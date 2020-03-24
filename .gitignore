@@ -1,0 +1,17 @@
+# ---> VisualStudioCode
+.settings
+.vscode
+.idea
+
+# Build
+build
+tmp
+web-ext-artifacts
+node_modules
+
+# Debug
+manifest_template.json
+scripts/debug.js
+
+# Save
+export.json
