@@ -41,6 +41,15 @@ The least amount of data is stored, here is the list of data for *each* titles o
 
 ``waiting`` is only saved when at least 1 service doesn't have an entry for the title, it will be used and deleted when the title is finally added on a service.
 
+## Build
+
+You need to have **node** installed, then just run ``node build`` and **SyncDex** will build in the **build** folder.
+
+You can pass some options:
+
+* ``--web-ext``: Build the ``web-ext`` archives.
+* ``-mode dev|prod``: Currently only minify code in prod mode.
+
 ## TODO
 
 - [x] Router
@@ -60,6 +69,9 @@ The least amount of data is stored, here is the list of data for *each* titles o
 - [ ] Display service in Title Page
 - [ ] Highlight Chapter List/Title List pages
 - [ ] Thumbnails
-- [ ] Options
+- [x] Options
+	- [x] Load from LocalStorage
+	- [ ] Options Page
 - [ ] Import/Export
 - [ ] Bigger History
+- [x] Build

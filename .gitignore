@@ -2,6 +2,7 @@
 .settings
 .vscode
 .idea
+.jshintrc
 
 # Build
 build

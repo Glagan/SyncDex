@@ -13,8 +13,14 @@ class Route {
 class Router {
 	routes: Route[] = [];
 
-	register(location: string, fnct: RouteFunction): void {
-		this.routes.push(new Route(location, fnct));
+	register(location: string | string[], fnct: RouteFunction): void {
+		if (!(location instanceof Array)) {
+			location = [location];
+		}
+		for (let index = 0; index < location.length; index++) {
+			const route = location[index];
+			this.routes.push(new Route(route, fnct));
+		}
 	}
 
 	match(location: string): RouteFunction | null {

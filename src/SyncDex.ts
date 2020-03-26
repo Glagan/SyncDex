@@ -1,22 +1,37 @@
 import { Router } from './Router';
+import { Options } from './Options';
+
+console.log('SyncDex :: SyncDex');
 
 class SyncDex {
 	router: Router = new Router();
+	options: Options = new Options();
 
 	constructor() {
-		this.router.register('/follows(/chapters)?$', this.chapterList);
-		this.router.register('/group/(\\d+)(/chapters)?$', this.chapterList);
-		this.router.register('/user/(\\d+)(/chapters)?$', this.chapterList);
+		this.router.register(
+			[
+				'/follows(/chapters)?$',
+				'/group/(\\d+)(/chapters)?$',
+				'/user/(\\d+)(/chapters)?$',
+				'/follows(/manga)?$',
+				'/group/(\\d+)(/manga)?$',
+				'/user/(\\d+)(/manga)?$'
+			],
+			this.chapterList
+		);
 		this.router.register('/chapter', this.chapterPage);
-		this.router.register('/follows(/manga)?$', this.chapterList);
-		this.router.register('/group/(\\d+)(/manga)?$', this.chapterList);
-		this.router.register('/user/(\\d+)(/manga)?$', this.chapterList);
-		this.router.register('/genre', this.titleList);
-		this.router.register('/featured', this.titleList);
-		this.router.register('(/search|\\?page=search)', this.titleList);
-		this.router.register('(/titles|\\?page=titles)', this.titleList);
+		this.router.register(
+			[
+				'/genre',
+				'/featured',
+				'(/search|\\?page=search)',
+				'(/titles|\\?page=titles)'
+			],
+			this.titleList
+		);
 		this.router.register('/(manga|title)', this.titlePage);
 		this.router.register('/updates', this.updatesPage);
+		this.options.load();
 	}
 
 	execute(location: string): void {
@@ -24,32 +39,8 @@ class SyncDex {
 		if (fnct) {
 			fnct();
 		}
-
-		// Test
-		const tests = [
-			'/follows',
-			'/titles',
-			'?page=titles',
-			'/search',
-			'?page=search',
-			'/featured',
-			'/manga',
-			'/title',
-			'/title/Super-Long-Title',
-			'/updates',
-			'/user/105544',
-			'/user/105544/manga',
-			'/user/105544/chapters',
-			'/group/105544',
-			'/group/105544/manga',
-			'/group/105544/chapters',
-			'/chapter',
-			'/chapter/1025'
-		];
-		for (let index = 0; index < tests.length; index++) {
-			const test = tests[index];
-			console.log(test, this.router.match(test));
-		}
+		console.log(location, 'found', fnct);
+		console.log(this.options);
 	}
 
 	chapterList(): void {}
