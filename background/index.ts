@@ -1,5 +1,3 @@
-import { browser } from '../src/Browser';
-
 console.log('SyncDex :: Background');
 
 enum MessageAction {
@@ -30,12 +28,12 @@ type ResponseFunction = (value: {
 	body: string | {};
 }) => void;
 
-browser.runtime.onMessage.addListener(
+chrome.runtime.onMessage.addListener(
 	(
 		message: FetchMessage | OpenOptionsMessage,
 		_sender: any,
 		sendResponse: ResponseFunction
-	): boolean | Promise<any> => {
+	): Promise<any> => {
 		if (message.action == MessageAction.fetch) {
 			// Default
 			message.isJson = !!message.isJson;
@@ -96,10 +94,10 @@ browser.runtime.onMessage.addListener(
 						});
 					});
 			}
-			return true;
+			return new Promise(() => true);
 		} else if (message.action == MessageAction.openOptions) {
-			return browser.runtime.openOptionsPage() as Promise<any>;
+			return chrome.runtime.openOptionsPage();
 		}
-		return false;
+		return new Promise(() => false);
 	}
 );

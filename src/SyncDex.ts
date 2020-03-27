@@ -1,11 +1,11 @@
 import { Router } from './Router';
-import { Options } from './Options';
+import { UserOptions } from './Options';
 
 console.log('SyncDex :: SyncDex');
 
-class SyncDex {
+export class SyncDex {
 	router: Router = new Router();
-	options: Options = new Options();
+	options: UserOptions = new UserOptions();
 
 	constructor() {
 		this.router.register(
@@ -49,5 +49,3 @@ class SyncDex {
 	titlePage(): void {}
 	updatesPage(): void {}
 }
-
-export { SyncDex };

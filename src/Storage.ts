@@ -1,49 +1,51 @@
-import { browser, isChrome } from './Browser';
+import { isChrome } from './Browser';
 
 console.log('SyncDex :: Storage');
 
-class LocalStorage {
-	static async get<T>(key: number | string | null = null): Promise<T> {
-		if (typeof key == 'number') key = key.toString();
-		let result;
+export class LocalStorage {
+	static async get<T>(
+		key: number | string | null = null
+	): Promise<T | undefined> {
+		if (typeof key === 'number') key = key.toString();
+		let result: Promise<{} | undefined>;
 		if (isChrome) {
+			const nestedKey: string | null = key; // Typescript fix...
 			result = new Promise(resolve =>
-				browser.storage.local.get(key, resolve)
+				chrome.storage.local.get(nestedKey, resolve)
 			);
 		} else {
-			result = browser.storage.local.get(key);
+			result = chrome.storage.local.get(key);
 		}
-		return result.then((data: { [key: string]: any }) => {
+		return result.then((data: { [key: string]: any } | undefined) => {
 			return key == null || data == undefined ? data : data[key];
 		});
 	}
 
-	static set(key: number | string, data: {}): Promise<any> {
+	static set(key: number | string, data: Object): Promise<any> {
 		if (typeof key == 'number') key = key.toString();
 		if (isChrome) {
 			return new Promise(resolve =>
-				browser.storage.local.set({ [key]: data }, resolve)
+				chrome.storage.local.set({ [key]: data }, resolve)
 			);
 		}
-		return browser.storage.local.set({ [key]: data });
+		return chrome.storage.local.set({ [key]: data });
 	}
 
 	static async remove(key: number | string): Promise<any> {
 		if (typeof key == 'number') key = key.toString();
 		if (isChrome) {
+			const nestedKey: string | null = key; // Typescript fix...
 			return new Promise(resolve =>
-				browser.storage.local.remove(key, resolve)
+				chrome.storage.local.remove(nestedKey, resolve)
 			);
 		}
-		return browser.storage.local.remove(key);
+		return chrome.storage.local.remove(key);
 	}
 
 	static clear(): Promise<any> {
 		if (isChrome) {
-			return new Promise(resolve => browser.storage.local.clear(resolve));
+			return new Promise(resolve => chrome.storage.local.clear(resolve));
 		}
-		return browser.storage.local.clear();
+		return chrome.storage.local.clear();
 	}
 }
-
-export { LocalStorage };

@@ -10,7 +10,7 @@ class Route {
 	}
 }
 
-class Router {
+export class Router {
 	routes: Route[] = [];
 
 	register(location: string | string[], fnct: RouteFunction): void {
@@ -33,5 +33,3 @@ class Router {
 		return null;
 	}
 }
-
-export { Router };
