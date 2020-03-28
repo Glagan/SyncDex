@@ -1,4 +1,3 @@
 console.log('SyncDex :: Browser');
 
-export const isChrome =
-	(<any>window).chrome && (<any>window).browser === undefined;
+export const isChrome = window.chrome && window.browser === undefined;

@@ -1,3 +1,8 @@
+interface Window {
+	chrome: typeof chrome;
+	browser?: typeof chrome;
+}
+
 declare const chrome: {
 	runtime: {
 		getManifest: () => {

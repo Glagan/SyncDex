@@ -1,0 +1,59 @@
+/***
+ * Meta
+ ***/
+
+.loading {
+	animation-name: pulse;
+	animation-duration: 2s;
+	animation-timing-function: ease-in-out;
+	animation-direction: alternate;
+	animation-iteration-count: infinite;
+}
+.has-transition {
+	transition: all 0.2s cubic-bezier(0.455, 0.03, 0.515, 0.955);
+}
+.has-fast-in-transition {
+	transition: all 400ms cubic-bezier(0.86, 0, 0.07, 1);
+}
+
+/***
+ * Tooltips
+ ***/
+
+.sd-tooltip {
+	display: block;
+	position: absolute;
+	border: 1px solid rgba(0, 0, 0, 0.6);
+	border-radius: 4px;
+	overflow: hidden;
+	background-color: rgba(0, 0, 0, 0.8);
+	opacity: 0;
+	transition: opacity 0.2s ease-in;
+	color: #fff;
+	z-index: 9999;
+	pointer-events: none;
+}
+.sd-tooltip.loading {
+	font-size: 1rem;
+	padding: 0.25rem;
+}
+.sd-tooltip.active {
+	opacity: 1;
+}
+.sd-tooltip .thumbnail {
+	max-width: 100%;
+	display: block;
+}
+.sd-tooltip .thumbnail.loading {
+	display: none;
+}
+.sd-tooltip.has-chapters .thumbnail {
+	border-bottom: 1px solid rgba(0, 0, 0, 0.6);
+}
+.sd-tooltip-content {
+	display: inline-block;
+	padding: 4px;
+}
+.sd-tooltip.loading .sd-tooltip-content {
+	display: none;
+}

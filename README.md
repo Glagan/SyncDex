@@ -12,35 +12,6 @@ You can update your list on this services:
 
 // Look at *proxer.me*, *shikimori.one*, *anisearch.com*
 
-## Data
-
-The least amount of data is stored, here is the list of data for *each* titles on MangaDex:
-
-```Javascript
-{
-    mangaDexId: {
-        services: {
-            mal: 0, // MyAnimeList
-            al: 0, // Anilist
-            ku: 0, // Kitsu
-            mu: 0, // MangaUpdates
-            ap: 0, // Anime Planet
-        },
-        progress: 0, // The last read chapter on MangaDex
-        lastCheck: Date.now(), // The last time nikurasu.org was queried for this title
-        // The saved state of the title when some services are missing
-        waiting: {
-            start: Date.now(),
-            end: Date.now(),
-            status: 'READING',
-        }
-        chapters: [], // The list of the last X opened chapters
-    }
-}
-```
-
-``waiting`` is only saved when at least 1 service doesn't have an entry for the title, it will be used and deleted when the title is finally added on a service.
-
 ## Build
 
 You need to have **node** installed, then just run ``node build`` and **SyncDex** will build in the **build** folder.
@@ -67,8 +38,8 @@ You can pass some options:
     - [ ] Kitsu
     - [ ] Anime Planet
 - [ ] Display service in Title Page
-- [ ] Highlight Chapter List/Title List pages
-- [ ] Thumbnails
+- [x] Highlight Chapter List/Title List pages
+- [x] Thumbnails
 - [x] Options
 	- [x] Load from LocalStorage
 	- [ ] Options Page

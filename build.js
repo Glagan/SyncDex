@@ -17,8 +17,7 @@ let mainManifest = {
 	name: 'syncdex',
 	version: '0.1',
 	author: 'Glagan',
-	description:
-		'Automatically update your Manga lists when reading on MangaDex.',
+	description: 'Automatically update your Manga lists when reading on MangaDex.',
 
 	permissions: [
 		'https://*.myanimelist.net/manga/*',
@@ -63,7 +62,7 @@ let mainManifest = {
 				'https://anilist.co/api/v2/oauth/pin?for=syncdex*'
 			],
 			js: ['dist/simpleNotification.min.js', 'SyncDex.js'],
-			css: ['dist/simpleNotification.min.css']
+			css: ['dist/simpleNotification.min.css', 'SyncDex.css']
 		}
 	]
 };
@@ -89,7 +88,7 @@ let browser_manifests = {
 };
 
 // Build
-let browsers = ['firefox', 'chrome'];
+let browsers = ['firefox' /* , 'chrome' */];
 let compiled = false;
 (async () => {
 	for (let index = 0; index < browsers.length; index++) {
@@ -105,16 +104,11 @@ let compiled = false;
 
 		// Merge manifests
 		console.log(`Building Manifest version ${mainManifest.version}`);
-		let manifest = Object.assign(
-			{},
-			mainManifest,
-			browser_manifests[browser]
-		);
+		let manifest = Object.assign({}, mainManifest, browser_manifests[browser]);
 		// Write in file
-		let bundleManifestStream = fs.createWriteStream(
-			`${folderName}/manifest.json`,
-			{ flags: 'w+' }
-		);
+		let bundleManifestStream = fs.createWriteStream(`${folderName}/manifest.json`, {
+			flags: 'w+'
+		});
 		bundleManifestStream.write(JSON.stringify(manifest));
 		bundleManifestStream.cork();
 		bundleManifestStream.end();
@@ -122,9 +116,7 @@ let compiled = false;
 		// Compile extension
 		if (!compiled) {
 			console.log('Compile');
-			execSync(
-				`rollup -c rollup.config.js --environment mode:${options.mode}`
-			);
+			execSync(`rollup -c rollup.config.js --environment mode:${options.mode}`);
 			compiled = true;
 		}
 
@@ -134,6 +126,7 @@ let compiled = false;
 			[
 				'dist',
 				'icons',
+				'src/SyncDex.css',
 				'build/SyncDex.js',
 				'build/SyncDex.js.map',
 				'build/SyncDex_background.js',
@@ -152,9 +145,7 @@ let compiled = false;
 		if (options.webExt) {
 			console.log('Building with web-ext');
 			const execResult = await execPromise(
-				exec(
-					`web-ext build --source-dir ${folderName} --artifacts-dir web-ext-artifacts`
-				)
+				exec(`web-ext build --source-dir ${folderName} --artifacts-dir web-ext-artifacts`)
 			)
 				.then(() => {
 					console.log('> Moving zip archive');

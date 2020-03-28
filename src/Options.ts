@@ -2,14 +2,6 @@ import { LocalStorage } from './Storage';
 
 console.log('SyncDex :: Options');
 
-enum Service {
-	'MyAnimeList',
-	'MangaUpdates',
-	'Anilist',
-	'Kitsu',
-	'AnimePlanet'
-}
-
 const version = parseFloat(chrome.runtime.getManifest().version);
 class Options {
 	// Chapter and Title List / Updates
@@ -61,17 +53,13 @@ class Options {
 		highlights: string[];
 		higherChapter: string;
 		lowerChapter: string;
-		currentChapter: string;
+		currentChapter: string; // Title Page
 		openedChapter: string; // Title Page
 	} = {
-		highlights: [
-			'rgba(28, 135, 141, 0.5)',
-			'rgba(22, 65, 87, 0.5)',
-			'rgba(28, 103, 141, 0.5)'
-		],
+		highlights: ['rgba(28, 135, 141, 0.5)', 'rgba(22, 65, 87, 0.5)', 'rgba(28, 103, 141, 0.5)'],
 		higherChapter: 'rgba(75, 180, 60, 0.8)',
 		lowerChapter: 'rgba(180, 102, 75, 0.5)',
-		currentChapter: 'rgba(75, 180, 60, 0.6)',
+		currentChapter: 'rgba(75, 180, 60, 0.6)', // Title Page
 		openedChapter: 'rgba(28, 135, 141, 0.4)' // Title Page
 	};
 	version: number = version;
@@ -97,14 +85,14 @@ export class UserOptions extends Options {
 		return new Promise<void>(() => {});
 	}
 
-	checkUpdate(): boolean {
+	checkUpdate = (): boolean => {
 		if (this.version !== version) {
 			return true;
 		}
 		return false;
-	}
+	};
 
-	update(): void {
+	update = (): void => {
 		for (let index = 0; index < updates.length; index++) {
 			const update = updates[index];
 			if (update.version >= this.version) {
@@ -113,5 +101,5 @@ export class UserOptions extends Options {
 			}
 		}
 		this.version = version;
-	}
+	};
 }
