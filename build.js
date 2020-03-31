@@ -14,7 +14,7 @@ options.webExt = options['web-ext'];
 // Manifest
 let mainManifest = {
 	manifest_version: 2,
-	name: 'syncdex',
+	name: 'SyncDex',
 	version: '0.1',
 	author: 'Glagan',
 	description: 'Automatically update your Manga lists when reading on MangaDex.',
@@ -39,7 +39,7 @@ let mainManifest = {
     },*/
 
 	background: {
-		page: 'background.html'
+		page: 'background/index.html'
 	},
 
 	content_scripts: [
@@ -75,13 +75,13 @@ let browser_manifests = {
 			}
 		},
 		options_ui: {
-			page: 'options.html',
+			page: 'options/index.html',
 			open_in_tab: true
 		}
 	},
 	chrome: {
 		options_ui: {
-			page: 'options.html',
+			page: 'options/index.html',
 			open_in_tab: true
 		}
 	}
@@ -89,7 +89,7 @@ let browser_manifests = {
 
 // Build
 let browsers = ['firefox' /* , 'chrome' */];
-let compiled = false;
+let compiled = true;
 (async () => {
 	for (let index = 0; index < browsers.length; index++) {
 		const browser = browsers[index];
@@ -124,18 +124,17 @@ let compiled = false;
 		console.log('Copying files');
 		deepFileCopy(
 			[
-				'dist',
-				'icons',
+				'dist:dist',
+				'icons:icons',
 				'src/SyncDex.css',
+				'background:background',
+				'build/SyncDex_background.js:background',
+				'build/SyncDex_background.js.map:background',
+				'options:options',
+				'build/SyncDex_options.js:options',
+				'build/SyncDex_options.js.map:options',
 				'build/SyncDex.js',
-				'build/SyncDex.js.map',
-				'build/SyncDex_background.js',
-				'build/SyncDex_background.js.map',
-				'build/SyncDex_options.js',
-				'build/SyncDex_options.js.map',
-				'background/background.html',
-				'options/options.html',
-				'options/options.css'
+				'build/SyncDex.js.map'
 			],
 			folderName,
 			['chrome', 'firefox']
@@ -184,31 +183,42 @@ function execPromise(child) {
 // Copy files to another folder
 function deepFileCopy(bases, destination, ignore = []) {
 	if (!Array.isArray(bases)) bases = [bases];
+	if (!fs.existsSync(destination)) {
+		fs.mkdirSync(destination);
+	}
 	for (let index = 0; index < bases.length; index++) {
-		const base = bases[index];
+		const parts = bases[index].split(':');
+		const base = parts[0];
 		if (fs.statSync(base).isFile()) {
-			let currentDestination = `${destination}/${path.basename(base)}`;
-			console.log(`> '${base}' into '${destination}'`);
+			let destinationBase = destination;
+			if (parts.length == 2 && parts[1].length) {
+				destinationBase = `${destination}/${parts[1]}`;
+				if (!fs.existsSync(destinationBase)) {
+					fs.mkdirSync(destinationBase);
+				}
+			}
+			let currentDestination = `${destinationBase}/${path.basename(base)}`;
+			console.log(`> '${base}' into '${destinationBase}'`);
 			fs.copyFileSync(base, currentDestination);
 		} else {
 			fs.readdirSync(base).forEach(file => {
 				// Return if it"s an ignored file
 				if (ignore.indexOf(file) >= 0) return;
 				// Create dir if it doesn"t exist
-				if (!fs.existsSync(destination)) {
-					fs.mkdirSync(destination);
-				}
-				const destinationBase = `${destination}/${base}`;
-				if (!fs.existsSync(destinationBase)) {
-					fs.mkdirSync(destinationBase);
+				let destinationBase = destination;
+				if (parts.length == 2 && parts[1].length) {
+					destinationBase = `${destination}/${parts[1]}`;
+					if (!fs.existsSync(destinationBase)) {
+						fs.mkdirSync(destinationBase);
+					}
 				}
 				// Move files
 				let currentFolder = `${base}/${file}`;
 				let currentDestination = `${destinationBase}/${file}`;
 				if (fs.statSync(currentFolder).isDirectory()) {
 					deepFileCopy(currentFolder, currentDestination, ignore);
-				} else {
-					console.log(`> '${file}' into '${destinationBase}'`);
+				} else if (path.extname(currentDestination) != '.ts') {
+					console.log(`> '${file}' into '${destination}'`);
 					fs.copyFileSync(currentFolder, currentDestination);
 				}
 			});

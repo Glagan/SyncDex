@@ -51,21 +51,29 @@ class ChapterGroup {
 
 	highlight = (options: UserOptions, progress: Progress): void => {
 		let lastColor = options.colors.highlights.length,
-			selected = 0;
+			selected = 0,
+			outerColor = options.colors.highlights[ChapterGroup.currentColor];
 		// If there is data
 		let chapterCount = this.chapters.length;
 		for (let j = 0; j < chapterCount; j++) {
 			let chapter = this.chapters[j];
 			chapter.row.classList.add('has-fast-in-transition');
 			if (chapter.progress) {
-				if (progress.chapter > chapter.progress.chapter) {
+				if (
+					progress.chapter < chapter.progress.chapter &&
+					chapter.progress.chapter < Math.floor(progress.chapter) + 2
+				) {
+					chapter.row.style.backgroundColor = options.colors.nextChapter;
+					selected = j;
+					outerColor = options.colors.nextChapter;
+				} else if (progress.chapter > chapter.progress.chapter) {
 					chapter.row.style.backgroundColor = options.colors.higherChapter;
 				} else if (progress.chapter < chapter.progress.chapter) {
 					chapter.row.style.backgroundColor = options.colors.lowerChapter;
 				} else if (progress.chapter == chapter.progress.chapter) {
 					chapter.row.style.backgroundColor =
 						options.colors.highlights[ChapterGroup.currentColor];
-					selected = selected == 0 ? j : selected;
+					selected = j;
 				}
 			}
 		}
@@ -80,8 +88,8 @@ class ChapterGroup {
 				)
 					continue;
 				if (this.chapters[j].row.firstElementChild) {
-					(this.chapters[j].row.firstElementChild as HTMLElement).style.backgroundColor =
-						options.colors.highlights[ChapterGroup.currentColor];
+					(this.chapters[j].row
+						.firstElementChild as HTMLElement).style.backgroundColor = outerColor;
 				}
 			}
 		}

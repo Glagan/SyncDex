@@ -15,7 +15,7 @@ class Options {
 	updateServicesInList: boolean = false;
 	// Reading
 	saveChapters: boolean = true;
-	chaptersSaved: number = 100;
+	chaptersSaved: number = 400;
 	saveOnlyHigher: boolean = true;
 	saveOnlyNext: boolean = false;
 	confirmChapter: boolean = false;
@@ -27,14 +27,14 @@ class Options {
 	// History
 	biggerHistory: boolean = false;
 	historySize: number = 100;
-	// Global
+	// Notifications
 	notifications: boolean = true;
 	errors: boolean = true;
+	// Global
 	useFetch: boolean = true;
 	useNikurasu: boolean = true;
 	acceptLowScore: boolean = true;
 	updateMD: boolean = false;
-	progressBar: boolean = true;
 	// Services
 	services: Service[] = [];
 	mainService: Service | undefined = undefined;
@@ -51,15 +51,15 @@ class Options {
 	// Colors
 	colors: {
 		highlights: string[];
+		nextChapter: string;
 		higherChapter: string;
 		lowerChapter: string;
-		currentChapter: string; // Title Page
 		openedChapter: string; // Title Page
 	} = {
 		highlights: ['rgba(28, 135, 141, 0.5)', 'rgba(22, 65, 87, 0.5)', 'rgba(28, 103, 141, 0.5)'],
-		higherChapter: 'rgba(75, 180, 60, 0.8)',
+		nextChapter: 'rgba(199, 146, 2, 0.4)',
+		higherChapter: 'transparent',
 		lowerChapter: 'rgba(180, 102, 75, 0.5)',
-		currentChapter: 'rgba(75, 180, 60, 0.6)', // Title Page
 		openedChapter: 'rgba(28, 135, 141, 0.4)' // Title Page
 	};
 	version: number = version;

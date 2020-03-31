@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>SyncDex :: Options</title>
+	<link rel="stylesheet" type="text/css" media="all" href="css/LineIcons.css">
+	<link rel="stylesheet" type="text/css" media="all" href="css/SyncDex.css">
+</head>
+
+<body>
+	<div id="menu">
+		<ul>
+			<li><a href="#"><i class="lni lni-world"></i> Services</a></li>
+			<li><a href="#"><i class="lni lni-brush"></i> Colors</a></li>
+			<li><a href="#"><i class="lni lni-bookmark"></i> Updates</a></li>
+			<li><a href="#"><i class="lni lni-book"></i> Lists</a></li>
+			<li><a href="#"><i class="lni lni-bubble"></i> Notifications</a></li>
+			<li><a href="#"><i class="lni lni-list"></i> History</a></li>
+			<li><a href="#"><i class="lni lni-upload"></i> Import</a></li>
+			<li><a href="#"><i class="lni lni-download"></i> Export</a></li>
+			<li><a href="#"><i class="lni lni-more"></i> Other</a></li>
+			<li><a href="#"><i class="lni lni-trash"></i> Delete</a></li>
+		</ul>
+	</div>
+	<div id="content">
+		<h1 id="services"><i class="lni lni-world"></i> Services</h1>
+		<div class="block warning">
+			There is one enabled but inactive service.
+		</div>
+		<div class="services">
+			<div class="service main active">
+				<div class="title"><img src="/icons/mal.png">&nbsp;<span class="myanimelist">MyAnimeList</span>
+				</div>
+				<button class="danger"><i class="lni lni-cross-circle"></i> Remove</button>
+			</div>
+			<div class="service inactive">
+				<div class="title"><img src="/icons/al.png">&nbsp;<span class="anilist">Ani<span
+							class="list">list</span></span>
+				</div>
+			</div>
+			<button class="service-add">
+				<i class="lni lni-circle-plus"></i> Add
+			</button>
+		</div>
+		<h1 id="colors"><i class="lni lni-brush"></i> Colors</h1>
+		<div class="block info">
+			Colors that exist in <a href="http://www.color-hex.com/color-names.html" target="blank">HTML</a> are
+			accepted but you
+			can also use values like <b>#RRGGBB</b>, <b>rgb(red, green, blue)</b> or with alpha channel
+			<b>rgba(red, green, blue, alpha)</b>.<br />
+			If you want to disable one of the highlights you can turn it off globally or set a color to
+			<b>transparent</b>.
+		</div>
+		<div class="block">
+			<h2>Highlight</h2>
+			<p>Paint rows in chapters lists to quickly identify which chapters you can read next or that you already
+				read.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Next Chapter</h2>
+			<p>Color of the next chapter of a title.</p>
+			<div class="color-input">
+				<input type="text" name="nextChapter" placeholder="Next chapter color" /><span class="color"></span>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Higher Chapters</h2>
+			<p>Color of all <b>higher</b> chapters than your last read chapter.</p>
+			<div class="color-input">
+				<input type="text" name="higherChapter" placeholder="Higher chapters color" /><span
+					class="color"></span>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Lower Chapters</h2>
+			<p>Color of all <b>lower</b> chapters than your last read chapter.</p>
+			<div class="color-input">
+				<input type="text" name="lowerChapter" placeholder="Lower chapter color" /><span class="color"></span>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Current Chapter</h2>
+			<p>Colors for all <b>current</b> chapters.<br />
+				<b>SyncDex</b> will cycle through them if you add multiple of them.</p>
+			<div class="color-input">
+				<input type="text" name="lowerChapter" placeholder="Lower chapter color" /><span class="color"></span>
+			</div>
+		</div>
+		<div class="block info">
+			The following option is only applied on a <b>title</b> page.
+		</div>
+		<div class="block">
+			<h2>Opened Chapters</h2>
+			<p>Colors for chapters that you opened if the "<b>Save opened chapters</b>" option is enabled.</p>
+			<div class="color-input">
+				<input type="text" name="openedChapter" placeholder="Opened chapters color" /><span
+					class="color"></span>
+			</div>
+		</div>
+		<h1 id="general"><i class="lni lni-bookmark"></i> Updates</h1>
+		<div class="block info">
+			The following options change the behavior while you are reading.
+		</div>
+		<div class="block">
+			<h2>Save opened chapters</h2>
+			<p>Keep a list of all opened chapters when read.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+				<div class="dependency">
+					<input type="number" name="savedChapters" placeholder="Amount of saved chapters" min="1"
+						max="500" />
+				</div>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Save only next chapter</h2>
+			<p>Save the chapter you are reading only if it's the next one.<br />
+				If "<b>Confirm Chapter save</b>" is enabled it will asks you if you still want to update it, or else it
+				will do nothing.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Save only higher chapter</h2>
+			<p>Save the chapter you are reading only if it's <b>higher</b>.<br />
+				If "<b>Confirm Chapter save</b>" is enabled it will asks you if you still want to update it, or else it
+				will do nothing.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Confirm Chapter</h2>
+			<p>Asks if you want to update your list(s) to the current chapter you are reading.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Update only if in list</h2>
+			<p>Update your list(s) only if the title you are reading is <b>already</b> in your <b>MangaDex</b> list.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<h1 id="general"><i class="lni lni-book"></i> Lists</h1>
+		<div class="block">
+			<h2>Hide Higher chapters</h2>
+			<p>Hide chapters that are <b>higher</b> than the last chapter you read.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Hide Lower chapters</h2>
+			<p>Hide chapters that are <b>lower</b>> than the last chapter you read.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Hide Last chapters</h2>
+			<p>Hide the last chapter you read.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Add covers</h2>
+			<p>Display the cover of the title when hovering a row.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+			<h2>Original cover</h2>
+			<p>Display the full size original cover of the title instead of a thumbnail.<br />
+				Do not enable this if you don't have a somehow good connection, some images can be big.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Check Service status</h2>
+			<p>Check the status of a title on a Service.<br />
+				This incrase the amount of requests to Services and is not recommended.<br />
+				It is actually useless if you <b>only</b> read on <b>MangaDex</b> through the site and with
+				<b>SyncDex</b> enable.<br />
+				This option can solve problems if you read and update your list through another application like
+				<b>Tachiyomi</b> on mobile and your <b>SyncDex</b> local status isn't up to date.<br />
+				There is an hard limit to the amount of requests that can be made and <b>SyncDex</b> will only try to
+				get the status of titles that could have changed, titles with chapters updated more than 15 minutes ago
+				and that haven't been already checked in the past hour.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<h1 id="general"><i class="lni lni-bookmark"></i> General</h1>
+		<div class="block info">
+			The following options change what is displayed on <b>title</b>s page.
+		</div>
+		<div class="block">
+			<h2>Link to services</h2>
+			<p>Add links to all Services that are available and valid.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Display Overview</h2>
+			<p>Display the state of the title in your list for each Services you saved it to.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+			<h2>Overview for main Service only</h2>
+			<p>Display the above overview only for your main Service.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<h1 id="notifications"><i class="lni lni-bubble"></i> Notifications</h1>
+		<div class="block">
+			<h2>Display Notifications</h2>
+			<p>Display Notifications.<br />
+				Error notifications will still be displayed unless you also toggle them off below.<br />
+				Confirmation notifications will still be displayed.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Display Error Notifications</h2>
+			<p>Display Error Notifications.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<h1 id="history"><i class="lni lni-list"></i> History</h1>
+		<div class="block info">
+			The following options update the <b>History</b> page of <b>MangaDex</b> (<a
+				href="https://mangadex.org/history" rel="noreferrer noopener">https://mangadex.org/history</a>)
+		</div>
+		<div class="block">
+			<h2>Bigger History</h2>
+			<p>Save each titles you read and display a bigger history than the original 20 that <b>MangaDex</b> save.
+			</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+				<div class="dependency">
+					<input type="number" name="savedChapters" placeholder="History size" min="21" max="1000" />
+				</div>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Display chapter status</h2>
+			<p>Highlight the covers to quickly see if you read the last chapter for a title.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<h1 id="import"><i class="lni lni-upload"></i> Import</h1>
+		<h1 id="export"><i class="lni lni-download"></i> Export</h1>
+		<h1 id="other"><i class="lni lni-more"></i> Other</h1>
+		<div class="block">
+			<h2>Use XHR</h2>
+			<p>Use the old XMLHttpRequest API to make Requests. Don't enable it.</p>
+			<div class="checkbox disabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Use <b>Mochi</b></h2>
+			<p>Use <a href="https://mochi.nikurasu.org/" rel="noreferrer noopener">Mochi</a> to get
+				Services links.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+			<h2>Allow low score</h2>
+			<p>Allow low score results from <b>Mochi</b>, it is not recommended since it could add and update totally
+				unrelated titles to your list.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<div class="block">
+			<h2>Update MangaDex list</h2>
+			<p>Update the <b>status</b> of the titles in your <b>MangaDex</b> list when needed.</p>
+			<div class="checkbox enabled">
+				<button type="button" class="on">Enabled</button>
+				<button type="button" class="off">Disabled</button>
+			</div>
+		</div>
+		<h1 id="delete"><i class="lni lni-trash"></i> Delete</h1>
+		<div class="block">
+			<button type="button" class="danger">Delete</button>
+		</div>
+	</div>
+	<script src="SyncDex_options.js"></script>
+</body>
+
+</html>
