@@ -1,3 +1,5 @@
+import { setBrowser } from '../src/Browser';
+
 console.log('SyncDex :: Background');
 
 enum MessageAction {
@@ -28,7 +30,8 @@ type ResponseFunction = (value: {
 	body: string | {};
 }) => void;
 
-chrome.runtime.onMessage.addListener(
+setBrowser();
+browser.runtime.onMessage.addListener(
 	(
 		message: FetchMessage | OpenOptionsMessage,
 		_sender: any,
@@ -49,9 +52,7 @@ chrome.runtime.onMessage.addListener(
 					if (xhr.readyState == 4) {
 						let body: {} | '';
 						try {
-							body = message.isJson
-								? JSON.parse(xhr.responseText)
-								: xhr.responseText;
+							body = message.isJson ? JSON.parse(xhr.responseText) : xhr.responseText;
 						} catch (error) {
 							body = message.isJson ? {} : '';
 						}
@@ -78,9 +79,7 @@ chrome.runtime.onMessage.addListener(
 							url: response.url,
 							status: response.status,
 							headers: response.headers,
-							body: message.isJson
-								? await response.json()
-								: await response.text()
+							body: message.isJson ? await response.json() : await response.text()
 						};
 					})
 					.then(response => sendResponse(response))
@@ -96,7 +95,7 @@ chrome.runtime.onMessage.addListener(
 			}
 			return new Promise(() => true);
 		} else if (message.action == MessageAction.openOptions) {
-			return chrome.runtime.openOptionsPage();
+			return browser.runtime.openOptionsPage();
 		}
 		return new Promise(() => false);
 	}

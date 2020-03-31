@@ -2,8 +2,8 @@ import { LocalStorage } from './Storage';
 
 console.log('SyncDex :: Options');
 
-const version = parseFloat(chrome.runtime.getManifest().version);
-class Options {
+const version = parseFloat(browser.runtime.getManifest().version);
+export class Options {
 	// Chapter and Title List / Updates
 	hideHigher: boolean = false;
 	hideLower: boolean = true;
@@ -27,12 +27,13 @@ class Options {
 	// History
 	biggerHistory: boolean = false;
 	historySize: number = 100;
+	chapterStatus: boolean = false;
 	// Notifications
 	notifications: boolean = true;
-	errors: boolean = true;
+	errorNotifications: boolean = true;
 	// Global
-	useFetch: boolean = true;
-	useNikurasu: boolean = true;
+	useXHR: boolean = true;
+	useMochi: boolean = true;
 	acceptLowScore: boolean = true;
 	updateMD: boolean = false;
 	// Services
@@ -78,21 +79,33 @@ export class UserOptions extends Options {
 		if (options !== undefined) {
 			Object.assign(this, options);
 		}
-		if (this.checkUpdate()) {
+		const needUpdate = this.checkUpdate();
+		if (needUpdate) {
 			this.update();
-			await LocalStorage.set('options', this);
 		}
-		return new Promise<void>(() => {});
+		if (!options || needUpdate) {
+			return await LocalStorage.set('options', this);
+		}
+		return new Promise<void>(resolve => resolve());
 	}
 
-	checkUpdate = (): boolean => {
+	get<K extends keyof Options>(key: K): UserOptions[K] {
+		return (this as UserOptions)[key];
+	}
+
+	set<K extends keyof Options>(key: K, value: UserOptions[K]): this {
+		(this as UserOptions)[key] = value;
+		return this;
+	}
+
+	checkUpdate(): boolean {
 		if (this.version !== version) {
 			return true;
 		}
 		return false;
-	};
+	}
 
-	update = (): void => {
+	update(): void {
 		for (let index = 0; index < updates.length; index++) {
 			const update = updates[index];
 			if (update.version >= this.version) {
@@ -101,5 +114,9 @@ export class UserOptions extends Options {
 			}
 		}
 		this.version = version;
-	};
+	}
+
+	async save(): Promise<void> {
+		return await LocalStorage.set('options', this);
+	}
 }

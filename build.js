@@ -88,8 +88,8 @@ let browser_manifests = {
 };
 
 // Build
-let browsers = ['firefox' /* , 'chrome' */];
-let compiled = true;
+let browsers = ['firefox', 'chrome'];
+let compiled = false;
 (async () => {
 	for (let index = 0; index < browsers.length; index++) {
 		const browser = browsers[index];

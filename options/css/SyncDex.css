@@ -29,6 +29,7 @@ body {
 	background-color: #111523;
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
 		sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+	font-size: 1rem;
 }
 
 #menu {
@@ -133,7 +134,7 @@ body {
 	margin-bottom: 0;
 }
 
-.service.loading {
+.loading {
 	animation-name: pulse;
 	animation-duration: 2s;
 	animation-timing-function: ease-in-out;
@@ -267,7 +268,7 @@ input {
 }
 
 .checkbox {
-	display: flex;
+	display: inline-flex;
 	flex-flow: row nowrap;
 }
 
