@@ -66,14 +66,14 @@
 		<div class="block">
 			<h2>Next Chapter</h2>
 			<p>Color of the next chapter of a title.</p>
-			<div class="color-input">
+			<div class="color-input" data-color="nextChapter">
 				<input type="text" name="nextChapter" placeholder="Next chapter color" /><span class="color"></span>
 			</div>
 		</div>
 		<div class="block">
 			<h2>Higher Chapters</h2>
 			<p>Color of all <b>higher</b> chapters than your last read chapter.</p>
-			<div class="color-input">
+			<div class="color-input" data-color="higherChapter">
 				<input type="text" name="higherChapter" placeholder="Higher chapters color" /><span
 					class="color"></span>
 			</div>
@@ -81,17 +81,15 @@
 		<div class="block">
 			<h2>Lower Chapters</h2>
 			<p>Color of all <b>lower</b> chapters than your last read chapter.</p>
-			<div class="color-input">
+			<div class="color-input" data-color="lowerChapter">
 				<input type="text" name="lowerChapter" placeholder="Lower chapter color" /><span class="color"></span>
 			</div>
 		</div>
 		<div class="block">
-			<h2>Current Chapter</h2>
+			<h2>Current Chapters</h2>
 			<p>Colors for all <b>current</b> chapters.<br />
 				<b>SyncDex</b> will cycle through them if you add multiple of them.</p>
-			<div class="color-input">
-				<input type="text" name="lowerChapter" placeholder="Lower chapter color" /><span class="color"></span>
-			</div>
+			<div id="highlights" class="highlights"></div>
 		</div>
 		<div class="block info">
 			The following option is only applied on a <b>title</b> page.
@@ -99,7 +97,7 @@
 		<div class="block">
 			<h2>Opened Chapters</h2>
 			<p>Colors for chapters that you opened if the "<b>Save opened chapters</b>" option is enabled.</p>
-			<div class="color-input">
+			<div class="color-input" data-color="openedChapter">
 				<input type="text" name="openedChapter" placeholder="Opened chapters color" /><span
 					class="color"></span>
 			</div>

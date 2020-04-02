@@ -52,6 +52,7 @@ body {
 	margin: 0.5rem;
 	color: #bfc0c0;
 	margin-right: 0;
+	overflow: hidden;
 }
 
 #menu ul li:hover,
@@ -218,6 +219,21 @@ body {
 	display: flex;
 	flex-flow: row nowrap;
 	align-items: stretch;
+	margin-bottom: 0.5rem;
+}
+
+.color-input:last-of-type {
+	margin-bottom: 0;
+}
+
+#highlights .color-input button:first-child {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+	border-right: 0;
+}
+
+#highlights button.success {
+	margin-top: 0.5rem;
 }
 
 input,

@@ -1,9 +1,15 @@
+type DOMSimpleEvent<K extends keyof DocumentEventMap> = (ev: DocumentEventMap[K]) => any;
 interface DOMProperties {
 	textContent?: string;
 	class?: string;
 	classList?: string[];
 	style?: { [key in keyof Partial<CSSStyleDeclaration>]: string };
 	attributes?: { [key: string]: string };
+	childs?: (HTMLElement | Text)[];
+	events?: {
+		[key in keyof Partial<DocumentEventMap>]: DOMSimpleEvent<key>;
+	};
+	dataset?: Record<string, string>;
 }
 
 export class DOM {
@@ -13,12 +19,10 @@ export class DOM {
 	): HTMLElementTagNameMap[K] {
 		const elt = document.createElement(tagName);
 		if (properties) {
-			if (properties.textContent) {
-				elt.textContent = properties.textContent;
-			}
-			if (properties.class) {
-				elt.className = properties.class;
-			}
+			Object.assign(elt, {
+				textContent: properties.textContent || '',
+				className: properties.class || ''
+			});
 			if (properties.classList) {
 				for (let index = 0; index < properties.classList.length; index++) {
 					const className = properties.classList[index];
@@ -36,8 +40,44 @@ export class DOM {
 					}
 				}
 			}
+			if (properties.childs) {
+				for (const child in properties.childs) {
+					if (properties.childs.hasOwnProperty(child)) {
+						elt.appendChild(properties.childs[child]);
+					}
+				}
+			}
+			if (properties.events) {
+				for (const event in properties.events) {
+					if (properties.events.hasOwnProperty(event)) {
+						elt.addEventListener(
+							event,
+							(<K extends keyof DocumentEventMap>(
+								event: string
+							): DOMSimpleEvent<K> => {
+								return properties.events[event as K] as DOMSimpleEvent<K>;
+							})(event)
+						);
+					}
+				}
+			}
+			if (properties.dataset) {
+				for (const data in properties.dataset) {
+					if (properties.dataset.hasOwnProperty(data)) {
+						elt.dataset[data] = properties.dataset[data];
+					}
+				}
+			}
 		}
 		return elt;
+	}
+
+	static text(text: string | undefined = undefined): Text {
+		return document.createTextNode(!text ? '' : text);
+	}
+
+	static space(): Text {
+		return this.text('\xA0');
 	}
 
 	static clear(node: HTMLElement) {
@@ -46,7 +86,7 @@ export class DOM {
 		}
 	}
 
-	static append(parent: HTMLElement, ...childs: HTMLElement[]): HTMLElement {
+	static append(parent: HTMLElement, ...childs: (HTMLElement | Text)[]): HTMLElement {
 		for (let index = 0; index < childs.length; index++) {
 			const child = childs[index];
 			parent.appendChild(child);
