@@ -41,7 +41,7 @@ class Highlights {
 		}
 	}
 
-	createRow(index: number, color: string): HTMLElement {
+	createRow = (index: number, color: string): HTMLElement => {
 		const row = DOM.create('div', {
 			class: 'color-input',
 			dataset: {
@@ -100,7 +100,7 @@ class Highlights {
 			DOM.append(this.node, row);
 		}
 		return row;
-	}
+	};
 }
 
 class Color {
@@ -200,11 +200,36 @@ class Checkbox {
 	};
 }
 
+const enum ScrollDirection {
+	UP,
+	DOWN
+}
+
+class Menu {
+	link: HTMLElement;
+	header: HTMLElement;
+
+	constructor(link: HTMLElement) {
+		this.link = link;
+		const name = link.dataset.link as string;
+		this.header = document.getElementById(name) as HTMLElement;
+	}
+
+	isVisible = (direction: ScrollDirection, scroll: number): boolean => {
+		if (direction == ScrollDirection.UP) {
+			return scroll >= this.header.offsetTop;
+		}
+		return scroll + (window.innerHeight - window.innerHeight / 2) >= this.header.offsetTop;
+	};
+}
+
 class OptionsManager {
 	options: UserOptions = new UserOptions();
 	colors: Color[] = [];
 	checkboxes: Checkbox[] = [];
 	highlights: Highlights | null = null;
+	menus: Menu[] = [];
+	activeMenu: number = 0;
 
 	initialize = async (): Promise<void> => {
 		await this.options.load();
@@ -225,6 +250,52 @@ class OptionsManager {
 			const checkbox = checkboxes[index] as HTMLElement;
 			this.checkboxes.push(new Checkbox(checkbox, this.options));
 		}
+		// Scrolling effect
+		const content = document.getElementById('content') as HTMLElement;
+		document.querySelectorAll<HTMLElement>('[data-link]').forEach(link => {
+			const menu = new Menu(link);
+			link.addEventListener('click', () => {
+				content.scroll({
+					top: menu.header.offsetTop,
+					behavior: 'smooth'
+				});
+			});
+			this.menus.push(menu);
+		});
+		const lastScroll = 0;
+		content.addEventListener(
+			'scroll',
+			_event => {
+				window.requestAnimationFrame(() => {
+					const scrollTop = content.scrollTop;
+					const direction =
+						lastScroll - scrollTop > 0 ? ScrollDirection.UP : ScrollDirection.DOWN;
+					if (scrollTop == 0) {
+						this.activateMenu(this.menus[0], 0);
+					} else if (scrollTop == content.scrollHeight - window.innerHeight) {
+						const menuLenghth = this.menus.length - 1;
+						this.activateMenu(this.menus[menuLenghth], menuLenghth);
+					} else {
+						for (let index = this.menus.length - 1; index >= 0; index--) {
+							const menu = this.menus[index];
+							if (menu.isVisible(direction, scrollTop)) {
+								if (this.activeMenu != index) {
+									this.activateMenu(menu, index);
+								}
+								break;
+							}
+						}
+					}
+				});
+			},
+			{ passive: true }
+		);
+	};
+
+	activateMenu = (menu: Menu, index: number): void => {
+		this.menus[this.activeMenu].link.classList.remove('active');
+		menu.link.classList.add('active');
+		this.activeMenu = index;
 	};
 }
 

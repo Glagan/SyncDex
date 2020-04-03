@@ -50,25 +50,23 @@ body {
 #menu ul li {
 	font-size: 1.5rem;
 	margin: 0.5rem;
-	color: #bfc0c0;
+	color: #d3d3d3;
 	margin-right: 0;
 	overflow: hidden;
+	transition: 0.1s ease-in-out;
+	cursor: pointer;
+	padding: 0.75rem;
 }
 
 #menu ul li:hover,
 #menu ul li.active {
-	background-color: #bfc0c0;
-	box-shadow: 0 0 4px 2px #bfc0c0;
+	background-color: #d3d3d3;
+	box-shadow: 0 0 4px 2px #d3d3d3;
 	color: #2f3845;
 }
 
-#menu ul li a {
-	text-decoration: none;
-	color: inherit;
-	display: inline-block;
-	padding: 1rem;
-	width: 100%;
-	margin-right: 0;
+#menu ul li:hover {
+	background-color: #b6b6b6;
 }
 
 #content {
