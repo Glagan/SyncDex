@@ -1,9 +1,10 @@
 import { LocalStorage } from './Storage';
+import { ServiceName } from './Service/Service';
 
 console.log('SyncDex :: Options');
 
 const version = parseFloat(browser.runtime.getManifest().version);
-export class Options {
+export class DefaultOptions {
 	// Chapter and Title List / Updates
 	hideHigher: boolean = false;
 	hideLower: boolean = true;
@@ -37,8 +38,8 @@ export class Options {
 	acceptLowScore: boolean = true;
 	updateMD: boolean = false;
 	// Services
-	services: Service[] = [];
-	mainService: Service | undefined = undefined;
+	services: ServiceName[] = [];
+	mainService: ServiceName | undefined = undefined;
 	noReloadStatus: boolean = true;
 	tokens: {
 		anilistToken: string | undefined;
@@ -47,7 +48,7 @@ export class Options {
 	} = {
 		anilistToken: undefined,
 		kitsuUser: undefined,
-		kitsuToken: undefined
+		kitsuToken: undefined,
 	};
 	// Colors
 	colors: {
@@ -61,21 +62,21 @@ export class Options {
 		nextChapter: 'rgba(199, 146, 2, 0.4)',
 		higherChapter: 'transparent',
 		lowerChapter: 'rgba(180, 102, 75, 0.5)',
-		openedChapter: 'rgba(28, 135, 141, 0.4)' // Title Page
+		openedChapter: 'rgba(28, 135, 141, 0.4)', // Title Page
 	};
 	version: number = version;
 }
 
 interface Update {
 	version: number;
-	fnct: (options: Options) => void;
+	fnct: (options: DefaultOptions) => void;
 }
 
 const updates: Update[] = [];
 
-export class UserOptions extends Options {
+export class Options extends DefaultOptions {
 	async load(): Promise<void> {
-		const options = await LocalStorage.get<Options>('options');
+		const options = await LocalStorage.get<DefaultOptions>('options');
 		if (options !== undefined) {
 			Object.assign(this, options);
 		}
@@ -86,15 +87,15 @@ export class UserOptions extends Options {
 		if (!options || needUpdate) {
 			return await LocalStorage.set('options', this);
 		}
-		return new Promise<void>(resolve => resolve());
+		return new Promise<void>((resolve) => resolve());
 	}
 
-	get<K extends keyof Options>(key: K): UserOptions[K] {
-		return (this as UserOptions)[key];
+	get<K extends keyof DefaultOptions>(key: K): Options[K] {
+		return (this as Options)[key];
 	}
 
-	set<K extends keyof Options>(key: K, value: UserOptions[K]): this {
-		(this as UserOptions)[key] = value;
+	set<K extends keyof DefaultOptions>(key: K, value: Options[K]): this {
+		(this as Options)[key] = value;
 		return this;
 	}
 

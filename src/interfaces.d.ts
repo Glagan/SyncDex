@@ -1,22 +1,3 @@
-declare enum Service {
-	'MyAnimeList',
-	'MangaUpdates',
-	'Anilist',
-	'Kitsu',
-	'AnimePlanet'
-}
-
-declare enum Status {
-	NONE,
-	READING,
-	COMPLETED,
-	PAUSED,
-	DROPPED,
-	PLAN_TO_READ,
-	REREADING,
-	WONT_READ
-}
-
 interface Progress {
 	chapter: number;
 	volume?: number;

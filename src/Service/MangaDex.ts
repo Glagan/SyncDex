@@ -1,6 +1,6 @@
-import { HTMLService } from './Service';
+import { HTMLService, ServiceStatus } from './Service';
 import { DOM } from '../DOM';
-import { UserOptions } from '../Options';
+import { Options } from '../Options';
 
 interface ChapterRow {
 	progress: Progress | undefined;
@@ -14,7 +14,7 @@ class ChapterGroup {
 	chapters: ChapterRow[] = [];
 	static currentColor: number = 0;
 
-	hide = (options: UserOptions, progres: Progress): void => {
+	hide = (options: Options, progres: Progress): void => {
 		if (!options.hideHigher && !options.hideLower && !options.hideLast) return;
 		let chapterCount = this.chapters.length;
 		for (let j = 0; j < chapterCount; j++) {
@@ -39,8 +39,8 @@ class ChapterGroup {
 					class: 'text-truncate',
 					attributes: {
 						href: `/title/${this.titleId}`,
-						title: this.name
-					}
+						title: this.name,
+					},
 				});
 				this.chapters[j].row.firstElementChild?.appendChild(link);
 			}
@@ -49,7 +49,7 @@ class ChapterGroup {
 		// TODO: Add button to show hidden
 	};
 
-	highlight = (options: UserOptions, progress: Progress): void => {
+	highlight = (options: Options, progress: Progress): void => {
 		let lastColor = options.colors.highlights.length,
 			selected = 0,
 			outerColor = options.colors.highlights[ChapterGroup.currentColor];
@@ -116,11 +116,11 @@ class ChapterGroup {
 			class: 'sd-tooltip loading',
 			style: {
 				left: `-${window.innerWidth}px`,
-				maxHeight: `${(window.innerHeight - 10) * (maxHeight / 100)}px`
-			}
+				maxHeight: `${(window.innerHeight - 10) * (maxHeight / 100)}px`,
+			},
 		});
 		let spinner = DOM.create('i', {
-			class: 'fas fa-circle-notch fa-spin'
+			class: 'fas fa-circle-notch fa-spin',
 		});
 		tooltip.appendChild(spinner);
 		container.appendChild(tooltip);
@@ -128,8 +128,8 @@ class ChapterGroup {
 		let tooltipThumb = DOM.create('img', {
 			class: 'thumbnail loading',
 			style: {
-				maxHeight: `${(window.innerHeight - 10) * (maxHeight / 100)}px`
-			}
+				maxHeight: `${(window.innerHeight - 10) * (maxHeight / 100)}px`,
+			},
 		});
 		tooltipThumb.style.length;
 		tooltip.appendChild(tooltipThumb);
@@ -189,24 +189,24 @@ class ChapterGroup {
 		};
 		// First column
 		if (row.firstElementChild) {
-			row.firstElementChild.addEventListener('mouseenter', event => {
+			row.firstElementChild.addEventListener('mouseenter', (event) => {
 				event.stopPropagation();
 				activateTooltip(false);
 			});
 		}
 		// Second column
 		if (row.lastElementChild) {
-			row.lastElementChild.addEventListener('mouseenter', event => {
+			row.lastElementChild.addEventListener('mouseenter', (event) => {
 				event.stopPropagation();
 				activateTooltip(true);
 			});
 		}
 		// Row
-		row.addEventListener('mouseleave', event => {
+		row.addEventListener('mouseleave', (event) => {
 			event.stopPropagation();
 			disableTooltip();
 		});
-		row.addEventListener('mouseout', event => {
+		row.addEventListener('mouseout', (event) => {
 			event.stopPropagation();
 			if (event.target == row) {
 				disableTooltip();
@@ -220,7 +220,7 @@ class ChapterGroup {
 			tooltip: tooltip.getBoundingClientRect(),
 			row: row.getBoundingClientRect(),
 			firstChild: {} as DOMRect,
-			lastChild: {} as DOMRect
+			lastChild: {} as DOMRect,
 		};
 		// Calculate to place on the left of the main column by default
 		let left = Math.max(5, rect.row.x - rect.tooltip.width - 5);
@@ -259,11 +259,18 @@ class ChapterGroup {
 	};
 }
 
-export class MangaDex implements HTMLService {
+export class MangaDex extends HTMLService {
 	name: string = 'MangaDex';
-	statusValue: { [key in Status]: number } = {};
-
-	constructor(public document: Document) {}
+	status: { [key in ServiceStatus]: number } = {
+		[ServiceStatus.READING]: 1,
+		[ServiceStatus.COMPLETED]: 2,
+		[ServiceStatus.PAUSED]: 3,
+		[ServiceStatus.PLAN_TO_READ]: 4,
+		[ServiceStatus.DROPPED]: 5,
+		[ServiceStatus.REREADING]: 6,
+		[ServiceStatus.NONE]: 0,
+		[ServiceStatus.WONT_READ]: 0,
+	};
 
 	getChaptersGroups = (): ChapterGroup[] => {
 		let chapterContainer = this.document.querySelector('.chapter-container');
@@ -288,7 +295,7 @@ export class MangaDex implements HTMLService {
 						Object.assign(currentGroup, {
 							titleId: titleId,
 							name: (firstChild.textContent as string).trim(),
-							chapters: []
+							chapters: [],
 						});
 					}
 					let chapter: ChapterRow = {
@@ -297,13 +304,13 @@ export class MangaDex implements HTMLService {
 								return {
 									chapter: parseFloat(chapterRow.dataset.chapter),
 									volume:
-										parseFloat(chapterRow.dataset?.volume || '') || undefined
+										parseFloat(chapterRow.dataset?.volume || '') || undefined,
 								};
 							}
 							return undefined;
 						})(),
 						row: row,
-						hidden: false
+						hidden: false,
 					};
 					// Don't add empty chapters
 					if (chapter.progress) {
@@ -317,5 +324,9 @@ export class MangaDex implements HTMLService {
 			}
 		}
 		return groups;
+	};
+
+	loggedIn = (): Promise<boolean> => {
+		return new Promise((resolve) => resolve(true));
 	};
 }

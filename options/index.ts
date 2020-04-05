@@ -1,301 +1,253 @@
 import { setBrowser } from '../src/Browser';
-import { Options, UserOptions } from '../src/Options';
+import { Options } from '../src/Options';
 import { DOM } from '../src/DOM';
+import { ServiceName, ServiceKey, Service } from '../src/Service/Service';
+import { MyAnimeList } from '../src/Service/MyAnimeList';
+import { Anilist } from '../src/Service/Anilist';
+import { Kitsu } from '../src/Service/Kitsu';
+import { MangaUpdates } from '../src/Service/MangaUpdates';
+import { AnimePlanet } from '../src/Service/AnimePlanet';
+import { CheckboxManager } from './Manager/Checkbox';
+import { ColorManager } from './Manager/Color';
+import { HighlightsManager } from './Manager/HighlightsManager';
+import { MenuHighlight } from './MenuHighlight';
+import { InputManager } from './Manager/Input';
 
-class Highlights {
+function serviceByName(name: ServiceName, options: Options): Service {
+	switch (name) {
+		case ServiceName.MyAnimeList:
+			return new MyAnimeList(options);
+		case ServiceName.Anilist:
+			return new Anilist(options);
+		case ServiceName.Kitsu:
+			return new Kitsu(options);
+		case ServiceName.MangaUpdates:
+			return new MangaUpdates(options);
+		case ServiceName.AnimePlanet:
+			return new AnimePlanet(options);
+	}
+}
+
+class Services {
+	options: Options;
 	node: HTMLElement;
-	options: UserOptions;
-	timeout: number = 0;
-	rows: HTMLElement[] = [];
+	list: { [key in ServiceName]?: Service | undefined } = {};
+	selector: HTMLElement;
 
-	constructor(node: HTMLElement, options: UserOptions) {
-		this.node = node;
+	constructor(node: HTMLElement, options: Options) {
 		this.options = options;
-		if (this.node) {
-			// Add current colors
-			const colors = this.options.colors.highlights;
-			for (let index = 0; index < colors.length; index++) {
-				this.rows.push(this.createRow(index, colors[index]));
-			}
-			// Add button
-			const addButton = DOM.create('button', {
-				class: 'success',
+		this.node = node;
+		this.selector = this.createAddForm();
+	}
+
+	add = async (name: ServiceName): Promise<void> => {
+		const isMain = this.options.mainService == name;
+		this.list[name] = serviceByName(name, this.options);
+		const block = DOM.create('div', {
+			class: 'service',
+		});
+		const title = DOM.create('title', {
+			class: 'title',
+			childs: [
+				DOM.create('img', {
+					attributes: { src: `/icons/${ServiceKey[name]}.png` },
+				}),
+				DOM.space(),
+				this.createTitle(name),
+			],
+		});
+		const buttons = DOM.create('div', { class: 'button-group' });
+		if (!isMain) {
+			const setMainButton = DOM.create('button', {
+				class: 'default',
+				attributes: { title: 'Set as main' },
+				childs: [DOM.create('i', { class: 'lni lni-angle-double-left' })],
 				events: {
 					click: () => {
-						const createdRow = this.createRow(
-							this.options.colors.highlights.length,
-							''
+						// Make service the first in the list
+						const index = this.options.services.indexOf(name);
+						this.options.services.splice(
+							0,
+							0,
+							this.options.services.splice(index, 1)[0]
 						);
-						this.rows.push(createdRow);
-						this.options.colors.highlights.push('');
-						createdRow.querySelector('input')?.focus();
+						this.options.mainService = name;
+						this.options.save();
+						// Remove main button and add the main button to the old main
+						setMainButton.remove();
+						const oldMain = this.node.querySelector('.service.main') as HTMLElement;
+						oldMain.classList.remove('main');
+						const oldMainButtons = oldMain.querySelector('.button-group');
+						oldMainButtons?.insertBefore(
+							DOM.create('button', {
+								// Recursive, todo: createMainButton function
+							}),
+							oldMainButtons.firstElementChild
+						);
+						block.classList.add('main');
+					},
+				},
+			});
+			DOM.append(buttons, setMainButton);
+		}
+		DOM.append(
+			buttons,
+			DOM.create('button', {
+				class: 'action',
+				attributes: { title: 'Check login status' },
+				childs: [DOM.create('i', { class: 'lni lni-reload' })],
+			}),
+			DOM.create('button', {
+				class: 'danger grow',
+				childs: [
+					DOM.create('i', { class: 'lni lni-cross-circle' }),
+					DOM.space(),
+					DOM.text('Remove'),
+				],
+				events: {
+					click: () => {
+						// Remove service from Service list and assign new main if possible
+						const index = this.options.services.indexOf(name);
+						if (index > -1) {
+							this.options.services.splice(index, 1);
+							if (this.options.mainService == name) {
+								this.options.mainService =
+									this.options.services.length > 0
+										? this.options.services[0]
+										: undefined;
+							}
+						}
+						this.options.save();
+						// Remove service block and add the option back to the selector
+						block.remove();
+						DOM.append(
+							this.selector,
+							DOM.create('option', {
+								textContent: name,
+								attributes: {
+									value: name,
+								},
+							})
+						);
+						// Add back the 'main' class to the next service
+						if (this.options.mainService) {
+							this.node.firstElementChild?.classList.add('main');
+						}
+					},
+				},
+			})
+		);
+		DOM.append(block, title, buttons);
+		if (isMain) {
+			block.classList.add('main');
+			this.node.insertBefore(block, this.node.firstElementChild);
+		} else {
+			this.node.insertBefore(block, this.node.lastElementChild);
+		}
+		if (!(await this.list[name]?.loggedIn())) {
+			block.classList.add('inactive');
+		} else {
+			block.classList.add('active');
+		}
+		const option = this.selector.querySelector(`[value="${name}"]`);
+		if (option) {
+			option.remove();
+		}
+	};
+
+	createTitle = (serviceName: ServiceName): HTMLElement => {
+		if (serviceName == ServiceName.Anilist) {
+			return DOM.create('span', {
+				class: serviceName.toLowerCase(),
+				textContent: 'Ani',
+				childs: [
+					DOM.create('span', {
+						class: 'list',
+						textContent: 'list',
+					}),
+				],
+			});
+		}
+		return DOM.create('span', {
+			class: serviceName.toLowerCase(),
+			textContent: serviceName,
+		});
+	};
+
+	createAddForm = (): HTMLElement => {
+		const block = DOM.create('div', {
+			class: 'service add',
+		});
+		const selector = DOM.create('select', {
+			childs: [DOM.create('option', { textContent: 'Select Service' })],
+		});
+		for (const service in ServiceName) {
+			if (isNaN(Number(service))) {
+				DOM.append(
+					selector,
+					DOM.create('option', {
+						textContent: service,
+						attributes: {
+							value: service,
+						},
+					})
+				);
+			}
+		}
+		const button = DOM.create('button', {
+			class: 'success',
+			childs: [
+				DOM.create('i', { class: 'lni lni-circle-plus' }),
+				DOM.space(),
+				DOM.text('Add'),
+			],
+			events: {
+				click: async (): Promise<any> => {
+					if (selector.value != 'Select Service') {
+						const name: ServiceName = selector.value as ServiceName;
+						this.list[name] = serviceByName(name, this.options);
+						if (this.options.services.length == 0) {
+							this.options.mainService = name;
+						}
+						this.options.services.push(name);
+						this.options.save();
+						this.add(name);
 					}
 				},
-				childs: [
-					DOM.create('i', { class: 'lni lni-circle-plus' }),
-					DOM.space(),
-					DOM.text('Add color')
-				]
-			});
-			this.node.appendChild(addButton);
-		}
-	}
-
-	createRow = (index: number, color: string): HTMLElement => {
-		const row = DOM.create('div', {
-			class: 'color-input',
-			dataset: {
-				index: index.toString()
-			}
-		});
-		const display = DOM.create('span', {
-			class: 'color',
-			style: {
-				backgroundColor: color
-			}
-		});
-		const input = DOM.create('input', {
-			attributes: {
-				type: 'text',
-				placeholder: 'Highlight color',
-				value: color
 			},
-			events: {
-				input: () => {
-					const index = row.dataset.index as string;
-					display.style.backgroundColor = input.value;
-					this.options.colors.highlights[parseInt(index)] = input.value;
-					this.timeout = window.setTimeout(() => {
-						this.options.save();
-					}, 400);
-				}
-			}
 		});
-		const remove = DOM.create('button', {
-			class: 'danger',
-			childs: [DOM.create('i', { class: 'lni lni-cross-circle' })],
-			events: {
-				// Remove current row and update data-index references
-				click: () => {
-					if (this.options.colors.highlights.length > 1) {
-						const index = parseInt(row.dataset.index as string);
-						this.options.colors.highlights.splice(index, 1);
-						this.rows.splice(index, 1);
-						this.rows.forEach(nextRow => {
-							const idx = parseInt(nextRow.dataset.index as string);
-							if (idx > index) {
-								nextRow.dataset.index = (idx - 1).toString();
-							}
-						});
-						row.remove();
-						this.options.save();
-					}
-				}
-			}
-		});
-		DOM.append(row, remove, input, display);
-		if (this.node.lastElementChild?.tagName === 'BUTTON') {
-			return this.node.insertBefore(row, this.node.lastElementChild);
-		} else {
-			DOM.append(this.node, row);
-		}
-		return row;
-	};
-}
-
-class Color {
-	node: HTMLElement;
-	options: UserOptions;
-	input: HTMLInputElement | null = null;
-	display: HTMLElement | null = null;
-	optionName: keyof Options['colors'];
-	timeout: number = 0;
-
-	constructor(node: HTMLElement, options: UserOptions) {
-		this.node = node;
-		this.options = options;
-		this.optionName = this.node.dataset.color as keyof Options['colors'];
-		this.input = this.node.querySelector('input');
-		this.display = this.node.querySelector('.color');
-		this.bind();
-		if (this.input && this.optionName != 'highlights') {
-			this.input.value = this.options.colors[this.optionName];
-			this.update();
-		}
-	}
-
-	bind = (): void => {
-		if (this.input !== null) {
-			this.input.addEventListener('input', event => {
-				this.update();
-				clearTimeout(this.timeout);
-				this.timeout = window.setTimeout(() => {
-					(this.options.colors[this.optionName] as string) = (this
-						.input as HTMLInputElement).value;
-					this.options.save();
-				}, 400);
-			});
-		}
-	};
-
-	update = (): void => {
-		if (this.display && this.input) {
-			this.display.style.backgroundColor = this.input.value;
-		}
-	};
-}
-
-class Checkbox {
-	node: HTMLElement;
-	options: UserOptions;
-	enable: HTMLElement | null = null;
-	disable: HTMLElement | null = null;
-	optionName: keyof Options;
-
-	constructor(node: HTMLElement, options: UserOptions) {
-		this.node = node;
-		this.options = options;
-		this.enable = this.node.querySelector('.on');
-		this.disable = this.node.querySelector('.off');
-		this.optionName = this.node.dataset.checkbox as keyof Options;
-		this.bind();
-		this.enableDisable(this.options.get(this.optionName) as boolean);
-	}
-
-	bind = (): void => {
-		if (this.enable !== null) {
-			this.enable.addEventListener('click', () => {
-				this.update(true);
-			});
-		}
-		if (this.disable !== null) {
-			this.disable.addEventListener('click', () => {
-				this.update(false);
-			});
-		}
-	};
-
-	update = (value: boolean): void => {
-		if (value != this.options.get(this.optionName)) {
-			this.node.classList.remove('enabled', 'disabled');
-			this.node.classList.add('loading');
-			this.options
-				.set(this.optionName, value)
-				.save()
-				.then(() => {
-					this.node.classList.remove('loading');
-					this.enableDisable(value);
-				});
-		}
-	};
-
-	enableDisable = (value: boolean): void => {
-		if (value) {
-			this.node.classList.remove('disabled');
-			this.node.classList.add('enabled');
-		} else {
-			this.node.classList.add('disabled');
-			this.node.classList.remove('enabled');
-		}
-	};
-}
-
-const enum ScrollDirection {
-	UP,
-	DOWN
-}
-
-class Menu {
-	link: HTMLElement;
-	header: HTMLElement;
-
-	constructor(link: HTMLElement) {
-		this.link = link;
-		const name = link.dataset.link as string;
-		this.header = document.getElementById(name) as HTMLElement;
-	}
-
-	isVisible = (direction: ScrollDirection, scroll: number): boolean => {
-		if (direction == ScrollDirection.UP) {
-			return scroll >= this.header.offsetTop;
-		}
-		return scroll + (window.innerHeight - window.innerHeight / 2) >= this.header.offsetTop;
+		this.node.appendChild(DOM.append(block, selector, button));
+		return selector;
 	};
 }
 
 class OptionsManager {
-	options: UserOptions = new UserOptions();
-	colors: Color[] = [];
-	checkboxes: Checkbox[] = [];
-	highlights: Highlights | null = null;
-	menus: Menu[] = [];
-	activeMenu: number = 0;
+	options: Options = new Options();
+	services: Services | null = null;
+
+	highlightsManager?: HighlightsManager;
+	colorManager?: ColorManager;
+	checkboxManager?: CheckboxManager;
+	inputManager?: InputManager;
+	menuHighlight?: MenuHighlight;
 
 	initialize = async (): Promise<void> => {
 		await this.options.load();
-		// Colors
-		const colors = document.querySelectorAll('[data-color]');
-		for (let index = 0; index < colors.length; index++) {
-			const color = colors[index] as HTMLElement;
-			this.colors.push(new Color(color, this.options));
-		}
-		// Highlights
-		const highlights = document.getElementById('highlights');
-		if (highlights) {
-			this.highlights = new Highlights(highlights, this.options);
-		}
-		// Checkboxes
-		const checkboxes = document.querySelectorAll('[data-checkbox]');
-		for (let index = 0; index < checkboxes.length; index++) {
-			const checkbox = checkboxes[index] as HTMLElement;
-			this.checkboxes.push(new Checkbox(checkbox, this.options));
-		}
-		// Scrolling effect
-		const content = document.getElementById('content') as HTMLElement;
-		document.querySelectorAll<HTMLElement>('[data-link]').forEach(link => {
-			const menu = new Menu(link);
-			link.addEventListener('click', () => {
-				content.scroll({
-					top: menu.header.offsetTop,
-					behavior: 'smooth'
-				});
-			});
-			this.menus.push(menu);
-		});
-		const lastScroll = 0;
-		content.addEventListener(
-			'scroll',
-			_event => {
-				window.requestAnimationFrame(() => {
-					const scrollTop = content.scrollTop;
-					const direction =
-						lastScroll - scrollTop > 0 ? ScrollDirection.UP : ScrollDirection.DOWN;
-					if (scrollTop == 0) {
-						this.activateMenu(this.menus[0], 0);
-					} else if (scrollTop == content.scrollHeight - window.innerHeight) {
-						const menuLenghth = this.menus.length - 1;
-						this.activateMenu(this.menus[menuLenghth], menuLenghth);
-					} else {
-						for (let index = this.menus.length - 1; index >= 0; index--) {
-							const menu = this.menus[index];
-							if (menu.isVisible(direction, scrollTop)) {
-								if (this.activeMenu != index) {
-									this.activateMenu(menu, index);
-								}
-								break;
-							}
-						}
-					}
-				});
-			},
-			{ passive: true }
+		// console.log(this.options);
+		this.highlightsManager = new HighlightsManager(this.options);
+		this.colorManager = new ColorManager(this.options);
+		this.checkboxManager = new CheckboxManager(this.options);
+		this.inputManager = new InputManager(this.options);
+		this.menuHighlight = new MenuHighlight(document.getElementById('content') as HTMLElement);
+		// TODO: Services
+		this.services = new Services(
+			document.querySelector('.services') as HTMLElement,
+			this.options
 		);
-	};
-
-	activateMenu = (menu: Menu, index: number): void => {
-		this.menus[this.activeMenu].link.classList.remove('active');
-		menu.link.classList.add('active');
-		this.activeMenu = index;
+		for (let index = 0; index < this.options.services.length; index++) {
+			const serviceName = this.options.services[index];
+			this.services.add(serviceName);
+		}
 	};
 }
 

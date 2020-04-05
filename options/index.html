@@ -22,29 +22,45 @@
 			<li data-link="history"><i class="lni lni-list"></i> History</li>
 			<li data-link="import"><i class="lni lni-upload"></i> Import</li>
 			<li data-link="export"><i class="lni lni-download"></i> Export</li>
-			<li data-link="other"><i class="lni lni-more"></i> Other</li>
 			<li data-link="delete"><i class="lni lni-trash"></i> Delete</li>
 		</ul>
 	</div>
 	<div id="content">
 		<h1 id="services"><i class="lni lni-world"></i> Services</h1>
 		<div class="block warning">
-			There is one enabled but inactive service.
+			There is enabled but inactive services. Click the reload button to fix them.
 		</div>
 		<div class="services">
-			<div class="service main active">
-				<div class="title"><img src="/icons/mal.png">&nbsp;<span class="myanimelist">MyAnimeList</span>
+			<!--<div class="service main active">
+				<div class="title">
+					<img src="/icons/mal.png">&nbsp;<span class="myanimelist">MyAnimeList</span>
 				</div>
-				<button class="danger"><i class="lni lni-cross-circle"></i> Remove</button>
+				<div class="button-group">
+					<button class="action" title="Check login status"><i class="lni lni-reload"></i></button>
+					<button class="danger grow"><i class="lni lni-cross-circle"></i> Remove</button>
+				</div>
 			</div>
 			<div class="service inactive">
-				<div class="title"><img src="/icons/al.png">&nbsp;<span class="anilist">Ani<span
-							class="list">list</span></span>
+				<div class="title">
+					<img src="/icons/al.png">&nbsp;<span class="anilist">Ani<span class="list">list</span></span>
+				</div>
+				<div class="button-group">
+					<button class="default" title="Set as main"><i class="lni lni-angle-double-left"></i></button>
+					<button class="action" title="Check login status"><i class="lni lni-reload"></i></button>
+					<button class="danger grow"><i class="lni lni-cross-circle"></i> Remove</button>
 				</div>
 			</div>
-			<button class="service-add">
-				<i class="lni lni-circle-plus"></i> Add
-			</button>
+			<div class="service add">
+				<select>
+					<option selected>Select Service</option>
+					<option>Kitsu</option>
+					<option>MangaUpdates</option>
+					<option>AnimePlanet</option>
+				</select>
+				<button class="service-add">
+					<i class="lni lni-circle-plus"></i> Add
+				</button>
+			</div>-->
 		</div>
 		<h1 id="colors"><i class="lni lni-brush"></i> Colors</h1>
 		<div class="block info">
@@ -114,7 +130,7 @@
 				<button type="button" class="on">Enabled</button>
 				<button type="button" class="off">Disabled</button>
 				<div class="dependency">
-					<input type="number" name="savedChapters" placeholder="Amount of saved chapters" min="1"
+					<input type="number" data-input="chaptersSaved" placeholder="Amount of saved chapters" min="1"
 						max="500" />
 				</div>
 			</div>
@@ -269,7 +285,7 @@
 				<button type="button" class="on">Enabled</button>
 				<button type="button" class="off">Disabled</button>
 				<div class="dependency">
-					<input type="number" name="savedChapters" placeholder="History size" min="21" max="1000" />
+					<input type="number" data-input="historySize" placeholder="History size" min="21" max="1000" />
 				</div>
 			</div>
 		</div>

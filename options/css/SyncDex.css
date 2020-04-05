@@ -116,6 +116,30 @@ body {
 	border-bottom: 4px solid #28a745;
 }
 
+.service.add {
+	padding: 0;
+	background-color: transparent;
+}
+
+.service.add select {
+	border: 0;
+	padding: 0.75rem;
+	border-top-left-radius: 3px;
+	border-top-right-radius: 3px;
+}
+
+.service.add button {
+	border-radius: 3px;
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+	background-color: #28a745;
+	color: white;
+	padding: 0.75rem;
+	border: 0;
+	cursor: pointer;
+	font-size: 1rem;
+}
+
 .service.inactive {
 	border-bottom: 4px solid #dfc327;
 	box-shadow: 0 0 4px 3px #dfc327;
@@ -172,16 +196,6 @@ body {
 .animeplanet {
 	color: rgb(252, 83, 66);
 	border-color: rgb(252, 83, 66);
-}
-
-.service-add {
-	background-color: #28a745;
-	color: white;
-	padding: 1rem;
-	border: 0;
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 1rem;
 }
 
 .block {
@@ -267,6 +281,51 @@ button.danger:hover {
 	background-color: rgb(150, 26, 26);
 }
 
+button.action {
+	color: white;
+	background-color: #2b2b2b;
+}
+
+button.action:hover {
+	background-color: #464646;
+}
+
+button.default {
+	color: white;
+	background-color: #1261bb;
+}
+
+button.default:hover {
+	background-color: #1055a3;
+}
+
+.button-group {
+	display: flex;
+	flex-flow: row nowrap;
+}
+
+.button-group button {
+	border-radius: 0;
+}
+
+.button-group .grow {
+	flex-grow: 1;
+}
+
+.button-group button:first-child {
+	border-top-left-radius: 3px;
+	border-bottom-left-radius: 3px;
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+.button-group button:last-child {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	border-top-right-radius: 3px;
+	border-bottom-right-radius: 3px;
+}
+
 input {
 	padding: 0.25rem;
 	font-size: 1rem;
@@ -329,4 +388,70 @@ input {
 
 .checkbox.disabled .dependency {
 	display: none;
+}
+
+input.invalid {
+	box-shadow: 0 0 4px 1px firebrick;
+}
+
+/* SimpleModal */
+
+.modal {
+	position: fixed;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	background-color: rgba(0, 0, 0, 0.6);
+	opacity: 0;
+	visibility: hidden;
+	transform: scale(1.1);
+	transition: visibility 0s linear 0.25s, opacity 0.25s 0s, transform 0.25s;
+	display: flex;
+	flex-flow: column nowrap;
+	justify-content: center;
+	align-content: center;
+	cursor: pointer;
+	z-index: 2;
+}
+
+.visible {
+	opacity: 1;
+	visibility: visible;
+	transform: scale(1);
+	transition: visibility 0s linear 0s, opacity 0.25s 0s, transform 0.25s;
+}
+
+.modal .content {
+	background-color: var(--bg-light);
+	margin-left: 20%;
+	margin-right: 20%;
+	overflow: hidden;
+	border-radius: 4px;
+	cursor: initial;
+	max-height: 75vh;
+	display: flex;
+	flex-flow: column nowrap;
+}
+
+.modal .header {
+	flex-shrink: 0;
+}
+
+.modal .body {
+	overflow: auto;
+}
+
+.modal .close-button {
+	float: right;
+	width: 1.5rem;
+	line-height: 1.5rem;
+	text-align: center;
+	cursor: pointer;
+	border-radius: 0.25rem;
+	background-color: lightgray;
+}
+
+.modal .close-button:hover {
+	background-color: darkgray;
 }

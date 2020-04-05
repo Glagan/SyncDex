@@ -1,5 +1,5 @@
 import { Router } from './Router';
-import { UserOptions } from './Options';
+import { Options } from './Options';
 import { MangaDex } from './Service/MangaDex';
 import { LocalStorage } from './Storage';
 import { DOM } from './DOM';
@@ -8,7 +8,7 @@ console.log('SyncDex :: SyncDex');
 
 export class SyncDex {
 	router: Router = new Router();
-	options: UserOptions = new UserOptions();
+	options: Options = new Options();
 
 	constructor() {
 		this.router.register(
@@ -18,7 +18,7 @@ export class SyncDex {
 				'/user/(\\d+)(/chapters)?$',
 				'/follows(/manga)?$',
 				'/group/(\\d+)(/manga)?$',
-				'/user/(\\d+)(/manga)?$'
+				'/user/(\\d+)(/manga)?$',
 			],
 			this.chapterList
 		);
@@ -60,15 +60,15 @@ export class SyncDex {
 			!this.options.highlight
 		)
 			return;
-		const md = new MangaDex(document);
+		const md = new MangaDex(this.options, document);
 		const groups = md.getChaptersGroups();
 		const titles: { [key: number]: Title | undefined | null } = {};
 		const container = this.options.thumbnail
 			? (() => {
 					const container = DOM.create('div', {
 						attributes: {
-							id: 'tooltip-container'
-						}
+							id: 'tooltip-container',
+						},
 					});
 					document.body.appendChild(container);
 					return container;
