@@ -34,9 +34,7 @@ export class MenuHighlight {
 		});
 		node.addEventListener(
 			'scroll',
-			() => {
-				window.requestAnimationFrame(this.frame.bind(node.scrollTop));
-			},
+			() => window.requestAnimationFrame(() => this.frame(node.scrollTop)),
 			{ passive: true }
 		);
 	}
@@ -61,10 +59,8 @@ export class MenuHighlight {
 	};
 
 	activateMenu = (index: number): void => {
-		const oldMenu = this.menus[this.activeMenu];
-		oldMenu.link.classList.remove('active');
+		this.menus[this.activeMenu].link.classList.remove('active');
 		this.activeMenu = index;
-		const newMenu = this.menus[this.activeMenu];
-		newMenu.link.classList.add('active');
+		this.menus[this.activeMenu].link.classList.add('active');
 	};
 }

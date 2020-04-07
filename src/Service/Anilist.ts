@@ -14,6 +14,6 @@ export class Anilist extends Service {
 	};
 
 	loggedIn = (): Promise<boolean> => {
-		return new Promise((resolve) => resolve(false));
+		return new Promise((resolve) => resolve(Math.random() > 0.5));
 	};
 }

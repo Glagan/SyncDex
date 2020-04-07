@@ -14,6 +14,6 @@ export class MangaUpdates extends Service {
 	};
 
 	loggedIn = (): Promise<boolean> => {
-		return new Promise((resolve) => resolve(true));
+		return new Promise((resolve) => resolve(false));
 	};
 }

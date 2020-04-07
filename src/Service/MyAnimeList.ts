@@ -14,6 +14,10 @@ export class MyAnimeList extends Service {
 	};
 
 	loggedIn = (): Promise<boolean> => {
-		return new Promise((resolve) => resolve(true));
+		return new Promise((resolve) => {
+			setTimeout(() => {
+				resolve(true);
+			}, 2000);
+		});
 	};
 }

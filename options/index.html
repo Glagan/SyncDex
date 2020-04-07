@@ -27,43 +27,15 @@
 	</div>
 	<div id="content">
 		<h1 id="services"><i class="lni lni-world"></i> Services</h1>
-		<div class="block warning">
+		<div id="no-service" class="block notification danger hidden">
+			You have no active Services. <b>SyncDex</b> won't do anything until you add one.
+		</div>
+		<div id="inactive-service" class="block notification warning hidden">
 			There is enabled but inactive services. Click the reload button to fix them.
 		</div>
-		<div class="services">
-			<!--<div class="service main active">
-				<div class="title">
-					<img src="/icons/mal.png">&nbsp;<span class="myanimelist">MyAnimeList</span>
-				</div>
-				<div class="button-group">
-					<button class="action" title="Check login status"><i class="lni lni-reload"></i></button>
-					<button class="danger grow"><i class="lni lni-cross-circle"></i> Remove</button>
-				</div>
-			</div>
-			<div class="service inactive">
-				<div class="title">
-					<img src="/icons/al.png">&nbsp;<span class="anilist">Ani<span class="list">list</span></span>
-				</div>
-				<div class="button-group">
-					<button class="default" title="Set as main"><i class="lni lni-angle-double-left"></i></button>
-					<button class="action" title="Check login status"><i class="lni lni-reload"></i></button>
-					<button class="danger grow"><i class="lni lni-cross-circle"></i> Remove</button>
-				</div>
-			</div>
-			<div class="service add">
-				<select>
-					<option selected>Select Service</option>
-					<option>Kitsu</option>
-					<option>MangaUpdates</option>
-					<option>AnimePlanet</option>
-				</select>
-				<button class="service-add">
-					<i class="lni lni-circle-plus"></i> Add
-				</button>
-			</div>-->
-		</div>
+		<div id="service-list" class="services"></div>
 		<h1 id="colors"><i class="lni lni-brush"></i> Colors</h1>
-		<div class="block info">
+		<div class="block notification info">
 			Colors that exist in <a href="http://www.color-hex.com/color-names.html" target="blank">HTML</a> are
 			accepted but you
 			can also use values like <b>#RRGGBB</b>, <b>rgb(red, green, blue)</b> or with alpha channel
@@ -108,7 +80,7 @@
 				<b>SyncDex</b> will cycle through them if you add multiple of them.</p>
 			<div id="highlights" class="highlights"></div>
 		</div>
-		<div class="block info">
+		<div class="block notification info">
 			The following option is only applied on a <b>title</b> page.
 		</div>
 		<div class="block">
@@ -120,7 +92,7 @@
 			</div>
 		</div>
 		<h1 id="updates"><i class="lni lni-bookmark"></i> Updates</h1>
-		<div class="block info">
+		<div class="block notification info">
 			The following options change the behavior while you are reading.
 		</div>
 		<div class="block">
@@ -228,7 +200,7 @@
 			</div>
 		</div>
 		<h1 id="general"><i class="lni lni-bookmark"></i> General</h1>
-		<div class="block info">
+		<div class="block notification info">
 			The following options change what is displayed on <b>title</b>s page.
 		</div>
 		<div class="block">
@@ -273,7 +245,7 @@
 			</div>
 		</div>
 		<h1 id="history"><i class="lni lni-list"></i> History</h1>
-		<div class="block info">
+		<div class="block notification info">
 			The following options update the <b>History</b> page of <b>MangaDex</b> (<a
 				href="https://mangadex.org/history" rel="noreferrer noopener">https://mangadex.org/history</a>)
 		</div>
