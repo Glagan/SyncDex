@@ -24,7 +24,7 @@ export class Color {
 			clearTimeout(Color.timeout);
 			Color.timeout = window.setTimeout(() => {
 				options.save();
-			}, 400);
+			}, 300);
 		});
 	};
 

@@ -1,12 +1,12 @@
 import typescript from '@rollup/plugin-typescript';
-import { uglify } from 'rollup-plugin-uglify';
+import { terser } from 'rollup-plugin-terser';
 
 const process = require('process');
 
 const plugins = () => {
 	let list = [typescript()];
 	if (process.env.mode == 'prod' || process.env.mode == 'production') {
-		list.push(uglify());
+		list.push(terser());
 	}
 	return list;
 };
@@ -16,27 +16,27 @@ export default [
 		input: 'src/index.ts',
 		output: {
 			file: 'build/SyncDex.js',
-			format: 'iife',
-			sourcemap: true
+			format: 'es',
+			sourcemap: true,
 		},
-		plugins: plugins()
+		plugins: plugins(),
 	},
 	{
 		input: 'background/index.ts',
 		output: {
 			file: 'build/SyncDex_background.js',
-			format: 'iife',
-			sourcemap: true
+			format: 'es',
+			sourcemap: true,
 		},
-		plugins: plugins()
+		plugins: plugins(),
 	},
 	{
 		input: 'options/index.ts',
 		output: {
 			file: 'build/SyncDex_options.js',
-			format: 'iife',
-			sourcemap: true
+			format: 'es',
+			sourcemap: true,
 		},
-		plugins: plugins()
-	}
+		plugins: plugins(),
+	},
 ];

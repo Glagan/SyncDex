@@ -1,8 +1,8 @@
-import { Service, ServiceStatus } from './Service';
+import { Service, ServiceStatus, ServiceName } from './Service';
 
 export class Kitsu extends Service {
-	name: string = 'Kitsu';
-	status: { [key in ServiceStatus]: string } = {
+	name: ServiceName = ServiceName.Kitsu;
+	static status: { [key in ServiceStatus]: string } = {
 		[ServiceStatus.NONE]: '__INVALID__',
 		[ServiceStatus.WONT_READ]: '__INVALID__',
 		[ServiceStatus.REREADING]: '__INVALID__',

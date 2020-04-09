@@ -38,7 +38,7 @@ class Highlights {
 			Highlights.timeout = window.setTimeout(() => {
 				options.colors.highlights[this.index] = this.input.value;
 				options.save();
-			}, 400);
+			}, 300);
 		});
 		this.remove.addEventListener('click', () => {
 			if (options.colors.highlights.length > 1) {
@@ -54,7 +54,7 @@ class Highlights {
 				clearTimeout(Highlights.timeout);
 				Highlights.timeout = window.setTimeout(() => {
 					options.save();
-				}, 400);
+				}, 300);
 			}
 		});
 	};
@@ -71,6 +71,25 @@ export class HighlightsManager {
 
 	constructor(options: Options) {
 		this.node = document.getElementById('highlights') as HTMLElement;
+		const addButton = DOM.create('button', {
+			class: 'success',
+			events: {
+				click: () => {
+					const color = new Highlights(options.colors.highlights.length);
+					options.colors.highlights.push('');
+					color.bind(this, options);
+					this.node.insertBefore(color.node, this.node.lastElementChild);
+					this.list.push(color);
+					color.input.focus();
+				},
+			},
+			childs: [
+				DOM.create('i', { class: 'lni lni-circle-plus' }),
+				DOM.space(),
+				DOM.text('Add color'),
+			],
+		});
+		this.node.appendChild(addButton);
 		this.updateAll(options);
 	}
 
@@ -80,11 +99,7 @@ export class HighlightsManager {
 		for (let index = 0; index < colors.length; index++) {
 			const color = new Highlights(index);
 			color.bind(this, options);
-			if (this.node.lastElementChild?.tagName === 'BUTTON') {
-				this.node.insertBefore(color.node, this.node.lastElementChild);
-			} else {
-				DOM.append(this.node, color.node);
-			}
+			this.node.insertBefore(color.node, this.node.lastElementChild);
 			this.list.push(color);
 		}
 	};

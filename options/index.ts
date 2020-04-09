@@ -2,10 +2,11 @@ import { setBrowser } from '../src/Browser';
 import { Options } from '../src/Options';
 import { CheckboxManager } from './Manager/Checkbox';
 import { ColorManager } from './Manager/Color';
-import { HighlightsManager } from './Manager/HighlightsManager';
+import { HighlightsManager } from './Manager/Highlights';
 import { MenuHighlight } from './MenuHighlight';
 import { InputManager } from './Manager/Input';
 import { ServiceManager } from './Manager/Service';
+import { ImportManager } from './Manager/Import';
 
 class OptionsManager {
 	options: Options = new Options();
@@ -16,6 +17,7 @@ class OptionsManager {
 	inputManager?: InputManager;
 	menuHighlight?: MenuHighlight;
 	serviceManager?: ServiceManager;
+	importManager?: ImportManager;
 
 	initialize = async (): Promise<void> => {
 		await this.options.load();
@@ -29,7 +31,13 @@ class OptionsManager {
 			document.getElementById('service-list') as HTMLElement,
 			this.options
 		);
+		this.importManager = new ImportManager(
+			document.getElementById('import-container') as HTMLElement,
+			this.options
+		);
 	};
+
+	reload = (): void => {};
 }
 
 setBrowser();

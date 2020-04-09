@@ -1,8 +1,9 @@
 import { Router } from './Router';
 import { Options } from './Options';
-import { MangaDex } from './Service/MangaDex';
+import { MangaDex } from './MangaDex';
 import { LocalStorage } from './Storage';
 import { DOM } from './DOM';
+import { Title } from './interfaces';
 
 console.log('SyncDex :: SyncDex');
 

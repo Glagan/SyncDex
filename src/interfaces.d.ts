@@ -1,23 +1,42 @@
+import { ServiceKey } from './Service/Service';
+import { DefaultOptions } from './Options';
+
 interface Progress {
 	chapter: number;
 	volume?: number;
 }
 
 interface Title {
-	services: {
-		md: number;
-		mal?: number;
-		al?: number;
-		ku?: number;
-		mu?: number;
-		ap?: string;
-	};
+	services: { [key in ServiceKey]?: number | string };
 	progress: Progress;
-	lastCheck: number;
 	chapters: number[];
-	initial: {
+	initial?: {
 		start: number;
 		end: number;
 		status: Status;
 	};
+	lastTitle?: number;
+	lastCheck?: number;
+	// History
+	chapterId?: number;
+	name?: string;
+	lastRead?: number;
 }
+
+interface HistoryList {
+	[key: number]: number;
+}
+
+type ExportOptions = {
+	options?: DefaultOptions;
+};
+
+type ExportHistory = {
+	history?: number[];
+};
+
+type ExportedTitles = {
+	[key: string]: Title;
+};
+
+type ExportedSave = ExportOptions & ExportHistory & ExportedTitles;

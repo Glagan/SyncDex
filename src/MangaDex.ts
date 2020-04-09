@@ -1,6 +1,7 @@
-import { HTMLService, ServiceStatus } from './Service';
-import { DOM } from '../DOM';
-import { Options } from '../Options';
+import { ServiceStatus } from './Service/Service';
+import { DOM } from './DOM';
+import { Options } from './Options';
+import { Progress } from './interfaces';
 
 interface ChapterRow {
 	progress: Progress | undefined;
@@ -259,9 +260,10 @@ class ChapterGroup {
 	};
 }
 
-export class MangaDex extends HTMLService {
-	name: string = 'MangaDex';
-	status: { [key in ServiceStatus]: number } = {
+export class MangaDex {
+	options: Options;
+	document: Document;
+	static status: { [key in ServiceStatus]: number } = {
 		[ServiceStatus.READING]: 1,
 		[ServiceStatus.COMPLETED]: 2,
 		[ServiceStatus.PAUSED]: 3,
@@ -271,6 +273,11 @@ export class MangaDex extends HTMLService {
 		[ServiceStatus.NONE]: 0,
 		[ServiceStatus.WONT_READ]: 0,
 	};
+
+	constructor(options: Options, document: Document) {
+		this.options = options;
+		this.document = document;
+	}
 
 	getChaptersGroups = (): ChapterGroup[] => {
 		let chapterContainer = this.document.querySelector('.chapter-container');
@@ -327,6 +334,7 @@ export class MangaDex extends HTMLService {
 	};
 
 	loggedIn = (): Promise<boolean> => {
+		MangaDex.prototype.constructor;
 		return new Promise((resolve) => resolve(true));
 	};
 }

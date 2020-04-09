@@ -25,7 +25,7 @@ export class Input {
 				clearTimeout(Input.timeout);
 				Input.timeout = window.setTimeout(() => {
 					options.save();
-				}, 400);
+				}, 300);
 			} else {
 				this.input.classList.add('invalid');
 			}

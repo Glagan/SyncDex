@@ -1,8 +1,8 @@
-import { Service, ServiceStatus } from './Service';
+import { Service, ServiceStatus, ServiceName } from './Service';
 
 export class Anilist extends Service {
-	name: string = 'Anilist';
-	status: { [key in ServiceStatus]: string } = {
+	name: ServiceName = ServiceName.Anilist;
+	static status: { [key in ServiceStatus]: string } = {
 		[ServiceStatus.NONE]: '__INVALID__',
 		[ServiceStatus.WONT_READ]: '__INVALID__',
 		[ServiceStatus.READING]: 'CURRENT',

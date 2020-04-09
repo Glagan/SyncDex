@@ -33,7 +33,7 @@ declare const browser: {
 	};
 	storage: {
 		local: {
-			get: (key: string | null) => Promise<Object | undefined>;
+			get: <T>(key: string[] | string | null) => Promise<{ [key: string]: T } | undefined>;
 			set: (data: Object) => Promise<any>;
 			remove: (key: string) => Promise<any>;
 			clear: () => Promise<any>;

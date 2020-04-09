@@ -1,11 +1,12 @@
 type DOMSimpleEvent<K extends keyof DocumentEventMap> = (ev: DocumentEventMap[K]) => any;
+export type AppendableElement = HTMLElement | Text;
 interface DOMProperties {
 	textContent?: string;
 	class?: string;
 	classList?: string[];
 	style?: { [key in keyof Partial<CSSStyleDeclaration>]: string };
 	attributes?: { [key: string]: string };
-	childs?: (HTMLElement | Text)[];
+	childs?: AppendableElement[];
 	events?: {
 		[key in keyof Partial<DocumentEventMap>]: DOMSimpleEvent<key>;
 	};
@@ -21,7 +22,7 @@ export class DOM {
 		if (properties) {
 			Object.assign(elt, {
 				textContent: properties.textContent || '',
-				className: properties.class || ''
+				className: properties.class || '',
 			});
 			if (properties.classList) {
 				for (let index = 0; index < properties.classList.length; index++) {
@@ -86,7 +87,7 @@ export class DOM {
 		}
 	}
 
-	static append(parent: HTMLElement, ...childs: (HTMLElement | Text)[]): HTMLElement {
+	static append(parent: HTMLElement, ...childs: AppendableElement[]): HTMLElement {
 		for (let index = 0; index < childs.length; index++) {
 			const child = childs[index];
 			parent.appendChild(child);

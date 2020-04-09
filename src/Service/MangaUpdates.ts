@@ -1,8 +1,8 @@
-import { Service, ServiceStatus } from './Service';
+import { Service, ServiceStatus, ServiceName } from './Service';
 
 export class MangaUpdates extends Service {
-	name: string = 'MangaUpdates';
-	status: { [key in ServiceStatus]: number } = {
+	name: ServiceName = ServiceName.MangaUpdates;
+	static status: { [key in ServiceStatus]: number } = {
 		[ServiceStatus.NONE]: -1,
 		[ServiceStatus.REREADING]: -1,
 		[ServiceStatus.WONT_READ]: -1,

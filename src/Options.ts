@@ -94,8 +94,10 @@ export class Options extends DefaultOptions {
 		return (this as Options)[key];
 	}
 
-	set<K extends keyof DefaultOptions>(key: K, value: Options[K]): this {
-		(this as Options)[key] = value;
+	set<K extends keyof DefaultOptions>(key: K, value?: Options[K]): this {
+		if (value !== undefined) {
+			(this as Options)[key] = value;
+		}
 		return this;
 	}
 

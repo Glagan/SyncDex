@@ -82,11 +82,24 @@ body {
 	overflow: auto;
 }
 
-#content h1 {
+#content > h1,
+h1.full {
 	background-color: #5f5d60;
 	border-top: 1px solid #d6d6d6;
 	border-bottom: 1px solid #d6d6d6;
-	color: #bfc0c0;
+	color: #f0f0f0;
+	text-shadow: 1px 1px 1px #19201a;
+	margin: 1rem 0;
+	padding: 1rem;
+	user-select: none;
+}
+
+#content > h2,
+h2.full {
+	background-color: #5f5d60;
+	border-top: 1px solid #d6d6d6;
+	border-bottom: 1px solid #d6d6d6;
+	color: #f0f0f0;
 	text-shadow: 1px 1px 1px #19201a;
 	margin: 1rem 0;
 	padding: 1rem;
@@ -95,14 +108,16 @@ body {
 
 .services {
 	display: flex;
-	flex-flow: row nowrap;
+	flex-flow: row wrap;
 	padding: 1rem;
+	padding-bottom: 0;
 	align-items: center;
 }
 
 .service {
 	background-color: #f7f7f7;
 	margin-right: 1rem;
+	margin-bottom: 1rem;
 	border-radius: 3px;
 	padding: 1rem;
 	display: flex;
@@ -152,6 +167,15 @@ body {
 	font-size: 1rem;
 }
 
+.services.selectable .service {
+	cursor: pointer;
+	transition: 0.1s ease-in-out;
+}
+
+.services.selectable .service:hover {
+	box-shadow: 0 0 4px 2px white;
+}
+
 .service .title {
 	display: flex;
 	justify-content: center;
@@ -174,6 +198,14 @@ body {
 
 .service img {
 	vertical-align: middle;
+}
+
+.mymangadex {
+	color: rgba(47, 82, 162);
+}
+
+.mymangadex .mangadex {
+	color: black;
 }
 
 .myanimelist {
@@ -238,6 +270,14 @@ body {
 	box-shadow: 0 0 2px 1px firebrick;
 }
 
+.notification.success {
+	border: 0;
+	color: white;
+	background-color: #28a745;
+	border-left: 4px solid #228b3a;
+	box-shadow: 0 0 2px 1px #28a745;
+}
+
 .block p {
 	margin: 0.25rem 0;
 }
@@ -269,7 +309,8 @@ button {
 		sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
-button {
+button,
+.button {
 	border-radius: 3px;
 	cursor: pointer;
 	border: 0;
@@ -278,39 +319,47 @@ button {
 	padding: 0.5rem;
 }
 
-button.success {
+button.success,
+.button.success {
 	color: white;
 	background-color: #28a745;
 }
 
-button.success:hover {
+button.success:hover,
+.button.success:hover {
 	background-color: #228b3a;
 }
 
-button.danger {
+button.danger,
+.button.danger {
 	color: white;
 	background-color: firebrick;
 }
 
-button.danger:hover {
+button.danger:hover,
+.button.danger:hover {
 	background-color: rgb(150, 26, 26);
 }
 
-button.action {
+button.action,
+.button.action {
 	color: white;
 	background-color: #2b2b2b;
 }
 
-button.action:hover {
+button.action:hover,
+.button.action:hover {
 	background-color: #464646;
 }
 
-button.default {
+button.default,
+.button.default {
 	color: white;
 	background-color: #1261bb;
 }
 
-button.default:hover {
+button.default:hover,
+.button.default:hover {
 	background-color: #1055a3;
 }
 
@@ -319,7 +368,8 @@ button.default:hover {
 	flex-flow: row nowrap;
 }
 
-.button-group button {
+.button-group button,
+.button-group .button {
 	border-radius: 0;
 }
 
@@ -327,14 +377,16 @@ button.default:hover {
 	flex-grow: 1;
 }
 
-.button-group button:first-child {
+.button-group button:first-child,
+.button-group .button:first-child {
 	border-top-left-radius: 3px;
 	border-bottom-left-radius: 3px;
 	border-top-right-radius: 0;
 	border-bottom-right-radius: 0;
 }
 
-.button-group button:last-child {
+.button-group button:last-child,
+.button-group .button:last-child {
 	border-top-left-radius: 0;
 	border-bottom-left-radius: 0;
 	border-top-right-radius: 3px;
@@ -411,6 +463,27 @@ input.invalid {
 
 .hidden {
 	display: none;
+}
+
+.row {
+	margin-bottom: 0.5rem;
+}
+
+.row input[type='checkbox'] {
+	vertical-align: middle;
+}
+
+label {
+	margin-right: 1rem;
+	cursor: pointer;
+}
+
+input[type='file'] {
+	margin-right: 1rem;
+}
+
+.mr-1 {
+	margin-right: 1rem;
 }
 
 /* SimpleModal */

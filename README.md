@@ -21,6 +21,10 @@ You can pass some options:
 * ``--web-ext``: Build the ``web-ext`` archives.
 * ``-mode dev|prod``: Currently only minify code in prod mode.
 
+## Credits
+
+* ``<div>Icons made by <a href="https://www.flaticon.com/authors/becris" title="Becris">Becris</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>``
+
 ## TODO
 
 - [x] Router
@@ -43,6 +47,6 @@ You can pass some options:
 - [x] Options
 	- [x] Load from LocalStorage
 	- [ ] Options Page
-- [ ] Import/Export
+	- [ ] Import/Export
 - [ ] Bigger History
 - [x] Build

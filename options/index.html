@@ -13,6 +13,7 @@
 <body>
 	<div id="menu">
 		<ul>
+			<li>SyncDex</li>
 			<li class="active" data-link="services"><i class="lni lni-world"></i> Services</li>
 			<li data-link="colors"><i class="lni lni-brush"></i> Colors</li>
 			<li data-link="updates"><i class="lni lni-bookmark"></i> Updates</li>
@@ -270,6 +271,41 @@
 			</div>
 		</div>
 		<h1 id="import"><i class="lni lni-upload"></i> Import</h1>
+		<div class="block notification info">
+			<b>Importing</b> will only update your <b>SyncDex</b> save and is used to initialize <b>SyncDex</b>.<br />
+			If you wish to update any external Service, see <b><a href="#Export">Export</a></b>.
+		</div>
+		<div id="import-container">
+			<!-- <h2 class="full">Select the Service you want to <b>Import</b> from</h2>
+			<div class="services selectable">
+				<div class="service">
+					<span class="title"><img src="/icons/mmd.png" />&nbsp;<span class="mymangadex">My<span
+								class="mangadex">MangaDex</span></span></span>
+				</div>
+				<div class="service">
+					<span class="title"><i class="lni lni-reload"></i>&nbsp;<span class="syncdex">SyncDex</span></span>
+				</div>
+				<div class="service">
+					<span class="title"><img src="/icons/mal.png" />&nbsp;<span
+							class="myanimelist">MyAnimeList</span></span>
+				</div>
+				<div class="service">
+					<span class="title"><img src="/icons/al.png" />&nbsp;<span class="anilist">Ani<span
+								class="list">list</span></span></span>
+				</div>
+				<div class="service">
+					<span class="title"><img src="/icons/ku.png" />&nbsp;<span class="kitsu">Kitsu</span></span>
+				</div>
+				<div class="service">
+					<span class="title"><img src="/icons/ap.png" />&nbsp;<span
+							class="animeplanet">AnimePlanet</span></span>
+				</div>
+				<div class="service">
+					<span class="title"><img src="/icons/mu.png" />&nbsp;<span
+							class="mangaupdates">MangaUpdates</span></span>
+				</div>
+			</div> -->
+		</div>
 		<h1 id="export"><i class="lni lni-download"></i> Export</h1>
 		<h1 id="other"><i class="lni lni-more"></i> Other</h1>
 		<!--<div class="block">
@@ -289,7 +325,8 @@
 				<button type="button" class="off">Disabled</button>
 			</div>
 			<h2>Allow low score</h2>
-			<p>Allow low score results from <b>Mochi</b>, it is not recommended since it could add and update totally
+			<p>Allow low score results from <b>Mochi</b>, it is not recommended since it could add and update
+				totally
 				unrelated titles to your list.</p>
 			<div class="checkbox" data-checkbox="acceptLowScore">
 				<button type="button" class="on">Enabled</button>

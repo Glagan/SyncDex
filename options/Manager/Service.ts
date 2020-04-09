@@ -1,11 +1,7 @@
 import { Options } from '../../src/Options';
 import { DOM } from '../../src/DOM';
 import { ServiceName, Service, ServiceKey } from '../../src/Service/Service';
-import { MyAnimeList } from '../../src/Service/MyAnimeList';
-import { Kitsu } from '../../src/Service/Kitsu';
-import { MangaUpdates } from '../../src/Service/MangaUpdates';
-import { AnimePlanet } from '../../src/Service/AnimePlanet';
-import { Anilist } from '../../src/Service/Anilist';
+import { ServiceClass } from '../../src/Service/ServiceClass';
 
 class ServiceOptions {
 	serviceName: ServiceName;
@@ -15,13 +11,13 @@ class ServiceOptions {
 	removeButton: HTMLElement;
 	service: Service;
 
-	constructor(service: Service, name: ServiceName, options: Options) {
+	constructor(service: Service, name: ServiceName) {
 		this.service = service;
 		this.serviceName = name;
 		this.node = DOM.create('div', {
 			class: 'service loading',
 		});
-		const title = DOM.create('title', {
+		const title = DOM.create('span', {
 			class: 'title',
 			childs: [
 				DOM.create('img', {
@@ -180,24 +176,9 @@ export class ServiceManager {
 		}
 	}
 
-	serviceByName(name: ServiceName): Service {
-		switch (name) {
-			case ServiceName.MyAnimeList:
-				return new MyAnimeList(this.options);
-			case ServiceName.Anilist:
-				return new Anilist(this.options);
-			case ServiceName.Kitsu:
-				return new Kitsu(this.options);
-			case ServiceName.MangaUpdates:
-				return new MangaUpdates(this.options);
-			case ServiceName.AnimePlanet:
-				return new AnimePlanet(this.options);
-		}
-	}
-
 	addService = (serviceName: ServiceName): void => {
-		const service = this.serviceByName(serviceName);
-		const serviceOptions = new ServiceOptions(service, serviceName, this.options);
+		const service = ServiceClass(serviceName, this.options);
+		const serviceOptions = new ServiceOptions(service, serviceName);
 		if (this.options.mainService == serviceName) {
 			this.mainService = serviceOptions;
 		}

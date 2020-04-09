@@ -28,30 +28,12 @@ export enum ServiceStatus {
 }
 
 export abstract class Service {
-	abstract name: string;
+	abstract name: ServiceName;
 	abstract loggedIn: () => Promise<boolean>;
-	abstract status: { [key in ServiceStatus]: number | string };
+	static status: { [key in ServiceStatus]: number | string };
 	options: Options;
 
 	constructor(options: Options) {
 		this.options = options;
-	}
-}
-
-export abstract class HTMLService extends Service {
-	document: Document;
-
-	constructor(options: Options, document: Document) {
-		super(options);
-		this.document = document;
-	}
-}
-
-export abstract class JSONService extends Service {
-	document: Object;
-
-	constructor(options: Options, document: Object) {
-		super(options);
-		this.document = document;
 	}
 }

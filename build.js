@@ -6,8 +6,8 @@ const path = require('path');
 const options = require('minimist')(process.argv.slice(2), {
 	default: {
 		'web-ext': false,
-		mode: 'dev'
-	}
+		mode: 'dev',
+	},
 });
 options.webExt = options['web-ext'];
 
@@ -29,7 +29,7 @@ let mainManifest = {
 		'https://*.mangaupdates.com/ajax/*',
 		'https://*.anime-planet.com/manga/*',
 		'https://*.anime-planet.com/api/*',
-		'storage'
+		'storage',
 	],
 
 	/*icons: {
@@ -39,7 +39,7 @@ let mainManifest = {
     },*/
 
 	background: {
-		page: 'background/index.html'
+		page: 'background/index.html',
 	},
 
 	content_scripts: [
@@ -59,32 +59,32 @@ let mainManifest = {
 				'https://*.mangadex.org/user*',
 				'https://*.mangadex.org/list*',
 				'https://*.mangadex.org/updates*',
-				'https://anilist.co/api/v2/oauth/pin?for=syncdex*'
+				'https://anilist.co/api/v2/oauth/pin?for=syncdex*',
 			],
 			js: ['dist/simpleNotification.min.js', 'SyncDex.js'],
-			css: ['dist/simpleNotification.min.css', 'SyncDex.css']
-		}
-	]
+			css: ['dist/simpleNotification.min.css', 'SyncDex.css'],
+		},
+	],
 };
 let browser_manifests = {
 	firefox: {
 		applications: {
 			gecko: {
 				id: 'syncdex@glagan',
-				strict_min_version: '61.0'
-			}
+				strict_min_version: '61.0',
+			},
 		},
 		options_ui: {
 			page: 'options/index.html',
-			open_in_tab: true
-		}
+			open_in_tab: true,
+		},
 	},
 	chrome: {
 		options_ui: {
 			page: 'options/index.html',
-			open_in_tab: true
-		}
-	}
+			open_in_tab: true,
+		},
+	},
 };
 
 // Build
@@ -107,7 +107,7 @@ let compiled = false;
 		let manifest = Object.assign({}, mainManifest, browser_manifests[browser]);
 		// Write in file
 		let bundleManifestStream = fs.createWriteStream(`${folderName}/manifest.json`, {
-			flags: 'w+'
+			flags: 'w+',
 		});
 		bundleManifestStream.write(JSON.stringify(manifest));
 		bundleManifestStream.cork();
@@ -115,30 +115,30 @@ let compiled = false;
 
 		// Compile extension
 		if (!compiled) {
-			console.log('Compile');
-			execSync(`rollup -c rollup.config.js --environment mode:${options.mode}`);
+			console.log('Compiling...');
+			execSync(`rollup -c rollup.config.js --sourcemap --environment mode:${options.mode}`);
 			compiled = true;
 		}
 
 		// Copy files
-		console.log('Copying files');
-		deepFileCopy(
-			[
-				'dist:dist',
-				'icons:icons',
-				'src/SyncDex.css',
-				'background:background',
-				'build/SyncDex_background.js:background',
-				'build/SyncDex_background.js.map:background',
-				'options:options',
-				'build/SyncDex_options.js:options',
-				'build/SyncDex_options.js.map:options',
-				'build/SyncDex.js',
-				'build/SyncDex.js.map'
-			],
-			folderName,
-			['chrome', 'firefox']
-		);
+		console.log('Copying files...');
+		const files = [
+			'dist:dist',
+			'icons:icons',
+			'src/SyncDex.css',
+			'background:background',
+			'build/SyncDex_background.js:background',
+			'build/SyncDex_background.js.map:background',
+			'options:options',
+			'build/SyncDex_options.js:options',
+			'build/SyncDex_options.js.map:options',
+			'build/SyncDex.js',
+			'build/SyncDex.js.map',
+		];
+		if (options.mode == 'dev') {
+			files.unshift('src:src');
+		}
+		deepFileCopy(files, folderName, ['chrome', 'firefox']);
 
 		// Make web-ext
 		if (options.webExt) {
@@ -158,7 +158,7 @@ let compiled = false;
 					rimraf.sync(`${folderName}/web-ext-artifacts`);
 					return true;
 				})
-				.catch(error => {
+				.catch((error) => {
 					console.error(error);
 					return false;
 				});
@@ -198,10 +198,10 @@ function deepFileCopy(bases, destination, ignore = []) {
 				}
 			}
 			let currentDestination = `${destinationBase}/${path.basename(base)}`;
-			console.log(`> '${base}' into '${destinationBase}'`);
+			// console.log(`> '${base}' into '${destinationBase}'`);
 			fs.copyFileSync(base, currentDestination);
 		} else {
-			fs.readdirSync(base).forEach(file => {
+			fs.readdirSync(base).forEach((file) => {
 				// Return if it"s an ignored file
 				if (ignore.indexOf(file) >= 0) return;
 				// Create dir if it doesn"t exist
@@ -217,8 +217,8 @@ function deepFileCopy(bases, destination, ignore = []) {
 				let currentDestination = `${destinationBase}/${file}`;
 				if (fs.statSync(currentFolder).isDirectory()) {
 					deepFileCopy(currentFolder, currentDestination, ignore);
-				} else if (path.extname(currentDestination) != '.ts') {
-					console.log(`> '${file}' into '${destination}'`);
+				} else if (options.mode == 'dev' || path.extname(currentDestination) != '.ts') {
+					// console.log(`> '${file}' into '${destination}'`);
 					fs.copyFileSync(currentFolder, currentDestination);
 				}
 			});
