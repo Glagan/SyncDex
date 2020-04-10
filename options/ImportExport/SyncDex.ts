@@ -1,16 +1,17 @@
-import { ImportableService } from './ServiceImport';
-import { Title, ExportedTitles, ExportedSave } from '../../src/interfaces';
+import { Title, ExportedSave } from '../../src/interfaces';
 import { DefaultOptions } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
-import { ExtensionServiceImport } from './ExtensionServiceImport';
+import { ExtensionSave } from './ExtensionSave';
+import { ServiceImport } from '../Manager/Import';
+import { ServiceExport } from '../Manager/Export';
 
-export class SyncDex extends ExtensionServiceImport {
-	name: ImportableService = ImportableService.SyncDex;
+export class SyncDex extends ExtensionSave implements ServiceImport, ServiceExport {
+	name: string = 'MangaDex';
 	key: string = 'sc';
 
 	form?: HTMLFormElement;
 
-	start = (): void => {
+	import = (): void => {
 		this.manager.clear();
 		this.manager.header('Select your SyncDex save file');
 		this.form = this.manager.form(
@@ -28,6 +29,8 @@ export class SyncDex extends ExtensionServiceImport {
 			(event) => this.handle(event)
 		);
 	};
+
+	export = (): void => {};
 
 	handle = (event: Event): void => {
 		event.preventDefault();

@@ -1,28 +1,23 @@
 console.log('SyncDex :: Storage');
 
 export class LocalStorage {
-	static getAll<T>(
-		keys: number[] | string[] | null = null
-	): Promise<Record<string, any> | Record<string, T> | undefined> {
+	static getAll<T = Record<string, any>>(
+		keys: number[] | string[]
+	): Promise<Record<string, T> | undefined> {
 		if (keys != null && keys.length > 0 && typeof keys[0] === 'number') {
 			keys = (keys as number[]).map((value: number): string => {
 				return value.toString();
 			});
 		}
-		return browser.storage.local.get<T>(keys as string[] | null).then((data) => {
+		return browser.storage.local.get<T>(keys as string[]).then((data) => {
 			return data;
 		});
 	}
 
-	static get<T>(
-		key: number | string | null = null
-	): Promise<Record<string, any> | T | undefined> {
+	static get<T>(key: number | string): Promise<T | undefined> {
 		if (typeof key === 'number') key = key.toString();
-		return browser.storage.local.get<T>(key).then((data):
-			| { [key: string]: any }
-			| T
-			| undefined => {
-			return key == null || data == undefined ? data : data[key];
+		return browser.storage.local.get<T>(key).then((data): T | undefined => {
+			return key === null || data === undefined ? undefined : data[key];
 		});
 	}
 

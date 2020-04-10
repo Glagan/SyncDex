@@ -1,8 +1,8 @@
-import { ImportableService } from './ServiceImport';
 import { DOM } from '../../src/DOM';
-import { Title, ExportedTitles, ExportedSave } from '../../src/interfaces';
+import { Title, ExportedSave } from '../../src/interfaces';
 import { LocalStorage } from '../../src/Storage';
-import { ExtensionServiceImport } from './ExtensionServiceImport';
+import { ExtensionSave } from './ExtensionSave';
+import { ServiceImport } from '../Manager/Import';
 
 interface MyMangaDexHistoryEntry {
 	chapter: number;
@@ -68,13 +68,12 @@ type MyMangaDexSave = {
 	[key: string]: MyMangaDexTitle;
 };
 
-export class MyMangaDex extends ExtensionServiceImport {
-	name: ImportableService = ImportableService.MyMangaDex;
+export class MyMangaDex extends ExtensionSave implements ServiceImport {
+	name: string = 'MyMangaDex';
 	key: string = 'mmd';
-
 	form?: HTMLFormElement;
 
-	start = (): void => {
+	import = (): void => {
 		this.manager.clear();
 		this.manager.header('Select your MyMangaDex save file');
 		this.form = this.manager.form(

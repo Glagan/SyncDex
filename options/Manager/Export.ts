@@ -2,8 +2,7 @@ import { SaveManager, ServiceSave } from './Save';
 import { Options } from '../../src/Options';
 import { ServiceSaveManagerClass } from '../ImportExport/Class';
 
-export enum ImportableService {
-	MyMangaDex = 'MyMangaDex',
+export enum ExportableService {
 	SyncDex = 'SyncDex',
 	MangaDex = 'MangaDex',
 	MyAnimeList = 'MyAnimeList',
@@ -13,32 +12,32 @@ export enum ImportableService {
 	MangaUpdates = 'MangaUpdates',
 }
 
-export interface ServiceImport extends ServiceSave {
-	import: () => void;
+export interface ServiceExport extends ServiceSave {
+	export: () => void;
 }
 
-type ServiceList = Record<ImportableService, ServiceImport>;
-export class SaveImportManager extends SaveManager {
-	headerName: string = 'Import from';
+type ServiceList = Record<ExportableService, ServiceExport>;
+export class SaveExportManager extends SaveManager {
+	headerName: string = 'Export to';
 	services: ServiceList;
 
 	constructor(node: HTMLElement, options: Options) {
 		super(node, options);
 		this.services = {} as ServiceList;
-		Object.keys(ImportableService).forEach((value) => {
-			this.services[value as ImportableService] = ServiceSaveManagerClass(
+		Object.keys(ExportableService).forEach((value) => {
+			this.services[value as ExportableService] = ServiceSaveManagerClass(
 				value,
 				this
-			) as ServiceImport;
+			) as ServiceExport;
 		});
 		this.reset();
 	}
 
 	linkedFunction = (service: string) => {
-		return this.services[service as ImportableService].import;
+		return this.services[service as ExportableService].export;
 	};
 
 	serviceKeys = () => {
-		return Object.keys(ImportableService) as ImportableService[];
+		return Object.keys(ExportableService) as ExportableService[];
 	};
 }

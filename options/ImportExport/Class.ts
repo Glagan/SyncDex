@@ -1,4 +1,3 @@
-import { ImportableService, ServiceImport } from './ServiceImport';
 import { MyMangaDex } from './MyMangaDex';
 import { SyncDex } from './SyncDex';
 import { MangaDex } from './MangaDex';
@@ -7,12 +6,9 @@ import { Kitsu } from './Kitsu';
 import { MyAnimeList } from './MyAnimeList';
 import { AnimePlanet } from './AnimePlanet';
 import { MangaUpdates } from './MangaUpdates';
-import { ImportManager } from '../Manager/Import';
+import { SaveManager, ServiceSave } from '../Manager/Save';
 
-export function ServiceImportClass(
-	service: ImportableService,
-	manager: ImportManager
-): ServiceImport {
+export function ServiceSaveManagerClass(service: string, manager: SaveManager): ServiceSave {
 	if (service == 'MyMangaDex') {
 		return new MyMangaDex(manager);
 	} else if (service == 'SyncDex') {
