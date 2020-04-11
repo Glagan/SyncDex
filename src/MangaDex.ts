@@ -1,4 +1,4 @@
-import { ServiceStatus } from './Service/Service';
+import { Status } from './Service/Service';
 import { DOM } from './DOM';
 import { Options } from './Options';
 import { Progress } from './interfaces';
@@ -263,15 +263,15 @@ class ChapterGroup {
 export class MangaDex {
 	options: Options;
 	document: Document;
-	static status: { [key in ServiceStatus]: number } = {
-		[ServiceStatus.READING]: 1,
-		[ServiceStatus.COMPLETED]: 2,
-		[ServiceStatus.PAUSED]: 3,
-		[ServiceStatus.PLAN_TO_READ]: 4,
-		[ServiceStatus.DROPPED]: 5,
-		[ServiceStatus.REREADING]: 6,
-		[ServiceStatus.NONE]: 0,
-		[ServiceStatus.WONT_READ]: 0,
+	static status: { [key in Status]: number } = {
+		[Status.READING]: 1,
+		[Status.COMPLETED]: 2,
+		[Status.PAUSED]: 3,
+		[Status.PLAN_TO_READ]: 4,
+		[Status.DROPPED]: 5,
+		[Status.REREADING]: 6,
+		[Status.NONE]: 0,
+		[Status.WONT_READ]: 0,
 	};
 
 	constructor(options: Options, document: Document) {

@@ -16,7 +16,7 @@ export enum ServiceKey {
 	AnimePlanet = 'ap',
 }
 
-export enum ServiceStatus {
+export enum Status {
 	NONE,
 	READING,
 	COMPLETED,
@@ -30,7 +30,7 @@ export enum ServiceStatus {
 export abstract class Service {
 	abstract name: ServiceName;
 	abstract loggedIn: () => Promise<boolean>;
-	static status: { [key in ServiceStatus]: number | string };
+	static status: { [key in Status]: number | string };
 	options: Options;
 
 	constructor(options: Options) {

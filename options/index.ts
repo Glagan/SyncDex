@@ -6,9 +6,7 @@ import { HighlightsManager } from './Manager/Highlights';
 import { MenuHighlight } from './MenuHighlight';
 import { InputManager } from './Manager/Input';
 import { ServiceManager } from './Manager/Service';
-import { SaveManager } from './Manager/Save';
-import { SaveExportManager } from './Manager/Export';
-import { SaveImportManager } from './Manager/Import';
+import { SaveImportManager, SaveExportManager } from './Manager/Save';
 
 class OptionsManager {
 	options: Options = new Options();

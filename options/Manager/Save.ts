@@ -1,78 +1,20 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { Options } from '../../src/Options';
-
-export abstract class ServiceSave {
-	manager: SaveManager;
-	error?: HTMLElement;
-	success?: HTMLElement;
-	abstract name: string;
-	abstract key: string;
-
-	constructor(manager: SaveManager) {
-		this.manager = manager;
-	}
-
-	title = (): HTMLElement => {
-		return DOM.create('span', {
-			class: this.name.toLowerCase(),
-			textContent: this.name,
-		});
-	};
-
-	removeSuccess = (): void => {
-		if (this.success) {
-			this.success.remove();
-			this.success = undefined;
-		}
-	};
-
-	displaySuccess = (content: string | AppendableElement[]): void => {
-		this.removeSuccess();
-		this.removeError();
-		this.success = DOM.create('div', {
-			class: 'block notification success',
-		});
-		if (typeof content === 'string') {
-			this.success.textContent = content;
-		} else {
-			for (let index = 0; index < content.length; index++) {
-				const child = content[index];
-				this.success.appendChild(child);
-			}
-		}
-		this.manager.node.appendChild(this.success);
-	};
-
-	removeError = (): void => {
-		if (this.error) {
-			this.error.remove();
-			this.error = undefined;
-		}
-	};
-
-	displayError = (content: string | AppendableElement[]): void => {
-		this.removeSuccess();
-		this.removeError();
-		this.error = DOM.create('div', {
-			class: 'block notification danger',
-		});
-		if (typeof content === 'string') {
-			this.error.textContent = content;
-		} else {
-			for (let index = 0; index < content.length; index++) {
-				const child = content[index];
-				this.error.appendChild(child);
-			}
-		}
-		this.manager.node.appendChild(this.error);
-	};
-}
+import { MyMangaDex } from '../Save/MyMangaDex';
+import { MangaDex } from '../Save/MangaDex';
+import { SyncDex } from '../Save/SyncDex';
+import { MyAnimeList } from '../Save/MyAnimeList';
+import { Anilist } from '../Save/Anilist';
+import { Kitsu } from '../Save/Kitsu';
+import { AnimePlanet } from '../Save/AnimePlanet';
+import { MangaUpdates } from '../Save/MangaUpdates';
+import { ServiceSave } from '../Save/Save';
 
 export abstract class SaveManager {
 	node: HTMLElement;
 	options: Options;
-	abstract headerName: string;
-	abstract services: { [key: string]: ServiceSave };
+	abstract services: ServiceSave[];
+	abstract mainHeader: string;
 
 	constructor(node: HTMLElement, options: Options) {
 		this.node = node;
@@ -92,22 +34,19 @@ export abstract class SaveManager {
 		DOM.clear(this.node);
 	};
 
-	abstract serviceKeys: () => string[];
-
 	reset = (): void => {
 		this.clear();
-		this.header(`Select the Service you want to ${this.headerName}`);
+		this.header(`Select the Service you want to ${this.mainHeader}`);
 		const serviceList = DOM.create('div', { class: 'services selectable' });
-		this.serviceKeys().forEach((value) => {
-			DOM.append(serviceList, this.serviceBlock(value));
-		});
+		for (const service of this.services) {
+			DOM.append(serviceList, this.serviceBlock(service));
+		}
 		DOM.append(this.node, serviceList);
 	};
 
-	abstract linkedFunction: (service: string) => () => void;
+	abstract bind(service: ServiceSave, block: HTMLElement): void;
 
-	serviceBlock = (name: string): HTMLElement => {
-		const service = this.services[name];
+	serviceBlock = (service: ServiceSave): HTMLElement => {
 		const block = DOM.create('div', { class: 'service' });
 		const title = DOM.create('span', {
 			class: 'title',
@@ -119,7 +58,7 @@ export abstract class SaveManager {
 				service.title(),
 			],
 		});
-		block.addEventListener('click', () => this.linkedFunction(name)());
+		this.bind(service, block);
 		return DOM.append(block, title);
 	};
 
@@ -227,5 +166,56 @@ export abstract class SaveManager {
 		form.addEventListener('submit', callback);
 		DOM.append(this.node, DOM.append(form, fileInput, sendButton));
 		return form;
+	};
+}
+
+export class SaveImportManager extends SaveManager {
+	mainHeader: string = 'Import from';
+	services: ServiceSave[] = [
+		new MyMangaDex(this),
+		new SyncDex(this),
+		new MangaDex(this),
+		new MyAnimeList(this),
+		new Anilist(this),
+		new Kitsu(this),
+		new AnimePlanet(this),
+		new MangaUpdates(this),
+	];
+
+	constructor(node: HTMLElement, options: Options) {
+		super(node, options);
+		this.reset();
+	}
+
+	bind = (service: ServiceSave, block: HTMLElement): void => {
+		if (service.import) {
+			/// @ts-ignore
+			block.addEventListener('click', () => service.import(this));
+		}
+	};
+}
+
+export class SaveExportManager extends SaveManager {
+	mainHeader: string = 'Export to';
+	services: ServiceSave[] = [
+		new SyncDex(this),
+		new MangaDex(this),
+		new MyAnimeList(this),
+		new Anilist(this),
+		new Kitsu(this),
+		new AnimePlanet(this),
+		new MangaUpdates(this),
+	];
+
+	constructor(node: HTMLElement, options: Options) {
+		super(node, options);
+		this.reset();
+	}
+
+	bind = (service: ServiceSave, block: HTMLElement): void => {
+		if (service.export) {
+			/// @ts-ignore
+			block.addEventListener('click', () => service.export(this));
+		}
 	};
 }

@@ -1,4 +1,4 @@
-import { ServiceSave } from '../Manager/Save';
+import { ServiceSave } from './Save';
 
 export class MangaUpdates extends ServiceSave {
 	name: string = 'MangaUpdates';

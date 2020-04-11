@@ -1,16 +1,16 @@
-import { Service, ServiceStatus, ServiceName } from './Service';
+import { Service, Status, ServiceName } from './Service';
 
 export class Anilist extends Service {
 	name: ServiceName = ServiceName.Anilist;
-	static status: { [key in ServiceStatus]: string } = {
-		[ServiceStatus.NONE]: '__INVALID__',
-		[ServiceStatus.WONT_READ]: '__INVALID__',
-		[ServiceStatus.READING]: 'CURRENT',
-		[ServiceStatus.COMPLETED]: 'COMPLETED',
-		[ServiceStatus.PAUSED]: 'PAUSED',
-		[ServiceStatus.DROPPED]: 'DROPPED',
-		[ServiceStatus.PLAN_TO_READ]: 'PLANNING',
-		[ServiceStatus.REREADING]: 'REPEATING',
+	static status: { [key in Status]: string } = {
+		[Status.NONE]: '__INVALID__',
+		[Status.WONT_READ]: '__INVALID__',
+		[Status.READING]: 'CURRENT',
+		[Status.COMPLETED]: 'COMPLETED',
+		[Status.PAUSED]: 'PAUSED',
+		[Status.DROPPED]: 'DROPPED',
+		[Status.PLAN_TO_READ]: 'PLANNING',
+		[Status.REREADING]: 'REPEATING',
 	};
 
 	loggedIn = (): Promise<boolean> => {

@@ -1,5 +1,5 @@
 import { ExportedSave, Title } from '../../src/interfaces';
-import { ServiceSave } from '../Manager/Save';
+import { ServiceSave } from './Save';
 
 export abstract class ExtensionSave extends ServiceSave {
 	mergeHistory = (currentSave: ExportedSave | undefined, newSave: ExportedSave): void => {

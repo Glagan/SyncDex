@@ -2,7 +2,6 @@ import { DOM } from '../../src/DOM';
 import { Title, ExportedSave } from '../../src/interfaces';
 import { LocalStorage } from '../../src/Storage';
 import { ExtensionSave } from './ExtensionSave';
-import { ServiceImport } from '../Manager/Import';
 
 interface MyMangaDexHistoryEntry {
 	chapter: number;
@@ -68,7 +67,7 @@ type MyMangaDexSave = {
 	[key: string]: MyMangaDexTitle;
 };
 
-export class MyMangaDex extends ExtensionSave implements ServiceImport {
+export class MyMangaDex extends ExtensionSave {
 	name: string = 'MyMangaDex';
 	key: string = 'mmd';
 	form?: HTMLFormElement;
@@ -91,6 +90,8 @@ export class MyMangaDex extends ExtensionSave implements ServiceImport {
 			(event) => this.handle(event)
 		);
 	};
+
+	export = undefined;
 
 	handle = (event: Event): void => {
 		event.preventDefault();

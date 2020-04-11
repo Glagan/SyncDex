@@ -2,10 +2,8 @@ import { Title, ExportedSave } from '../../src/interfaces';
 import { DefaultOptions } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
 import { ExtensionSave } from './ExtensionSave';
-import { ServiceImport } from '../Manager/Import';
-import { ServiceExport } from '../Manager/Export';
 
-export class SyncDex extends ExtensionSave implements ServiceImport, ServiceExport {
+export class SyncDex extends ExtensionSave {
 	name: string = 'MangaDex';
 	key: string = 'sc';
 

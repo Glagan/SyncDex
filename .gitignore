@@ -13,6 +13,7 @@ node_modules
 # Debug
 manifest_template.json
 scripts/debug.js
+DEV.md
 
 # Save
 export.json
