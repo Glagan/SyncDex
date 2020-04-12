@@ -170,8 +170,8 @@
 			</div>
 		</div>
 		<div class="block">
-			<h2>Add covers</h2>
-			<p>Display the cover of the title when hovering a row.</p>
+			<h2>Display cover in lists</h2>
+			<p>Display the cover of the title when hovering a row inside lists.</p>
 			<div class="checkbox" data-checkbox="thumbnail">
 				<button type="button" class="on">Enabled</button>
 				<button type="button" class="off">Disabled</button>
@@ -318,8 +318,12 @@
 			</div>
 		</div>
 		<h1 id="delete"><i class="lni lni-trash"></i> Delete</h1>
-		<div class="block">
-			<button type="button" class="danger">Delete</button>
+		<div class="block notification danger">
+			Click the <b>Delete</b> button twice to <b>permanently erase</b> your save.<br/>
+			It can't be restored, <b><a href="#Export">Export</a></b> first if you want to keep a copy.
+		</div>
+		<div class="block center">
+			<button id="delete-save" type="button" class="danger">Delete</button>
 		</div>
 	</div>
 	<script src="SyncDex_options.js"></script>

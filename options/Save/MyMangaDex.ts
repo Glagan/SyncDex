@@ -2,6 +2,7 @@ import { DOM } from '../../src/DOM';
 import { Title, ExportedSave } from '../../src/interfaces';
 import { LocalStorage } from '../../src/Storage';
 import { ExtensionSave } from './ExtensionSave';
+import { Options } from '../../src/Options';
 
 interface MyMangaDexHistoryEntry {
 	chapter: number;
@@ -75,6 +76,10 @@ export class MyMangaDex extends ExtensionSave {
 	import = (): void => {
 		this.manager.clear();
 		this.manager.header('Select your MyMangaDex save file');
+		this.manager.node.appendChild(DOM.create('div', {
+			class: 'block notification info',
+			textContent: 'All of your MyMangaDex options will also be imported and MyAnimeList will be enabled if it\'s not already.'
+		}));
 		this.form = this.manager.form(
 			[
 				{
@@ -122,7 +127,7 @@ export class MyMangaDex extends ExtensionSave {
 						this.mergeTitles(currentSave, newSave);
 					}
 					// History
-					if (this.manager.options.biggerHistory && data.history) {
+					if (Options.biggerHistory && data.history) {
 						this.loadHistory(newSave, data.history);
 						if (merge) {
 							this.mergeHistory(currentSave, newSave);
@@ -133,7 +138,7 @@ export class MyMangaDex extends ExtensionSave {
 						await LocalStorage.clear();
 					}
 					await LocalStorage.raw(newSave);
-					await this.manager.options.save();
+					await Options.save();
 					this.end();
 				} catch (error) {
 					this.displayError('Invalid file !');
@@ -166,32 +171,31 @@ export class MyMangaDex extends ExtensionSave {
 	};
 
 	loadOptions = (old: MyMangaDexOptions): void => {
-		const options = this.manager.options;
-		options.set('thumbnail', old.showTooltips);
-		options.set('originalThumbnail', old.showFullCover);
-		options.set('thumbnailMaxHeight', old.coverMaxHeight);
-		options.set('updateMD', old.updateMDList);
-		options.set('updateOnlyInList', old.updateOnlyInList);
-		options.set('notifications', old.showNotifications);
-		options.set('errorNotifications', old.showErrors);
-		options.set('hideHigher', old.hideHigherChapters);
-		options.set('hideLower', old.hideLowerChapters);
-		options.set('hideLast', old.hideLastRead);
-		options.set('saveOnlyHigher', old.saveOnlyHigher);
-		options.set('biggerHistory', old.updateHistoryPage);
-		options.set('historySize', old.historySize);
-		options.set('saveChapters', old.saveAllOpened);
-		options.set('chaptersSaved', old.maxChapterSaved);
-		options.set('highlight', old.highlightChapters);
-		options.set('saveOnlyNext', old.saveOnlyNext);
-		options.set('confirmChapter', old.confirmChapter);
-		options.set('colors', {
-			highlights: old.lastOpenColors || options.colors.highlights,
-			nextChapter: old.nextChapterColor || options.colors.nextChapter,
-			higherChapter: old.higherChaptersColor || options.colors.higherChapter,
-			lowerChapter: old.lowerChaptersColor || options.colors.lowerChapter,
-			openedChapter: old.openedChaptersColor || options.colors.openedChapter,
-		});
+		Options.thumbnail = old.showTooltips;
+		Options.originalThumbnail = old.showFullCover;
+		Options.thumbnailMaxHeight = old.coverMaxHeight;
+		Options.updateMD = old.updateMDList;
+		Options.updateOnlyInList = old.updateOnlyInList;
+		Options.notifications = old.showNotifications;
+		Options.errorNotifications = old.showErrors;
+		Options.hideHigher = old.hideHigherChapters;
+		Options.hideLower = old.hideLowerChapters;
+		Options.hideLast = old.hideLastRead;
+		Options.saveOnlyHigher = old.saveOnlyHigher;
+		Options.biggerHistory = old.updateHistoryPage;
+		Options.historySize = old.historySize;
+		Options.saveChapters = old.saveAllOpened;
+		Options.chaptersSaved = old.maxChapterSaved;
+		Options.highlight = old.highlightChapters;
+		Options.saveOnlyNext = old.saveOnlyNext;
+		Options.confirmChapter = old.confirmChapter;
+		Options.colors = {
+			highlights: old.lastOpenColors || Options.colors.highlights,
+			nextChapter: old.nextChapterColor || Options.colors.nextChapter,
+			higherChapter: old.higherChaptersColor || Options.colors.higherChapter,
+			lowerChapter: old.lowerChaptersColor || Options.colors.lowerChapter,
+			openedChapter: old.openedChaptersColor || Options.colors.openedChapter,
+		};
 	};
 
 	loadHistory = (newSave: ExportedSave, old: MyMangaDexHistory): void => {

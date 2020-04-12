@@ -30,19 +30,19 @@ class Highlights {
 		DOM.append(this.node, this.remove, this.input, this.display);
 	}
 
-	bind = (highlights: HighlightsManager, options: Options): void => {
-		this.update(options.colors.highlights[this.index]);
+	bind = (highlights: HighlightsManager): void => {
+		this.update(Options.colors.highlights[this.index]);
 		this.input.addEventListener('input', () => {
 			this.display.style.backgroundColor = this.input.value;
 			clearTimeout(Highlights.timeout);
 			Highlights.timeout = window.setTimeout(() => {
-				options.colors.highlights[this.index] = this.input.value;
-				options.save();
+				Options.colors.highlights[this.index] = this.input.value;
+				Options.save();
 			}, 300);
 		});
 		this.remove.addEventListener('click', () => {
-			if (options.colors.highlights.length > 1) {
-				options.colors.highlights.splice(this.index, 1);
+			if (Options.colors.highlights.length > 1) {
+				Options.colors.highlights.splice(this.index, 1);
 				highlights.list.splice(this.index, 1);
 				for (let index = 0; index < highlights.list.length; index++) {
 					const row = highlights.list[index];
@@ -53,7 +53,7 @@ class Highlights {
 				this.node.remove();
 				clearTimeout(Highlights.timeout);
 				Highlights.timeout = window.setTimeout(() => {
-					options.save();
+					Options.save();
 				}, 300);
 			}
 		});
@@ -69,15 +69,15 @@ export class HighlightsManager {
 	node: HTMLElement;
 	list: Highlights[] = [];
 
-	constructor(options: Options) {
+	constructor() {
 		this.node = document.getElementById('highlights') as HTMLElement;
 		const addButton = DOM.create('button', {
 			class: 'success',
 			events: {
 				click: () => {
-					const color = new Highlights(options.colors.highlights.length);
-					options.colors.highlights.push('');
-					color.bind(this, options);
+					const color = new Highlights(Options.colors.highlights.length);
+					Options.colors.highlights.push('');
+					color.bind(this);
 					this.node.insertBefore(color.node, this.node.lastElementChild);
 					this.list.push(color);
 					color.input.focus();
@@ -90,15 +90,15 @@ export class HighlightsManager {
 			],
 		});
 		this.node.appendChild(addButton);
-		this.updateAll(options);
+		this.updateAll();
 	}
 
-	updateAll = (options: Options): void => {
-		const colors = options.colors.highlights;
+	updateAll = (): void => {
+		const colors = Options.colors.highlights;
 		this.list = [];
 		for (let index = 0; index < colors.length; index++) {
 			const color = new Highlights(index);
-			color.bind(this, options);
+			color.bind(this);
 			this.node.insertBefore(color.node, this.node.lastElementChild);
 			this.list.push(color);
 		}

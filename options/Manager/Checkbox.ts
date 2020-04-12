@@ -1,39 +1,38 @@
-import { Options, DefaultOptions } from '../../src/Options';
+import { Options, AvailableOptions } from '../../src/Options';
 
 export class Checkbox {
 	node: HTMLElement;
 	enable: HTMLElement;
 	disable: HTMLElement;
-	optionName: keyof DefaultOptions;
+	optionName: keyof AvailableOptions;
 
 	constructor(node: HTMLElement) {
 		this.node = node;
 		this.enable = this.node.querySelector('.on') as HTMLElement;
 		this.disable = this.node.querySelector('.off') as HTMLElement;
-		this.optionName = this.node.dataset.checkbox as keyof DefaultOptions;
+		this.optionName = this.node.dataset.checkbox as keyof AvailableOptions;
 	}
 
-	bind = (options: Options): void => {
-		this.toggle(options.get(this.optionName) as boolean);
+	bind = (): void => {
+		this.toggle(Options[this.optionName] as boolean);
 		if (this.enable !== null) {
 			this.enable.addEventListener('click', () => {
-				this.update(options, true);
+				this.update(true);
 			});
 		}
 		if (this.disable !== null) {
 			this.disable.addEventListener('click', () => {
-				this.update(options, false);
+				this.update(false);
 			});
 		}
 	};
 
-	update = (options: Options, value: boolean): void => {
-		if (value != options.get(this.optionName)) {
+	update = (value: boolean): void => {
+		if (value != Options.get(this.optionName)) {
 			this.node.classList.remove('enabled', 'disabled');
 			this.node.classList.add('loading');
-			options
-				.set(this.optionName, value)
-				.save()
+			Options.set(this.optionName, value);
+			Options.save()
 				.then(() => {
 					this.node.classList.remove('loading');
 					this.toggle(value);
@@ -55,20 +54,20 @@ export class Checkbox {
 export class CheckboxManager {
 	checkboxes: Checkbox[] = [];
 
-	constructor(options: Options) {
+	constructor() {
 		const checkboxes = document.querySelectorAll<HTMLElement>('[data-checkbox]');
 		for (let index = 0; index < checkboxes.length; index++) {
 			const node = checkboxes[index];
 			const checkbox = new Checkbox(node);
-			checkbox.bind(options);
+			checkbox.bind();
 			this.checkboxes.push(checkbox);
 		}
 	}
 
-	updateAll = (options: Options): void => {
+	updateAll = (): void => {
 		for (let index = 0; index < this.checkboxes.length; index++) {
 			const checkbox = this.checkboxes[index];
-			checkbox.toggle(options.get(checkbox.optionName) as boolean);
+			checkbox.toggle(Options[checkbox.optionName] as boolean);
 		}
 	};
 }

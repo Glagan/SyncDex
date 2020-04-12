@@ -1,6 +1,6 @@
-import { Options, DefaultOptions } from '../../src/Options';
+import { Options, AvailableOptions } from '../../src/Options';
 
-type ValidInputs = Pick<DefaultOptions, 'historySize' | 'chaptersSaved'>;
+type ValidInputs = Pick<AvailableOptions, 'historySize' | 'chaptersSaved'>;
 type MinMax = [number, number];
 
 export class Input {
@@ -15,16 +15,16 @@ export class Input {
 		this.optionName = this.input.dataset.input as keyof ValidInputs;
 	}
 
-	bind = (options: Options): void => {
-		this.update(options.get(this.optionName));
+	bind = (): void => {
+		this.update(Options[this.optionName]);
 		this.input.addEventListener('input', () => {
 			const value = parseInt(this.input.value);
 			this.input.classList.remove('invalid');
 			if (!isNaN(value) && value >= this.limits[0] && value <= this.limits[1]) {
-				options.set(this.optionName, value);
+				Options.set(this.optionName, value);
 				clearTimeout(Input.timeout);
 				Input.timeout = window.setTimeout(() => {
-					options.save();
+					Options.save();
 				}, 300);
 			} else {
 				this.input.classList.add('invalid');
@@ -40,20 +40,20 @@ export class Input {
 export class InputManager {
 	inputs: Input[] = [];
 
-	constructor(options: Options) {
+	constructor() {
 		const inputs = document.querySelectorAll<HTMLInputElement>('[data-input]');
 		for (let index = 0; index < inputs.length; index++) {
 			const node = inputs[index];
 			const input = new Input(node);
-			input.bind(options);
+			input.bind();
 			this.inputs.push(input);
 		}
 	}
 
-	updateAll = (options: Options): void => {
+	updateAll = (): void => {
 		for (let index = 0; index < this.inputs.length; index++) {
 			const input = this.inputs[index];
-			input.update(options.get(input.optionName));
+			input.update(Options.get(input.optionName));
 		}
 	};
 }

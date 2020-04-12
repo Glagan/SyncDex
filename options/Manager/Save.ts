@@ -12,13 +12,11 @@ import { ServiceSave } from '../Save/Save';
 
 export abstract class SaveManager {
 	node: HTMLElement;
-	options: Options;
 	abstract services: ServiceSave[];
 	abstract mainHeader: string;
 
-	constructor(node: HTMLElement, options: Options) {
+	constructor(node: HTMLElement) {
 		this.node = node;
-		this.options = options;
 	}
 
 	header = (value: string): void => {
@@ -182,8 +180,8 @@ export class SaveImportManager extends SaveManager {
 		new MangaUpdates(this),
 	];
 
-	constructor(node: HTMLElement, options: Options) {
-		super(node, options);
+	constructor(node: HTMLElement) {
+		super(node);
 		this.reset();
 	}
 
@@ -207,8 +205,8 @@ export class SaveExportManager extends SaveManager {
 		new MangaUpdates(this),
 	];
 
-	constructor(node: HTMLElement, options: Options) {
-		super(node, options);
+	constructor(node: HTMLElement) {
+		super(node);
 		this.reset();
 	}
 

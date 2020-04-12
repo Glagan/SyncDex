@@ -6,17 +6,17 @@ import { MangaUpdates } from './MangaUpdates';
 import { ServiceName, Service } from './Service';
 import { Options } from '../Options';
 
-export function ServiceClass(name: ServiceName, options: Options): Service {
+export function ServiceClass(name: ServiceName): Service {
 	if (name == 'MyAnimeList') {
-		return new MyAnimeList(options);
+		return new MyAnimeList();
 	} else if (name == 'MangaUpdates') {
-		return new MangaUpdates(options);
+		return new MangaUpdates();
 	} else if (name == 'Anilist') {
-		return new Anilist(options);
+		return new Anilist();
 	} else if (name == 'Kitsu') {
-		return new Kitsu(options);
+		return new Kitsu();
 	} else {
 		// if (name == 'AnimePlanet')
-		return new AnimePlanet(options);
+		return new AnimePlanet();
 	}
 }

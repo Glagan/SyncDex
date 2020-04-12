@@ -15,16 +15,16 @@ class ChapterGroup {
 	chapters: ChapterRow[] = [];
 	static currentColor: number = 0;
 
-	hide = (options: Options, progres: Progress): void => {
-		if (!options.hideHigher && !options.hideLower && !options.hideLast) return;
+	hide = (progres: Progress): void => {
+		if (!Options.hideHigher && !Options.hideLower && !Options.hideLast) return;
 		let chapterCount = this.chapters.length;
 		for (let j = 0; j < chapterCount; j++) {
 			let chapter = this.chapters[j];
 			if (
 				chapter.progress &&
-				((options.hideHigher && progres.chapter > chapter.progress.chapter) ||
-					(options.hideLower && progres.chapter < chapter.progress.chapter) ||
-					(options.hideLast && progres.chapter == chapter.progress.chapter))
+				((Options.hideHigher && progres.chapter > chapter.progress.chapter) ||
+					(Options.hideLower && progres.chapter < chapter.progress.chapter) ||
+					(Options.hideLast && progres.chapter == chapter.progress.chapter))
 			) {
 				chapter.row.classList.add('hidden');
 				chapter.hidden = true;
@@ -50,10 +50,10 @@ class ChapterGroup {
 		// TODO: Add button to show hidden
 	};
 
-	highlight = (options: Options, progress: Progress): void => {
-		let lastColor = options.colors.highlights.length,
+	highlight = (progress: Progress): void => {
+		let lastColor = Options.colors.highlights.length,
 			selected = 0,
-			outerColor = options.colors.highlights[ChapterGroup.currentColor];
+			outerColor = Options.colors.highlights[ChapterGroup.currentColor];
 		// If there is data
 		let chapterCount = this.chapters.length;
 		for (let j = 0; j < chapterCount; j++) {
@@ -64,16 +64,16 @@ class ChapterGroup {
 					progress.chapter < chapter.progress.chapter &&
 					chapter.progress.chapter < Math.floor(progress.chapter) + 2
 				) {
-					chapter.row.style.backgroundColor = options.colors.nextChapter;
+					chapter.row.style.backgroundColor = Options.colors.nextChapter;
 					selected = j;
-					outerColor = options.colors.nextChapter;
+					outerColor = Options.colors.nextChapter;
 				} else if (progress.chapter > chapter.progress.chapter) {
-					chapter.row.style.backgroundColor = options.colors.higherChapter;
+					chapter.row.style.backgroundColor = Options.colors.higherChapter;
 				} else if (progress.chapter < chapter.progress.chapter) {
-					chapter.row.style.backgroundColor = options.colors.lowerChapter;
+					chapter.row.style.backgroundColor = Options.colors.lowerChapter;
 				} else if (progress.chapter == chapter.progress.chapter) {
 					chapter.row.style.backgroundColor =
-						options.colors.highlights[ChapterGroup.currentColor];
+						Options.colors.highlights[ChapterGroup.currentColor];
 					selected = j;
 				}
 			}
@@ -97,27 +97,22 @@ class ChapterGroup {
 		ChapterGroup.currentColor = (ChapterGroup.currentColor + 1) % lastColor;
 	};
 
-	setThumbnail = (container: HTMLElement, original: boolean, maxHeight: number): void => {
+	setThumbnail = (container: HTMLElement): void => {
 		let chapterCount = this.chapters.length;
 		// Add events
 		for (let j = 0; j < chapterCount; j++) {
 			const row = this.chapters[j].row;
-			this.setRowThumbnail(container, row, original, maxHeight);
+			this.setRowThumbnail(container, row);
 		}
 	};
 
-	setRowThumbnail = (
-		container: HTMLElement,
-		row: HTMLElement,
-		original: boolean,
-		maxHeight: number
-	): void => {
+	setRowThumbnail = (container: HTMLElement, row: HTMLElement): void => {
 		// Create tooltip
 		let tooltip = DOM.create('div', {
 			class: 'sd-tooltip loading',
 			style: {
 				left: `-${window.innerWidth}px`,
-				maxHeight: `${(window.innerHeight - 10) * (maxHeight / 100)}px`,
+				maxHeight: `${(window.innerHeight - 10) * (Options.thumbnailMaxHeight / 100)}px`,
 			},
 		});
 		let spinner = DOM.create('i', {
@@ -129,7 +124,7 @@ class ChapterGroup {
 		let tooltipThumb = DOM.create('img', {
 			class: 'thumbnail loading',
 			style: {
-				maxHeight: `${(window.innerHeight - 10) * (maxHeight / 100)}px`,
+				maxHeight: `${(window.innerHeight - 10) * (Options.thumbnailMaxHeight / 100)}px`,
 			},
 		});
 		tooltipThumb.style.length;
@@ -146,13 +141,13 @@ class ChapterGroup {
 			// Update position
 			if (tooltip.classList.contains('active')) {
 				setTimeout(() => {
-					this.updateThumbnailPosition(tooltip, row, original);
+					this.updateThumbnailPosition(tooltip, row);
 				}, 1);
 			}
 		});
 		let extensions = ['jpg', 'png', 'jpeg', 'gif'];
 		tooltipThumb.addEventListener('error', () => {
-			if (original) {
+			if (Options.originalThumbnail) {
 				let tryNumber = tooltipThumb.dataset.ext
 					? Math.floor(parseInt(tooltipThumb.dataset.ext))
 					: 1;
@@ -169,20 +164,20 @@ class ChapterGroup {
 			tooltip.dataset.column = rightColumn.toString();
 			tooltip.classList.add('active');
 			if (row.dataset.loading) {
-				this.updateThumbnailPosition(tooltip, row, original);
+				this.updateThumbnailPosition(tooltip, row);
 				return;
 			}
 			if (!row.dataset.loaded) {
 				row.dataset.loading = 'true';
 				// Will trigger 'load' event
-				if (original) {
+				if (Options.originalThumbnail) {
 					tooltipThumb.src = `https://mangadex.org/images/manga/${this.titleId}.jpg`;
 					tooltipThumb.dataset.ext = '1';
 				} else {
 					tooltipThumb.src = `https://mangadex.org/images/manga/${this.titleId}.thumb.jpg`;
 				}
 			}
-			this.updateThumbnailPosition(tooltip, row, original);
+			this.updateThumbnailPosition(tooltip, row);
 		};
 		let disableTooltip = () => {
 			tooltip.classList.remove('active');
@@ -215,7 +210,7 @@ class ChapterGroup {
 		});
 	};
 
-	updateThumbnailPosition = (tooltip: HTMLElement, row: HTMLElement, original: boolean): void => {
+	updateThumbnailPosition = (tooltip: HTMLElement, row: HTMLElement): void => {
 		let rightColumn = tooltip.dataset.column == 'true';
 		let rect = {
 			tooltip: tooltip.getBoundingClientRect(),
@@ -227,7 +222,7 @@ class ChapterGroup {
 		let left = Math.max(5, rect.row.x - rect.tooltip.width - 5);
 		let maxWidth = rect.row.left - 10;
 		// Boundaries
-		if ((original && rect.row.left < 400) || rect.row.left < 100) {
+		if ((Options.originalThumbnail && rect.row.left < 400) || rect.row.left < 100) {
 			if (rightColumn && row.lastElementChild) {
 				rect.lastChild = row.lastElementChild.getBoundingClientRect();
 				maxWidth = rect.lastChild.left - 10;
@@ -239,7 +234,7 @@ class ChapterGroup {
 		tooltip.style.maxWidth = `${maxWidth}px`;
 		// X axis
 		setTimeout(() => {
-			if ((original && rect.row.left < 400) || rect.row.left < 100) {
+			if ((Options.originalThumbnail && rect.row.left < 400) || rect.row.left < 100) {
 				if (rightColumn) {
 					left = rect.lastChild.left - 5 - Math.min(maxWidth, rect.tooltip.width);
 				} else {
@@ -261,7 +256,6 @@ class ChapterGroup {
 }
 
 export class MangaDex {
-	options: Options;
 	document: Document;
 	static status: { [key in Status]: number } = {
 		[Status.READING]: 1,
@@ -274,8 +268,7 @@ export class MangaDex {
 		[Status.WONT_READ]: 0,
 	};
 
-	constructor(options: Options, document: Document) {
-		this.options = options;
+	constructor(document: Document) {
 		this.document = document;
 	}
 
@@ -334,7 +327,6 @@ export class MangaDex {
 	};
 
 	loggedIn = (): Promise<boolean> => {
-		MangaDex.prototype.constructor;
 		return new Promise((resolve) => resolve(true));
 	};
 }

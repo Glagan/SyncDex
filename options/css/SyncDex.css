@@ -486,6 +486,11 @@ input[type='file'] {
 	margin-right: 1rem;
 }
 
+.center {
+	text-align: center;
+	justify-content: center;
+}
+
 /* SimpleModal */
 
 .modal {

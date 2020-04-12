@@ -1,5 +1,3 @@
-import { Options } from '../Options';
-
 export enum ServiceName {
 	MyAnimeList = 'MyAnimeList',
 	MangaUpdates = 'MangaUpdates',
@@ -31,9 +29,4 @@ export abstract class Service {
 	abstract name: ServiceName;
 	abstract loggedIn: () => Promise<boolean>;
 	static status: { [key in Status]: number | string };
-	options: Options;
-
-	constructor(options: Options) {
-		this.options = options;
-	}
 }

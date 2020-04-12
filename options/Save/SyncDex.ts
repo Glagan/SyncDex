@@ -1,10 +1,10 @@
 import { Title, ExportedSave } from '../../src/interfaces';
-import { DefaultOptions } from '../../src/Options';
+import { AvailableOptions, Options } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
 import { ExtensionSave } from './ExtensionSave';
 
 export class SyncDex extends ExtensionSave {
-	name: string = 'MangaDex';
+	name: string = 'SyncDex';
 	key: string = 'sc';
 
 	form?: HTMLFormElement;
@@ -45,10 +45,9 @@ export class SyncDex extends ExtensionSave {
 					let data = JSON.parse(reader.result) as ExportedSave;
 					// Options
 					if (data.options !== undefined) {
-						Object.keys(data.options).forEach((value) => {
-							const key = value as keyof DefaultOptions;
-							this.manager.options.set(key, (data.options as DefaultOptions)[key]);
-						});
+						for (const key in data.options) {
+							Options.set(key as keyof AvailableOptions, data.options[key as keyof AvailableOptions]);
+						}
 					}
 					// Merge or override Titles
 					Object.keys(data).forEach((value): void => {
@@ -63,7 +62,7 @@ export class SyncDex extends ExtensionSave {
 					}
 					// History
 					newSave.history = data.history;
-					if (this.manager.options.biggerHistory && data.history) {
+					if (Options.biggerHistory && data.history) {
 						if (merge) {
 							this.mergeHistory(currentSave, newSave);
 						} else {
@@ -75,7 +74,7 @@ export class SyncDex extends ExtensionSave {
 						await LocalStorage.clear();
 					}
 					await LocalStorage.raw(newSave);
-					await this.manager.options.save();
+					await Options.save();
 					this.displaySuccess('Save successfully imported !');
 				} catch (error) {
 					this.displayError('Invalid file !');

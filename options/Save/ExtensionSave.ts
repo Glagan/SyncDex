@@ -1,5 +1,6 @@
 import { ExportedSave, Title } from '../../src/interfaces';
 import { ServiceSave } from './Save';
+import { Options } from '../../src/Options';
 
 export abstract class ExtensionSave extends ServiceSave {
 	mergeHistory = (currentSave: ExportedSave | undefined, newSave: ExportedSave): void => {
@@ -58,8 +59,8 @@ export abstract class ExtensionSave extends ServiceSave {
 					}
 					newTitle.chapters = newTitle.chapters.concat(curTitle.chapters);
 					newTitle.chapters.sort((a, b) => b - a);
-					if (newTitle.chapters.length > this.manager.options.chaptersSaved) {
-						const diff = this.manager.options.chaptersSaved - newTitle.chapters.length;
+					if (newTitle.chapters.length > Options.chaptersSaved) {
+						const diff = Options.chaptersSaved - newTitle.chapters.length;
 						newTitle.chapters.splice(-diff, diff);
 					}
 				}

@@ -1,5 +1,5 @@
 import { ServiceKey } from './Service/Service';
-import { DefaultOptions } from './Options';
+import { AvailableOptions } from './Options';
 
 interface Progress {
 	chapter: number;
@@ -28,7 +28,7 @@ interface HistoryList {
 }
 
 type ExportOptions = {
-	options?: DefaultOptions;
+	options?: AvailableOptions;
 };
 
 type ExportHistory = {

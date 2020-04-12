@@ -9,7 +9,6 @@ console.log('SyncDex :: SyncDex');
 
 export class SyncDex {
 	router: Router = new Router();
-	options: Options = new Options();
 
 	constructor() {
 		this.router.register(
@@ -30,16 +29,6 @@ export class SyncDex {
 		);
 		this.router.register('/(manga|title)', this.titlePage);
 		this.router.register('/updates', this.updatesPage);
-		this.options.load();
-		console.log(this.options);
-
-		// DEBUG
-		// LocalStorage.set(20723, {
-		// 	progress: {
-		// 		chapter: 36,
-		// 		volume: 7
-		// 	}
-		// });
 	}
 
 	execute = (location: string): void => {
@@ -53,18 +42,18 @@ export class SyncDex {
 		console.log('SyncDex :: Chapter List');
 
 		if (
-			!this.options.hideHigher &&
-			!this.options.hideLast &&
-			!this.options.hideLower &&
-			!this.options.thumbnail &&
-			!this.options.updateServicesInList &&
-			!this.options.highlight
+			!Options.hideHigher &&
+			!Options.hideLast &&
+			!Options.hideLower &&
+			!Options.thumbnail &&
+			!Options.updateServicesInList &&
+			!Options.highlight
 		)
 			return;
-		const md = new MangaDex(this.options, document);
+		const md = new MangaDex(document);
 		const groups = md.getChaptersGroups();
 		const titles: { [key: number]: Title | undefined | null } = {};
-		const container = this.options.thumbnail
+		const container = Options.thumbnail
 			? (() => {
 					const container = DOM.create('div', {
 						attributes: {
@@ -87,15 +76,11 @@ export class SyncDex {
 			}
 			console.log(title);
 			if (title !== null) {
-				group.hide(this.options, title.progress);
-				group.highlight(this.options, title.progress);
+				group.hide(title.progress);
+				group.highlight(title.progress);
 			}
-			if (this.options.thumbnail && container) {
-				group.setThumbnail(
-					container,
-					this.options.originalThumbnail,
-					this.options.thumbnailMaxHeight
-				);
+			if (Options.thumbnail && container) {
+				group.setThumbnail(container);
 			}
 		}
 	};

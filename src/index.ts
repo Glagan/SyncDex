@@ -1,8 +1,12 @@
 import { setBrowser } from './Browser';
 import { SyncDex } from './SyncDex';
+import { Options } from './Options';
 
 console.log('SyncDex :: Index');
 
-setBrowser();
-const sync = new SyncDex();
-sync.execute(window.location.pathname);
+(async () => {
+	setBrowser();
+	const sync = new SyncDex();
+	await Options.load();
+	sync.execute(window.location.pathname);
+})();

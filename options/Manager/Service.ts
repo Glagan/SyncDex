@@ -55,8 +55,7 @@ class ServiceOptions {
 
 	bind = async (manager: ServiceManager): Promise<void> => {
 		// Load current state
-		const options = manager.options;
-		if (options.mainService == this.serviceName) {
+		if (Options.mainService == this.serviceName) {
 			this.node.classList.add('main');
 			this.mainButton.classList.add('hidden');
 		}
@@ -65,11 +64,11 @@ class ServiceOptions {
 		// Add events
 		this.mainButton.addEventListener('click', () => {
 			// Make service the first in the list
-			const index = options.services.indexOf(this.serviceName);
+			const index = Options.services.indexOf(this.serviceName);
 			manager.services.splice(0, 0, manager.services.splice(index, 1)[0]);
-			options.services.splice(0, 0, options.services.splice(index, 1)[0]);
-			options.mainService = this.serviceName;
-			options.save();
+			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
+			Options.mainService = this.serviceName;
+			Options.save();
 			// Remove main button and add the main button to the previous main
 			if (manager.mainService) {
 				manager.mainService.node.classList.remove('main');
@@ -90,21 +89,21 @@ class ServiceOptions {
 		});
 		this.removeButton.addEventListener('click', () => {
 			// Remove service from Service list and assign new main if possible
-			const index = options.services.indexOf(this.serviceName);
+			const index = Options.services.indexOf(this.serviceName);
 			if (index > -1) {
 				manager.services.splice(index, 1);
-				options.services.splice(index, 1);
-				if (options.mainService == this.serviceName) {
-					options.mainService =
-						options.services.length > 0 ? options.services[0] : undefined;
+				Options.services.splice(index, 1);
+				if (Options.mainService == this.serviceName) {
+					Options.mainService =
+						Options.services.length > 0 ? Options.services[0] : undefined;
 				}
 			}
-			options.save();
+			Options.save();
 			// Remove service block and add the option back to the selector
 			this.node.remove();
 			manager.addSelectorRow(this.serviceName);
 			// Set the new main
-			if (options.mainService) {
+			if (Options.mainService) {
 				manager.services[0].node.classList.add('main');
 				manager.services[0].mainButton.classList.add('hidden');
 				manager.mainService = manager.services[0];
@@ -146,7 +145,6 @@ class ServiceOptions {
 
 export class ServiceManager {
 	node: HTMLElement;
-	options: Options;
 	services: ServiceOptions[] = [];
 	addForm: HTMLElement;
 	selector: HTMLSelectElement;
@@ -155,8 +153,7 @@ export class ServiceManager {
 	inactiveServices: ServiceName[] = [];
 	inactiveWarnig: HTMLElement;
 
-	constructor(node: HTMLElement, options: Options) {
-		this.options = options;
+	constructor(node: HTMLElement) {
 		this.node = node;
 		this.addForm = DOM.create('div', {
 			class: 'service add',
@@ -167,19 +164,19 @@ export class ServiceManager {
 		this.noServices = document.getElementById('no-service') as HTMLElement;
 		this.inactiveWarnig = document.getElementById('inactive-service') as HTMLElement;
 		this.createAddForm();
-		for (let index = 0; index < this.options.services.length; index++) {
-			const serviceName = this.options.services[index] as ServiceName;
+		for (let index = 0; index < Options.services.length; index++) {
+			const serviceName = Options.services[index] as ServiceName;
 			this.addService(serviceName);
 		}
-		if (this.options.services.length == 0) {
+		if (Options.services.length == 0) {
 			this.noServices.classList.remove('hidden');
 		}
 	}
 
 	addService = (serviceName: ServiceName): void => {
-		const service = ServiceClass(serviceName, this.options);
+		const service = ServiceClass(serviceName);
 		const serviceOptions = new ServiceOptions(service, serviceName);
-		if (this.options.mainService == serviceName) {
+		if (Options.mainService == serviceName) {
 			this.mainService = serviceOptions;
 		}
 		serviceOptions.bind(this);
@@ -209,7 +206,7 @@ export class ServiceManager {
 				},
 			})
 		);
-		if (this.options.services.length == 0) {
+		if (Options.services.length == 0) {
 			this.noServices.classList.remove('hidden');
 		}
 		const index = this.inactiveServices.indexOf(service);
@@ -240,11 +237,11 @@ export class ServiceManager {
 				click: async (): Promise<any> => {
 					if (this.selector.value != 'Select Service') {
 						const name = this.selector.value as ServiceName;
-						if (this.options.services.length == 0) {
-							this.options.mainService = name;
+						if (Options.services.length == 0) {
+							Options.mainService = name;
 						}
-						this.options.services.push(name);
-						this.options.save();
+						Options.services.push(name);
+						Options.save();
 						this.addService(name);
 					}
 				},
