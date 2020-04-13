@@ -1,6 +1,9 @@
+import { FetchMessage, OpenOptionsMessage } from './Message';
+
 console.log('SyncDex :: Browser');
 
 export const isChrome = window.chrome && window.browser === undefined;
+// Promisify Chrome
 export const setBrowser = ((): (() => void) => {
 	if (isChrome) {
 		window.browser = window.chrome;
@@ -21,6 +24,25 @@ export const setBrowser = ((): (() => void) => {
 		const chromeClear = chrome.storage.local.clear.bind(chrome.storage.local);
 		browser.storage.local.clear = (): Promise<any> => {
 			return new Promise((resolve) => chromeClear(resolve));
+		};
+		const chromeOnMessage = chrome.runtime.onMessage.addListener.bind(chrome.runtime.onMessage);
+		browser.runtime.onMessage.addListener = (
+			fnct: (message: FetchMessage | OpenOptionsMessage) => Promise<any>
+		): void => {
+			chromeOnMessage(
+				(
+					message: FetchMessage | OpenOptionsMessage,
+					_sender: any,
+					sendResponse: (response?: any) => void
+				): true => {
+					fnct(message).then((response) => sendResponse(response));
+					return true;
+				}
+			);
+		};
+		const chromeSendMessage = chrome.runtime.sendMessage;
+		browser.runtime.sendMessage = (message: Object): Promise<any> => {
+			return new Promise((resolve) => chromeSendMessage(message, resolve));
 		};
 	}
 	return () => {};

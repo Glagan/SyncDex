@@ -1,6 +1,6 @@
 import { Options } from '../../src/Options';
 import { DOM } from '../../src/DOM';
-import { ServiceName, Service, ServiceKey } from '../../src/Service/Service';
+import { ServiceName, Service, ServiceKey, LoginStatus } from '../../src/Service/Service';
 import { ServiceClass } from '../../src/Service/ServiceClass';
 
 class ServiceOptions {
@@ -113,9 +113,9 @@ class ServiceOptions {
 		});
 	};
 
-	updateStatus = (manager: ServiceManager, status: boolean): void => {
+	updateStatus = (manager: ServiceManager, status: LoginStatus): void => {
 		this.node.classList.remove('loading');
-		if (status) {
+		if (status == LoginStatus.SUCCESS) {
 			this.node.classList.add('active');
 		} else {
 			this.node.classList.add('inactive');
@@ -251,10 +251,10 @@ export class ServiceManager {
 		return this.selector;
 	};
 
-	updateServiceStatus = (name: ServiceName, status: boolean): void => {
+	updateServiceStatus = (name: ServiceName, status: LoginStatus): void => {
 		const index = this.inactiveServices.indexOf(name);
 		if (index > -1) {
-			if (status) {
+			if (status == LoginStatus.SUCCESS) {
 				this.inactiveServices.splice(index, 1);
 				if (this.inactiveServices.length == 0) {
 					this.inactiveWarnig.classList.add('hidden');

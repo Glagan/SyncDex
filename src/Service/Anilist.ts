@@ -1,4 +1,6 @@
-import { Service, Status, ServiceName } from './Service';
+import { Service, Status, ServiceName, LoginStatus } from './Service';
+import { Options } from '../Options';
+import { Message, MessageAction } from '../Message';
 
 export class Anilist extends Service {
 	name: ServiceName = ServiceName.Anilist;
@@ -13,7 +15,28 @@ export class Anilist extends Service {
 		[Status.REREADING]: 'REPEATING',
 	};
 
-	loggedIn = (): Promise<boolean> => {
-		return new Promise((resolve) => resolve(Math.random() > 0.5));
+	loggedIn = async (): Promise<LoginStatus> => {
+		if (!Options.tokens.anilistToken === undefined) return LoginStatus.NO_AUTHENTIFICATION;
+		const query = `query { Viewer { id } }`;
+		const response = await Message.send({
+			action: MessageAction.fetch,
+			url: 'https://graphql.anilist.co',
+			isJson: true,
+			options: {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${Options.tokens.anilistToken}`,
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
+				body: JSON.stringify({ query: query }),
+			},
+		});
+		if (response.status >= 500) {
+			return LoginStatus.SERVER_ERROR;
+		} else if (response.status >= 400 && response.status < 500) {
+			return LoginStatus.BAD_REQUEST;
+		}
+		return LoginStatus.SUCCESS;
 	};
 }

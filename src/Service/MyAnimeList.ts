@@ -1,4 +1,6 @@
-import { Service, Status, ServiceName } from './Service';
+import { Service, Status, ServiceName, LoginStatus } from './Service';
+import { Message } from '../Message';
+import { MessageAction } from '../Message';
 
 export class MyAnimeList extends Service {
 	name: ServiceName = ServiceName.MyAnimeList;
@@ -13,11 +15,27 @@ export class MyAnimeList extends Service {
 		[Status.PLAN_TO_READ]: 6,
 	};
 
-	loggedIn = (): Promise<boolean> => {
-		return new Promise((resolve) => {
-			setTimeout(() => {
-				resolve(true);
-			}, 2000);
+	loggedIn = async (): Promise<LoginStatus> => {
+		const response = await Message.send({
+			action: MessageAction.fetch,
+			url: 'https://myanimelist.net/login.php',
+			options: {
+				method: 'GET',
+				credentials: 'include',
+			},
 		});
+		if (response.status >= 500) {
+			return LoginStatus.SERVER_ERROR;
+		} else if (response.status >= 400 && response.status < 500) {
+			return LoginStatus.BAD_REQUEST;
+		}
+		if (
+			response.status >= 200 &&
+			response.status < 400 &&
+			response.body &&
+			response.url.indexOf('login.php') < 0
+		)
+			return LoginStatus.SUCCESS;
+		return LoginStatus.FAIL;
 	};
 }

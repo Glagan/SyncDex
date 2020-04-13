@@ -1,4 +1,6 @@
-import { Service, Status, ServiceName } from './Service';
+import { Service, Status, ServiceName, LoginStatus } from './Service';
+import { Options } from '../Options';
+import { Message, MessageAction } from '../Message';
 
 export class Kitsu extends Service {
 	name: ServiceName = ServiceName.Kitsu;
@@ -13,7 +15,25 @@ export class Kitsu extends Service {
 		[Status.PLAN_TO_READ]: 'planned',
 	};
 
-	loggedIn = (): Promise<boolean> => {
-		return new Promise((resolve) => resolve(true));
+	loggedIn = async (): Promise<LoginStatus> => {
+		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken)
+			return LoginStatus.NO_AUTHENTIFICATION;
+		const response = await Message.send({
+			action: MessageAction.fetch,
+			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
+			isJson: true,
+			options: {
+				headers: {
+					Authorization: `Bearer ${Options.tokens.kitsuToken}`,
+					Accept: 'application/vnd.api+json',
+				},
+			},
+		});
+		if (response.status >= 500) {
+			return LoginStatus.SERVER_ERROR;
+		} else if (response.status >= 400 && response.status < 500) {
+			return LoginStatus.BAD_REQUEST;
+		}
+		return LoginStatus.SUCCESS;
 	};
 }

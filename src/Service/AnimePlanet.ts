@@ -1,4 +1,6 @@
-import { Service, Status, ServiceName } from './Service';
+import { Service, Status, ServiceName, LoginStatus } from './Service';
+import { Message } from '../Message';
+import { MessageAction } from '../Message';
 
 export class AnimePlanet extends Service {
 	name: ServiceName = ServiceName.AnimePlanet;
@@ -13,7 +15,21 @@ export class AnimePlanet extends Service {
 		[Status.WONT_READ]: 6,
 	};
 
-	loggedIn = (): Promise<boolean> => {
-		return new Promise((resolve) => resolve(true));
+	loggedIn = async (): Promise<LoginStatus> => {
+		const response = await Message.send({
+			action: MessageAction.fetch,
+			url: 'https://www.anime-planet.com/manga/recommendations/',
+			options: {
+				method: 'GET',
+				credentials: 'include',
+			},
+		});
+		if (response.status >= 500) {
+			return LoginStatus.SERVER_ERROR;
+		} else if (response.status >= 400 && response.status < 500) {
+			return LoginStatus.BAD_REQUEST;
+		}
+		if (response.body && response.body.indexOf(`"/login.php"`) < 0) return LoginStatus.SUCCESS;
+		return LoginStatus.FAIL;
 	};
 }

@@ -9,10 +9,18 @@ declare const chrome: {
 			version: string;
 		};
 		openOptionsPage: (resolve?: () => void) => Promise<any>;
+		sendMessage: (
+			message: FetchMessage | OpenOptionsMessage,
+			resolve?: (response?: any) => void
+		) => Promise<any>;
 		onMessage: {
 			addListener: (
-				fnct: (message: any, _sender: any, sendResponse: () => void) => Promise<any>
-			) => any;
+				fnct: (
+					message: FetchMessage | OpenOptionsMessage,
+					_sender: any,
+					sendResponse: (response?: any) => void
+				) => any
+			) => void;
 		};
 	};
 	storage: {
@@ -32,7 +40,12 @@ declare const browser: {
 	runtime: {
 		getManifest: typeof chrome.runtime.getManifest;
 		openOptionsPage: () => Promise<any>;
-		onMessage: typeof chrome.runtime.onMessage;
+		sendMessage: (message: FetchMessage | OpenOptionsMessage) => Promise<any>;
+		onMessage: {
+			addListener: (
+				fnct: (message: FetchMessage | OpenOptionsMessage) => Promise<any>
+			) => void;
+		};
 	};
 	storage: {
 		local: {
