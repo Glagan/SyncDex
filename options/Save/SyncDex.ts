@@ -1,7 +1,9 @@
-import { Title, ExportedSave } from '../../src/interfaces';
+import { ExportedSave } from '../../src/interfaces';
 import { AvailableOptions, Options } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
 import { ExtensionSave } from './ExtensionSave';
+import { Title } from '../../src/Title';
+import { DOM } from '../../src/DOM';
 
 export class SyncDex extends ExtensionSave {
 	name: string = 'SyncDex';
@@ -39,44 +41,58 @@ export class SyncDex extends ExtensionSave {
 		reader.onload = async (): Promise<void> => {
 			if (typeof reader.result == 'string') {
 				try {
-					const titleList: string[] = [];
-					let currentSave: ExportedSave | undefined = {} as ExportedSave;
 					const newSave = {} as ExportedSave;
+					const titleList: string[] = [];
+					let titles: Title[] = [];
 					let data = JSON.parse(reader.result) as ExportedSave;
 					// Options
 					if (data.options !== undefined) {
 						for (const key in data.options) {
-							Options.set(key as keyof AvailableOptions, data.options[key as keyof AvailableOptions]);
+							Options.set(
+								key as keyof AvailableOptions,
+								data.options[key as keyof AvailableOptions]
+							);
 						}
 					}
 					// Merge or override Titles
 					Object.keys(data).forEach((value): void => {
 						if (value !== 'options' && value !== 'history') {
 							titleList.push(value);
-							newSave[value] = data[value];
+							titles.push(new Title(parseInt(value), data[value]));
 						}
 					});
 					if (merge) {
-						currentSave = await LocalStorage.getAll<Title>(titleList);
-						await this.mergeTitles(currentSave, newSave);
+						this.mergeTitles(await Title.getAll(titleList), titles);
 					}
 					// History
-					newSave.history = data.history;
 					if (Options.biggerHistory && data.history) {
+						newSave.history = [];
 						if (merge) {
-							this.mergeHistory(currentSave, newSave);
+							const currentHistory = await LocalStorage.get('history');
+							if (currentHistory !== undefined) {
+								newSave.history.concat(data.history);
+							} else {
+								newSave.history = data.history;
+							}
 						} else {
 							newSave.history = data.history;
 						}
 					}
-					// Save everything
+					// Add each titles to the save
+					for (let index = 0, len = titles.length; index < len; index++) {
+						const title = titles[index];
+						newSave[title.id] = title.toSave();
+					}
+					// Save
 					if (!merge) {
 						await LocalStorage.clear();
 					}
 					await LocalStorage.raw(newSave);
 					await Options.save();
-					this.displaySuccess('Save successfully imported !');
+					// TODO: Reload everything
+					this.end();
 				} catch (error) {
+					console.error(error);
 					this.displayError('Invalid file !');
 				}
 			} else {
@@ -88,5 +104,21 @@ export class SyncDex extends ExtensionSave {
 		} else {
 			this.displayError('No file !');
 		}
+	};
+
+	end = (): void => {
+		this.manager.clear();
+		this.manager.header('Done Importing SyncDex');
+		this.displaySuccess([
+			DOM.text('Save successfully imported !'),
+			DOM.space(),
+			DOM.create('button', {
+				class: 'action',
+				textContent: 'Go Back',
+				events: {
+					click: () => this.manager.reset(),
+				},
+			}),
+		]);
 	};
 }

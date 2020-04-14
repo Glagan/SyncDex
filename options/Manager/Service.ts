@@ -241,7 +241,7 @@ export class ServiceManager {
 							Options.mainService = name;
 						}
 						Options.services.push(name);
-						Options.save();
+						await Options.save();
 						this.addService(name);
 					}
 				},

@@ -1,9 +1,8 @@
 import { Router } from './Router';
 import { Options } from './Options';
 import { MangaDex } from './MangaDex';
-import { LocalStorage } from './Storage';
 import { DOM } from './DOM';
-import { Title } from './interfaces';
+import { Title } from './Title';
 
 console.log('SyncDex :: SyncDex');
 
@@ -68,7 +67,7 @@ export class SyncDex {
 			const group = groups[index];
 			let title = titles[group.titleId];
 			if (title === undefined) {
-				title = await LocalStorage.get<Title>(group.titleId);
+				title = await Title.get(group.titleId);
 				if (title === undefined) {
 					title = null;
 				}

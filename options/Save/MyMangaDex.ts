@@ -1,8 +1,9 @@
 import { DOM } from '../../src/DOM';
-import { Title, ExportedSave } from '../../src/interfaces';
+import { ExportedSave } from '../../src/interfaces';
 import { LocalStorage } from '../../src/Storage';
 import { ExtensionSave } from './ExtensionSave';
 import { Options } from '../../src/Options';
+import { Title, FullTitle } from '../../src/Title';
 
 interface MyMangaDexHistoryEntry {
 	chapter: number;
@@ -76,10 +77,13 @@ export class MyMangaDex extends ExtensionSave {
 	import = (): void => {
 		this.manager.clear();
 		this.manager.header('Select your MyMangaDex save file');
-		this.manager.node.appendChild(DOM.create('div', {
-			class: 'block notification info',
-			textContent: 'All of your MyMangaDex options will also be imported and MyAnimeList will be enabled if it\'s not already.'
-		}));
+		this.manager.node.appendChild(
+			DOM.create('div', {
+				class: 'block notification info',
+				textContent:
+					"All of your MyMangaDex options will also be imported and MyAnimeList will be enabled if it's not already.",
+			})
+		);
 		this.form = this.manager.form(
 			[
 				{
@@ -107,9 +111,9 @@ export class MyMangaDex extends ExtensionSave {
 		reader.onload = async (): Promise<void> => {
 			if (typeof reader.result == 'string') {
 				try {
+					let newSave: ExportedSave = {};
 					const titleList: string[] = [];
-					let currentSave: ExportedSave | undefined = {} as ExportedSave;
-					const newSave = {} as ExportedSave;
+					let titles: Title[] = [];
 					let data = JSON.parse(reader.result) as MyMangaDexSave;
 					// Options
 					if (data.options) {
@@ -119,28 +123,34 @@ export class MyMangaDex extends ExtensionSave {
 					Object.keys(data).forEach((value): void => {
 						if (value !== 'options' && value !== 'history') {
 							titleList.push(value);
-							newSave[value] = this.convertTitle(data[value]);
+							titles.push(new Title(parseInt(value), this.convertTitle(data[value])));
 						}
 					});
 					if (merge) {
-						currentSave = await LocalStorage.getAll<Title>(titleList);
-						this.mergeTitles(currentSave, newSave);
+						this.mergeTitles(await Title.getAll(titleList), titles);
 					}
 					// History
 					if (Options.biggerHistory && data.history) {
-						this.loadHistory(newSave, data.history);
+						newSave.history = this.loadHistory(titles, data.history);
 						if (merge) {
-							this.mergeHistory(currentSave, newSave);
+							newSave.history.concat(data.history.list);
 						}
 					}
-					// Save everything
+					// Add each titles to the save
+					for (let index = 0, len = titles.length; index < len; index++) {
+						const title = titles[index];
+						newSave[title.id] = title.toSave();
+					}
+					// Save
 					if (!merge) {
 						await LocalStorage.clear();
 					}
 					await LocalStorage.raw(newSave);
-					await Options.save();
+					await Options.save(); // TODO: Add MyAnimeList service
+					// TODO: Reload everything
 					this.end();
 				} catch (error) {
+					console.error(error);
 					this.displayError('Invalid file !');
 				}
 			} else {
@@ -198,19 +208,23 @@ export class MyMangaDex extends ExtensionSave {
 		};
 	};
 
-	loadHistory = (newSave: ExportedSave, old: MyMangaDexHistory): void => {
-		newSave.history = [];
-		Object.keys(old).forEach((value) => {
-			if (newSave[value] !== undefined) {
-				newSave[value].chapterId = old[value].chapter;
-				newSave[value].name = old[value].name;
-				newSave[value].lastRead = old[value].lastRead;
-				newSave.history?.push(parseInt(value));
+	loadHistory = (titles: Title[], old: MyMangaDexHistory): number[] => {
+		const history: number[] = [];
+		for (const key in old) {
+			const titleId = parseInt(key);
+			const found = Title.findInCollection(titles, titleId);
+			if (found >= 0) {
+				let title = titles[found];
+				title.lastChapter = old[key].chapter;
+				title.name = old[key].name;
+				title.lastRead = old[key].lastRead;
+				history.push(titleId);
 			}
-		});
+		}
+		return history;
 	};
 
-	convertTitle = (old: MyMangaDexTitle): Title => {
+	convertTitle = (old: MyMangaDexTitle): FullTitle => {
 		return {
 			services: {
 				mal: old.mal,
@@ -220,6 +234,6 @@ export class MyMangaDex extends ExtensionSave {
 			},
 			lastTitle: old.lastTitle,
 			chapters: old.chapters,
-		} as Title;
+		};
 	};
 }

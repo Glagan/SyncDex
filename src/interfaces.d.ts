@@ -6,23 +6,6 @@ interface Progress {
 	volume?: number;
 }
 
-interface Title {
-	services: { [key in ServiceKey]?: number | string };
-	progress: Progress;
-	chapters: number[];
-	initial?: {
-		start: number;
-		end: number;
-		status: Status;
-	};
-	lastTitle?: number;
-	lastCheck?: number;
-	// History
-	chapterId?: number;
-	name?: string;
-	lastRead?: number;
-}
-
 interface HistoryList {
 	[key: number]: number;
 }

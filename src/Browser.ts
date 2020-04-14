@@ -9,8 +9,8 @@ export const setBrowser = ((): (() => void) => {
 		window.browser = window.chrome;
 		const chromeGet = chrome.storage.local.get.bind(chrome.storage.local);
 		browser.storage.local.get = <T>(
-			key: string[] | string
-		): Promise<Record<string, T> | undefined> => {
+			key: string[] | string | null
+		): Promise<Record<string, any> | Record<string, T> | undefined> => {
 			return new Promise((resolve) => chromeGet(key, resolve));
 		};
 		const chromeSet = chrome.storage.local.set.bind(chrome.storage.local);

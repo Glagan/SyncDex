@@ -26,7 +26,7 @@ declare const chrome: {
 	storage: {
 		local: {
 			get: <T>(
-				key: string[] | string,
+				key: string[] | string | null,
 				resolve?: () => void
 			) => Promise<Record<string, T> | undefined>;
 			set: (data: Object, resolve?: () => void) => Promise<any>;
@@ -49,7 +49,9 @@ declare const browser: {
 	};
 	storage: {
 		local: {
-			get: <T>(key: string[] | string) => Promise<Record<string, T> | undefined>;
+			get: <T>(
+				key: string[] | string | null
+			) => Promise<Record<string, any> | Record<string, T> | undefined>;
 			set: (data: Object) => Promise<any>;
 			remove: (key: string) => Promise<any>;
 			clear: () => Promise<any>;
