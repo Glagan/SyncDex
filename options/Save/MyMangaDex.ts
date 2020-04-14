@@ -3,7 +3,7 @@ import { ExportedSave } from '../../src/interfaces';
 import { LocalStorage } from '../../src/Storage';
 import { ExtensionSave } from './ExtensionSave';
 import { Options } from '../../src/Options';
-import { Title, FullTitle } from '../../src/Title';
+import { Title, FullTitle, TitleCollection } from '../../src/Title';
 
 interface MyMangaDexHistoryEntry {
 	chapter: number;
@@ -111,9 +111,9 @@ export class MyMangaDex extends ExtensionSave {
 		reader.onload = async (): Promise<void> => {
 			if (typeof reader.result == 'string') {
 				try {
-					let newSave: ExportedSave = {};
 					const titleList: string[] = [];
-					let titles: Title[] = [];
+					let titles = new TitleCollection();
+					let history: number[] | undefined = undefined;
 					let data = JSON.parse(reader.result) as MyMangaDexSave;
 					// Options
 					if (data.options) {
@@ -123,29 +123,27 @@ export class MyMangaDex extends ExtensionSave {
 					Object.keys(data).forEach((value): void => {
 						if (value !== 'options' && value !== 'history') {
 							titleList.push(value);
-							titles.push(new Title(parseInt(value), this.convertTitle(data[value])));
+							titles.add(new Title(parseInt(value), this.convertTitle(data[value])));
 						}
 					});
 					if (merge) {
-						this.mergeTitles(await Title.getAll(titleList), titles);
+						this.mergeTitles(await TitleCollection.get(titleList), titles);
 					}
 					// History
 					if (Options.biggerHistory && data.history) {
-						newSave.history = this.loadHistory(titles, data.history);
+						history = this.loadHistory(titles, data.history);
 						if (merge) {
-							newSave.history.concat(data.history.list);
+							history.concat(data.history.list);
 						}
-					}
-					// Add each titles to the save
-					for (let index = 0, len = titles.length; index < len; index++) {
-						const title = titles[index];
-						newSave[title.id] = title.toSave();
 					}
 					// Save
 					if (!merge) {
 						await LocalStorage.clear();
 					}
-					await LocalStorage.raw(newSave);
+					await titles.save();
+					if (history) {
+						await LocalStorage.set('history', history);
+					}
 					await Options.save(); // TODO: Add MyAnimeList service
 					// TODO: Reload everything
 					this.end();
@@ -208,16 +206,15 @@ export class MyMangaDex extends ExtensionSave {
 		};
 	};
 
-	loadHistory = (titles: Title[], old: MyMangaDexHistory): number[] => {
+	loadHistory = (titles: TitleCollection, old: MyMangaDexHistory): number[] => {
 		const history: number[] = [];
 		for (const key in old) {
 			const titleId = parseInt(key);
-			const found = Title.findInCollection(titles, titleId);
-			if (found >= 0) {
-				let title = titles[found];
-				title.lastChapter = old[key].chapter;
-				title.name = old[key].name;
-				title.lastRead = old[key].lastRead;
+			const found = titles.find(titleId);
+			if (found !== undefined) {
+				found.lastChapter = old[key].chapter;
+				found.name = old[key].name;
+				found.lastRead = old[key].lastRead;
 				history.push(titleId);
 			}
 		}

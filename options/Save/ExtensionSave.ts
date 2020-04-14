@@ -1,24 +1,24 @@
 import { ExportedSave } from '../../src/interfaces';
 import { ServiceSave } from './Save';
 import { Options } from '../../src/Options';
-import { FullTitle, Title } from '../../src/Title';
+import { FullTitle, Title, TitleCollection } from '../../src/Title';
 
 export abstract class ExtensionSave extends ServiceSave {
-	mergeTitles = (currentSave: Title[], newSave: Title[]): void => {
+	mergeTitles = (currentSave: TitleCollection, newSave: TitleCollection): void => {
 		for (let index = 0, len = currentSave.length; index < len; index++) {
-			const curTitle = currentSave[index];
-			const found = Title.findInCollection(newSave, curTitle.id);
-			if (found < 0) {
-				newSave.push(curTitle);
+			const curTitle = currentSave.collection[index];
+			if (curTitle.new) continue;
+			const found = newSave.find(curTitle.id);
+			if (found === undefined) {
+				newSave.add(curTitle);
 			} else {
-				const newTitle: FullTitle = newSave[found];
-				if (newTitle.progress.chapter < curTitle.progress.chapter) {
-					newTitle.progress = curTitle.progress;
+				if (found.progress.chapter < curTitle.progress.chapter) {
+					found.progress = curTitle.progress;
 				}
-				if (!newTitle.initial && curTitle.initial) {
-					newTitle.initial = curTitle.initial;
+				if (!found.initial && curTitle.initial) {
+					found.initial = curTitle.initial;
 				}
-				newTitle.services = Object.assign({}, curTitle.services, newTitle.services);
+				found.services = Object.assign({}, curTitle.services, found.services);
 				// Update all 'number' properties to select the highest ones
 				type NumberKey = Pick<
 					FullTitle,
@@ -32,16 +32,16 @@ export abstract class ExtensionSave extends ServiceSave {
 				];
 				for (let index = 0; index < lastKeys.length; index++) {
 					const key = lastKeys[index] as keyof NumberKey;
-					if (newTitle[key] && curTitle[key]) {
-						newTitle[key] = Math.max(newTitle[key] as number, curTitle[key] as number);
+					if (found[key] && curTitle[key]) {
+						found[key] = Math.max(found[key] as number, curTitle[key] as number);
 					}
 				}
 				// Merge chapters array
-				newTitle.chapters = newTitle.chapters.concat(curTitle.chapters);
-				newTitle.chapters.sort((a, b) => b - a);
-				if (newTitle.chapters.length > Options.chaptersSaved) {
-					const diff = Options.chaptersSaved - newTitle.chapters.length;
-					newTitle.chapters.splice(-diff, diff);
+				found.chapters = found.chapters.concat(curTitle.chapters);
+				found.chapters.sort((a, b) => b - a);
+				if (found.chapters.length > Options.chaptersSaved) {
+					const diff = Options.chaptersSaved - found.chapters.length;
+					found.chapters.splice(-diff, diff);
 				}
 			}
 		}

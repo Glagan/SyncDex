@@ -100,37 +100,6 @@ export class Title implements FullTitle {
 		return new Title(rid, Title.toTitle(title));
 	}
 
-	static findInCollection(collection: Title[], id: number): number {
-		for (let index = 0, len = collection.length; index < len; index++) {
-			if (collection[index].id === id) return index;
-		}
-		return -1;
-	}
-
-	static async getAll(list?: string[] | number[]): Promise<Title[]> {
-		let titles: Title[] = [];
-		if (list === undefined) {
-			const localTitles = (await LocalStorage.getAll()) as ExportedSave;
-			for (const key in localTitles) {
-				if (key !== 'options' && key != 'history') {
-					titles.push(new Title(parseInt(key), Title.toTitle(localTitles[key])));
-				}
-			}
-		} else {
-			const localTitles = await LocalStorage.getAll<SaveTitle>(list);
-			if (localTitles !== undefined) {
-				for (let index = 0, len = list.length; index < len; index++) {
-					const titleId: number =
-						typeof list[index] === 'number'
-							? (list[index] as number)
-							: parseInt(list[index] as string);
-					titles.push(new Title(titleId, Title.toTitle(localTitles[titleId])));
-				}
-			}
-		}
-		return titles;
-	}
-
 	toSave = (): SaveTitle => {
 		const mapped: SaveTitle = {
 			s: this.services,
@@ -156,8 +125,68 @@ export class Title implements FullTitle {
 	 * Convert a Title to a SaveTitle to follow the save schema and save it in LocalStorage
 	 */
 	save = async (): Promise<void> => {
-		LocalStorage.set(this.id, this.toSave());
+		return LocalStorage.set(this.id, this.toSave());
 	};
 }
 
-// TODO: TitleCollection ?
+export class TitleCollection {
+	private counter = 0;
+	collection: Title[] = [];
+
+	constructor(titles: Title[] = []) {
+		this.collection = titles;
+	}
+
+	add = (title: Title): void => {
+		this.collection.push(title);
+	};
+
+	get length(): number {
+		return this.collection.length;
+	}
+
+	static async get(list?: number[] | string[]): Promise<TitleCollection> {
+		let collection = new TitleCollection();
+		if (list === undefined) {
+			const localTitles = (await LocalStorage.getAll()) as ExportedSave;
+			for (const key in localTitles) {
+				if (key !== 'options' && key != 'history') {
+					collection.add(new Title(parseInt(key), Title.toTitle(localTitles[key])));
+				}
+			}
+		} else {
+			const localTitles = await LocalStorage.getAll<SaveTitle>(list);
+			if (localTitles !== undefined) {
+				for (let index = 0, len = list.length; index < len; index++) {
+					const titleId: number =
+						typeof list[index] === 'number'
+							? (list[index] as number)
+							: parseInt(list[index] as string);
+					if (localTitles[titleId] === undefined) {
+						collection.add(new Title(titleId));
+					} else {
+						collection.add(new Title(titleId, Title.toTitle(localTitles[titleId])));
+					}
+				}
+			}
+		}
+		return collection;
+	}
+
+	find = (id: number): Title | undefined => {
+		for (let index = 0, len = this.collection.length; index < len; index++) {
+			const title = this.collection[index];
+			if (title.id === id) return title;
+		}
+		return undefined;
+	};
+
+	save = async (): Promise<void> => {
+		const mapped: { [key: number]: SaveTitle } = {};
+		for (let index = 0, len = this.collection.length; index < len; index++) {
+			const title = this.collection[index];
+			mapped[title.id] = title.toSave();
+		}
+		return LocalStorage.raw(mapped);
+	};
+}

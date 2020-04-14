@@ -2,7 +2,7 @@ import { ExportedSave } from '../../src/interfaces';
 import { AvailableOptions, Options } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
 import { ExtensionSave } from './ExtensionSave';
-import { Title } from '../../src/Title';
+import { Title, TitleCollection } from '../../src/Title';
 import { DOM } from '../../src/DOM';
 
 export class SyncDex extends ExtensionSave {
@@ -41,9 +41,9 @@ export class SyncDex extends ExtensionSave {
 		reader.onload = async (): Promise<void> => {
 			if (typeof reader.result == 'string') {
 				try {
-					const newSave = {} as ExportedSave;
 					const titleList: string[] = [];
-					let titles: Title[] = [];
+					let titles: TitleCollection = new TitleCollection();
+					let history: number[] | undefined = undefined;
 					let data = JSON.parse(reader.result) as ExportedSave;
 					// Options
 					if (data.options !== undefined) {
@@ -58,36 +58,34 @@ export class SyncDex extends ExtensionSave {
 					Object.keys(data).forEach((value): void => {
 						if (value !== 'options' && value !== 'history') {
 							titleList.push(value);
-							titles.push(new Title(parseInt(value), data[value]));
+							titles.add(new Title(parseInt(value), data[value]));
 						}
 					});
 					if (merge) {
-						this.mergeTitles(await Title.getAll(titleList), titles);
+						this.mergeTitles(await TitleCollection.get(titleList), titles);
 					}
 					// History
 					if (Options.biggerHistory && data.history) {
-						newSave.history = [];
+						history = [];
 						if (merge) {
 							const currentHistory = await LocalStorage.get('history');
 							if (currentHistory !== undefined) {
-								newSave.history.concat(data.history);
+								history.concat(data.history);
 							} else {
-								newSave.history = data.history;
+								history = data.history;
 							}
 						} else {
-							newSave.history = data.history;
+							history = data.history;
 						}
-					}
-					// Add each titles to the save
-					for (let index = 0, len = titles.length; index < len; index++) {
-						const title = titles[index];
-						newSave[title.id] = title.toSave();
 					}
 					// Save
 					if (!merge) {
 						await LocalStorage.clear();
 					}
-					await LocalStorage.raw(newSave);
+					await titles.save();
+					if (history) {
+						await LocalStorage.set('history', history);
+					}
 					await Options.save();
 					// TODO: Reload everything
 					this.end();

@@ -2,7 +2,7 @@ import { Router } from './Router';
 import { Options } from './Options';
 import { MangaDex } from './MangaDex';
 import { DOM } from './DOM';
-import { Title } from './Title';
+import { TitleCollection } from './Title';
 
 console.log('SyncDex :: SyncDex');
 
@@ -51,7 +51,6 @@ export class SyncDex {
 			return;
 		const md = new MangaDex(document);
 		const groups = md.getChaptersGroups();
-		const titles: { [key: number]: Title | undefined | null } = {};
 		const container = Options.thumbnail
 			? (() => {
 					const container = DOM.create('div', {
@@ -63,18 +62,15 @@ export class SyncDex {
 					return container;
 			  })()
 			: undefined;
+		const titles = await TitleCollection.get(
+			groups.map((group) => {
+				return group.titleId;
+			})
+		);
 		for (let index = 0; index < groups.length; index++) {
 			const group = groups[index];
-			let title = titles[group.titleId];
-			if (title === undefined) {
-				title = await Title.get(group.titleId);
-				if (title === undefined) {
-					title = null;
-				}
-				titles[group.titleId] = title;
-			}
-			console.log(title);
-			if (title !== null) {
+			const title = titles.find(group.titleId);
+			if (title !== undefined && !title.new) {
 				group.hide(title.progress);
 				group.highlight(title.progress);
 			}
