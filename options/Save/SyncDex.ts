@@ -1,7 +1,7 @@
 import { ExportedSave } from '../../src/interfaces';
-import { AvailableOptions, Options } from '../../src/Options';
+import { Options, AvailableOptions } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
-import { ExtensionSave } from './ExtensionSave';
+import { ExtensionSave, ImportSummary } from './ExtensionSave';
 import { Title, TitleCollection } from '../../src/Title';
 import { DOM } from '../../src/DOM';
 
@@ -9,6 +9,7 @@ export class SyncDex extends ExtensionSave {
 	name: string = 'SyncDex';
 	key: string = 'sc';
 
+	busy: boolean = false;
 	form?: HTMLFormElement;
 
 	import = (): void => {
@@ -18,7 +19,7 @@ export class SyncDex extends ExtensionSave {
 			[
 				{
 					type: 'checkbox',
-					text: 'Override instead of merge',
+					text: 'Override (erase current save)',
 					name: 'override',
 				},
 				{
@@ -30,7 +31,30 @@ export class SyncDex extends ExtensionSave {
 		);
 	};
 
-	export = (): void => {};
+	export = async (): Promise<void> => {
+		if (this.block && !this.busy) {
+			this.busy = true;
+			this.block.classList.add('loading');
+			let data = await LocalStorage.getAll();
+			let downloadLink = DOM.create('a', {
+				style: {
+					display: 'none',
+				},
+				attributes: {
+					download: 'SyncDex.json',
+					target: '_blank',
+					href: `data:application/json;charset=utf-8,${encodeURIComponent(
+						JSON.stringify(data)
+					)}`,
+				},
+			});
+			document.body.appendChild(downloadLink);
+			downloadLink.click();
+			downloadLink.remove();
+			this.block.classList.remove('loading');
+			this.busy = false;
+		}
+	};
 
 	handle = (event: Event): void => {
 		event.preventDefault();
@@ -41,6 +65,12 @@ export class SyncDex extends ExtensionSave {
 		reader.onload = async (): Promise<void> => {
 			if (typeof reader.result == 'string') {
 				try {
+					let summary: ImportSummary = {
+						options: 0,
+						history: false,
+						total: 0,
+						invalid: 0,
+					};
 					const titleList: string[] = [];
 					let titles: TitleCollection = new TitleCollection();
 					let history: number[] | undefined = undefined;
@@ -48,7 +78,7 @@ export class SyncDex extends ExtensionSave {
 					// Options
 					if (data.options !== undefined) {
 						for (const key in data.options) {
-							Options.set(
+							summary.options += this.assignValidOption(
 								key as keyof AvailableOptions,
 								data.options[key as keyof AvailableOptions]
 							);
@@ -57,8 +87,13 @@ export class SyncDex extends ExtensionSave {
 					// Merge or override Titles
 					Object.keys(data).forEach((value): void => {
 						if (value !== 'options' && value !== 'history') {
-							titleList.push(value);
-							titles.add(new Title(parseInt(value), data[value]));
+							if (!isNaN(parseInt(value)) && this.isValidTitle(data[value])) {
+								titleList.push(value);
+								titles.add(new Title(parseInt(value), data[value]));
+							} else {
+								summary.invalid++;
+							}
+							summary.total++;
 						}
 					});
 					if (merge) {
@@ -77,6 +112,15 @@ export class SyncDex extends ExtensionSave {
 						} else {
 							history = data.history;
 						}
+						summary.history = false;
+					}
+					// Check if we did not import anything at all
+					if (
+						(summary.total == 0 || summary.total == summary.invalid) &&
+						summary.options == 0 &&
+						!summary.history
+					) {
+						throw 'Invalid file !';
 					}
 					// Save
 					if (!merge) {
@@ -87,8 +131,8 @@ export class SyncDex extends ExtensionSave {
 						await LocalStorage.set('history', history);
 					}
 					await Options.save();
-					// TODO: Reload everything
-					this.end();
+					this.end(summary);
+					this.manager.reload();
 				} catch (error) {
 					console.error(error);
 					this.displayError('Invalid file !');
@@ -104,19 +148,16 @@ export class SyncDex extends ExtensionSave {
 		}
 	};
 
-	end = (): void => {
-		this.manager.clear();
-		this.manager.header('Done Importing SyncDex');
-		this.displaySuccess([
-			DOM.text('Save successfully imported !'),
-			DOM.space(),
-			DOM.create('button', {
-				class: 'action',
-				textContent: 'Go Back',
-				events: {
-					click: () => this.manager.reset(),
-				},
-			}),
-		]);
+	isValidTitle = (title: Record<string, any>): boolean => {
+		return (
+			typeof title.s === 'object' &&
+			typeof title.p === 'object' &&
+			Array.isArray(title.c) &&
+			(title.lt === undefined || typeof title.lt === 'number') &&
+			(title.lc === undefined || typeof title.lc === 'number') &&
+			(title.id === undefined || typeof title.id === 'number') &&
+			(title.lr === undefined || typeof title.lr === 'number') &&
+			(title.n === undefined || typeof title.n === 'string')
+		);
 	};
 }

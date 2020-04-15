@@ -37,6 +37,7 @@ export class MenuHighlight {
 			() => window.requestAnimationFrame(() => this.frame(node.scrollTop)),
 			{ passive: true }
 		);
+		this.frame(node.scrollTop);
 	}
 
 	frame = (scrollTop: number): void => {
@@ -60,7 +61,11 @@ export class MenuHighlight {
 
 	activateMenu = (index: number): void => {
 		this.menus[this.activeMenu].link.classList.remove('active');
+		this.menus[this.activeMenu].header.classList.remove('active');
+		this.menus[this.activeMenu].header.nextElementSibling?.classList.remove('active');
 		this.activeMenu = index;
 		this.menus[this.activeMenu].link.classList.add('active');
+		this.menus[this.activeMenu].header.classList.add('active');
+		this.menus[this.activeMenu].header.nextElementSibling?.classList.add('active');
 	};
 }

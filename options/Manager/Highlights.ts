@@ -94,9 +94,13 @@ export class HighlightsManager {
 	}
 
 	updateAll = (): void => {
-		const colors = Options.colors.highlights;
+		// Remove previous
+		for (let index = 0; index < this.list.length; index++) {
+			this.list[index].node.remove();
+		}
+		// Add current
 		this.list = [];
-		for (let index = 0; index < colors.length; index++) {
+		for (let index = 0; index < Options.colors.highlights.length; index++) {
 			const color = new Highlights(index);
 			color.bind(this);
 			this.node.insertBefore(color.node, this.node.lastElementChild);

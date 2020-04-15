@@ -82,10 +82,15 @@ class ServiceOptions {
 				this.node.parentElement.firstElementChild
 			);
 		});
+		let busy = false;
 		this.checkStatusButton.addEventListener('click', () => {
-			this.node.classList.remove('active', 'inactive');
-			this.node.classList.add('loading');
-			this.service.loggedIn().then((loggedIn) => this.updateStatus(manager, loggedIn));
+			if (!busy) {
+				busy = true;
+				this.node.classList.remove('active', 'inactive');
+				this.node.classList.add('loading');
+				this.service.loggedIn().then((loggedIn) => this.updateStatus(manager, loggedIn));
+				busy = false;
+			}
 		});
 		this.removeButton.addEventListener('click', () => {
 			// Remove service from Service list and assign new main if possible
@@ -164,13 +169,7 @@ export class ServiceManager {
 		this.noServices = document.getElementById('no-service') as HTMLElement;
 		this.inactiveWarnig = document.getElementById('inactive-service') as HTMLElement;
 		this.createAddForm();
-		for (let index = 0; index < Options.services.length; index++) {
-			const serviceName = Options.services[index] as ServiceName;
-			this.addService(serviceName);
-		}
-		if (Options.services.length == 0) {
-			this.noServices.classList.remove('hidden');
-		}
+		this.updateAll();
 	}
 
 	addService = (serviceName: ServiceName): void => {
@@ -263,6 +262,23 @@ export class ServiceManager {
 		} else if (!status) {
 			this.inactiveServices.push(name);
 			this.inactiveWarnig.classList.remove('hidden');
+		}
+	};
+
+	updateAll = (): void => {
+		// Remove previous
+		for (let index = 0; index < this.services.length; index++) {
+			this.services[index].node.remove();
+		}
+		this.services = [];
+		this.inactiveServices = [];
+		// Insert current Services
+		for (let index = 0; index < Options.services.length; index++) {
+			const serviceName = Options.services[index] as ServiceName;
+			this.addService(serviceName);
+		}
+		if (Options.services.length == 0) {
+			this.noServices.classList.remove('hidden');
 		}
 	};
 }

@@ -19,7 +19,7 @@ class OptionsManager {
 	importManager?: SaveImportManager;
 	exportManager?: SaveExportManager;
 
-	initialize = async (): Promise<void> => {
+	execute = async (): Promise<void> => {
 		// await LocalStorage.clear();
 		await Options.load();
 		this.highlightsManager = new HighlightsManager();
@@ -31,10 +31,12 @@ class OptionsManager {
 			document.getElementById('service-list') as HTMLElement
 		);
 		this.importManager = new SaveImportManager(
-			document.getElementById('import-container') as HTMLElement
+			document.getElementById('import-container') as HTMLElement,
+			this.reload
 		);
 		this.exportManager = new SaveExportManager(
-			document.getElementById('export-container') as HTMLElement
+			document.getElementById('export-container') as HTMLElement,
+			this.reload
 		);
 		// Delete save
 		const deleteSave = document.getElementById('delete-save');
@@ -43,10 +45,14 @@ class OptionsManager {
 			let clickCount = 0;
 			deleteSave.addEventListener('click', async () => {
 				if (clickCount == 1) {
-					Object.assign(Options, DefaultOptions);
+					window.clearTimeout(clearClickCount);
+					deleteSave.classList.add('loading');
+					await LocalStorage.clear();
+					Options.reset();
 					await Options.save();
 					this.reload();
 					clickCount = 0;
+					deleteSave.classList.remove('loading');
 					deleteSave.style.fontSize = '1rem';
 				} else {
 					deleteSave.style.fontSize = '2rem';
@@ -62,9 +68,15 @@ class OptionsManager {
 		}
 	};
 
-	reload = (): void => {};
+	reload = (): void => {
+		this.highlightsManager?.updateAll();
+		this.colorManager?.updateAll();
+		this.checkboxManager?.updateAll();
+		this.inputManager?.updateAll();
+		this.serviceManager?.updateAll();
+	};
 }
 
 setBrowser();
 const manager = new OptionsManager();
-manager.initialize();
+manager.execute();

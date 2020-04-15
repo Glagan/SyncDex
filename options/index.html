@@ -23,307 +23,338 @@
 			<li data-link="history"><i class="lni lni-list"></i> History</li>
 			<li data-link="import"><i class="lni lni-upload"></i> Import</li>
 			<li data-link="export"><i class="lni lni-download"></i> Export</li>
+			<li data-link="other"><i class="lni lni-more-alt"></i> Other</li>
 			<li data-link="delete"><i class="lni lni-trash"></i> Delete</li>
 		</ul>
 	</div>
 	<div id="content">
 		<h1 id="services"><i class="lni lni-world"></i> Services</h1>
-		<div id="no-service" class="block notification danger hidden">
-			You have no active Services. <b>SyncDex</b> won't do anything until you add one.
+		<div>
+			<div id="no-service" class="block notification danger hidden">
+				You have no active Services. <b>SyncDex</b> won't do anything until you add one.
+			</div>
+			<div id="inactive-service" class="block notification warning hidden">
+				There is enabled but inactive services. Click the reload button to fix them.
+			</div>
+			<div id="service-list" class="services"></div>
 		</div>
-		<div id="inactive-service" class="block notification warning hidden">
-			There is enabled but inactive services. Click the reload button to fix them.
-		</div>
-		<div id="service-list" class="services"></div>
 		<h1 id="colors"><i class="lni lni-brush"></i> Colors</h1>
-		<div class="block notification info">
-			Colors that exist in <a href="http://www.color-hex.com/color-names.html" target="blank">HTML</a> are
-			accepted but you
-			can also use values like <b>#RRGGBB</b>, <b>rgb(red, green, blue)</b> or with alpha channel
-			<b>rgba(red, green, blue, alpha)</b>.<br />
-			If you want to disable one of the highlights you can turn it off globally or set a color to
-			<b>transparent</b>.
-		</div>
-		<div class="block">
-			<h2>Highlight</h2>
-			<p>Paint rows in chapters lists to quickly identify which chapters you can read next or that you already
-				read.</p>
-			<div class="checkbox" data-checkbox="highlight">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
+		<div>
+			<div class="block notification info">
+				Colors that exist in <a href="http://www.color-hex.com/color-names.html" target="blank">HTML</a> are
+				accepted but you
+				can also use values like <b>#RRGGBB</b>, <b>rgb(red, green, blue)</b> or with alpha channel
+				<b>rgba(red, green, blue, alpha)</b>.<br />
+				If you want to disable one of the highlights you can turn it off globally or set a color to
+				<b>transparent</b>.
 			</div>
-		</div>
-		<div class="block">
-			<h2>Next Chapter</h2>
-			<p>Color of the next chapter of a title.</p>
-			<div class="color-input" data-color="nextChapter">
-				<input type="text" name="nextChapter" placeholder="Next chapter color" /><span class="color"></span>
+			<div class="block">
+				<h2>Highlight</h2>
+				<p>Paint rows in chapters lists to quickly identify which chapters you can read next or that you already
+					read.</p>
+				<div class="checkbox" data-checkbox="highlight">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
 			</div>
-		</div>
-		<div class="block">
-			<h2>Higher Chapters</h2>
-			<p>Color of all <b>higher</b> chapters than your last read chapter.</p>
-			<div class="color-input" data-color="higherChapter">
-				<input type="text" name="higherChapter" placeholder="Higher chapters color" /><span
-					class="color"></span>
+			<div class="block">
+				<h2>Next Chapter</h2>
+				<p>Color of the next chapter of a title.</p>
+				<div class="color-input" data-color="nextChapter">
+					<input type="text" name="nextChapter" placeholder="Next chapter color" /><span class="color"></span>
+				</div>
 			</div>
-		</div>
-		<div class="block">
-			<h2>Lower Chapters</h2>
-			<p>Color of all <b>lower</b> chapters than your last read chapter.</p>
-			<div class="color-input" data-color="lowerChapter">
-				<input type="text" name="lowerChapter" placeholder="Lower chapter color" /><span class="color"></span>
+			<div class="block">
+				<h2>Higher Chapters</h2>
+				<p>Color of all <b>higher</b> chapters than your last read chapter.</p>
+				<div class="color-input" data-color="higherChapter">
+					<input type="text" name="higherChapter" placeholder="Higher chapters color" /><span
+						class="color"></span>
+				</div>
 			</div>
-		</div>
-		<div class="block">
-			<h2>Current Chapters</h2>
-			<p>Colors for all <b>current</b> chapters.<br />
-				<b>SyncDex</b> will cycle through them if you add multiple of them.</p>
-			<div id="highlights" class="highlights"></div>
-		</div>
-		<div class="block notification info">
-			The following option is only applied on a <b>title</b> page.
-		</div>
-		<div class="block">
-			<h2>Opened Chapters</h2>
-			<p>Colors for chapters that you opened if the "<b>Save opened chapters</b>" option is enabled.</p>
-			<div class="color-input" data-color="openedChapter">
-				<input type="text" name="openedChapter" placeholder="Opened chapters color" /><span
-					class="color"></span>
+			<div class="block">
+				<h2>Lower Chapters</h2>
+				<p>Color of all <b>lower</b> chapters than your last read chapter.</p>
+				<div class="color-input" data-color="lowerChapter">
+					<input type="text" name="lowerChapter" placeholder="Lower chapter color" /><span
+						class="color"></span>
+				</div>
+			</div>
+			<div class="block">
+				<h2>Current Chapters</h2>
+				<p>Colors for all <b>current</b> chapters.<br />
+					<b>SyncDex</b> will cycle through them if you add multiple of them.</p>
+				<div id="highlights" class="highlights"></div>
+			</div>
+			<div class="block notification info">
+				The following option is only applied on a <b>title</b> page.
+			</div>
+			<div class="block">
+				<h2>Opened Chapters</h2>
+				<p>Colors for chapters that you opened if the "<b>Save opened chapters</b>" option is enabled.</p>
+				<div class="color-input" data-color="openedChapter">
+					<input type="text" name="openedChapter" placeholder="Opened chapters color" /><span
+						class="color"></span>
+				</div>
 			</div>
 		</div>
 		<h1 id="updates"><i class="lni lni-bookmark"></i> Updates</h1>
-		<div class="block notification info">
-			The following options change the behavior while you are reading.
-		</div>
-		<div class="block">
-			<h2>Save opened chapters</h2>
-			<p>Keep a list of all opened chapters when read.</p>
-			<div class="checkbox" data-checkbox="saveChapters">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
-				<div class="dependency">
-					<input type="number" data-input="chaptersSaved" placeholder="Amount of saved chapters" min="1"
-						max="500" />
+		<div>
+			<div class="block notification info">
+				The following options change the behavior while you are reading.
+			</div>
+			<div class="block">
+				<h2>Save opened chapters</h2>
+				<p>Keep a list of all opened chapters when read.</p>
+				<div class="checkbox" data-checkbox="saveChapters">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+					<div class="dependency">
+						<input type="number" data-input="chaptersSaved" placeholder="Amount of saved chapters" min="1"
+							max="500" />
+					</div>
 				</div>
 			</div>
-		</div>
-		<div class="block">
-			<h2>Save only next chapter</h2>
-			<p>Save the chapter you are reading only if it's the next one.<br />
-				If "<b>Confirm Chapter save</b>" is enabled it will asks you if you still want to update it, or else it
-				will do nothing.</p>
-			<div class="checkbox" data-checkbox="saveOnlyNext">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
+			<div class="block">
+				<h2>Save only next chapter</h2>
+				<p>Save the chapter you are reading only if it's the next one.<br />
+					If "<b>Confirm Chapter save</b>" is enabled it will asks you if you still want to update it, or else
+					it
+					will do nothing.</p>
+				<div class="checkbox" data-checkbox="saveOnlyNext">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
 			</div>
-		</div>
-		<div class="block">
-			<h2>Save only higher chapter</h2>
-			<p>Save the chapter you are reading only if it's <b>higher</b>.<br />
-				If "<b>Confirm Chapter save</b>" is enabled it will asks you if you still want to update it, or else it
-				will do nothing.</p>
-			<div class="checkbox" data-checkbox="saveOnlyHigher">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
+			<div class="block">
+				<h2>Save only higher chapter</h2>
+				<p>Save the chapter you are reading only if it's <b>higher</b>.<br />
+					If "<b>Confirm Chapter save</b>" is enabled it will asks you if you still want to update it, or else
+					it
+					will do nothing.</p>
+				<div class="checkbox" data-checkbox="saveOnlyHigher">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
 			</div>
-		</div>
-		<div class="block">
-			<h2>Confirm Chapter</h2>
-			<p>Asks if you want to update your list(s) to the current chapter you are reading.</p>
-			<div class="checkbox" data-checkbox="confirmChapter">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
+			<div class="block">
+				<h2>Confirm Chapter</h2>
+				<p>Asks if you want to update your list(s) to the current chapter you are reading.</p>
+				<div class="checkbox" data-checkbox="confirmChapter">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
 			</div>
-		</div>
-		<div class="block">
-			<h2>Update only if in list</h2>
-			<p>Update your list(s) only if the title you are reading is <b>already</b> in your <b>MangaDex</b> list.</p>
-			<div class="checkbox" data-checkbox="updateOnlyInList">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
+			<div class="block">
+				<h2>Update only if in list</h2>
+				<p>Update your list(s) only if the title you are reading is <b>already</b> in your <b>MangaDex</b> list.
+				</p>
+				<div class="checkbox" data-checkbox="updateOnlyInList">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
 			</div>
 		</div>
 		<h1 id="lists"><i class="lni lni-book"></i> Lists</h1>
-		<div class="block">
-			<h2>Hide Higher chapters</h2>
-			<p>Hide chapters that are <b>higher</b> than the last chapter you read.</p>
-			<div class="checkbox" data-checkbox="hideHigher">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
+		<div>
+			<div class="block">
+				<h2>Hide Higher chapters</h2>
+				<p>Hide chapters that are <b>higher</b> than the last chapter you read.</p>
+				<div class="checkbox" data-checkbox="hideHigher">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
 			</div>
-		</div>
-		<div class="block">
-			<h2>Hide Lower chapters</h2>
-			<p>Hide chapters that are <b>lower</b>> than the last chapter you read.</p>
-			<div class="checkbox" data-checkbox="hideLower">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
+			<div class="block">
+				<h2>Hide Lower chapters</h2>
+				<p>Hide chapters that are <b>lower</b>> than the last chapter you read.</p>
+				<div class="checkbox" data-checkbox="hideLower">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
 			</div>
-		</div>
-		<div class="block">
-			<h2>Hide Last chapters</h2>
-			<p>Hide the last chapter you read.</p>
-			<div class="checkbox" data-checkbox="hideLast">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
+			<div class="block">
+				<h2>Hide Last chapters</h2>
+				<p>Hide the last chapter you read.</p>
+				<div class="checkbox" data-checkbox="hideLast">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
 			</div>
-		</div>
-		<div class="block">
-			<h2>Display cover in lists</h2>
-			<p>Display the cover of the title when hovering a row inside lists.</p>
-			<div class="checkbox" data-checkbox="thumbnail">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
+			<div class="block">
+				<h2>Display cover in lists</h2>
+				<p>Display the cover of the title when hovering a row inside lists.</p>
+				<div class="checkbox" data-checkbox="thumbnail">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
+				<h2>Original cover</h2>
+				<p>Display the full size original cover of the title instead of a thumbnail.<br />
+					Do not enable this if you don't have a somehow good connection, some images can be big.</p>
+				<div class="checkbox" data-checkbox="originalThumbnail">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
 			</div>
-			<h2>Original cover</h2>
-			<p>Display the full size original cover of the title instead of a thumbnail.<br />
-				Do not enable this if you don't have a somehow good connection, some images can be big.</p>
-			<div class="checkbox" data-checkbox="originalThumbnail">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
-			</div>
-		</div>
-		<div class="block">
-			<h2>Check Service status</h2>
-			<p>Check the status of a title on a Service.<br />
-				This incrase the amount of requests to Services and is not recommended.<br />
-				It is actually useless if you <b>only</b> read on <b>MangaDex</b> through the site and with
-				<b>SyncDex</b> enable.<br />
-				This option can solve problems if you read and update your list through another application like
-				<b>Tachiyomi</b> on mobile and your <b>SyncDex</b> local status isn't up to date.<br />
-				There is an hard limit to the amount of requests that can be made and <b>SyncDex</b> will only try to
-				get the status of titles that could have changed, titles with chapters updated more than 15 minutes ago
-				and that haven't been already checked in the past hour.</p>
-			<div class="checkbox" data-checkbox="updateServicesInList">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
-			</div>
-		</div>
-		<h1 id="general"><i class="lni lni-bookmark"></i> General</h1>
-		<div class="block notification info">
-			The following options change what is displayed on <b>title</b>s page.
-		</div>
-		<div class="block">
-			<h2>Link to services</h2>
-			<p>Add links to all Services that are available and valid.</p>
-			<div class="checkbox" data-checkbox="linkToServices">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
-			</div>
-		</div>
-		<div class="block">
-			<h2>Display Overview</h2>
-			<p>Display the state of the title in your list for each Services you saved it to.</p>
-			<div class="checkbox" data-checkbox="showOverview">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
-			</div>
-			<h2>Overview for main Service only</h2>
-			<p>Display the above overview only for your main Service.</p>
-			<div class="checkbox" data-checkbox="overviewMainOnly">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
-			</div>
-		</div>
-		<h1 id="notifications"><i class="lni lni-bubble"></i> Notifications</h1>
-		<div class="block">
-			<h2>Display Notifications</h2>
-			<p>Display Notifications.<br />
-				Error notifications will still be displayed unless you also toggle them off below.<br />
-				Confirmation notifications will still be displayed.</p>
-			<div class="checkbox" data-checkbox="notifications">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
-			</div>
-		</div>
-		<div class="block">
-			<h2>Display Error Notifications</h2>
-			<p>Display Error Notifications.</p>
-			<div class="checkbox" data-checkbox="errorNotifications">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
-			</div>
-		</div>
-		<h1 id="history"><i class="lni lni-list"></i> History</h1>
-		<div class="block notification info">
-			The following options update the <b>History</b> page of <b>MangaDex</b> (<a
-				href="https://mangadex.org/history" rel="noreferrer noopener">https://mangadex.org/history</a>)
-		</div>
-		<div class="block">
-			<h2>Bigger History</h2>
-			<p>Save each titles you read and display a bigger history than the original 20 that <b>MangaDex</b> save.
-			</p>
-			<div class="checkbox" data-checkbox="biggerHistory">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
-				<div class="dependency">
-					<input type="number" data-input="historySize" placeholder="History size" min="21" max="1000" />
+			<div class="block">
+				<h2>Check Service status</h2>
+				<p>Check the status of a title on a Service.<br />
+					This incrase the amount of requests to Services and is not recommended.<br />
+					It is actually useless if you <b>only</b> read on <b>MangaDex</b> through the site and with
+					<b>SyncDex</b> enable.<br />
+					This option can solve problems if you read and update your list through another application like
+					<b>Tachiyomi</b> on mobile and your <b>SyncDex</b> local status isn't up to date.<br />
+					There is an hard limit to the amount of requests that can be made and <b>SyncDex</b> will only try
+					to
+					get the status of titles that could have changed, titles with chapters updated more than 15 minutes
+					ago
+					and that haven't been already checked in the past hour.</p>
+				<div class="checkbox" data-checkbox="updateServicesInList">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
 				</div>
 			</div>
 		</div>
-		<div class="block">
-			<h2>Display chapter status</h2>
-			<p>Highlight the covers to quickly see if you read the last chapter for a title.</p>
-			<div class="checkbox" data-checkbox="chapterStatus">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
+		<h1 id="general"><i class="lni lni-bookmark"></i> General</h1>
+		<div>
+			<div class="block notification info">
+				The following options change what is displayed on <b>title</b>s page.
+			</div>
+			<div class="block">
+				<h2>Link to services</h2>
+				<p>Add links to all Services that are available and valid.</p>
+				<div class="checkbox" data-checkbox="linkToServices">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
+			</div>
+			<div class="block">
+				<h2>Display Overview</h2>
+				<p>Display the state of the title in your list for each Services you saved it to.</p>
+				<div class="checkbox" data-checkbox="showOverview">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
+				<h2>Overview for main Service only</h2>
+				<p>Display the above overview only for your main Service.</p>
+				<div class="checkbox" data-checkbox="overviewMainOnly">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
+			</div>
+		</div>
+		<h1 id="notifications"><i class="lni lni-bubble"></i> Notifications</h1>
+		<div>
+			<div class="block">
+				<h2>Display Notifications</h2>
+				<p>Display Notifications.<br />
+					Error notifications will still be displayed unless you also toggle them off below.<br />
+					Confirmation notifications will still be displayed.</p>
+				<div class="checkbox" data-checkbox="notifications">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
+			</div>
+			<div class="block">
+				<h2>Display Error Notifications</h2>
+				<p>Display Error Notifications.</p>
+				<div class="checkbox" data-checkbox="errorNotifications">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
+			</div>
+		</div>
+		<h1 id="history"><i class="lni lni-list"></i> History</h1>
+		<div>
+			<div class="block notification info">
+				The following options update the <b>History</b> page of <b>MangaDex</b> (<a
+					href="https://mangadex.org/history" rel="noreferrer noopener">https://mangadex.org/history</a>)
+			</div>
+			<div class="block">
+				<h2>Bigger History</h2>
+				<p>Save each titles you read and display a bigger history than the original 20 that <b>MangaDex</b>
+					save.
+				</p>
+				<div class="checkbox" data-checkbox="biggerHistory">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+					<div class="dependency">
+						<input type="number" data-input="historySize" placeholder="History size" min="21" max="1000" />
+					</div>
+				</div>
+			</div>
+			<div class="block">
+				<h2>Display chapter status</h2>
+				<p>Highlight the covers to quickly see if you read the last chapter for a title.</p>
+				<div class="checkbox" data-checkbox="chapterStatus">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
 			</div>
 		</div>
 		<h1 id="import"><i class="lni lni-upload"></i> Import</h1>
-		<div class="block notification info">
-			<b>Importing</b> will only update your <b>SyncDex</b> save and is used to initialize <b>SyncDex</b>.<br />
-			If you wish to update any external Service, see <b><a href="#Export">Export</a></b>.
+		<div>
+			<div class="block notification info">
+				<b>Importing</b> will only update your <b>SyncDex</b> save and is used to initialize
+				<b>SyncDex</b>.<br />
+				If you wish to update any external Service, see <b><a href="#Export">Export</a></b>.
+			</div>
+			<div id="import-container"></div>
 		</div>
-		<div id="import-container"></div>
 		<h1 id="export"><i class="lni lni-download"></i> Export</h1>
-		<div class="block notification info">
-			<b>Exporting</b> will update your <b>online</b> save on the Service you choose using your <b>SyncDex</b>
-			save.<br />
-			You should <b><a href="#Import">Import</a></b> from somewhere before exporting to somewhere else !
+		<div>
+			<div class="block notification info">
+				<b>Exporting</b> will update your <b>online</b> save on the Service you choose using your <b>SyncDex</b>
+				save.<br />
+				You should <b><a href="#Import">Import</a></b> from somewhere before exporting to somewhere else !
+			</div>
+			<div id="export-container"></div>
 		</div>
-		<div id="export-container"></div>
 		<h1 id="other"><i class="lni lni-more"></i> Other</h1>
-		<!--<div class="block">
-			<h2>Use XHR</h2>
-			<p>Use the old XMLHttpRequest API to make Requests. Don't enable it.</p>
-			<div class="checkbox" data-checkbox="useXHR">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
+		<div>
+			<!--<div class="block">
+				<h2>Use XHR</h2>
+				<p>Use the old XMLHttpRequest API to make Requests. Don't enable it.</p>
+				<div class="checkbox" data-checkbox="useXHR">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
+			</div>-->
+			<div class="block">
+				<h2>Use <b>Mochi</b></h2>
+				<p>Use <a href="https://mochi.nikurasu.org/" rel="noreferrer noopener">Mochi</a> to get
+					Services links.</p>
+				<div class="checkbox" data-checkbox="useMochi">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
+				<h2>Allow low score</h2>
+				<p>Allow low score results from <b>Mochi</b>, it is not recommended since it could add and update
+					totally
+					unrelated titles to your list.</p>
+				<div class="checkbox" data-checkbox="acceptLowScore">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
 			</div>
-		</div>-->
-		<div class="block">
-			<h2>Use <b>Mochi</b></h2>
-			<p>Use <a href="https://mochi.nikurasu.org/" rel="noreferrer noopener">Mochi</a> to get
-				Services links.</p>
-			<div class="checkbox" data-checkbox="useMochi">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
-			</div>
-			<h2>Allow low score</h2>
-			<p>Allow low score results from <b>Mochi</b>, it is not recommended since it could add and update
-				totally
-				unrelated titles to your list.</p>
-			<div class="checkbox" data-checkbox="acceptLowScore">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
-			</div>
-		</div>
-		<div class="block">
-			<h2>Update MangaDex list</h2>
-			<p>Update the <b>status</b> of the titles in your <b>MangaDex</b> list when needed.</p>
-			<div class="checkbox" data-checkbox="updateMD">
-				<button type="button" class="on">Enabled</button>
-				<button type="button" class="off">Disabled</button>
+			<div class="block">
+				<h2>Update MangaDex list</h2>
+				<p>Update the <b>status</b> of the titles in your <b>MangaDex</b> list when needed.</p>
+				<div class="checkbox" data-checkbox="updateMD">
+					<button type="button" class="on">Enabled</button>
+					<button type="button" class="off">Disabled</button>
+				</div>
 			</div>
 		</div>
 		<h1 id="delete"><i class="lni lni-trash"></i> Delete</h1>
-		<div class="block notification danger">
-			Click the <b>Delete</b> button twice to <b>permanently erase</b> your save.<br/>
-			It can't be restored, <b><a href="#Export">Export</a></b> first if you want to keep a copy.
-		</div>
-		<div class="block center">
-			<button id="delete-save" type="button" class="danger">Delete</button>
+		<div>
+			<div class="block notification danger">
+				Click the <b>Delete</b> button twice to <b>permanently erase</b> your save.<br />
+				It can't be restored, <b><a href="#Export">Export</a></b> first if you want to keep a copy.
+			</div>
+			<div class="block center">
+				<button id="delete-save" type="button" class="danger">Delete</button>
+			</div>
 		</div>
 	</div>
 	<script src="SyncDex_options.js"></script>

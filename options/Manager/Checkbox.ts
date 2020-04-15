@@ -1,16 +1,24 @@
 import { Options, AvailableOptions } from '../../src/Options';
 
+// https://medium.com/dailyjs/typescript-create-a-condition-based-subset-types-9d902cea5b8c#6f75
+type BooleanOptions = Pick<
+	AvailableOptions,
+	{
+		[K in keyof AvailableOptions]: AvailableOptions[K] extends boolean ? K : never;
+	}[keyof AvailableOptions]
+>;
+
 export class Checkbox {
 	node: HTMLElement;
 	enable: HTMLElement;
 	disable: HTMLElement;
-	optionName: keyof AvailableOptions;
+	optionName: keyof BooleanOptions;
 
 	constructor(node: HTMLElement) {
 		this.node = node;
 		this.enable = this.node.querySelector('.on') as HTMLElement;
 		this.disable = this.node.querySelector('.off') as HTMLElement;
-		this.optionName = this.node.dataset.checkbox as keyof AvailableOptions;
+		this.optionName = this.node.dataset.checkbox as keyof BooleanOptions;
 	}
 
 	bind = (): void => {
@@ -28,15 +36,14 @@ export class Checkbox {
 	};
 
 	update = (value: boolean): void => {
-		if (value != Options.get(this.optionName)) {
+		if (value != Options[this.optionName]) {
 			this.node.classList.remove('enabled', 'disabled');
 			this.node.classList.add('loading');
-			Options.set(this.optionName, value);
-			Options.save()
-				.then(() => {
-					this.node.classList.remove('loading');
-					this.toggle(value);
-				});
+			Options[this.optionName] = value;
+			Options.save().then(() => {
+				this.node.classList.remove('loading');
+				this.toggle(value);
+			});
 		}
 	};
 

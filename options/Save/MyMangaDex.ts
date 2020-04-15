@@ -1,17 +1,17 @@
 import { DOM } from '../../src/DOM';
-import { ExportedSave } from '../../src/interfaces';
 import { LocalStorage } from '../../src/Storage';
-import { ExtensionSave } from './ExtensionSave';
-import { Options } from '../../src/Options';
+import { ExtensionSave, ImportSummary } from './ExtensionSave';
+import { Options, AvailableOptions } from '../../src/Options';
 import { Title, FullTitle, TitleCollection } from '../../src/Title';
+import { ServiceName } from '../../src/Service/Service';
 
 interface MyMangaDexHistoryEntry {
 	chapter: number;
 	id: number;
 	name: string;
 	progress: {
-		chapter: string;
-		volume: string;
+		chapter: number;
+		volume: number;
 	};
 	lastRead?: number;
 }
@@ -88,7 +88,7 @@ export class MyMangaDex extends ExtensionSave {
 			[
 				{
 					type: 'checkbox',
-					text: 'Override instead of merge',
+					text: 'Override (erase current save)',
 					name: 'override',
 				},
 				{
@@ -111,19 +111,36 @@ export class MyMangaDex extends ExtensionSave {
 		reader.onload = async (): Promise<void> => {
 			if (typeof reader.result == 'string') {
 				try {
+					let summary: ImportSummary = {
+						options: 0,
+						history: false,
+						total: 0,
+						invalid: 0,
+					};
 					const titleList: string[] = [];
 					let titles = new TitleCollection();
 					let history: number[] | undefined = undefined;
 					let data = JSON.parse(reader.result) as MyMangaDexSave;
 					// Options
 					if (data.options) {
-						this.loadOptions(data.options);
+						summary.options = this.loadOptions(data.options);
 					}
 					// Merge or override Titles
 					Object.keys(data).forEach((value): void => {
 						if (value !== 'options' && value !== 'history') {
-							titleList.push(value);
-							titles.add(new Title(parseInt(value), this.convertTitle(data[value])));
+							// Check if Title keys are valid and contain a valid Title
+							if (
+								!isNaN(parseInt(value)) &&
+								this.isValidMyMangaDexTitle(data[value])
+							) {
+								titleList.push(value);
+								titles.add(
+									new Title(parseInt(value), this.convertTitle(data[value]))
+								);
+							} else {
+								summary.invalid++;
+							}
+							summary.total++;
 						}
 					});
 					if (merge) {
@@ -135,6 +152,15 @@ export class MyMangaDex extends ExtensionSave {
 						if (merge) {
 							history.concat(data.history.list);
 						}
+						summary.history = false;
+					}
+					// Check if we did not import anything at all
+					if (
+						(summary.total == 0 || summary.total == summary.invalid) &&
+						summary.options == 0 &&
+						!summary.history
+					) {
+						throw 'Invalid file !';
 					}
 					// Save
 					if (!merge) {
@@ -144,9 +170,14 @@ export class MyMangaDex extends ExtensionSave {
 					if (history) {
 						await LocalStorage.set('history', history);
 					}
-					await Options.save(); // TODO: Add MyAnimeList service
-					// TODO: Reload everything
-					this.end();
+					// Add MyAnimeList and save options
+					if (Options.services.indexOf(ServiceName.MyAnimeList) < 0) {
+						Options.services.unshift(ServiceName.MyAnimeList);
+						Options.mainService = ServiceName.MyAnimeList;
+					}
+					await Options.save();
+					this.end(summary);
+					this.manager.reload();
 				} catch (error) {
 					console.error(error);
 					this.displayError('Invalid file !');
@@ -162,63 +193,13 @@ export class MyMangaDex extends ExtensionSave {
 		}
 	};
 
-	end = (): void => {
-		this.manager.clear();
-		this.manager.header('Done Importing MyMangaDex');
-		this.displaySuccess([
-			DOM.text('Save successfully imported !'),
-			DOM.space(),
-			DOM.create('button', {
-				class: 'action',
-				textContent: 'Go Back',
-				events: {
-					click: () => this.manager.reset(),
-				},
-			}),
-		]);
-	};
-
-	loadOptions = (old: MyMangaDexOptions): void => {
-		Options.thumbnail = old.showTooltips;
-		Options.originalThumbnail = old.showFullCover;
-		Options.thumbnailMaxHeight = old.coverMaxHeight;
-		Options.updateMD = old.updateMDList;
-		Options.updateOnlyInList = old.updateOnlyInList;
-		Options.notifications = old.showNotifications;
-		Options.errorNotifications = old.showErrors;
-		Options.hideHigher = old.hideHigherChapters;
-		Options.hideLower = old.hideLowerChapters;
-		Options.hideLast = old.hideLastRead;
-		Options.saveOnlyHigher = old.saveOnlyHigher;
-		Options.biggerHistory = old.updateHistoryPage;
-		Options.historySize = old.historySize;
-		Options.saveChapters = old.saveAllOpened;
-		Options.chaptersSaved = old.maxChapterSaved;
-		Options.highlight = old.highlightChapters;
-		Options.saveOnlyNext = old.saveOnlyNext;
-		Options.confirmChapter = old.confirmChapter;
-		Options.colors = {
-			highlights: old.lastOpenColors || Options.colors.highlights,
-			nextChapter: old.nextChapterColor || Options.colors.nextChapter,
-			higherChapter: old.higherChaptersColor || Options.colors.higherChapter,
-			lowerChapter: old.lowerChaptersColor || Options.colors.lowerChapter,
-			openedChapter: old.openedChaptersColor || Options.colors.openedChapter,
-		};
-	};
-
-	loadHistory = (titles: TitleCollection, old: MyMangaDexHistory): number[] => {
-		const history: number[] = [];
-		for (const key in old) {
-			const titleId = parseInt(key);
-			const found = titles.find(titleId);
-			if (found !== undefined) {
-				found.lastChapter = old[key].chapter;
-				found.name = old[key].name;
-				found.lastRead = old[key].lastRead;
-				history.push(titleId);
-			}
-		}
-		return history;
+	isValidMyMangaDexTitle = (title: Record<string, any>): boolean => {
+		return (
+			typeof title.mal === 'number' &&
+			typeof title.last === 'number' &&
+			Array.isArray(title.chapters) &&
+			(title.lastTitle === undefined || typeof title.lastTitle === 'number')
+		);
 	};
 
 	convertTitle = (old: MyMangaDexTitle): FullTitle => {
@@ -232,5 +213,61 @@ export class MyMangaDex extends ExtensionSave {
 			lastTitle: old.lastTitle,
 			chapters: old.chapters,
 		};
+	};
+
+	loadOptions = (old: MyMangaDexOptions): number => {
+		let total = 0;
+		total += this.assignValidOption('thumbnail', old.showTooltips);
+		total += this.assignValidOption('originalThumbnail', old.showFullCover);
+		total += this.assignValidOption('thumbnailMaxHeight', old.coverMaxHeight);
+		total += this.assignValidOption('updateMD', old.updateMDList);
+		total += this.assignValidOption('updateOnlyInList', old.updateOnlyInList);
+		total += this.assignValidOption('notifications', old.showNotifications);
+		total += this.assignValidOption('errorNotifications', old.showErrors);
+		total += this.assignValidOption('hideHigher', old.hideHigherChapters);
+		total += this.assignValidOption('hideLower', old.hideLowerChapters);
+		total += this.assignValidOption('hideLast', old.hideLastRead);
+		total += this.assignValidOption('saveOnlyHigher', old.saveOnlyHigher);
+		total += this.assignValidOption('biggerHistory', old.updateHistoryPage);
+		total += this.assignValidOption('historySize', old.historySize);
+		total += this.assignValidOption('saveChapters', old.saveAllOpened);
+		total += this.assignValidOption('chaptersSaved', old.maxChapterSaved);
+		total += this.assignValidOption('highlight', old.highlightChapters);
+		total += this.assignValidOption('saveOnlyNext', old.saveOnlyNext);
+		total += this.assignValidOption('confirmChapter', old.confirmChapter);
+		Options.colors = {
+			highlights: old.lastOpenColors || Options.colors.highlights,
+			nextChapter: old.nextChapterColor || Options.colors.nextChapter,
+			higherChapter: old.higherChaptersColor || Options.colors.higherChapter,
+			lowerChapter: old.lowerChaptersColor || Options.colors.lowerChapter,
+			openedChapter: old.openedChaptersColor || Options.colors.openedChapter,
+		};
+		return total;
+	};
+
+	isValidMyMangaDexHistory = (entry: MyMangaDexHistoryEntry): boolean => {
+		return (
+			typeof entry.chapter === 'number' &&
+			typeof entry.name === 'string' &&
+			typeof entry.progress == 'object' &&
+			typeof entry.progress.chapter == 'number' &&
+			(entry.progress.volume === undefined || typeof entry.progress.volume == 'number') &&
+			(entry.lastRead === undefined || typeof entry.lastRead === 'number')
+		);
+	};
+
+	loadHistory = (titles: TitleCollection, old: MyMangaDexHistory): number[] => {
+		const history: number[] = [];
+		for (const key in old) {
+			const titleId = parseInt(key);
+			const found = titles.find(titleId);
+			if (found !== undefined && this.isValidMyMangaDexHistory(old[key])) {
+				found.lastChapter = old[key].chapter;
+				found.name = old[key].name;
+				found.lastRead = old[key].lastRead;
+				history.push(titleId);
+			}
+		}
+		return history;
 	};
 }

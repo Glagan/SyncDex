@@ -3,7 +3,7 @@ import { ServiceName } from './Service/Service';
 
 console.log('SyncDex :: Options');
 
-/*export interface DefaultOptions {
+export interface AvailableOptions {
 	// Chapter and Title List / Updates
 	hideHigher: boolean;
 	hideLower: boolean;
@@ -54,126 +54,126 @@ console.log('SyncDex :: Options');
 		openedChapter: string; // Title Page
 	};
 	version: number;
-}*/
+}
 
-export class DefaultOptions {
+export const DefaultOptions: AvailableOptions = {
 	// Chapter and Title List / Updates
-	static hideHigher: boolean = false;
-	static hideLower: boolean = true;
-	static hideLast: boolean = false;
-	static highlight: boolean = true;
-	static thumbnail: boolean = true;
-	static originalThumbnail: boolean = false;
-	static thumbnailMaxHeight: number = 80;
-	static updateServicesInList: boolean = false;
+	hideHigher: false,
+	hideLower: true,
+	hideLast: false,
+	highlight: true,
+	thumbnail: true,
+	originalThumbnail: false,
+	thumbnailMaxHeight: 80,
+	updateServicesInList: false,
 	// Reading
-	static saveChapters: boolean = true;
-	static chaptersSaved: number = 400;
-	static saveOnlyHigher: boolean = true;
-	static saveOnlyNext: boolean = false;
-	static confirmChapter: boolean = false;
-	static updateOnlyInList: boolean = false;
+	saveChapters: true,
+	chaptersSaved: 400,
+	saveOnlyHigher: true,
+	saveOnlyNext: false,
+	confirmChapter: false,
+	updateOnlyInList: false,
 	// Title
-	static linkToServices: boolean = true;
-	static showOverview: boolean = true;
-	static overviewMainOnly: boolean = true;
+	linkToServices: true,
+	showOverview: true,
+	overviewMainOnly: true,
 	// History
-	static biggerHistory: boolean = false;
-	static historySize: number = 100;
-	static chapterStatus: boolean = false;
+	biggerHistory: false,
+	historySize: 100,
+	chapterStatus: false,
 	// Notifications
-	static notifications: boolean = true;
-	static errorNotifications: boolean = true;
+	notifications: true,
+	errorNotifications: true,
 	// Global
-	static useXHR: boolean = true;
-	static useMochi: boolean = true;
-	static acceptLowScore: boolean = true;
-	static updateMD: boolean = false;
+	useXHR: true,
+	useMochi: true,
+	acceptLowScore: true,
+	updateMD: false,
 	// Services
-	static services: ServiceName[] = [];
-	static mainService?: ServiceName = undefined;
-	static noReloadStatus: boolean = true;
-	static tokens: {
-		anilistToken?: string;
-		kitsuUser?: number;
-		kitsuToken?: string;
-	} = {
+	services: [],
+	mainService: undefined,
+	noReloadStatus: true,
+	tokens: {
 		anilistToken: undefined,
 		kitsuUser: undefined,
 		kitsuToken: undefined,
-	};
+	},
 	// Colors
-	static colors = {
+	colors: {
 		highlights: ['rgba(28, 135, 141, 0.5)', 'rgba(22, 65, 87, 0.5)', 'rgba(28, 103, 141, 0.5)'],
 		nextChapter: 'rgba(199, 146, 2, 0.4)',
 		higherChapter: 'transparent',
 		lowerChapter: 'rgba(180, 102, 75, 0.5)',
 		openedChapter: 'rgba(28, 135, 141, 0.4)', // Title Page
-	};
-	static version: number = parseFloat(browser.runtime.getManifest().version);
+	},
+	version: parseFloat(browser.runtime.getManifest().version),
 };
-export type AvailableOptions = { [K in Exclude<keyof typeof DefaultOptions, 'prototype'>]: typeof DefaultOptions[K] };
+// export type AvailableOptions = {
+// 	[K in Exclude<keyof typeof DefaultOptions, 'prototype'>]: typeof DefaultOptions[K];
+// };
 
 interface Update {
 	version: number;
-	fnct: (options: DefaultOptions) => void;
+	fnct: (options: AvailableOptions) => void;
 }
 const updates: Update[] = [];
 
-// export const Options: ManageOptions = Object.assign({} as ManageOptions, DefaultOptions, {
-export class Options extends DefaultOptions {
-	static load = async (): Promise<void> => {
-		const options = await LocalStorage.get<DefaultOptions>('options');
-		if (options !== undefined) {
-			Object.assign(Options, options);
-		}
-		const needUpdate = Options.checkUpdate();
-		if (needUpdate) {
-			Options.update();
-		}
-		if (!options || needUpdate) {
-			return Options.save();
-		}
-		return new Promise<void>((resolve) => resolve());
-	}
+interface ManageOptions {
+	load: () => Promise<void>;
+	checkUpdate: () => boolean;
+	update: () => void;
+	save: () => Promise<void>;
+	reset: () => void;
+}
 
-	static get = <K extends keyof AvailableOptions>(key: K): AvailableOptions[K] => {
-		return (Options as AvailableOptions)[key];
-	}
-
-	static set = <K extends keyof AvailableOptions>(key: K, value?: AvailableOptions[K]): Options => {
-		if (value !== undefined) {
-			(Options as AvailableOptions)[key] = value;
-		}
-		return Options;
-	}
-
-	static checkUpdate = (): boolean => {
-		if (Options.version !== DefaultOptions.version) {
-			return true;
-		}
-		return false;
-	}
-
-	static update = (): void => {
-		for (let index = 0; index < updates.length; index++) {
-			const update = updates[index];
-			if (update.version >= Options.version) {
-				update.fnct(Options);
-				Options.version = update.version;
+export const Options: AvailableOptions & ManageOptions = Object.assign(
+	{
+		load: async (): Promise<void> => {
+			const options = await LocalStorage.get<AvailableOptions>('options');
+			if (options !== undefined) {
+				Object.assign(Options, options);
 			}
-		}
-		Options.version = DefaultOptions.version;
-	}
+			const needUpdate = Options.checkUpdate();
+			if (needUpdate) {
+				Options.update();
+			}
+			if (!options || needUpdate) {
+				return Options.save();
+			}
+			return new Promise<void>((resolve) => resolve());
+		},
 
-	static save = async (): Promise<void> => {
-		const values = Object.assign({}, Options);
-		delete values.load;
-		delete values.get;
-		delete values.set;
-		delete values.checkUpdate;
-		delete values.update;
-		delete values.save;
-		return await LocalStorage.set('options', values);
-	}
-};
+		checkUpdate: (): boolean => {
+			if (Options.version !== DefaultOptions.version) {
+				return true;
+			}
+			return false;
+		},
+
+		update: (): void => {
+			for (let index = 0; index < updates.length; index++) {
+				const update = updates[index];
+				if (update.version >= Options.version) {
+					update.fnct(Options);
+					Options.version = update.version;
+				}
+			}
+			Options.version = DefaultOptions.version;
+		},
+
+		save: async (): Promise<void> => {
+			const values = Object.assign({}, Options);
+			delete values.load;
+			delete values.checkUpdate;
+			delete values.update;
+			delete values.save;
+			delete values.reset;
+			return await LocalStorage.set('options', values);
+		},
+
+		reset: (): void => {
+			Object.assign(Options, JSON.parse(JSON.stringify(DefaultOptions)));
+		},
+	},
+	JSON.parse(JSON.stringify(DefaultOptions)) // Avoid references
+);

@@ -89,7 +89,6 @@ h1.full {
 	border-bottom: 1px solid #d6d6d6;
 	color: #f0f0f0;
 	text-shadow: 1px 1px 1px #19201a;
-	margin: 1rem 0;
 	padding: 1rem;
 	user-select: none;
 }
@@ -104,6 +103,27 @@ h2.full {
 	margin: 1rem 0;
 	padding: 1rem;
 	user-select: none;
+}
+
+#content > h1 {
+	transition: 0.1s cubic-bezier(0.6, 0.04, 0.98, 0.335);
+	opacity: 0.4;
+}
+
+#content > h1:first-child {
+	margin-top: 1rem;
+}
+
+#content > div {
+	transition: 0.1s cubic-bezier(0.6, 0.04, 0.98, 0.335);
+	padding: 1rem 0;
+	opacity: 0.4;
+}
+
+#content > h1.active,
+#content > div.active {
+	/* background-color: #b6b6b6; */
+	opacity: 1;
 }
 
 .services {
@@ -243,7 +263,11 @@ h2.full {
 	background-color: #e0dfe0;
 	border: 1px solid #d0d0d1;
 	color: #131313;
-	margin: 0 0.5rem 1rem 0.5rem;
+	margin: 0 1rem 1rem 1rem;
+}
+
+.block:last-child {
+	margin-bottom: 0;
 }
 
 .notification.info {

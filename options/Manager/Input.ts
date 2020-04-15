@@ -1,6 +1,14 @@
 import { Options, AvailableOptions } from '../../src/Options';
 
-type ValidInputs = Pick<AvailableOptions, 'historySize' | 'chaptersSaved'>;
+type ValidInputs = Omit<
+	Pick<
+		AvailableOptions,
+		{
+			[K in keyof AvailableOptions]: AvailableOptions[K] extends number ? K : never;
+		}[keyof AvailableOptions]
+	>,
+	'version'
+>;
 type MinMax = [number, number];
 
 export class Input {
@@ -21,7 +29,7 @@ export class Input {
 			const value = parseInt(this.input.value);
 			this.input.classList.remove('invalid');
 			if (!isNaN(value) && value >= this.limits[0] && value <= this.limits[1]) {
-				Options.set(this.optionName, value);
+				Options[this.optionName] = value;
 				clearTimeout(Input.timeout);
 				Input.timeout = window.setTimeout(() => {
 					Options.save();
@@ -53,7 +61,7 @@ export class InputManager {
 	updateAll = (): void => {
 		for (let index = 0; index < this.inputs.length; index++) {
 			const input = this.inputs[index];
-			input.update(Options.get(input.optionName));
+			input.update(Options[input.optionName]);
 		}
 	};
 }

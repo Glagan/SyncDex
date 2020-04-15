@@ -1,5 +1,4 @@
-import { DOM, AppendableElement } from '../../src/DOM';
-import { Options } from '../../src/Options';
+import { DOM } from '../../src/DOM';
 import { MyMangaDex } from '../Save/MyMangaDex';
 import { MangaDex } from '../Save/MangaDex';
 import { SyncDex } from '../Save/SyncDex';
@@ -12,11 +11,13 @@ import { ServiceSave } from '../Save/Save';
 
 export abstract class SaveManager {
 	node: HTMLElement;
+	reload: () => void;
 	abstract services: ServiceSave[];
 	abstract mainHeader: string;
 
-	constructor(node: HTMLElement) {
+	constructor(node: HTMLElement, reload: () => void) {
 		this.node = node;
+		this.reload = reload;
 	}
 
 	header = (value: string): void => {
@@ -37,28 +38,13 @@ export abstract class SaveManager {
 		this.header(`Select the Service you want to ${this.mainHeader}`);
 		const serviceList = DOM.create('div', { class: 'services selectable' });
 		for (const service of this.services) {
-			DOM.append(serviceList, this.serviceBlock(service));
+			DOM.append(serviceList, service.createBlock());
+			this.bind(service);
 		}
 		DOM.append(this.node, serviceList);
 	};
 
-	abstract bind(service: ServiceSave, block: HTMLElement): void;
-
-	serviceBlock = (service: ServiceSave): HTMLElement => {
-		const block = DOM.create('div', { class: 'service' });
-		const title = DOM.create('span', {
-			class: 'title',
-			childs: [
-				DOM.create('img', {
-					attributes: { src: `/icons/${service.key}.png` },
-				}),
-				DOM.space(),
-				service.title(),
-			],
-		});
-		this.bind(service, block);
-		return DOM.append(block, title);
-	};
+	abstract bind(service: ServiceSave): void;
 
 	form = (
 		fields: {
@@ -180,15 +166,15 @@ export class SaveImportManager extends SaveManager {
 		new MangaUpdates(this),
 	];
 
-	constructor(node: HTMLElement) {
-		super(node);
+	constructor(node: HTMLElement, reload: () => void) {
+		super(node, reload);
 		this.reset();
 	}
 
-	bind = (service: ServiceSave, block: HTMLElement): void => {
+	bind = (service: ServiceSave): void => {
 		if (service.import) {
 			/// @ts-ignore
-			block.addEventListener('click', () => service.import(this));
+			service.block.addEventListener('click', () => service.import(this));
 		}
 	};
 }
@@ -205,15 +191,15 @@ export class SaveExportManager extends SaveManager {
 		new MangaUpdates(this),
 	];
 
-	constructor(node: HTMLElement) {
-		super(node);
+	constructor(node: HTMLElement, reload: () => void) {
+		super(node, reload);
 		this.reset();
 	}
 
-	bind = (service: ServiceSave, block: HTMLElement): void => {
+	bind = (service: ServiceSave): void => {
 		if (service.export) {
 			/// @ts-ignore
-			block.addEventListener('click', () => service.export(this));
+			service.block.addEventListener('click', () => service.export(this));
 		}
 	};
 }

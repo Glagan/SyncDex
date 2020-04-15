@@ -3,6 +3,7 @@ import { DOM, AppendableElement } from '../../src/DOM';
 
 export abstract class ServiceSave {
 	manager: SaveManager;
+	block?: HTMLElement;
 	error?: HTMLElement;
 	success?: HTMLElement;
 	abstract name: string;
@@ -19,6 +20,21 @@ export abstract class ServiceSave {
 			class: this.name.toLowerCase(),
 			textContent: this.name,
 		});
+	};
+
+	createBlock = (): HTMLElement => {
+		this.block = DOM.create('div', { class: 'service' });
+		const title = DOM.create('span', {
+			class: 'title',
+			childs: [
+				DOM.create('img', {
+					attributes: { src: `/icons/${this.key}.png` },
+				}),
+				DOM.space(),
+				this.title(),
+			],
+		});
+		return DOM.append(this.block, title);
 	};
 
 	removeSuccess = (): void => {
