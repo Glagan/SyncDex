@@ -1,32 +1,31 @@
 import { setBrowser } from '../src/Browser';
 
-import { FetchMessage, OpenOptionsMessage, MessageAction } from '../src/Message';
+import { Message, MessageAction } from '../src/Runtime';
 
 console.log('SyncDex :: Background');
 
 setBrowser();
 browser.runtime.onMessage.addListener(
-	async (message: FetchMessage | OpenOptionsMessage): Promise<any> => {
-		if (message.action == MessageAction.fetch) {
+	async (message: Message): Promise<any> => {
+		if (message.action == MessageAction.request) {
 			// Default
 			message.isJson = !!message.isJson;
-			message.with = message.with || 'fetch';
-			message.options = message.options || {};
-			message.options.method = message.options.method || 'GET';
-			message.options.body = message.options.body || null;
-			message.options.credentials = message.options.credentials || 'same-origin';
-			message.options.headers = message.options.headers || {};
+			message.with = message.with || 'request';
+			message.method = message.method || 'GET';
+			message.body = message.body || null;
+			message.credentials = message.credentials || 'same-origin';
+			message.headers = message.headers || {};
 			// XMLHttpRequest or Fetch
 			if (message.with == 'XHR') {
 				let xhr = new XMLHttpRequest();
-				xhr.open(message.options.method, message.url, true);
-				const keys = Object.keys(message.options.headers);
+				xhr.open(message.method, message.url, true);
+				const keys = Object.keys(message.headers);
 				for (let index = 0; index < keys.length; index++) {
 					const key = keys[index];
-					xhr.setRequestHeader(name, message.options.headers[key]);
+					xhr.setRequestHeader(name, message.headers[key]);
 				}
 				xhr.withCredentials = true;
-				xhr.send(message.options.body);
+				xhr.send(message.body);
 				return new Promise((resolve) => {
 					xhr.addEventListener('readystatechange', () => {
 						if (xhr.readyState == 4) {
@@ -49,7 +48,7 @@ browser.runtime.onMessage.addListener(
 				});
 			} else {
 				try {
-					return fetch(message.url, message.options).then(async (response) => {
+					return fetch(message.url, message).then(async (response) => {
 						return {
 							url: response.url,
 							status: response.status,
@@ -61,7 +60,7 @@ browser.runtime.onMessage.addListener(
 					console.error(error);
 					return {
 						url: message.url,
-						status: 0,
+						status: 400,
 						headers: {},
 						body: message.isJson ? {} : '',
 					};

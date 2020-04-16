@@ -1,6 +1,6 @@
 import { Service, Status, ServiceName, LoginStatus } from './Service';
-import { Message } from '../Message';
-import { MessageAction } from '../Message';
+import { Runtime, RawResponse } from '../Runtime';
+import { MessageAction } from '../Runtime';
 
 export class MangaUpdates extends Service {
 	name: ServiceName = ServiceName.MangaUpdates;
@@ -16,13 +16,9 @@ export class MangaUpdates extends Service {
 	};
 
 	loggedIn = async (): Promise<LoginStatus> => {
-		const response = await Message.send({
-			action: MessageAction.fetch,
+		const response = await Runtime.request<RawResponse>({
 			url: 'https://www.mangaupdates.com/aboutus.html',
-			options: {
-				method: 'GET',
-				credentials: 'include',
-			},
+			credentials: 'include',
 		});
 		if (response.status >= 500) {
 			return LoginStatus.SERVER_ERROR;

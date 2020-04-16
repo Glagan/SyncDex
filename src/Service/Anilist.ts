@@ -1,6 +1,6 @@
 import { Service, Status, ServiceName, LoginStatus } from './Service';
 import { Options } from '../Options';
-import { Message, MessageAction } from '../Message';
+import { Runtime, MessageAction, JSONResponse } from '../Runtime';
 
 export class Anilist extends Service {
 	name: ServiceName = ServiceName.Anilist;
@@ -18,19 +18,16 @@ export class Anilist extends Service {
 	loggedIn = async (): Promise<LoginStatus> => {
 		if (!Options.tokens.anilistToken === undefined) return LoginStatus.NO_AUTHENTIFICATION;
 		const query = `query { Viewer { id } }`;
-		const response = await Message.send({
-			action: MessageAction.fetch,
+		const response = await Runtime.request<JSONResponse>({
+			method: 'POST',
 			url: 'https://graphql.anilist.co',
 			isJson: true,
-			options: {
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${Options.tokens.anilistToken}`,
-					'Content-Type': 'application/json',
-					Accept: 'application/json',
-				},
-				body: JSON.stringify({ query: query }),
+			headers: {
+				Authorization: `Bearer ${Options.tokens.anilistToken}`,
+				'Content-Type': 'application/json',
+				Accept: 'application/json',
 			},
+			body: JSON.stringify({ query: query }),
 		});
 		if (response.status >= 500) {
 			return LoginStatus.SERVER_ERROR;

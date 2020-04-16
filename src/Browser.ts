@@ -1,4 +1,4 @@
-import { FetchMessage, OpenOptionsMessage } from './Message';
+import { Message } from './Runtime';
 
 console.log('SyncDex :: Browser');
 
@@ -27,14 +27,10 @@ export const setBrowser = ((): (() => void) => {
 		};
 		const chromeOnMessage = chrome.runtime.onMessage.addListener.bind(chrome.runtime.onMessage);
 		browser.runtime.onMessage.addListener = (
-			fnct: (message: FetchMessage | OpenOptionsMessage) => Promise<any>
+			fnct: (message: Message) => Promise<any>
 		): void => {
 			chromeOnMessage(
-				(
-					message: FetchMessage | OpenOptionsMessage,
-					_sender: any,
-					sendResponse: (response?: any) => void
-				): true => {
+				(message: Message, _sender: any, sendResponse: (response?: any) => void): true => {
 					fnct(message).then((response) => sendResponse(response));
 					return true;
 				}

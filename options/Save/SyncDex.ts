@@ -4,6 +4,7 @@ import { LocalStorage } from '../../src/Storage';
 import { ExtensionSave, ImportSummary } from './ExtensionSave';
 import { Title, TitleCollection } from '../../src/Title';
 import { DOM } from '../../src/DOM';
+import { Checkbox, FileInput } from './Save';
 
 export class SyncDex extends ExtensionSave {
 	name: string = 'SyncDex';
@@ -15,17 +16,10 @@ export class SyncDex extends ExtensionSave {
 	import = (): void => {
 		this.manager.clear();
 		this.manager.header('Select your SyncDex save file');
-		this.form = this.manager.form(
+		this.form = this.createForm(
 			[
-				{
-					type: 'checkbox',
-					text: 'Override (erase current save)',
-					name: 'override',
-				},
-				{
-					type: 'file',
-					name: 'file',
-				},
+				new Checkbox('override', 'Erase current Save'),
+				new FileInput('file', 'SyncDex save file'),
 			],
 			(event) => this.handle(event)
 		);
@@ -58,7 +52,7 @@ export class SyncDex extends ExtensionSave {
 
 	handle = (event: Event): void => {
 		event.preventDefault();
-		this.removeError();
+		this.removeNotifications();
 		if (!this.form) return;
 		const merge = this.form.override.checked == false;
 		var reader = new FileReader();
@@ -135,22 +129,23 @@ export class SyncDex extends ExtensionSave {
 					this.manager.reload();
 				} catch (error) {
 					console.error(error);
-					this.displayError('Invalid file !');
+					this.error('Invalid file !');
 				}
 			} else {
-				this.displayError('Unknown error, wrong file type.');
+				this.error('Unknown error, wrong file type.');
 			}
 		};
 		if (this.form.file.files.length > 0) {
 			reader.readAsText(this.form.file.files[0]);
 		} else {
-			this.displayError('No file !');
+			this.error('No file !');
 		}
 	};
 
 	isValidTitle = (title: Record<string, any>): boolean => {
 		return (
 			typeof title.s === 'object' &&
+			typeof title.st === 'number' &&
 			typeof title.p === 'object' &&
 			Array.isArray(title.c) &&
 			(title.lt === undefined || typeof title.lt === 'number') &&

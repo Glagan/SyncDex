@@ -1,6 +1,5 @@
 import { Service, Status, ServiceName, LoginStatus } from './Service';
-import { Message } from '../Message';
-import { MessageAction } from '../Message';
+import { Runtime, JSONResponse, RawResponse } from '../Runtime';
 
 export class AnimePlanet extends Service {
 	name: ServiceName = ServiceName.AnimePlanet;
@@ -16,13 +15,9 @@ export class AnimePlanet extends Service {
 	};
 
 	loggedIn = async (): Promise<LoginStatus> => {
-		const response = await Message.send({
-			action: MessageAction.fetch,
+		const response = await Runtime.request<RawResponse>({
 			url: 'https://www.anime-planet.com/manga/recommendations/',
-			options: {
-				method: 'GET',
-				credentials: 'include',
-			},
+			credentials: 'include',
 		});
 		if (response.status >= 500) {
 			return LoginStatus.SERVER_ERROR;

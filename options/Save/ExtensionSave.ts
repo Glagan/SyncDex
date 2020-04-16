@@ -42,6 +42,7 @@ export abstract class ExtensionSave extends ServiceSave {
 			if (found === undefined) {
 				newSave.add(curTitle);
 			} else {
+				found.status = curTitle.status; // MyMangaDex has no Status, always choose SyncDex
 				if (found.progress.chapter < curTitle.progress.chapter) {
 					found.progress = curTitle.progress;
 				}
@@ -99,7 +100,7 @@ export abstract class ExtensionSave extends ServiceSave {
 				})
 			);
 		}
-		this.displaySuccess([
+		this.success([
 			DOM.text(
 				`Successfully imported ${summary.total - summary.invalid} titles, ${
 					summary.options

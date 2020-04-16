@@ -1,6 +1,5 @@
 import { Service, Status, ServiceName, LoginStatus } from './Service';
-import { Message } from '../Message';
-import { MessageAction } from '../Message';
+import { Runtime, RawResponse } from '../Runtime';
 
 export class MyAnimeList extends Service {
 	name: ServiceName = ServiceName.MyAnimeList;
@@ -16,13 +15,10 @@ export class MyAnimeList extends Service {
 	};
 
 	loggedIn = async (): Promise<LoginStatus> => {
-		const response = await Message.send({
-			action: MessageAction.fetch,
+		const response = await Runtime.request<RawResponse>({
 			url: 'https://myanimelist.net/login.php',
-			options: {
-				method: 'GET',
-				credentials: 'include',
-			},
+			method: 'GET',
+			credentials: 'include',
 		});
 		if (response.status >= 500) {
 			return LoginStatus.SERVER_ERROR;

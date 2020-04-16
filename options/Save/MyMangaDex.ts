@@ -1,9 +1,9 @@
-import { DOM } from '../../src/DOM';
 import { LocalStorage } from '../../src/Storage';
 import { ExtensionSave, ImportSummary } from './ExtensionSave';
-import { Options, AvailableOptions } from '../../src/Options';
+import { Options } from '../../src/Options';
 import { Title, FullTitle, TitleCollection } from '../../src/Title';
-import { ServiceName } from '../../src/Service/Service';
+import { ServiceName, Status } from '../../src/Service/Service';
+import { Checkbox, FileInput } from './Save';
 
 interface MyMangaDexHistoryEntry {
 	chapter: number;
@@ -77,24 +77,14 @@ export class MyMangaDex extends ExtensionSave {
 	import = (): void => {
 		this.manager.clear();
 		this.manager.header('Select your MyMangaDex save file');
-		this.manager.node.appendChild(
-			DOM.create('div', {
-				class: 'block notification info',
-				textContent:
-					"All of your MyMangaDex options will also be imported and MyAnimeList will be enabled if it's not already.",
-			})
+		this.notification(
+			'info',
+			"All of your MyMangaDex options will also be imported and MyAnimeList will be enabled if it's not already."
 		);
-		this.form = this.manager.form(
+		this.form = this.createForm(
 			[
-				{
-					type: 'checkbox',
-					text: 'Override (erase current save)',
-					name: 'override',
-				},
-				{
-					type: 'file',
-					name: 'file',
-				},
+				new Checkbox('override', 'Erase current Save'),
+				new FileInput('file', 'MyMangaDex save file'),
 			],
 			(event) => this.handle(event)
 		);
@@ -104,7 +94,7 @@ export class MyMangaDex extends ExtensionSave {
 
 	handle = (event: Event): void => {
 		event.preventDefault();
-		this.removeError();
+		this.removeNotifications();
 		if (!this.form) return;
 		const merge = this.form.override.checked == false;
 		var reader = new FileReader();
@@ -180,16 +170,16 @@ export class MyMangaDex extends ExtensionSave {
 					this.manager.reload();
 				} catch (error) {
 					console.error(error);
-					this.displayError('Invalid file !');
+					this.error('Invalid file !');
 				}
 			} else {
-				this.displayError('Unknown error, wrong file type.');
+				this.error('Unknown error, wrong file type.');
 			}
 		};
 		if (this.form.file.files.length > 0) {
 			reader.readAsText(this.form.file.files[0]);
 		} else {
-			this.displayError('No file !');
+			this.error('No file !');
 		}
 	};
 
@@ -207,6 +197,7 @@ export class MyMangaDex extends ExtensionSave {
 			services: {
 				mal: old.mal,
 			},
+			status: Status.NONE,
 			progress: {
 				chapter: old.last,
 			},

@@ -4,8 +4,9 @@ import { LocalStorage } from './Storage';
 
 interface SaveTitle {
 	s: { [key in ServiceKey]?: number | string };
+	st: Status;
 	p: Progress;
-	c: number[];
+	c?: number[];
 	i?: {
 		s: number;
 		e: number;
@@ -21,6 +22,7 @@ interface SaveTitle {
 
 export interface FullTitle {
 	services: { [key in ServiceKey]?: number | string };
+	status: Status;
 	progress: Progress;
 	chapters: number[];
 	initial?: {
@@ -44,6 +46,7 @@ export class Title implements FullTitle {
 	new: boolean;
 	id: number;
 	services: { [key in ServiceKey]?: number | string } = {};
+	status: Status = 0;
 	progress: Progress = { chapter: -1, volume: 0 };
 	chapters: number[] = [];
 	initial?: {
@@ -70,7 +73,8 @@ export class Title implements FullTitle {
 		const mapped: FullTitle = {
 			services: title.s,
 			progress: title.p,
-			chapters: title.c,
+			status: title.st,
+			chapters: title.c || [],
 			lastTitle: title.lt,
 			lastCheck: title.lc,
 			lastChapter: title.id,
@@ -103,14 +107,17 @@ export class Title implements FullTitle {
 	toSave = (): SaveTitle => {
 		const mapped: SaveTitle = {
 			s: this.services,
+			st: this.status,
 			p: this.progress,
-			c: this.chapters,
 			lt: this.lastTitle,
 			lc: this.lastCheck,
 			id: this.lastChapter,
 			n: this.name,
 			lr: this.lastRead,
 		};
+		if (this.chapters.length > 0) {
+			mapped.c = this.chapters;
+		}
 		if (this.initial) {
 			mapped.i = {
 				s: this.initial.start,
