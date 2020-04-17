@@ -20,6 +20,8 @@ let mainManifest = {
 	description: 'Automatically update your Manga lists when reading on MangaDex.',
 
 	permissions: [
+		'http://127.0.0.1/*', // !
+		'http://localhost/mochi-v2/api/*', // !
 		'https://*.myanimelist.net/manga/*',
 		'https://*.myanimelist.net/ownlist/manga/*',
 		'https://*.mangadex.org/*',

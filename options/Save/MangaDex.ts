@@ -19,25 +19,17 @@ export class MangaDex extends ServiceSave {
 	// TODO: Cancel button
 	import = (): void => {
 		this.manager.clear();
-		this.manager.header('Select your MangaDex User');
-		this.manager.node.appendChild(
-			DOM.create('div', {
-				class: 'block notification info',
-				textContent: `Importing from MangaDex doesn't do much and only initialize your SyncDex save with "empty" titles since there is no progress saved on MangaDex.`,
-			})
+		this.manager.header('Enter your MangaDex User ID');
+		this.notification(
+			'info',
+			`Importing from MangaDex doesn't do much and only initialize your SyncDex save with "empty" titles since there is no progress saved on MangaDex.`
 		);
-		this.manager.node.appendChild(
-			DOM.create('div', {
-				class: 'block notification info',
-				textContent: `Enter your `,
-				childs: [
-					DOM.create('b', { textContent: 'MangaDex User ID' }),
-					DOM.text(' in the form below, you can find it in your Profile.'),
-					DOM.create('br'),
-					DOM.text('You can click the Find button to add your ID if you are logged in.'),
-				],
-			})
-		);
+		this.notification('info', [
+			DOM.create('b', { textContent: 'MangaDex User ID' }),
+			DOM.text(' in the form below, you can find it in your Profile.'),
+			DOM.create('br'),
+			DOM.text('You can click the Find button to add your ID if you are logged in.'),
+		]);
 		const inputRow = new Input('userId', 'MangaDex User ID', 'number');
 		this.form = this.createForm([inputRow], (event) => this.handle(event));
 		let busy = false;
@@ -121,6 +113,7 @@ export class MangaDex extends ServiceSave {
 
 	handle = async (event: Event): Promise<void> => {
 		event.preventDefault();
+		this.removeNotifications();
 		if (!this.form) return;
 		const userId = parseInt(this.form?.userId.value);
 		console.log('fetching for user', userId);

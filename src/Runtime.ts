@@ -32,7 +32,7 @@ export interface Response {
 }
 
 export interface JSONResponse extends Response {
-	body: Record<string, string>;
+	body: Record<string, any>;
 }
 
 export interface RawResponse extends Response {

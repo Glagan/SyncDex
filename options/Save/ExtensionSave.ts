@@ -30,55 +30,6 @@ export abstract class ExtensionSave extends ServiceSave {
 	};
 
 	/**
-	 * Add all Titles that are not in newSave.
-	 * If a Title is already in newSave, all values are set to the highest.
-	 */
-	mergeTitles = (currentSave: TitleCollection, newSave: TitleCollection): void => {
-		for (let index = 0, len = currentSave.length; index < len; index++) {
-			const curTitle = currentSave.collection[index];
-			if (curTitle.new) continue; // Title doesn't exist in LocalStorage
-			const found = newSave.find(curTitle.id);
-			// The title doesn't exist in newSave, just copy it
-			if (found === undefined) {
-				newSave.add(curTitle);
-			} else {
-				found.status = curTitle.status; // MyMangaDex has no Status, always choose SyncDex
-				if (found.progress.chapter < curTitle.progress.chapter) {
-					found.progress = curTitle.progress;
-				}
-				if (!found.initial && curTitle.initial) {
-					found.initial = curTitle.initial;
-				}
-				found.services = Object.assign({}, curTitle.services, found.services);
-				// Update all 'number' properties to select the highest ones
-				type NumberKey = Pick<
-					FullTitle,
-					'lastRead' | 'lastTitle' | 'lastCheck' | 'lastChapter'
-				>;
-				const lastKeys: (keyof NumberKey)[] = [
-					'lastRead',
-					'lastTitle',
-					'lastCheck',
-					'lastChapter',
-				];
-				for (let index = 0; index < lastKeys.length; index++) {
-					const key = lastKeys[index] as keyof NumberKey;
-					if (found[key] && curTitle[key]) {
-						found[key] = Math.max(found[key] as number, curTitle[key] as number);
-					}
-				}
-				// Merge chapters array
-				found.chapters = found.chapters.concat(curTitle.chapters);
-				found.chapters.sort((a, b) => b - a);
-				if (found.chapters.length > Options.chaptersSaved) {
-					const diff = Options.chaptersSaved - found.chapters.length;
-					found.chapters.splice(-diff, diff);
-				}
-			}
-		}
-	};
-
-	/**
 	 * Display summary and button to go back to Service selection
 	 */
 	end = (summary: ImportSummary): void => {

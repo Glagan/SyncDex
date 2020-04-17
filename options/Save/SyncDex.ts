@@ -19,35 +19,10 @@ export class SyncDex extends ExtensionSave {
 		this.form = this.createForm(
 			[
 				new Checkbox('override', 'Erase current Save'),
-				new FileInput('file', 'SyncDex save file'),
+				new FileInput('file', 'SyncDex save file', 'application/json'),
 			],
 			(event) => this.handle(event)
 		);
-	};
-
-	export = async (): Promise<void> => {
-		if (this.block && !this.busy) {
-			this.busy = true;
-			this.block.classList.add('loading');
-			let data = await LocalStorage.getAll();
-			let downloadLink = DOM.create('a', {
-				style: {
-					display: 'none',
-				},
-				attributes: {
-					download: 'SyncDex.json',
-					target: '_blank',
-					href: `data:application/json;charset=utf-8,${encodeURIComponent(
-						JSON.stringify(data)
-					)}`,
-				},
-			});
-			document.body.appendChild(downloadLink);
-			downloadLink.click();
-			downloadLink.remove();
-			this.block.classList.remove('loading');
-			this.busy = false;
-		}
 	};
 
 	handle = (event: Event): void => {
@@ -91,7 +66,7 @@ export class SyncDex extends ExtensionSave {
 						}
 					});
 					if (merge) {
-						this.mergeTitles(await TitleCollection.get(titleList), titles);
+						titles.merge(await TitleCollection.get(titles.ids));
 					}
 					// History
 					if (Options.biggerHistory && data.history) {
@@ -154,5 +129,30 @@ export class SyncDex extends ExtensionSave {
 			(title.lr === undefined || typeof title.lr === 'number') &&
 			(title.n === undefined || typeof title.n === 'string')
 		);
+	};
+
+	export = async (): Promise<void> => {
+		if (this.block && !this.busy) {
+			this.busy = true;
+			this.block.classList.add('loading');
+			let data = await LocalStorage.getAll();
+			let downloadLink = DOM.create('a', {
+				style: {
+					display: 'none',
+				},
+				attributes: {
+					download: 'SyncDex.json',
+					target: '_blank',
+					href: `data:application/json;charset=utf-8,${encodeURIComponent(
+						JSON.stringify(data)
+					)}`,
+				},
+			});
+			document.body.appendChild(downloadLink);
+			downloadLink.click();
+			downloadLink.remove();
+			this.block.classList.remove('loading');
+			this.busy = false;
+		}
 	};
 }

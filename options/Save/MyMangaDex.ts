@@ -84,7 +84,7 @@ export class MyMangaDex extends ExtensionSave {
 		this.form = this.createForm(
 			[
 				new Checkbox('override', 'Erase current Save'),
-				new FileInput('file', 'MyMangaDex save file'),
+				new FileInput('file', 'MyMangaDex save file', 'application/json'),
 			],
 			(event) => this.handle(event)
 		);
@@ -107,7 +107,6 @@ export class MyMangaDex extends ExtensionSave {
 						total: 0,
 						invalid: 0,
 					};
-					const titleList: string[] = [];
 					let titles = new TitleCollection();
 					let history: number[] | undefined = undefined;
 					let data = JSON.parse(reader.result) as MyMangaDexSave;
@@ -123,7 +122,6 @@ export class MyMangaDex extends ExtensionSave {
 								!isNaN(parseInt(value)) &&
 								this.isValidMyMangaDexTitle(data[value])
 							) {
-								titleList.push(value);
 								titles.add(
 									new Title(parseInt(value), this.convertTitle(data[value]))
 								);
@@ -134,7 +132,7 @@ export class MyMangaDex extends ExtensionSave {
 						}
 					});
 					if (merge) {
-						this.mergeTitles(await TitleCollection.get(titleList), titles);
+						titles.merge(await TitleCollection.get(titles.ids));
 					}
 					// History
 					if (Options.biggerHistory && data.history) {

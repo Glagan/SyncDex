@@ -1,6 +1,7 @@
 import { Progress, ExportedSave } from './interfaces';
 import { ServiceKey, Status } from './Service/Service';
 import { LocalStorage } from './Storage';
+import { Options } from './Options';
 
 interface SaveTitle {
 	s: { [key in ServiceKey]?: number | string };
@@ -37,6 +38,7 @@ export interface FullTitle {
 	name?: string;
 	lastRead?: number;
 }
+type NumberKey = Pick<FullTitle, 'lastRead' | 'lastTitle' | 'lastCheck' | 'lastChapter'>;
 
 /**
  * Handle conversion between a SaveTitle in LocalStorage and a Title.
@@ -104,6 +106,39 @@ export class Title implements FullTitle {
 		return new Title(rid, Title.toTitle(title));
 	}
 
+	static numberKeys: (keyof NumberKey)[] = ['lastRead', 'lastTitle', 'lastCheck', 'lastChapter'];
+	/**
+	 * Select highest values of both Titles and assign them to *this*
+	 */
+	merge = (other: Title): void => {
+		// Update *this* Status if it's NONE or/and if other is not NONE
+		if (other.status != Status.NONE || this.status == Status.NONE) {
+			this.status = other.status;
+		}
+		if (this.progress.chapter < other.progress.chapter) {
+			this.progress = other.progress;
+		}
+		if (this.initial === undefined) {
+			this.initial = other.initial;
+		}
+		Object.assign(this.services, other.services); // Merge Services - other erase *this*
+		// Update all 'number' properties (last...) to select the highest ones
+		for (let index = 0, len = Title.numberKeys.length; index < len; index++) {
+			const key = Title.numberKeys[index] as keyof NumberKey;
+			if (this[key] && other[key]) {
+				this[key] = Math.max(this[key] as number, other[key] as number);
+			}
+		}
+		// Merge chapters array
+		this.chapters = this.chapters.concat(other.chapters);
+		// Sort and only keep the first (desc) *Options.chaptersSaved* chapters
+		this.chapters.sort((a, b) => b - a);
+		if (this.chapters.length > Options.chaptersSaved) {
+			const diff = Options.chaptersSaved - this.chapters.length;
+			this.chapters.splice(-diff, diff);
+		}
+	};
+
 	toSave = (): SaveTitle => {
 		const mapped: SaveTitle = {
 			s: this.services,
@@ -148,6 +183,12 @@ export class TitleCollection {
 		this.collection.push(title);
 	};
 
+	get ids(): number[] {
+		return this.collection.map((title) => {
+			return title.id;
+		});
+	}
+
 	get length(): number {
 		return this.collection.length;
 	}
@@ -186,6 +227,22 @@ export class TitleCollection {
 			if (title.id === id) return title;
 		}
 		return undefined;
+	};
+
+	/**
+	 * Apply merge to each Titles in *this* collection with the other Collection.
+	 * Add missing Titles in *this*
+	 */
+	merge = (other: TitleCollection): void => {
+		for (let index = 0, len = other.collection.length; index < len; index++) {
+			const title = other.collection[index];
+			let found = this.find(title.id);
+			if (found !== undefined) {
+				found.merge(title);
+			} else {
+				this.add(title);
+			}
+		}
 	};
 
 	save = async (): Promise<void> => {

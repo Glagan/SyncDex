@@ -89,7 +89,7 @@ export class FileInput extends Row {
 	label?: HTMLElement;
 	input: HTMLInputElement;
 
-	constructor(fieldName: string, label?: string) {
+	constructor(fieldName: string, label?: string, accept?: string) {
 		super();
 		if (label !== 'undefined') {
 			this.label = DOM.create('label', {
@@ -105,6 +105,7 @@ export class FileInput extends Row {
 			attributes: {
 				name: fieldName,
 				type: 'file',
+				accept: accept ? accept : '*',
 			},
 		});
 		DOM.append(this.node, this.input);
