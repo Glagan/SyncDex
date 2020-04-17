@@ -74,7 +74,7 @@ export class MangaDex extends ServiceSave {
 			credentials: 'include',
 		});
 		if (response.status >= 400 || typeof response.body !== 'string') {
-			this.error('The request failed, maybe MangaDex is having problem, retry later.');
+			this.error('The request failed, maybe MangaDex is having problems, retry later.');
 			return false;
 		}
 		if (response.body.indexOf(`You do not have permission to view this user's list.`) >= 0) {
@@ -107,16 +107,11 @@ export class MangaDex extends ServiceSave {
 		return true;
 	};
 
-	sleep = async (ms: number): Promise<void> => {
-		return new Promise((resolve) => setTimeout(resolve, ms));
-	};
-
 	handle = async (event: Event): Promise<void> => {
 		event.preventDefault();
 		this.removeNotifications();
 		if (!this.form) return;
 		const userId = parseInt(this.form?.userId.value);
-		console.log('fetching for user', userId);
 		if (isNaN(userId)) {
 			this.error('Invalid User ID');
 			return;
@@ -133,7 +128,6 @@ export class MangaDex extends ServiceSave {
 		// Then fetch remaining pages
 		let res = true;
 		while (state.current < state.max && res) {
-			await this.sleep(1500);
 			res = await this.singlePage(titles, userId, state);
 		}
 		if (!res) {

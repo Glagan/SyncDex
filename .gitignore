@@ -16,4 +16,5 @@ scripts/debug.js
 DEV.md
 
 # Save
+examples/*
 export.json

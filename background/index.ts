@@ -5,10 +5,34 @@ import { Message, MessageAction } from '../src/Runtime';
 console.log('SyncDex :: Background');
 
 setBrowser();
+const findDomain = (url: string): string => {
+	// Simple domain search - not the best but simple
+	const res = /https?:\/\/(?:.+\.)?([-\w\d]+\.(?:\w{2,5})|localhost)(?:$|\/)	/i.exec(url);
+	if (res !== null) {
+		return res[1];
+	}
+	return '*';
+};
+let nextRequest: Record<string, number> = {};
+// Defaults to 1000ms
+const cooldowns: Record<string, number> = {
+	localhost: 250,
+};
 browser.runtime.onMessage.addListener(
 	async (message: Message): Promise<any> => {
 		if (message.action == MessageAction.request) {
-			// Default
+			// Cooldown
+			const domain = findDomain(message.url);
+			const now = Date.now();
+			// Sleep until cooldown is reached
+			if (nextRequest[domain] && nextRequest[domain] >= now) {
+				const diff = nextRequest[domain] - now;
+				nextRequest[domain] = now + diff + (cooldowns[domain] ?? 1000) + 100;
+				await new Promise((resolve) => setTimeout(resolve, diff));
+			} else {
+				nextRequest[domain] = now + (cooldowns[domain] ?? 1000) + 100;
+			}
+			// Options
 			message.isJson = !!message.isJson;
 			message.with = message.with || 'request';
 			message.method = message.method || 'GET';

@@ -163,7 +163,6 @@ export class MyAnimeList extends ServiceSave {
 						currentNotification.textContent = `Step 2: Find MangaDex IDs from MyAnimeList IDs, ${
 							index + 1
 						} out of ${totalValid}`;
-						await new Promise((resolve) => setTimeout(resolve, 1000));
 					}
 					currentNotification.classList.remove('loading');
 					currentNotification = this.notification(
@@ -178,7 +177,6 @@ export class MyAnimeList extends ServiceSave {
 						DOM.space(),
 						this.resetButton(),
 					]);
-					console.log(titles.collection);
 				} catch (error) {
 					console.error(error);
 					this.error('Invalid file !');
@@ -192,5 +190,7 @@ export class MyAnimeList extends ServiceSave {
 		}
 	};
 
+	/* TODO: MyAnimeList doesn't have the same URL for adding/editing titles
+			 I need to get the list of titles *really* in the list before adding or updating things */
 	export = (): void => {};
 }
