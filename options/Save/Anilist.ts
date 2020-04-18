@@ -222,7 +222,6 @@ export class Anilist extends ServiceSave {
 			DOM.space(),
 			this.resetButton(),
 		]);
-		console.log(titles.collection);
 	};
 
 	export = (): void => {};

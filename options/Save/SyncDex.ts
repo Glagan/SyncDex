@@ -136,21 +136,22 @@ export class SyncDex extends ExtensionSave {
 			this.busy = true;
 			this.block.classList.add('loading');
 			let data = await LocalStorage.getAll();
-			let downloadLink = DOM.create('a', {
-				style: {
-					display: 'none',
-				},
-				attributes: {
-					download: 'SyncDex.json',
-					target: '_blank',
-					href: `data:application/json;charset=utf-8,${encodeURIComponent(
-						JSON.stringify(data)
-					)}`,
-				},
-			});
-			document.body.appendChild(downloadLink);
-			downloadLink.click();
-			downloadLink.remove();
+			if (data) {
+				delete data.tokens;
+				let downloadLink = DOM.create('a', {
+					style: {
+						display: 'none',
+					},
+					attributes: {
+						download: 'SyncDex.json',
+						target: '_blank',
+						href: `data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(data))}`,
+					},
+				});
+				document.body.appendChild(downloadLink);
+				downloadLink.click();
+				downloadLink.remove();
+			}
 			this.block.classList.remove('loading');
 			this.busy = false;
 		}

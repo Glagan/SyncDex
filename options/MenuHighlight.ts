@@ -32,11 +32,9 @@ export class MenuHighlight {
 			});
 			this.menus.push(menu);
 		});
-		node.addEventListener(
-			'scroll',
-			() => window.requestAnimationFrame(() => this.frame(node.scrollTop)),
-			{ passive: true }
-		);
+		node.addEventListener('scroll', () => window.requestAnimationFrame(() => this.frame(node.scrollTop)), {
+			passive: true,
+		});
 		this.frame(node.scrollTop);
 	}
 

@@ -32,8 +32,8 @@ body {
 	flex-flow: row nowrap;
 	justify-content: stretch;
 	background-color: #111523;
-	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-		sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
+		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 	font-size: 1rem;
 }
 
@@ -108,15 +108,11 @@ h2.full {
 #content > h1 {
 	transition: 0.1s cubic-bezier(0.6, 0.04, 0.98, 0.335);
 	opacity: 0.4;
-}
-
-#content > h1:first-child {
-	margin-top: 1rem;
+	margin: 1rem 0;
 }
 
 #content > div {
 	transition: 0.1s cubic-bezier(0.6, 0.04, 0.98, 0.335);
-	padding: 1rem 0;
 	opacity: 0.4;
 }
 
@@ -329,8 +325,8 @@ h2.full {
 
 input,
 button {
-	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-		sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
+		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
 button,

@@ -1,6 +1,11 @@
 import { SaveManager } from '../Manager/Save';
 import { DOM, AppendableElement } from '../../src/DOM';
 
+export interface ImportState {
+	current: number;
+	max: number;
+}
+
 export class Row {
 	node: HTMLElement;
 
@@ -192,10 +197,7 @@ export abstract class ServiceSave {
 		});
 	};
 
-	createForm = (
-		elements: (Row | AppendableElement)[],
-		callback: (event: Event) => void
-	): HTMLFormElement => {
+	createForm = (elements: (Row | AppendableElement)[], callback: (event: Event) => void): HTMLFormElement => {
 		const form = DOM.create('form', { class: 'block' });
 		for (let index = 0, len = elements.length; index < len; index++) {
 			const element = elements[index];

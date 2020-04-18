@@ -1,13 +1,8 @@
-import { ServiceSave, Input } from './Save';
+import { ServiceSave, Input, ImportState } from './Save';
 import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Runtime, RawResponse } from '../../src/Runtime';
 import { Status } from '../../src/Service/Service';
-
-interface ImportState {
-	current: number;
-	max: number;
-}
 
 export class MangaDex extends ServiceSave {
 	name: string = 'MangaDex';
