@@ -63,7 +63,7 @@ export class Title implements FullTitle {
 	name?: string;
 	lastRead?: number;
 
-	constructor(id: number, title?: FullTitle) {
+	constructor(id: number, title?: Partial<FullTitle>) {
 		this.new = title == undefined;
 		this.id = id;
 		if (!this.new) {

@@ -7,7 +7,7 @@ console.log('SyncDex :: Background');
 setBrowser();
 const findDomain = (url: string): string => {
 	// Simple domain search - not the best but simple
-	const res = /https?:\/\/(?:.+\.)?([-\w\d]+\.(?:\w{2,5})|localhost)(?:$|\/)	/i.exec(url);
+	const res = /https?:\/\/(?:.+\.)?([-\w\d]+\.(?:\w{2,5})|localhost)(?:$|\/)/i.exec(url);
 	if (res !== null) {
 		return res[1];
 	}
@@ -16,6 +16,7 @@ const findDomain = (url: string): string => {
 let nextRequest: Record<string, number> = {};
 // Defaults to 1000ms
 const cooldowns: Record<string, number> = {
+	'mangadex.org': 1250,
 	localhost: 250,
 };
 browser.runtime.onMessage.addListener(

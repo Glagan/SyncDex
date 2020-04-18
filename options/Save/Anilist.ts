@@ -6,6 +6,14 @@ import { Runtime, JSONResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 
+interface ViewerResponse {
+	data: {
+		Viewer: {
+			name: string;
+		};
+	};
+}
+
 enum AnilistStatus {
 	'CURRENT' = 'CURRENT',
 	'COMPLETED' = 'COMPLETED',
@@ -41,6 +49,13 @@ export class Anilist extends ServiceSave {
 
 	form?: HTMLFormElement;
 
+	static viewerQuery = `
+	query {
+		Viewer {
+			name
+		}
+	}`;
+
 	static listQuery = `
 	query ($userId: Int, $userName: String) {
 		MediaListCollection(userId: $userId, userName: $userName, type: MANGA) {
@@ -58,36 +73,57 @@ export class Anilist extends ServiceSave {
 	// TODO: Cancel button
 	import = (): void => {
 		this.manager.clear();
-		this.manager.header('Enter your Anilist Username');
-		this.notification(
-			'info',
-			`Make sure your lists are public and/or activate the Service to be logged in.`
-		);
-		const inputRow = new Input('username', 'Anilist Username', 'text');
-		this.form = this.createForm([inputRow], (event) => this.handle(event));
-		// Add a button to *Find* Username if the Service is activated
+		this.manager.header('Importing from Anilist');
+		this.notification('warning', `You need to have Anilist activated and to be logged in to import.`);
+		const block = DOM.create('div', {
+			class: 'block',
+		});
 		let busy = false;
-		const find = DOM.create('button', {
-			class: 'default ml-1',
-			textContent: 'Find',
+		const startButton = DOM.create('button', {
+			class: 'success mr-1',
+			textContent: 'Start',
 			events: {
 				click: async (event): Promise<void> => {
 					event.preventDefault();
-					if (Options.services.indexOf(ServiceName.Anilist) < 0) {
-						this.error('You need to have Anilist activated to find your Username.');
+					if (
+						Options.services.indexOf(ServiceName.Anilist) < 0 ||
+						Options.tokens.anilistToken === undefined
+					) {
+						this.error('You need to have Anilist activated and to be logged in to Import.');
 						return;
 					}
 					if (!busy) {
 						busy = true;
-						find.classList.add('loading');
-						// TODO: Request to Anilist to find Username
+						startButton.classList.add('loading');
+						const response = await Runtime.request<JSONResponse>({
+							url: 'https://graphql.anilist.co/',
+							method: 'POST',
+							isJson: true,
+							headers: {
+								Accept: 'application/json',
+								'Content-Type': 'application/json',
+								Authorization: `Bearer ${Options.tokens.anilistToken}`,
+							},
+							body: JSON.stringify({
+								query: Anilist.viewerQuery,
+							}),
+						});
+						let username = '';
+						if (response.status >= 400) {
+							this.error(
+								`The request failed, maybe Anilist is having problems or your token expired, retry later.`
+							);
+							startButton.classList.remove('loading');
+						} else {
+							username = (response.body as ViewerResponse).data.Viewer.name;
+							await this.handleImport(username);
+						}
 						busy = false;
-						find.classList.remove('loading');
 					}
 				},
 			},
 		});
-		inputRow.node.appendChild(find);
+		DOM.append(this.manager.node, DOM.append(block, startButton, this.resetButton()));
 	};
 
 	toStatus = (status: AnilistStatus): Status => {
@@ -107,16 +143,10 @@ export class Anilist extends ServiceSave {
 		return Status.NONE;
 	};
 
-	handle = async (event: Event): Promise<void> => {
-		event.preventDefault();
-		if (!this.form) return;
-		const username = this.form?.username?.value.trim();
-		if (username === undefined || username === '') {
-			this.error('Empty Username');
-			return;
-		}
+	handleImport = async (username: string): Promise<void> => {
+		this.removeNotifications();
 		// Send a simple query to Anilist
-		let notification = this.notification('info loading', 'Sending request to Anilist...');
+		let notification = this.notification('info loading', 'Importing Manga list form Anilist...');
 		const response = await Runtime.request<JSONResponse>({
 			url: 'https://graphql.anilist.co/',
 			method: 'POST',
@@ -138,22 +168,20 @@ export class Anilist extends ServiceSave {
 			return;
 		}
 		if (response.status >= 400) {
-			this.error('Bad Request, check if you entered the correct Username.');
+			this.error('Bad Request, check if your token is valid.');
 			return;
 		}
 		// data.MediaListCollection.lists[]
 		let titles = new TitleCollection();
 		const body = response.body as AnilistResponse;
-		let total = body.data.MediaListCollection.lists.reduce(
-			(acc, list) => acc + list.entries.length,
-			0
-		);
+		let total = body.data.MediaListCollection.lists.reduce((acc, list) => acc + list.entries.length, 0);
 		let processed = 0;
 		let added = 0;
 		this.manager.clear();
+		this.manager.header('Importing from Anilist');
 		notification = this.notification(
 			'success loading',
-			`Finding MangaDex IDs from MyAnimeList IDs, 0 out of ${total}.`
+			`Finding MangaDex IDs from Anilist IDs, 0 out of ${total}.`
 		);
 		// Flatten entries and search MangaDex IDs
 		for (let lid = 0, len = body.data.MediaListCollection.lists.length; lid < len; lid++) {
@@ -190,7 +218,7 @@ export class Anilist extends ServiceSave {
 		titles.merge(await TitleCollection.get(titles.ids));
 		await titles.save();
 		this.success([
-			DOM.text(`Done ! Imported ${added} Titles (out of ${total}) from Anilist`),
+			DOM.text(`Done ! Imported ${added} Titles (out of ${total}) from Anilist.`),
 			DOM.space(),
 			this.resetButton(),
 		]);
