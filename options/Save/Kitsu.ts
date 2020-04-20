@@ -125,8 +125,6 @@ export class Kitsu extends ServiceSave {
 
 	// TODO: Cancel button
 	import = async (): Promise<void> => {
-		Options.tokens.kitsuToken = '7fae61c53bf32b62da9c5e3125114f90ebd23e01e7ce8c021ae6f3cbf7c90b29';
-		Options.tokens.kitsuUser = '471913';
 		/*const thing = await Runtime.request({
 			url: 'https://kitsu.io/api/oauth/token',
 			isJson: true,
@@ -198,7 +196,7 @@ export class Kitsu extends ServiceSave {
 		const total = kitsuTitles.length;
 		let added = 0;
 		this.notification('success', `Found a total of ${kitsuTitles.length} Titles.`);
-		notification = this.notification('info loading', `Finding MangaDex IDs from Anilist IDs, 0 out of ${total}.`);
+		notification = this.notification('info loading', `Finding MangaDex IDs from Kitsu IDs, 0 out of ${total}.`);
 		for (let index = 0; index < total; index++) {
 			const kitsuTitle = kitsuTitles[index];
 			const connections = await Mochi.find(kitsuTitle.id, 'Kitsu');
