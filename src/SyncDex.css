@@ -1,4 +1,44 @@
 /***
+ * Animations
+ ***/
+
+@keyframes pulse {
+	0% {
+		box-shadow: 0px 0px 4px 1px #78c5d5;
+	}
+	25% {
+		box-shadow: 0px 0px 4px 1px #79c268;
+	}
+	50% {
+		box-shadow: 0px 0px 4px 1px #f5d63d;
+	}
+	75% {
+		box-shadow: 0px 0px 4px 1px #e868a1;
+	}
+	100% {
+		box-shadow: 0px 0px 4px 1px #bf63a6;
+	}
+}
+
+@keyframes pulse-bg {
+	0% {
+		background-color: #78c5d5;
+	}
+	25% {
+		background-color: #79c268;
+	}
+	50% {
+		background-color: #f5d63d;
+	}
+	75% {
+		background-color: #e868a1;
+	}
+	100% {
+		background-color: #bf63a6;
+	}
+}
+
+/***
  * Meta
  ***/
 

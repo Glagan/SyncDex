@@ -4,13 +4,12 @@ import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { Status } from '../../src/Service/Service';
-import { cpus } from 'os';
+import { Progress } from '../../src/interfaces';
 
 interface APTitle {
 	id: string;
 	status: Status;
-	chapter: number;
-	volume: number;
+	progress: Progress;
 }
 
 export class AnimePlanet extends ServiceSave {
@@ -107,13 +106,15 @@ export class AnimePlanet extends ServiceSave {
 		const rows = body.querySelectorAll('table.personalList tbody tr');
 		for (let index = 0, len = rows.length; index < len; index++) {
 			const row = rows[index];
-			const apTitle = {} as APTitle;
+			const apTitle = {
+				progress: {},
+			} as APTitle;
 			const title = row.querySelector('a[href^="/manga/"]') as HTMLElement;
 			apTitle.id = title.getAttribute('href')?.slice(7) as string;
 			const chapter = row.querySelector('select[name="chapters"]') as HTMLSelectElement;
-			apTitle.chapter = parseInt(chapter.value as string);
+			apTitle.progress.chapter = parseInt(chapter.value as string);
 			const volume = row.querySelector('select[name="volumes"]') as HTMLSelectElement;
-			apTitle.volume = parseInt(volume.value as string);
+			apTitle.progress.volume = parseInt(volume.value as string);
 			const status = row.querySelector('select.changeStatus') as HTMLSelectElement;
 			apTitle.status = this.toStatus(status.value);
 			if (apTitle.status !== Status.NONE) {
@@ -165,10 +166,7 @@ export class AnimePlanet extends ServiceSave {
 						titles.add(
 							new Title(connection.id as number, {
 								services: { ap: apTitle.id },
-								progress: {
-									chapter: apTitle.chapter,
-									volume: apTitle.volume,
-								},
+								progress: apTitle.progress,
 								status: apTitle.status,
 								chapters: [],
 							})
