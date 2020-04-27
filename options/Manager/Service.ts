@@ -15,7 +15,7 @@ class ServiceOptions {
 		this.service = service;
 		this.serviceName = name;
 		this.node = DOM.create('div', {
-			class: 'service loading',
+			class: `service loading ${this.serviceName.toLowerCase()}`,
 		});
 		const title = DOM.create('span', {
 			class: 'title',
@@ -40,17 +40,9 @@ class ServiceOptions {
 		});
 		this.removeButton = DOM.create('button', {
 			class: 'danger grow',
-			childs: [
-				DOM.create('i', { class: 'lni lni-cross-circle' }),
-				DOM.space(),
-				DOM.text('Remove'),
-			],
+			childs: [DOM.create('i', { class: 'lni lni-cross-circle' }), DOM.space(), DOM.text('Remove')],
 		});
-		DOM.append(
-			this.node,
-			title,
-			DOM.append(buttons, this.mainButton, this.checkStatusButton, this.removeButton)
-		);
+		DOM.append(this.node, title, DOM.append(buttons, this.mainButton, this.checkStatusButton, this.removeButton));
 	}
 
 	bind = async (manager: ServiceManager): Promise<void> => {
@@ -77,10 +69,7 @@ class ServiceOptions {
 			manager.mainService = this;
 			this.mainButton.classList.add('hidden');
 			this.node.classList.add('main');
-			this.node.parentElement?.insertBefore(
-				this.node,
-				this.node.parentElement.firstElementChild
-			);
+			this.node.parentElement?.insertBefore(this.node, this.node.parentElement.firstElementChild);
 		});
 		let busy = false;
 		this.checkStatusButton.addEventListener('click', () => {
@@ -99,8 +88,7 @@ class ServiceOptions {
 				manager.services.splice(index, 1);
 				Options.services.splice(index, 1);
 				if (Options.mainService == this.serviceName) {
-					Options.mainService =
-						Options.services.length > 0 ? Options.services[0] : undefined;
+					Options.mainService = Options.services.length > 0 ? Options.services[0] : undefined;
 				}
 			}
 			Options.save();
@@ -136,7 +124,7 @@ class ServiceOptions {
 				childs: [
 					DOM.create('span', {
 						class: 'list',
-						textContent: 'list',
+						textContent: 'List',
 					}),
 				],
 			});
@@ -227,11 +215,7 @@ export class ServiceManager {
 		// Button to add the service to the active list
 		const button = DOM.create('button', {
 			class: 'success',
-			childs: [
-				DOM.create('i', { class: 'lni lni-circle-plus' }),
-				DOM.space(),
-				DOM.text('Add'),
-			],
+			childs: [DOM.create('i', { class: 'lni lni-circle-plus' }), DOM.space(), DOM.text('Add')],
 			events: {
 				click: async (): Promise<any> => {
 					if (this.selector.value != 'Select Service') {

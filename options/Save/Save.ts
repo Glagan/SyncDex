@@ -152,7 +152,7 @@ export abstract class ServiceSave {
 	};
 
 	createBlock = (): HTMLElement => {
-		this.block = DOM.create('div', { class: 'service' });
+		this.block = DOM.create('div', { class: `service ${this.name.toLowerCase()}` });
 		const title = DOM.create('span', {
 			class: 'title',
 			childs: [

@@ -216,6 +216,7 @@ h2.full {
 	vertical-align: middle;
 }
 
+/* Dex */
 .mymangadex {
 	color: rgba(47, 82, 162);
 }
@@ -224,33 +225,60 @@ h2.full {
 	color: black;
 }
 
+/* MangaDex */
+.service.mangadex {
+	background: rgb(39, 43, 48);
+	background: linear-gradient(180deg, rgba(39, 43, 48, 1) 0%, rgba(45, 51, 56, 1) 100%);
+}
+
+.mangadex {
+	color: white;
+}
+
+/* MyAnimeList */
 .myanimelist {
 	color: rgba(47, 82, 162);
-	border-color: rgba(47, 82, 162);
+}
+
+/* Anilist */
+.service.anilist {
+	background-color: rgb(31, 38, 49);
+	box-shadow: rgb(31, 38, 49);
 }
 
 .anilist {
-	color: rgb(31, 38, 49);
-	border-color: rgb(31, 38, 49);
+	color: white;
 }
 
 .anilist .list {
 	color: rgb(2, 169, 255);
 }
 
+/* Kitsu */
+.service.kitsu {
+	background-color: rgb(64, 47, 63);
+}
+
 .kitsu {
-	color: rgb(253, 117, 92);
-	border-color: rgb(253, 117, 92);
+	color: white;
+}
+
+/* Mangaupdates */
+.service.mangaupdates {
+	background-color: rgb(240, 243, 247);
 }
 
 .mangaupdates {
-	color: rgb(184, 193, 202);
-	border-color: rgb(184, 193, 202);
+	color: rgb(82, 102, 124);
+}
+
+/* AnimePlanet */
+.service.animeplanet {
+	background-color: rgb(48, 48, 48);
 }
 
 .animeplanet {
 	color: rgb(252, 83, 66);
-	border-color: rgb(252, 83, 66);
 }
 
 .block {
