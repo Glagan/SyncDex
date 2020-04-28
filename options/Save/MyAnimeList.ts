@@ -91,20 +91,13 @@ export class MyAnimeList extends ServiceSave {
 					// Check if user_export_type is set and equals 2 for manga lists
 					const infos = body.querySelector('myinfo') ?? undefined;
 					const exportType = infos?.querySelector('user_export_type') ?? undefined;
-					if (
-						infos === undefined ||
-						exportType === undefined ||
-						exportType.textContent !== '2'
-					) {
+					if (infos === undefined || exportType === undefined || exportType.textContent !== '2') {
 						this.error('Invalid file !');
 						return;
 					}
 					this.manager.clear();
 					this.manager.header('Import MyAnimeList Save');
-					let currentNotification = this.notification(
-						'info loading',
-						'Step 1: Reading Save file'
-					);
+					let notification = this.notification('info loading', 'Step 1: Reading Save file');
 					// Get a list of MAL Titles
 					const titles = new TitleCollection();
 					const myAnimeListTitles: MyAnimeListTitle[] = [];
@@ -112,60 +105,57 @@ export class MyAnimeList extends ServiceSave {
 					for (let index = 0, len = mangaList.length; index < len; index++) {
 						const manga = mangaList[index] as HTMLElement;
 						const title = {
-							id: parseInt(
-								manga.querySelector('manga_mangadb_id')?.textContent || ''
-							),
-							chapters: parseInt(
-								manga.querySelector('my_read_chapters')?.textContent || ''
-							),
-							volumes: parseInt(
-								manga.querySelector('my_read_volumes')?.textContent || ''
-							),
-							status: (manga.querySelector('my_status')?.textContent ||
-								'Invalid') as MyAnimeListStatus,
+							id: parseInt(manga.querySelector('manga_mangadb_id')?.textContent || ''),
+							chapters: parseInt(manga.querySelector('my_read_chapters')?.textContent || ''),
+							volumes: parseInt(manga.querySelector('my_read_volumes')?.textContent || ''),
+							status: (manga.querySelector('my_status')?.textContent || 'Invalid') as MyAnimeListStatus,
 						};
 						if (this.validMyAnimeListTitle(title)) {
 							myAnimeListTitles.push(title);
 						}
 					}
-					currentNotification.classList.remove('loading');
+					notification.classList.remove('loading');
 					const totalValid = myAnimeListTitles.length;
 					this.notification('success', `Found ${myAnimeListTitles.length} valid titles.`);
-					currentNotification = this.notification(
-						'info loading',
-						`Step 2: Find MangaDex IDs from MyAnimeList IDs, 0 out of ${totalValid}`
-					);
 					// Get a list of MangaDex ID for every MAL IDs
 					let totalAdded = 0;
-					for (let index = 0, len = myAnimeListTitles.length; index < len; index++) {
+					let doStop = false;
+					const stopButton = this.stopButton(() => {
+						doStop = true;
+					});
+					notification = this.notification('info loading', [
+						DOM.text(`Step 2: Find MangaDex IDs from MyAnimeList IDs, 0 out of ${totalValid}`),
+						DOM.space(),
+						stopButton,
+					]);
+					for (let index = 0, len = myAnimeListTitles.length; !doStop && index < len; index++) {
 						const myAnimeListTitle = myAnimeListTitles[index];
 						const connections = await Mochi.find(myAnimeListTitle.id, 'MyAnimeList');
-						if (connections !== undefined) {
-							for (let index = 0, len = connections.length; index < len; index++) {
-								const connection = connections[index];
-								if (connection.service === 'MangaDex') {
-									titles.add(
-										new Title(connection.id as number, {
-											services: { mal: myAnimeListTitle.id },
-											progress: {
-												chapter: myAnimeListTitle.chapters,
-												volume: myAnimeListTitle.volumes,
-											},
-											status: this.toStatus(myAnimeListTitle.status),
-											chapters: [],
-										})
-									);
-									totalAdded++;
-									break;
-								}
-							}
+						if (connections !== undefined && connections['MangaDex'] !== undefined) {
+							titles.add(
+								new Title(connections['MangaDex'] as number, {
+									services: { mal: myAnimeListTitle.id },
+									progress: {
+										chapter: myAnimeListTitle.chapters,
+										volume: myAnimeListTitle.volumes,
+									},
+									status: this.toStatus(myAnimeListTitle.status),
+									chapters: [],
+								})
+							);
+							totalAdded++;
 						}
-						currentNotification.textContent = `Step 2: Find MangaDex IDs from MyAnimeList IDs, ${
+						(notification.firstChild as Text).textContent = `Step 2: Find MangaDex IDs from MyAnimeList IDs, ${
 							index + 1
-						} out of ${totalValid}`;
+						} out of ${totalValid}.`;
 					}
-					currentNotification.classList.remove('loading');
-					currentNotification = this.notification(
+					notification.classList.remove('loading');
+					stopButton.remove();
+					if (doStop) {
+						this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+						return;
+					}
+					notification = this.notification(
 						'info',
 						`Step 3: Saving a total of ${totalAdded} (ouf of ${totalValid}).`
 					);

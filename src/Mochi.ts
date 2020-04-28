@@ -1,7 +1,7 @@
 import { Runtime, JSONResponse } from './Runtime';
 
-interface MochiResult<T> {
-	data: T[];
+interface MochiResult {
+	data: Record<MochiService, string | number>;
 	meta: {
 		time: Record<string, number>;
 	} & Record<string, any>;
@@ -14,11 +14,6 @@ enum MochiService {
 	Kitsu = 'Kitsu',
 	MangaUpdates = 'MangaUpdates',
 	AnimePlanet = 'AnimePlanet',
-}
-
-interface MochiConnection {
-	id: number | string;
-	service: MochiService;
 }
 
 export class Mochi {
@@ -36,7 +31,7 @@ export class Mochi {
 	static async find(
 		title: number | string,
 		service: string = 'MangaDex'
-	): Promise<MochiConnection[] | undefined> {
+	): Promise<Record<MochiService, string | number> | undefined> {
 		const response = await Runtime.request<JSONResponse>({
 			url: `${Mochi.server}/connections.php?id=${title}&service=${service}`,
 			isJson: true,
@@ -44,9 +39,6 @@ export class Mochi {
 		if (response.status >= 400) {
 			return undefined;
 		}
-		if (Array.isArray(response.body.data)) {
-			return response.body.data as MochiConnection[];
-		}
-		return undefined;
+		return (response.body as MochiResult).data;
 	}
 }

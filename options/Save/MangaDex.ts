@@ -37,7 +37,6 @@ export class MangaDex extends ServiceSave {
 		}
 	};
 
-	// TODO: Cancel button
 	import = (): void => {
 		this.manager.clear();
 		this.manager.header('Importing from MangaDex');
@@ -146,14 +145,27 @@ export class MangaDex extends ServiceSave {
 		}
 		this.manager.clear();
 		this.manager.header('Importing MangaDex Titles');
-		let notification = this.notification('success loading', `Importing page 1 out of ${state.max}.`);
 		// Then fetch remaining pages
 		let res = true;
-		while (state.current < state.max && res) {
+		let doStop = false;
+		const stopButton = this.stopButton(() => {
+			doStop = true;
+		});
+		let notification = this.notification('success loading', [
+			DOM.text(`Importing page 1 out of ${state.max}.`),
+			DOM.space(),
+			stopButton,
+		]);
+		while (!doStop && state.current < state.max && res) {
 			res = await this.singlePage(titles, userId, state);
-			notification.textContent = `Importing page ${state.current} out of ${state.max}.`;
+			(notification.firstChild as Text).textContent = `Importing page ${state.current} out of ${state.max}.`;
 		}
 		notification.classList.remove('loading');
+		stopButton.remove();
+		if (doStop) {
+			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			return;
+		}
 		if (!res) {
 			this.notification('warning', `Page ${state.current} failed, but all previous pages were imported.`);
 		}
@@ -185,7 +197,6 @@ export class MangaDex extends ServiceSave {
 		}
 	};
 
-	// TODO: Cancel button
 	export = async (): Promise<void> => {
 		this.manager.clear();
 		this.manager.header('Exporting to MangaDex');
@@ -199,7 +210,11 @@ export class MangaDex extends ServiceSave {
 		);
 		let len = titles.collection.length,
 			total = 0;
-		for (let index = 0; index < len; index++) {
+		let doStop = false;
+		const stopButton = this.stopButton(() => {
+			doStop = true;
+		});
+		for (let index = 0; !doStop && index < len; index++) {
 			const title = titles.collection[index];
 			const status = this.fromStatus(title.status);
 			if (status > 0) {
@@ -216,10 +231,16 @@ export class MangaDex extends ServiceSave {
 					total++;
 				}
 			}
-			notification.textContent = `Step 2: Adding all Titles to your MangaDex List (${index + 1} out of ${len}).
+			(notification.firstChild as Text).textContent = `Step 2: Adding all Titles to your MangaDex List (${
+				index + 1
+			} out of ${len}).
 			This can take a long time if you have a lot of titles, be patient.`;
 		}
 		notification.classList.remove('loading');
-		this.success([DOM.text(`Done ! ${len} Titles have been exported.`), DOM.space(), this.resetButton()]);
+		stopButton.remove();
+		if (doStop) {
+			this.notification('warning', [DOM.text('You canceled the Import. '), this.resetButton()]);
+		}
+		this.success([DOM.text(`Done ! ${total} Titles have been exported.`), DOM.space(), this.resetButton()]);
 	};
 }

@@ -1,5 +1,6 @@
 import { SaveManager } from '../Manager/Save';
 import { DOM, AppendableElement } from '../../src/DOM';
+import { ServiceHelper } from '../ServiceHelper';
 
 export interface ImportState {
 	current: number;
@@ -152,18 +153,8 @@ export abstract class ServiceSave {
 	};
 
 	createBlock = (): HTMLElement => {
-		this.block = DOM.create('div', { class: `service ${this.name.toLowerCase()}` });
-		const title = DOM.create('span', {
-			class: 'title',
-			childs: [
-				DOM.create('img', {
-					attributes: { src: `/icons/${this.key}.png` },
-				}),
-				DOM.space(),
-				this.title(),
-			],
-		});
-		return DOM.append(this.block, title);
+		this.block = ServiceHelper.createBlock(this.name, this.key);
+		return this.block;
 	};
 
 	removeNotifications = (): void => {
@@ -185,6 +176,20 @@ export abstract class ServiceSave {
 	error = (content: string | AppendableElement[]): void => {
 		this.removeNotifications();
 		this.errorNotification = this.notification('danger', content);
+	};
+
+	stopButton = (callback: () => void, content: string = 'Cancel'): HTMLButtonElement => {
+		const stopButton = DOM.create('button', {
+			class: 'danger',
+			textContent: content,
+			events: {
+				click: () => {
+					callback();
+					stopButton.remove();
+				},
+			},
+		});
+		return stopButton;
 	};
 
 	resetButton = (content: string = 'Go back', type: string = 'action'): HTMLButtonElement => {

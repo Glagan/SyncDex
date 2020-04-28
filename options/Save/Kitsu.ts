@@ -185,45 +185,65 @@ export class Kitsu extends ServiceSave {
 			current: 0,
 			max: 1,
 		};
-		let notification = this.notification('info loading', `Importing page 1 of your list.`);
-		while (state.current < state.max) {
-			notification.textContent = `Importing page ${state.current + 1} out of ${state.max} of your list.`;
+		let doStop = false;
+		const stopButton = this.stopButton(() => {
+			doStop = true;
+		});
+		let notification = this.notification('info loading', [
+			DOM.text(`Importing page 1 of your list.`),
+			DOM.space(),
+			stopButton,
+		]);
+		while (!doStop && state.current < state.max) {
+			(notification.firstChild as Text).textContent = `Importing page ${state.current + 1} out of ${
+				state.max
+			} of your list.`;
 			await this.singlePage(kitsuTitles, state);
 		}
 		notification.classList.remove('loading');
+		stopButton.remove();
+		if (doStop) {
+			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			return;
+		}
 		// Find MangaDex IDs
 		let titles = new TitleCollection();
 		const total = kitsuTitles.length;
 		let added = 0;
 		this.notification('success', `Found a total of ${kitsuTitles.length} Titles.`);
-		notification = this.notification('info loading', `Finding MangaDex IDs from Kitsu IDs, 0 out of ${total}.`);
+		notification = this.notification('info loading', [
+			DOM.text(`Finding MangaDex IDs from Kitsu IDs, 0 out of ${total}.`),
+			DOM.space(),
+			stopButton,
+		]);
 		for (let index = 0; index < total; index++) {
 			const kitsuTitle = kitsuTitles[index];
 			const connections = await Mochi.find(kitsuTitle.id, 'Kitsu');
-			if (connections !== undefined) {
-				for (let index = 0, len = connections.length; index < len; index++) {
-					const connection = connections[index];
-					if (connection.service === 'MangaDex') {
-						titles.add(
-							new Title(connection.id as number, {
-								services: { ku: kitsuTitle.id },
-								progress: {
-									chapter: kitsuTitle.chapter,
-									volume: kitsuTitle.volume,
-								},
-								status: kitsuTitle.status,
-								chapters: [],
-							})
-						);
-						added++;
-						break;
-					}
-				}
+			if (connections !== undefined && connections['MangaDex'] !== undefined) {
+				titles.add(
+					new Title(connections['MangaDex'] as number, {
+						services: { ku: kitsuTitle.id },
+						progress: {
+							chapter: kitsuTitle.chapter,
+							volume: kitsuTitle.volume,
+						},
+						status: kitsuTitle.status,
+						chapters: [],
+					})
+				);
+				added++;
 			}
-			notification.textContent = `Finding MangaDex IDs from Kitsu IDs, ${index + 1} out of ${total}.`;
+			(notification.firstChild as Text).textContent = `Finding MangaDex IDs from Kitsu IDs, ${
+				index + 1
+			} out of ${total}.`;
+		}
+		notification.classList.remove('loading');
+		stopButton.remove();
+		if (doStop) {
+			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			return;
 		}
 		// Done, merge and save
-		notification.classList.remove('loading');
 		titles.merge(await TitleCollection.get(titles.ids));
 		await titles.save();
 		this.success([

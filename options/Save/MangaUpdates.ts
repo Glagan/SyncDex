@@ -92,49 +92,65 @@ export class MangaUpdates extends ServiceSave {
 		this.manager.clear();
 		this.removeNotifications();
 		this.manager.header('Importing from MangaUpdates');
-		let notification = this.notification('info loading', `Importing list 1 out of 5.`);
 		let muTitles: MUTitle[] = [];
-		for (let index = 0, len = MangaUpdates.lists.length; index < len; index++) {
+		let doStop = false;
+		const stopButton = this.stopButton(() => {
+			doStop = true;
+		});
+		let notification = this.notification('info loading', [
+			DOM.text(`Importing list 1 out of 5.`),
+			DOM.space(),
+			stopButton,
+		]);
+		for (let index = 0, len = MangaUpdates.lists.length; !doStop && index < len; index++) {
 			const listName = MangaUpdates.lists[index];
-			notification.textContent = `Importing list ${index + 1} out of 5.`;
+			(notification.firstChild as Text).textContent = `Importing list ${index + 1} out of 5.`;
 			if (!(await this.listPage(muTitles, listName))) {
+				this.error(
+					`The request failed, maybe MangaUpdates is having problems or you aren't logged in, retry later.`
+				);
 				break;
 			}
 		}
 		notification.classList.remove('loading');
+		stopButton.remove();
+		if (doStop) {
+			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			return;
+		}
 		// Find MangaDex IDs
 		let titles = new TitleCollection();
 		const total = muTitles.length;
 		let added = 0;
 		this.notification('success', `Found a total of ${muTitles.length} Titles.`);
-		notification = this.notification(
-			'info loading',
-			`Finding MangaDex IDs from MangaUpdates IDs, 0 out of ${total}.`
-		);
-		for (let index = 0; index < total; index++) {
+		notification = this.notification('info loading', [
+			DOM.text(`Finding MangaDex IDs from MangaUpdates IDs, 0 out of ${total}.`),
+			DOM.space(),
+			stopButton,
+		]);
+		for (let index = 0; !doStop && index < total; index++) {
 			const muTitle = muTitles[index];
 			const connections = await Mochi.find(muTitle.id, 'MangaUpdates');
-			if (connections !== undefined) {
-				for (let index = 0, len = connections.length; index < len; index++) {
-					const connection = connections[index];
-					if (connection.service === 'MangaDex') {
-						titles.add(
-							new Title(connection.id as number, {
-								services: { mu: muTitle.id },
-								progress: muTitle.progress,
-								status: muTitle.status,
-								chapters: [],
-							})
-						);
-						added++;
-						break;
-					}
-				}
+			if (connections !== undefined && connections['MangaDex'] !== undefined) {
+				titles.add(
+					new Title(connections['MangaDex'] as number, {
+						services: { mu: muTitle.id },
+						progress: muTitle.progress,
+						status: muTitle.status,
+						chapters: [],
+					})
+				);
+				added++;
 			}
 			notification.textContent = `Finding MangaDex IDs from MangaUpdates IDs, ${index + 1} out of ${total}.`;
 		}
-		// Done, merge and save
 		notification.classList.remove('loading');
+		stopButton.remove();
+		if (doStop) {
+			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			return;
+		}
+		// Done, merge and save
 		titles.merge(await TitleCollection.get(titles.ids));
 		await titles.save();
 		this.success([

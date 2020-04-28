@@ -179,42 +179,46 @@ export class Anilist extends ServiceSave {
 		let added = 0;
 		this.manager.clear();
 		this.manager.header('Importing from Anilist');
-		notification = this.notification(
-			'success loading',
-			`Finding MangaDex IDs from Anilist IDs, 0 out of ${total}.`
-		);
+		let doStop = false;
+		const stopButton = this.stopButton(() => {
+			doStop = true;
+		});
+		notification = this.notification('success loading', [
+			DOM.text(`Finding MangaDex IDs from Anilist IDs, 0 out of ${total}.`),
+			DOM.space(),
+			stopButton,
+		]);
 		// Flatten entries and search MangaDex IDs
-		for (let lid = 0, len = body.data.MediaListCollection.lists.length; lid < len; lid++) {
+		for (let lid = 0, len = body.data.MediaListCollection.lists.length; !doStop && lid < len; lid++) {
 			const list = body.data.MediaListCollection.lists[lid];
 			for (let eid = 0, len = list.entries.length; eid < len; eid++) {
 				const entry = list.entries[eid];
 				const connections = await Mochi.find(entry.mediaId, 'Anilist');
-				if (connections !== undefined) {
-					for (let index = 0, len = connections.length; index < len; index++) {
-						const connection = connections[index];
-						if (connection.service === 'MangaDex') {
-							titles.add(
-								new Title(connection.id as number, {
-									services: { al: entry.mediaId },
-									progress: {
-										chapter: entry.progress,
-										volume: entry.progressVolumes,
-									},
-									status: this.toStatus(entry.status),
-									chapters: [],
-								})
-							);
-							added++;
-							break;
-						}
-					}
+				if (connections !== undefined && connections['MangaDex'] !== undefined) {
+					titles.add(
+						new Title(connections['MangaDex'] as number, {
+							services: { al: entry.mediaId },
+							progress: {
+								chapter: entry.progress,
+								volume: entry.progressVolumes,
+							},
+							status: this.toStatus(entry.status),
+							chapters: [],
+						})
+					);
+					added++;
 				}
 				processed++;
-				notification.textContent = `Finding MangaDex IDs from Anilist IDs, ${processed} out of ${total}.`;
+				(notification.firstChild as Text).textContent = `Finding MangaDex IDs from Anilist IDs, ${processed} out of ${total}.`;
 			}
 		}
-		// Done, merge and save
 		notification.classList.remove('loading');
+		stopButton.remove();
+		if (doStop) {
+			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			return;
+		}
+		// Done, merge and save
 		titles.merge(await TitleCollection.get(titles.ids));
 		await titles.save();
 		this.success([

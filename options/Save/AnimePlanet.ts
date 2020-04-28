@@ -141,45 +141,60 @@ export class AnimePlanet extends ServiceSave {
 			current: 0,
 			max: 1,
 		};
-		let notification = this.notification('info loading', `Importing page 1 of your list.`);
-		while (state.current < state.max) {
+		let doStop = false;
+		const stopButton = this.stopButton(() => {
+			doStop = true;
+		});
+		let notification = this.notification('info loading', [
+			DOM.text(`Importing page 1 of your list.`),
+			DOM.space(),
+			stopButton,
+		]);
+		while (!doStop && state.current < state.max) {
 			await this.singlePage(apTitles, username, state);
-			notification.textContent = `Importing page ${state.current} out of ${state.max} of your list.`;
+			(notification.firstChild as Text).textContent = `Importing page ${state.current} out of ${state.max} of your list.`;
 		}
 		notification.classList.remove('loading');
+		stopButton.remove();
+		if (doStop) {
+			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			return;
+		}
 		// Find MangaDex IDs
 		let titles = new TitleCollection();
 		const total = apTitles.length;
 		let added = 0;
 		this.notification('success', `Found a total of ${apTitles.length} Titles.`);
-		notification = this.notification(
-			'info loading',
-			`Finding MangaDex IDs from AnimePlanet IDs, 0 out of ${total}.`
-		);
-		for (let index = 0; index < total; index++) {
+		notification = this.notification('info loading', [
+			DOM.text(`Finding MangaDex IDs from AnimePlanet IDs, 0 out of ${total}.`),
+			DOM.space(),
+			stopButton,
+		]);
+		for (let index = 0; !doStop && index < total; index++) {
 			const apTitle = apTitles[index];
 			const connections = await Mochi.find(apTitle.id, 'AnimePlanet');
-			if (connections !== undefined) {
-				for (let index = 0, len = connections.length; index < len; index++) {
-					const connection = connections[index];
-					if (connection.service === 'MangaDex') {
-						titles.add(
-							new Title(connection.id as number, {
-								services: { ap: apTitle.id },
-								progress: apTitle.progress,
-								status: apTitle.status,
-								chapters: [],
-							})
-						);
-						added++;
-						break;
-					}
-				}
+			if (connections !== undefined && connections['MangaDex'] !== undefined) {
+				titles.add(
+					new Title(connections['MangaDex'] as number, {
+						services: { ap: apTitle.id },
+						progress: apTitle.progress,
+						status: apTitle.status,
+						chapters: [],
+					})
+				);
+				added++;
 			}
-			notification.textContent = `Finding MangaDex IDs from AnimePlanet IDs, ${index + 1} out of ${total}.`;
+			(notification.firstChild as Text).textContent = `Finding MangaDex IDs from AnimePlanet IDs, ${
+				index + 1
+			} out of ${total}.`;
+		}
+		notification.classList.remove('loading');
+		stopButton.remove();
+		if (doStop) {
+			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			return;
 		}
 		// Done, merge and save
-		notification.classList.remove('loading');
 		titles.merge(await TitleCollection.get(titles.ids));
 		await titles.save();
 		this.success([

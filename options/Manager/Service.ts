@@ -2,6 +2,7 @@ import { Options } from '../../src/Options';
 import { DOM } from '../../src/DOM';
 import { ServiceName, Service, ServiceKey, LoginStatus } from '../../src/Service/Service';
 import { ServiceClass } from '../../src/Service/ServiceClass';
+import { ServiceHelper } from '../ServiceHelper';
 
 class ServiceOptions {
 	serviceName: ServiceName;
@@ -14,19 +15,8 @@ class ServiceOptions {
 	constructor(service: Service, name: ServiceName) {
 		this.service = service;
 		this.serviceName = name;
-		this.node = DOM.create('div', {
-			class: `service loading ${this.serviceName.toLowerCase()}`,
-		});
-		const title = DOM.create('span', {
-			class: 'title',
-			childs: [
-				DOM.create('img', {
-					attributes: { src: `/icons/${ServiceKey[name]}.png` },
-				}),
-				DOM.space(),
-				this.createTitle(),
-			],
-		});
+		this.node = ServiceHelper.createBlock(this.serviceName, ServiceKey[this.serviceName]);
+		this.node.classList.add('loading');
 		const buttons = DOM.create('div', { class: 'button-group' });
 		this.mainButton = DOM.create('button', {
 			class: 'default',
@@ -42,7 +32,7 @@ class ServiceOptions {
 			class: 'danger grow',
 			childs: [DOM.create('i', { class: 'lni lni-cross-circle' }), DOM.space(), DOM.text('Remove')],
 		});
-		DOM.append(this.node, title, DOM.append(buttons, this.mainButton, this.checkStatusButton, this.removeButton));
+		DOM.append(this.node, DOM.append(buttons, this.mainButton, this.checkStatusButton, this.removeButton));
 	}
 
 	bind = async (manager: ServiceManager): Promise<void> => {
@@ -114,25 +104,6 @@ class ServiceOptions {
 			this.node.classList.add('inactive');
 		}
 		manager.updateServiceStatus(this.serviceName, status);
-	};
-
-	createTitle = (): HTMLElement => {
-		if (this.serviceName == ServiceName.Anilist) {
-			return DOM.create('span', {
-				class: this.serviceName.toLowerCase(),
-				textContent: 'Ani',
-				childs: [
-					DOM.create('span', {
-						class: 'list',
-						textContent: 'List',
-					}),
-				],
-			});
-		}
-		return DOM.create('span', {
-			class: this.serviceName.toLowerCase(),
-			textContent: this.serviceName,
-		});
 	};
 }
 
