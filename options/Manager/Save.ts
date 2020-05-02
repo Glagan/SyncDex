@@ -1,13 +1,13 @@
 import { DOM } from '../../src/DOM';
-import { MyMangaDex } from '../Save/MyMangaDex';
-import { MangaDex } from '../Save/MangaDex';
-import { SyncDex } from '../Save/SyncDex';
-import { MyAnimeList } from '../Save/MyAnimeList';
-import { Anilist } from '../Save/Anilist';
-import { Kitsu } from '../Save/Kitsu';
-import { AnimePlanet } from '../Save/AnimePlanet';
-import { MangaUpdates } from '../Save/MangaUpdates';
-import { ServiceSave } from '../Save/Save';
+import { MyMangaDex } from '../Service/MyMangaDex';
+import { MangaDex } from '../Service/MangaDex';
+import { SyncDex } from '../Service/SyncDex';
+import { MyAnimeList } from '../Service/MyAnimeList';
+import { Anilist } from '../Service/Anilist';
+import { Kitsu } from '../Service/Kitsu';
+import { AnimePlanet } from '../Service/AnimePlanet';
+import { MangaUpdates } from '../Service/MangaUpdates';
+import { ServiceSave } from '../Service/Save';
 
 export abstract class SaveManager {
 	node: HTMLElement;

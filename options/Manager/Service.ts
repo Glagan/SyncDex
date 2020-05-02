@@ -142,22 +142,34 @@ class ServiceOptions {
 						}),
 					],
 				});
+				let busy = false;
 				this.loginForm.addEventListener('submit', async (event) => {
 					event.preventDefault();
 					if (this.loginForm === undefined) return;
-					if (this.service.login) {
-						// Login call Options.save itself
-						const res = await this.service.login(
-							this.loginForm.username.value.trim(),
-							this.loginForm.password.value
-						);
-						if (res == LoginStatus.SUCCESS) {
-							this.loginForm.remove();
-							this.loginForm = undefined;
-							this.service.loggedIn().then((loggedIn) => this.updateStatus(manager, loggedIn));
-						} else {
-							// TODO: Notification
+					if (!busy) {
+						busy = true;
+						this.node.classList.add('loading');
+						this.loginForm.classList.add('hidden');
+						if (this.service.login) {
+							// Login call Options.save itself
+							const res = await this.service.login(
+								this.loginForm.username.value.trim(),
+								this.loginForm.password.value
+							);
+							if (res == LoginStatus.SUCCESS) {
+								this.loginForm.remove();
+								this.loginForm = undefined;
+								this.node.classList.remove('inactive', 'loading');
+								this.node.classList.add('active');
+								this.loginButton.classList.add('hidden');
+								this.updateStatus(manager, res);
+								return;
+							}
 						}
+						// If there was an error -- show the form again
+						// TODO: Notification
+						this.loginForm.classList.remove('hidden');
+						busy = false;
 					}
 				});
 				this.node.appendChild(this.loginForm);
