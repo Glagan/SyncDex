@@ -17,15 +17,13 @@ export class Router {
 		if (!(location instanceof Array)) {
 			location = [location];
 		}
-		for (let index = 0; index < location.length; index++) {
-			const route = location[index];
+		for (const route of location) {
 			this.routes.push(new Route(route, fnct));
 		}
 	}
 
 	match(location: string): RouteFunction | null {
-		for (let index = 0; index < this.routes.length; index++) {
-			const route = this.routes[index];
+		for (const route of this.routes) {
 			if (location.match(route.location)) {
 				return route.fnct;
 			}

@@ -50,8 +50,7 @@ export class InputManager {
 
 	constructor() {
 		const inputs = document.querySelectorAll<HTMLInputElement>('[data-input]');
-		for (let index = 0; index < inputs.length; index++) {
-			const node = inputs[index];
+		for (const node of inputs) {
 			const input = new Input(node);
 			input.bind();
 			this.inputs.push(input);
@@ -59,8 +58,7 @@ export class InputManager {
 	}
 
 	updateAll = (): void => {
-		for (let index = 0; index < this.inputs.length; index++) {
-			const input = this.inputs[index];
+		for (const input of this.inputs) {
 			input.update(Options[input.optionName]);
 		}
 	};

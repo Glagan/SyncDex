@@ -104,8 +104,7 @@ export class AnimePlanet extends ServiceSave {
 		}
 		const body = this.parser.parseFromString(response.body, 'text/html');
 		const rows = body.querySelectorAll('table.personalList tbody tr');
-		for (let index = 0, len = rows.length; index < len; index++) {
-			const row = rows[index];
+		for (const row of rows) {
 			const apTitle = {
 				progress: {},
 			} as APTitle;
@@ -170,8 +169,9 @@ export class AnimePlanet extends ServiceSave {
 			DOM.space(),
 			stopButton,
 		]);
-		for (let index = 0; !doStop && index < total; index++) {
-			const apTitle = apTitles[index];
+		let index = 0;
+		for (const apTitle of apTitles) {
+			if (doStop) break;
 			const connections = await Mochi.find(apTitle.id, 'AnimePlanet');
 			if (connections !== undefined && connections['MangaDex'] !== undefined) {
 				titles.add(
@@ -184,9 +184,7 @@ export class AnimePlanet extends ServiceSave {
 				);
 				added++;
 			}
-			(notification.firstChild as Text).textContent = `Finding MangaDex IDs from AnimePlanet IDs, ${
-				index + 1
-			} out of ${total}.`;
+			(notification.firstChild as Text).textContent = `Finding MangaDex IDs from AnimePlanet IDs, ${++index} out of ${total}.`;
 		}
 		notification.classList.remove('loading');
 		stopButton.remove();

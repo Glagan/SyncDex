@@ -44,8 +44,7 @@ class Highlights {
 			if (Options.colors.highlights.length > 1) {
 				Options.colors.highlights.splice(this.index, 1);
 				highlights.list.splice(this.index, 1);
-				for (let index = 0; index < highlights.list.length; index++) {
-					const row = highlights.list[index];
+				for (const row of highlights.list) {
 					if (row.index > this.index) {
 						row.index--;
 					}
@@ -83,11 +82,7 @@ export class HighlightsManager {
 					color.input.focus();
 				},
 			},
-			childs: [
-				DOM.create('i', { class: 'lni lni-circle-plus' }),
-				DOM.space(),
-				DOM.text('Add color'),
-			],
+			childs: [DOM.create('i', { class: 'lni lni-circle-plus' }), DOM.space(), DOM.text('Add color')],
 		});
 		this.node.appendChild(addButton);
 		this.updateAll();
@@ -95,12 +90,12 @@ export class HighlightsManager {
 
 	updateAll = (): void => {
 		// Remove previous
-		for (let index = 0; index < this.list.length; index++) {
-			this.list[index].node.remove();
+		for (const highlight of this.list) {
+			highlight.node.remove();
 		}
 		// Add current
 		this.list = [];
-		for (let index = 0; index < Options.colors.highlights.length; index++) {
+		for (let index = 0, len = Options.colors.highlights.length; index < len; index++) {
 			const color = new Highlights(index);
 			color.bind(this);
 			this.node.insertBefore(color.node, this.node.lastElementChild);

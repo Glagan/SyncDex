@@ -189,10 +189,8 @@ export class Anilist extends ServiceSave {
 			stopButton,
 		]);
 		// Flatten entries and search MangaDex IDs
-		for (let lid = 0, len = body.data.MediaListCollection.lists.length; !doStop && lid < len; lid++) {
-			const list = body.data.MediaListCollection.lists[lid];
-			for (let eid = 0, len = list.entries.length; eid < len; eid++) {
-				const entry = list.entries[eid];
+		for (const list of body.data.MediaListCollection.lists) {
+			for (const entry of list.entries) {
 				const connections = await Mochi.find(entry.mediaId, 'Anilist');
 				if (connections !== undefined && connections['MangaDex'] !== undefined) {
 					titles.add(

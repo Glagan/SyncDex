@@ -18,8 +18,7 @@ class ChapterGroup {
 	hide = (progres: Progress): void => {
 		if (!Options.hideHigher && !Options.hideLower && !Options.hideLast) return;
 		let chapterCount = this.chapters.length;
-		for (let j = 0; j < chapterCount; j++) {
-			let chapter = this.chapters[j];
+		for (const chapter of this.chapters) {
 			if (
 				chapter.progress &&
 				((Options.hideHigher && progres.chapter > chapter.progress.chapter) ||
@@ -72,8 +71,7 @@ class ChapterGroup {
 				} else if (progress.chapter < chapter.progress.chapter) {
 					chapter.row.style.backgroundColor = Options.colors.lowerChapter;
 				} else if (progress.chapter == chapter.progress.chapter) {
-					chapter.row.style.backgroundColor =
-						Options.colors.highlights[ChapterGroup.currentColor];
+					chapter.row.style.backgroundColor = Options.colors.highlights[ChapterGroup.currentColor];
 					selected = j;
 				}
 			}
@@ -84,13 +82,11 @@ class ChapterGroup {
 					j == selected ||
 					this.chapters[j].hidden ||
 					(this.chapters[j].progress &&
-						this.chapters[j].progress?.chapter ==
-							this.chapters[selected].progress?.chapter)
+						this.chapters[j].progress?.chapter == this.chapters[selected].progress?.chapter)
 				)
 					continue;
 				if (this.chapters[j].row.firstElementChild) {
-					(this.chapters[j].row
-						.firstElementChild as HTMLElement).style.backgroundColor = outerColor;
+					(this.chapters[j].row.firstElementChild as HTMLElement).style.backgroundColor = outerColor;
 				}
 			}
 		}
@@ -98,11 +94,9 @@ class ChapterGroup {
 	};
 
 	setThumbnail = (container: HTMLElement): void => {
-		let chapterCount = this.chapters.length;
 		// Add events
-		for (let j = 0; j < chapterCount; j++) {
-			const row = this.chapters[j].row;
-			this.setRowThumbnail(container, row);
+		for (const group of this.chapters) {
+			this.setRowThumbnail(container, group.row);
 		}
 	};
 
@@ -148,9 +142,7 @@ class ChapterGroup {
 		let extensions = ['jpg', 'png', 'jpeg', 'gif'];
 		tooltipThumb.addEventListener('error', () => {
 			if (Options.originalThumbnail) {
-				let tryNumber = tooltipThumb.dataset.ext
-					? Math.floor(parseInt(tooltipThumb.dataset.ext))
-					: 1;
+				let tryNumber = tooltipThumb.dataset.ext ? Math.floor(parseInt(tooltipThumb.dataset.ext)) : 1;
 				if (tryNumber < extensions.length) {
 					tooltipThumb.src = `https://mangadex.org/images/manga/${this.titleId}.${extensions[tryNumber]}`;
 					tooltipThumb.dataset.ext = (tryNumber + 1).toString();
@@ -273,14 +265,13 @@ export class MangaDex {
 	}
 
 	getChaptersGroups = (): ChapterGroup[] => {
-		let chapterContainer = this.document.querySelector('.chapter-container');
+		let chapterContainer = this.document.querySelector<HTMLElement>('.chapter-container');
 		if (!chapterContainer) return [];
 		let nodes = chapterContainer.children;
 		let groups: ChapterGroup[] = [];
 		if (nodes.length > 1) {
 			let currentGroup = new ChapterGroup();
-			for (let i = 1; i < nodes.length; i++) {
-				const row = nodes[i] as HTMLElement;
+			for (const row of nodes) {
 				let chapterRow = row.querySelector<HTMLElement>('[data-chapter]');
 				const firstChild = row.firstElementChild;
 				if (chapterRow && chapterRow.dataset.mangaId && firstChild) {
@@ -303,13 +294,12 @@ export class MangaDex {
 							if (chapterRow.dataset.chapter) {
 								return {
 									chapter: parseFloat(chapterRow.dataset.chapter),
-									volume:
-										parseFloat(chapterRow.dataset?.volume || '') || undefined,
+									volume: parseFloat(chapterRow.dataset?.volume || '') || undefined,
 								};
 							}
 							return undefined;
 						})(),
-						row: row,
+						row: row as HTMLElement,
 						hidden: false,
 					};
 					// Don't add empty chapters

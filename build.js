@@ -93,9 +93,7 @@ let browser_manifests = {
 let browsers = ['firefox', 'chrome'];
 let compiled = false;
 (async () => {
-	for (let index = 0; index < browsers.length; index++) {
-		const browser = browsers[index];
-
+	for (const browser of browsers) {
 		// Create temp folder for the bundle
 		console.log(`Creating tmp directory for ${browser}`);
 		let folderName = `build/${browser}`;
@@ -188,8 +186,8 @@ function deepFileCopy(bases, destination, ignore = []) {
 	if (!fs.existsSync(destination)) {
 		fs.mkdirSync(destination);
 	}
-	for (let index = 0; index < bases.length; index++) {
-		const parts = bases[index].split(':');
+	for (const currentBase of bases) {
+		const parts = currentBase.split(':');
 		const base = parts[0];
 		if (fs.statSync(base).isFile()) {
 			let destinationBase = destination;

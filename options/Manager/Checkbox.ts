@@ -63,8 +63,7 @@ export class CheckboxManager {
 
 	constructor() {
 		const checkboxes = document.querySelectorAll<HTMLElement>('[data-checkbox]');
-		for (let index = 0; index < checkboxes.length; index++) {
-			const node = checkboxes[index];
+		for (const node of checkboxes) {
 			const checkbox = new Checkbox(node);
 			checkbox.bind();
 			this.checkboxes.push(checkbox);
@@ -72,8 +71,7 @@ export class CheckboxManager {
 	}
 
 	updateAll = (): void => {
-		for (let index = 0; index < this.checkboxes.length; index++) {
-			const checkbox = this.checkboxes[index];
+		for (const checkbox of this.checkboxes) {
 			checkbox.toggle(Options[checkbox.optionName] as boolean);
 		}
 	};

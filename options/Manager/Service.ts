@@ -222,14 +222,13 @@ export class ServiceManager {
 
 	updateAll = (): void => {
 		// Remove previous
-		for (let index = 0; index < this.services.length; index++) {
-			this.services[index].node.remove();
+		for (const service of this.services) {
+			service.node.remove();
 		}
 		this.services = [];
 		this.inactiveServices = [];
 		// Insert current Services
-		for (let index = 0; index < Options.services.length; index++) {
-			const serviceName = Options.services[index] as ServiceName;
+		for (const serviceName of Options.services) {
 			this.addService(serviceName);
 		}
 		if (Options.services.length == 0) {

@@ -45,8 +45,7 @@ browser.runtime.onMessage.addListener(
 				let xhr = new XMLHttpRequest();
 				xhr.open(message.method, message.url, true);
 				const keys = Object.keys(message.headers);
-				for (let index = 0; index < keys.length; index++) {
-					const key = keys[index];
+				for (const key of keys) {
 					xhr.setRequestHeader(name, message.headers[key]);
 				}
 				xhr.withCredentials = true;
@@ -56,9 +55,7 @@ browser.runtime.onMessage.addListener(
 						if (xhr.readyState == 4) {
 							let body: {} | '';
 							try {
-								body = message.isJson
-									? JSON.parse(xhr.responseText)
-									: xhr.responseText;
+								body = message.isJson ? JSON.parse(xhr.responseText) : xhr.responseText;
 							} catch (error) {
 								body = message.isJson ? {} : '';
 							}

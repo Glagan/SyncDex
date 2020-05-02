@@ -151,8 +151,7 @@ export const Options: AvailableOptions & ManageOptions = Object.assign(
 		},
 
 		update: (): void => {
-			for (let index = 0; index < updates.length; index++) {
-				const update = updates[index];
+			for (const update of updates) {
 				if (update.version >= Options.version) {
 					update.fnct(Options);
 					Options.version = update.version;

@@ -72,8 +72,7 @@ export class MangaUpdates extends ServiceSave {
 			const body = this.parser.parseFromString(response.body, 'text/html');
 			const rows = body.querySelectorAll(`div[id^='r']`);
 			const status = this.toStatus(list);
-			for (let index = 0, len = rows.length; index < len; index++) {
-				const row = rows[index];
+			for (const row of rows) {
 				titles.push({
 					id: parseInt(row.id.slice(1)),
 					progress: {
@@ -102,9 +101,9 @@ export class MangaUpdates extends ServiceSave {
 			DOM.space(),
 			stopButton,
 		]);
-		for (let index = 0, len = MangaUpdates.lists.length; !doStop && index < len; index++) {
-			const listName = MangaUpdates.lists[index];
-			(notification.firstChild as Text).textContent = `Importing list ${index + 1} out of 5.`;
+		for (let i = 0; i < MangaUpdates.lists.length; i++) {
+			const listName = MangaUpdates.lists[i];
+			(notification.firstChild as Text).textContent = `Importing list ${i + 1} out of 5.`;
 			if (!(await this.listPage(muTitles, listName))) {
 				this.error(
 					`The request failed, maybe MangaUpdates is having problems or you aren't logged in, retry later.`
@@ -128,8 +127,8 @@ export class MangaUpdates extends ServiceSave {
 			DOM.space(),
 			stopButton,
 		]);
-		for (let index = 0; !doStop && index < total; index++) {
-			const muTitle = muTitles[index];
+		let index = 0;
+		for (const muTitle of muTitles) {
 			const connections = await Mochi.find(muTitle.id, 'MangaUpdates');
 			if (connections !== undefined && connections['MangaDex'] !== undefined) {
 				titles.add(
@@ -142,7 +141,7 @@ export class MangaUpdates extends ServiceSave {
 				);
 				added++;
 			}
-			notification.textContent = `Finding MangaDex IDs from MangaUpdates IDs, ${index + 1} out of ${total}.`;
+			notification.textContent = `Finding MangaDex IDs from MangaUpdates IDs, ${++index} out of ${total}.`;
 		}
 		notification.classList.remove('loading');
 		stopButton.remove();

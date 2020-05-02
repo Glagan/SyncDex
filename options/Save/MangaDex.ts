@@ -105,10 +105,10 @@ export class MangaDex extends ServiceSave {
 		}
 		const body = this.parser.parseFromString(response.body, 'text/html');
 		// Each row has a data-id field
-		const rows = body.querySelectorAll('.manga-entry');
-		for (let index = 0, len = rows.length; index < len; index++) {
-			const id = parseInt((rows[index] as HTMLElement).dataset.id || '');
-			const status: Status = this.toStatus(rows[index].querySelector<HTMLElement>('.dropdown-menu > .disabled'));
+		const rows = body.querySelectorAll<HTMLElement>('.manga-entry');
+		for (const row of rows) {
+			const id = parseInt(row.dataset.id || '');
+			const status: Status = this.toStatus(row.querySelector<HTMLElement>('.dropdown-menu > .disabled'));
 			if (!isNaN(id)) {
 				titles.add(
 					new Title(id, {
@@ -214,8 +214,9 @@ export class MangaDex extends ServiceSave {
 		const stopButton = this.stopButton(() => {
 			doStop = true;
 		});
-		for (let index = 0; !doStop && index < len; index++) {
-			const title = titles.collection[index];
+		let index = 0;
+		for (const title of titles.collection) {
+			if (doStop) break;
 			const status = this.fromStatus(title.status);
 			if (status > 0) {
 				const response = await Runtime.request<RawResponse>({
@@ -231,15 +232,13 @@ export class MangaDex extends ServiceSave {
 					total++;
 				}
 			}
-			(notification.firstChild as Text).textContent = `Step 2: Adding all Titles to your MangaDex List (${
-				index + 1
-			} out of ${len}).
+			(notification.firstChild as Text).textContent = `Step 2: Adding all Titles to your MangaDex List (${++index} out of ${len}).
 			This can take a long time if you have a lot of titles, be patient.`;
 		}
 		notification.classList.remove('loading');
 		stopButton.remove();
 		if (doStop) {
-			this.notification('warning', [DOM.text('You canceled the Import. '), this.resetButton()]);
+			this.notification('warning', 'You canceled the Export.');
 		}
 		this.success([DOM.text(`Done ! ${total} Titles have been exported.`), DOM.space(), this.resetButton()]);
 	};

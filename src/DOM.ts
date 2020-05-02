@@ -25,8 +25,7 @@ export class DOM {
 				className: properties.class || '',
 			});
 			if (properties.classList) {
-				for (let index = 0; index < properties.classList.length; index++) {
-					const className = properties.classList[index];
+				for (const className of properties.classList) {
 					elt.classList.add(className);
 				}
 			}
@@ -53,9 +52,7 @@ export class DOM {
 					if (properties.events.hasOwnProperty(event)) {
 						elt.addEventListener(
 							event,
-							(<K extends keyof DocumentEventMap>(
-								event: string
-							): DOMSimpleEvent<K> => {
+							(<K extends keyof DocumentEventMap>(event: string): DOMSimpleEvent<K> => {
 								return properties.events[event as K] as DOMSimpleEvent<K>;
 							})(event)
 						);
@@ -88,8 +85,7 @@ export class DOM {
 	}
 
 	static append(parent: HTMLElement, ...childs: AppendableElement[]): HTMLElement {
-		for (let index = 0; index < childs.length; index++) {
-			const child = childs[index];
+		for (const child of childs) {
 			parent.appendChild(child);
 		}
 		return parent;

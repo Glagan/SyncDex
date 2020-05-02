@@ -204,8 +204,7 @@ export abstract class ServiceSave {
 
 	createForm = (elements: (Row | AppendableElement)[], callback: (event: Event) => void): HTMLFormElement => {
 		const form = DOM.create('form', { class: 'block' });
-		for (let index = 0, len = elements.length; index < len; index++) {
-			const element = elements[index];
+		for (const element of elements) {
 			if (typeof element === 'object' && element instanceof Row) {
 				form.appendChild(element.node);
 			} else {

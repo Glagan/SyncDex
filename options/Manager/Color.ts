@@ -39,8 +39,7 @@ export class ColorManager {
 
 	constructor() {
 		const colors = document.querySelectorAll<HTMLElement>('[data-color]');
-		for (let index = 0; index < colors.length; index++) {
-			const node = colors[index];
+		for (const node of colors) {
 			const color = new Color(node);
 			color.bind();
 			this.colors.push(color);
@@ -48,8 +47,7 @@ export class ColorManager {
 	}
 
 	updateAll = (): void => {
-		for (let index = 0; index < this.colors.length; index++) {
-			const color = this.colors[index];
+		for (const color of this.colors) {
 			color.update(Options.colors[color.optionName]);
 		}
 	};

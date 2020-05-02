@@ -106,8 +106,7 @@ export class Kitsu extends ServiceSave {
 		}
 		const body = response.body as KitsuResponse;
 		// Each row has a data-id field
-		for (let index = 0, len = body.data.length; index < len; index++) {
-			const title = body.data[index];
+		for (const title of body.data) {
 			const kitsuTitle: KitsuTitle = {
 				id: parseInt(title.relationships.manga.data.id),
 				chapter: title.attributes.progress,
@@ -216,8 +215,8 @@ export class Kitsu extends ServiceSave {
 			DOM.space(),
 			stopButton,
 		]);
-		for (let index = 0; index < total; index++) {
-			const kitsuTitle = kitsuTitles[index];
+		let index = 0;
+		for (const kitsuTitle of kitsuTitles) {
 			const connections = await Mochi.find(kitsuTitle.id, 'Kitsu');
 			if (connections !== undefined && connections['MangaDex'] !== undefined) {
 				titles.add(
@@ -233,9 +232,7 @@ export class Kitsu extends ServiceSave {
 				);
 				added++;
 			}
-			(notification.firstChild as Text).textContent = `Finding MangaDex IDs from Kitsu IDs, ${
-				index + 1
-			} out of ${total}.`;
+			(notification.firstChild as Text).textContent = `Finding MangaDex IDs from Kitsu IDs, ${++index} out of ${total}.`;
 		}
 		notification.classList.remove('loading');
 		stopButton.remove();

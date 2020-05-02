@@ -67,8 +67,7 @@ export class SyncDex {
 				return group.titleId;
 			})
 		);
-		for (let index = 0; index < groups.length; index++) {
-			const group = groups[index];
+		for (const group of groups) {
 			const title = titles.find(group.titleId);
 			if (title !== undefined && !title.new) {
 				group.hide(title.progress);

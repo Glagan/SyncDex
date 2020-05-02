@@ -101,9 +101,8 @@ export class MyAnimeList extends ServiceSave {
 					// Get a list of MAL Titles
 					const titles = new TitleCollection();
 					const myAnimeListTitles: MyAnimeListTitle[] = [];
-					const mangaList = body.querySelectorAll('manga');
-					for (let index = 0, len = mangaList.length; index < len; index++) {
-						const manga = mangaList[index] as HTMLElement;
+					const mangaList = body.querySelectorAll<HTMLElement>('manga');
+					for (const manga of mangaList) {
 						const title = {
 							id: parseInt(manga.querySelector('manga_mangadb_id')?.textContent || ''),
 							chapters: parseInt(manga.querySelector('my_read_chapters')?.textContent || ''),
@@ -128,8 +127,8 @@ export class MyAnimeList extends ServiceSave {
 						DOM.space(),
 						stopButton,
 					]);
-					for (let index = 0, len = myAnimeListTitles.length; !doStop && index < len; index++) {
-						const myAnimeListTitle = myAnimeListTitles[index];
+					for (let i = 0, len = myAnimeListTitles.length; !doStop && i < len; i++) {
+						const myAnimeListTitle = myAnimeListTitles[i];
 						const connections = await Mochi.find(myAnimeListTitle.id, 'MyAnimeList');
 						if (connections !== undefined && connections['MangaDex'] !== undefined) {
 							titles.add(
@@ -146,7 +145,7 @@ export class MyAnimeList extends ServiceSave {
 							totalAdded++;
 						}
 						(notification.firstChild as Text).textContent = `Step 2: Find MangaDex IDs from MyAnimeList IDs, ${
-							index + 1
+							i + 1
 						} out of ${totalValid}.`;
 					}
 					notification.classList.remove('loading');

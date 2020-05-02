@@ -123,8 +123,7 @@ export class Title implements FullTitle {
 		}
 		Object.assign(this.services, other.services); // Merge Services - other erase *this*
 		// Update all 'number' properties (last...) to select the highest ones
-		for (let index = 0, len = Title.numberKeys.length; index < len; index++) {
-			const key = Title.numberKeys[index] as keyof NumberKey;
+		for (const key of Title.numberKeys) {
 			if (this[key] && other[key]) {
 				this[key] = Math.max(this[key] as number, other[key] as number);
 			}
@@ -205,11 +204,8 @@ export class TitleCollection {
 		} else {
 			const localTitles = await LocalStorage.getAll<SaveTitle>(list);
 			if (localTitles !== undefined) {
-				for (let index = 0, len = list.length; index < len; index++) {
-					const titleId: number =
-						typeof list[index] === 'number'
-							? (list[index] as number)
-							: parseInt(list[index] as string);
+				for (const id of list) {
+					const titleId = typeof id === 'number' ? id : parseInt(id);
 					if (localTitles[titleId] === undefined) {
 						collection.add(new Title(titleId));
 					} else {
@@ -222,8 +218,7 @@ export class TitleCollection {
 	}
 
 	find = (id: number): Title | undefined => {
-		for (let index = 0, len = this.collection.length; index < len; index++) {
-			const title = this.collection[index];
+		for (const title of this.collection) {
 			if (title.id === id) return title;
 		}
 		return undefined;
@@ -234,8 +229,7 @@ export class TitleCollection {
 	 * Add missing Titles in *this*
 	 */
 	merge = (other: TitleCollection): void => {
-		for (let index = 0, len = other.collection.length; index < len; index++) {
-			const title = other.collection[index];
+		for (const title of other.collection) {
 			let found = this.find(title.id);
 			if (found !== undefined) {
 				found.merge(title);
@@ -247,8 +241,7 @@ export class TitleCollection {
 
 	save = async (): Promise<void> => {
 		const mapped: { [key: number]: SaveTitle } = {};
-		for (let index = 0, len = this.collection.length; index < len; index++) {
-			const title = this.collection[index];
+		for (const title of this.collection) {
 			mapped[title.id] = title.toSave();
 		}
 		return LocalStorage.raw(mapped);
