@@ -204,6 +204,16 @@ h2.full {
 	margin-bottom: 0;
 }
 
+.service-login {
+	display: flex;
+	flex-flow: column wrap;
+	margin-top: 0.25rem;
+}
+
+.service-login input {
+	margin-bottom: 0.25rem;
+}
+
 .loading {
 	animation-name: pulse;
 	animation-duration: 2s;
@@ -287,7 +297,8 @@ h2.full {
 	background-color: #e0dfe0;
 	border: 1px solid #d0d0d1;
 	color: #131313;
-	margin: 0 1rem 1rem 1rem;
+	margin: 1rem;
+	margin-top: 0;
 }
 
 .block:last-child {
@@ -355,6 +366,10 @@ input,
 button {
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
 		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+a.button {
+	text-decoration: none;
 }
 
 button,

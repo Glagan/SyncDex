@@ -4,7 +4,6 @@ import { Kitsu } from './Kitsu';
 import { Anilist } from './Anilist';
 import { MangaUpdates } from './MangaUpdates';
 import { ServiceName, Service } from './Service';
-import { Options } from '../Options';
 
 export function ServiceClass(name: ServiceName): Service {
 	if (name == 'MyAnimeList') {

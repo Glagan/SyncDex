@@ -39,4 +39,13 @@ export default [
 		},
 		plugins: plugins(),
 	},
+	{
+		input: 'external/Anilist.ts',
+		output: {
+			file: 'build/SyncDex_Anilist.js',
+			format: 'es',
+			sourcemap: true,
+		},
+		plugins: plugins(),
+	},
 ];

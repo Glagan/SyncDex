@@ -1,9 +1,10 @@
-import { Service, Status, ServiceName, LoginStatus } from './Service';
-import { Runtime, JSONResponse, RawResponse } from '../Runtime';
+import { Service, Status, ServiceName, LoginStatus, LoginMethod, ServiceKey } from './Service';
+import { Runtime, RawResponse } from '../Runtime';
 
 export class AnimePlanet extends Service {
+	key: ServiceKey = ServiceKey.AnimePlanet;
 	name: ServiceName = ServiceName.AnimePlanet;
-	static status: { [key in Status]: number } = {
+	status: { [key in Status]: number } = {
 		[Status.NONE]: -1,
 		[Status.REREADING]: -1,
 		[Status.COMPLETED]: 1,
@@ -13,6 +14,8 @@ export class AnimePlanet extends Service {
 		[Status.PAUSED]: 5,
 		[Status.WONT_READ]: 6,
 	};
+	loginUrl = 'https://www.anime-planet.com/login.php';
+	loginMethod = LoginMethod.EXTERNAL;
 
 	loggedIn = async (): Promise<LoginStatus> => {
 		const response = await Runtime.request<RawResponse>({

@@ -46,6 +46,10 @@ let mainManifest = {
 
 	content_scripts: [
 		{
+			matches: ['https://anilist.co/api/v2/oauth/pin?syncdex*'],
+			js: ['dist/simpleNotification.min.js', 'external/SyncDex_Anilist.js'],
+		},
+		{
 			matches: [
 				'https://*.mangadex.org/follows*',
 				'https://*.mangadex.org/manga*',
@@ -61,7 +65,6 @@ let mainManifest = {
 				'https://*.mangadex.org/user*',
 				'https://*.mangadex.org/list*',
 				'https://*.mangadex.org/updates*',
-				'https://anilist.co/api/v2/oauth/pin?for=syncdex*',
 			],
 			js: ['dist/simpleNotification.min.js', 'SyncDex.js'],
 			css: ['dist/simpleNotification.min.css', 'SyncDex.css'],
@@ -134,6 +137,8 @@ let compiled = false;
 			'build/SyncDex_options.js.map:options',
 			'build/SyncDex.js',
 			'build/SyncDex.js.map',
+			'build/SyncDex_Anilist.js:external',
+			'build/SyncDex_Anilist.js.map:external',
 		];
 		if (options.mode == 'dev') {
 			files.unshift('src:src');

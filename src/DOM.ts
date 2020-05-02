@@ -22,7 +22,7 @@ export class DOM {
 		if (properties) {
 			Object.assign(elt, {
 				textContent: properties.textContent || '',
-				className: properties.class || '',
+				className: properties.class,
 			});
 			if (properties.classList) {
 				for (const className of properties.classList) {

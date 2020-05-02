@@ -124,29 +124,6 @@ export class Kitsu extends ServiceSave {
 
 	// TODO: Cancel button
 	import = async (): Promise<void> => {
-		/*const thing = await Runtime.request({
-			url: 'https://kitsu.io/api/oauth/token',
-			isJson: true,
-			method: 'POST',
-			headers: {
-				Accept: 'application/vnd.api+json',
-				'Content-Type': 'application/x-www-form-urlencoded',
-			},
-			body: `grant_type=password&username=${encodeURIComponent(
-				'glagan@protonmail.com'
-			)}&password=${encodeURIComponent('=z$=}tfFUylJ=Gf+A.-S!3Ar')}`,
-		});*/
-		/*const thing = await Runtime.request({
-			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
-			isJson: true,
-			headers: {
-				Authorization: `Bearer ${Options.tokens.kitsuToken}`,
-				Accept: 'application/vnd.api+json',
-				'Content-Type': 'application/vnd.api+json',
-			},
-		});
-		console.log(thing);
-		return;*/
 		this.manager.clear();
 		this.manager.header('Importing from Kitsu');
 		this.notification('warning', `You need to have Kitsu activated and to be logged in to import.`);

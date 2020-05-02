@@ -1,10 +1,10 @@
-import { Service, Status, ServiceName, LoginStatus } from './Service';
+import { Service, Status, ServiceName, LoginStatus, LoginMethod, ServiceKey } from './Service';
 import { Runtime, RawResponse } from '../Runtime';
-import { MessageAction } from '../Runtime';
 
 export class MangaUpdates extends Service {
+	key: ServiceKey = ServiceKey.MangaUpdates;
 	name: ServiceName = ServiceName.MangaUpdates;
-	static status: { [key in Status]: number } = {
+	status: { [key in Status]: number } = {
 		[Status.NONE]: -1,
 		[Status.REREADING]: -1,
 		[Status.WONT_READ]: -1,
@@ -14,6 +14,8 @@ export class MangaUpdates extends Service {
 		[Status.DROPPED]: 3, // "unfinished"
 		[Status.PAUSED]: 4, // "hold"
 	};
+	loginUrl: string = 'https://www.mangaupdates.com/login.html';
+	loginMethod = LoginMethod.EXTERNAL;
 
 	loggedIn = async (): Promise<LoginStatus> => {
 		const response = await Runtime.request<RawResponse>({

@@ -25,8 +25,13 @@ export const enum Status {
 	WONT_READ,
 }
 
+export const enum LoginMethod {
+	EXTERNAL,
+	FORM,
+}
+
 export const enum LoginStatus {
-	NO_AUTHENTIFICATION,
+	MISSING_TOKEN,
 	SUCCESS,
 	FAIL,
 	SERVER_ERROR,
@@ -34,7 +39,12 @@ export const enum LoginStatus {
 }
 
 export abstract class Service {
+	abstract key: ServiceKey;
 	abstract name: ServiceName;
-	abstract loggedIn: () => Promise<LoginStatus>;
-	static status: { [key in Status]: number | string };
+	abstract loggedIn(): Promise<LoginStatus>;
+	abstract status: { [key in Status]: number | string };
+	abstract loginMethod: LoginMethod;
+	abstract loginUrl: string;
+	login?: (username: string, password: string) => Promise<LoginStatus> = undefined;
+	logout?: () => Promise<void> = undefined;
 }

@@ -1,21 +1,21 @@
 import { Options } from '../../src/Options';
 import { DOM } from '../../src/DOM';
-import { ServiceName, Service, ServiceKey, LoginStatus } from '../../src/Service/Service';
+import { ServiceName, Service, LoginStatus, LoginMethod } from '../../src/Service/Service';
 import { ServiceClass } from '../../src/Service/ServiceClass';
 import { ServiceHelper } from '../ServiceHelper';
 
 class ServiceOptions {
-	serviceName: ServiceName;
+	service: Service;
 	node: HTMLElement;
 	mainButton: HTMLElement;
 	checkStatusButton: HTMLElement;
+	loginButton: HTMLElement;
+	loginForm?: HTMLFormElement;
 	removeButton: HTMLElement;
-	service: Service;
 
-	constructor(service: Service, name: ServiceName) {
+	constructor(service: Service) {
 		this.service = service;
-		this.serviceName = name;
-		this.node = ServiceHelper.createBlock(this.serviceName, ServiceKey[this.serviceName]);
+		this.node = ServiceHelper.createBlock(this.service.name, this.service.key);
 		this.node.classList.add('loading');
 		const buttons = DOM.create('div', { class: 'button-group' });
 		this.mainButton = DOM.create('button', {
@@ -28,28 +28,41 @@ class ServiceOptions {
 			attributes: { title: 'Check login status' },
 			childs: [DOM.create('i', { class: 'lni lni-reload' })],
 		});
+		this.loginButton = DOM.create('a', {
+			class: 'button success hidden',
+			attributes: {
+				title: 'Login',
+				href: this.service.loginUrl,
+				rel: 'noreferrer noopener',
+				target: '_blank',
+			},
+			childs: [DOM.create('i', { class: 'lni lni-link' }), DOM.space(), DOM.text('Login')],
+		});
 		this.removeButton = DOM.create('button', {
 			class: 'danger grow',
 			childs: [DOM.create('i', { class: 'lni lni-cross-circle' }), DOM.space(), DOM.text('Remove')],
 		});
-		DOM.append(this.node, DOM.append(buttons, this.mainButton, this.checkStatusButton, this.removeButton));
+		DOM.append(
+			this.node,
+			DOM.append(buttons, this.mainButton, this.loginButton, this.checkStatusButton, this.removeButton)
+		);
 	}
 
 	bind = async (manager: ServiceManager): Promise<void> => {
 		// Load current state
-		if (Options.mainService == this.serviceName) {
+		if (Options.mainService == this.service.name) {
 			this.node.classList.add('main');
 			this.mainButton.classList.add('hidden');
 		}
 		this.service.loggedIn().then((loggedIn) => this.updateStatus(manager, loggedIn));
-		manager.removeSelectorRow(this.serviceName);
+		manager.removeSelectorRow(this.service.name);
 		// Add events
 		this.mainButton.addEventListener('click', () => {
 			// Make service the first in the list
-			const index = Options.services.indexOf(this.serviceName);
+			const index = Options.services.indexOf(this.service.name);
 			manager.services.splice(0, 0, manager.services.splice(index, 1)[0]);
 			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
-			Options.mainService = this.serviceName;
+			Options.mainService = this.service.name;
 			Options.save();
 			// Remove main button and add the main button to the previous main
 			if (manager.mainService) {
@@ -65,26 +78,36 @@ class ServiceOptions {
 		this.checkStatusButton.addEventListener('click', () => {
 			if (!busy) {
 				busy = true;
+				this.loginButton.classList.add('hidden');
 				this.node.classList.remove('active', 'inactive');
 				this.node.classList.add('loading');
+				if (this.loginForm) {
+					this.loginForm.remove();
+					this.loginForm = undefined;
+				}
 				this.service.loggedIn().then((loggedIn) => this.updateStatus(manager, loggedIn));
 				busy = false;
 			}
 		});
-		this.removeButton.addEventListener('click', () => {
+		this.removeButton.addEventListener('click', async () => {
 			// Remove service from Service list and assign new main if possible
-			const index = Options.services.indexOf(this.serviceName);
+			const index = Options.services.indexOf(this.service.name);
 			if (index > -1) {
 				manager.services.splice(index, 1);
 				Options.services.splice(index, 1);
-				if (Options.mainService == this.serviceName) {
+				if (Options.mainService == this.service.name) {
 					Options.mainService = Options.services.length > 0 ? Options.services[0] : undefined;
 				}
 			}
+			// Execute logout actions
+			if (this.service.logout !== undefined) {
+				await this.service.logout();
+			}
+			// Save
 			Options.save();
 			// Remove service block and add the option back to the selector
 			this.node.remove();
-			manager.addSelectorRow(this.serviceName);
+			manager.addSelectorRow(this.service.name);
 			// Set the new main
 			if (Options.mainService) {
 				manager.services[0].node.classList.add('main');
@@ -92,6 +115,52 @@ class ServiceOptions {
 				manager.mainService = manager.services[0];
 			} else {
 				manager.mainService = undefined;
+			}
+		});
+		this.loginButton.addEventListener('click', (event) => {
+			if (this.service.loginMethod == LoginMethod.FORM) {
+				event.preventDefault();
+				if (this.loginForm) return;
+				this.loginForm = DOM.create('form', {
+					class: 'service-login',
+					childs: [
+						DOM.create('input', {
+							attributes: { type: 'text', name: 'username', placeholder: 'Email', required: 'true' },
+						}),
+						DOM.create('input', {
+							attributes: {
+								type: 'password',
+								name: 'password',
+								placeholder: 'Password',
+								required: 'true',
+							},
+						}),
+						DOM.create('button', {
+							class: 'success',
+							attributes: { type: 'submit' },
+							textContent: 'Login',
+						}),
+					],
+				});
+				this.loginForm.addEventListener('submit', async (event) => {
+					event.preventDefault();
+					if (this.loginForm === undefined) return;
+					if (this.service.login) {
+						// Login call Options.save itself
+						const res = await this.service.login(
+							this.loginForm.username.value.trim(),
+							this.loginForm.password.value
+						);
+						if (res == LoginStatus.SUCCESS) {
+							this.loginForm.remove();
+							this.loginForm = undefined;
+							this.service.loggedIn().then((loggedIn) => this.updateStatus(manager, loggedIn));
+						} else {
+							// TODO: Notification
+						}
+					}
+				});
+				this.node.appendChild(this.loginForm);
 			}
 		});
 	};
@@ -102,8 +171,9 @@ class ServiceOptions {
 			this.node.classList.add('active');
 		} else {
 			this.node.classList.add('inactive');
+			this.loginButton.classList.remove('hidden');
 		}
-		manager.updateServiceStatus(this.serviceName, status);
+		manager.updateServiceStatus(this.service.name, status);
 	};
 }
 
@@ -115,7 +185,7 @@ export class ServiceManager {
 	mainService?: ServiceOptions;
 	noServices: HTMLElement;
 	inactiveServices: ServiceName[] = [];
-	inactiveWarnig: HTMLElement;
+	inactiveWarning: HTMLElement;
 
 	constructor(node: HTMLElement) {
 		this.node = node;
@@ -126,14 +196,14 @@ export class ServiceManager {
 			childs: [DOM.create('option', { textContent: 'Select Service' })],
 		});
 		this.noServices = document.getElementById('no-service') as HTMLElement;
-		this.inactiveWarnig = document.getElementById('inactive-service') as HTMLElement;
+		this.inactiveWarning = document.getElementById('inactive-service') as HTMLElement;
 		this.createAddForm();
 		this.updateAll();
 	}
 
 	addService = (serviceName: ServiceName): void => {
 		const service = ServiceClass(serviceName);
-		const serviceOptions = new ServiceOptions(service, serviceName);
+		const serviceOptions = new ServiceOptions(service);
 		if (Options.mainService == serviceName) {
 			this.mainService = serviceOptions;
 		}
@@ -171,7 +241,7 @@ export class ServiceManager {
 		if (index > -1) {
 			this.inactiveServices.splice(index, 1);
 			if (this.inactiveServices.length == 0) {
-				this.inactiveWarnig.classList.add('hidden');
+				this.inactiveWarning.classList.add('hidden');
 			}
 		}
 	};
@@ -211,12 +281,12 @@ export class ServiceManager {
 			if (status == LoginStatus.SUCCESS) {
 				this.inactiveServices.splice(index, 1);
 				if (this.inactiveServices.length == 0) {
-					this.inactiveWarnig.classList.add('hidden');
+					this.inactiveWarning.classList.add('hidden');
 				}
 			}
-		} else if (!status) {
+		} else if (status != LoginStatus.SUCCESS) {
 			this.inactiveServices.push(name);
-			this.inactiveWarnig.classList.remove('hidden');
+			this.inactiveWarning.classList.remove('hidden');
 		}
 	};
 

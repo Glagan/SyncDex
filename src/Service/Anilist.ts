@@ -1,10 +1,11 @@
-import { Service, Status, ServiceName, LoginStatus } from './Service';
+import { Service, Status, ServiceName, LoginStatus, LoginMethod, ServiceKey } from './Service';
 import { Options } from '../Options';
-import { Runtime, MessageAction, JSONResponse } from '../Runtime';
+import { Runtime, JSONResponse } from '../Runtime';
 
 export class Anilist extends Service {
+	key: ServiceKey = ServiceKey.Anilist;
 	name: ServiceName = ServiceName.Anilist;
-	static status: { [key in Status]: string } = {
+	status: { [key in Status]: string } = {
 		[Status.NONE]: '__INVALID__',
 		[Status.WONT_READ]: '__INVALID__',
 		[Status.READING]: 'CURRENT',
@@ -14,9 +15,11 @@ export class Anilist extends Service {
 		[Status.PLAN_TO_READ]: 'PLANNING',
 		[Status.REREADING]: 'REPEATING',
 	};
+	loginUrl = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
+	loginMethod = LoginMethod.EXTERNAL;
 
 	loggedIn = async (): Promise<LoginStatus> => {
-		if (!Options.tokens.anilistToken === undefined) return LoginStatus.NO_AUTHENTIFICATION;
+		if (!Options.tokens.anilistToken === undefined) return LoginStatus.MISSING_TOKEN;
 		const query = `query { Viewer { id } }`;
 		const response = await Runtime.request<JSONResponse>({
 			method: 'POST',
@@ -35,5 +38,10 @@ export class Anilist extends Service {
 			return LoginStatus.BAD_REQUEST;
 		}
 		return LoginStatus.SUCCESS;
+	};
+
+	logout = async (): Promise<void> => {
+		delete Options.tokens.anilistToken;
+		return await Options.save();
 	};
 }
