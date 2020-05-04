@@ -1,206 +1,59 @@
 import { Options } from '../../src/Options';
-import { DOM } from '../../src/DOM';
-import { ServiceName, Service, LoginStatus, LoginMethod } from '../../src/Service/Service';
-import { ServiceClass } from '../../src/Service/ServiceClass';
-import { ServiceHelper } from '../ServiceHelper';
+import { DOM, AppendableElement } from '../../src/DOM';
+import { LoginStatus } from '../../src/Service/Service';
+import { Service } from '../Service/Service';
+import { MyMangaDex } from '../Service/MyMangaDex';
+import { SyncDex } from '../Service/SyncDex';
+import { MangaDex } from '../Service/MangaDex';
+import { MyAnimeList } from '../Service/MyAnimeList';
+import { Anilist } from '../Service/Anilist';
+import { Kitsu } from '../Service/Kitsu';
+import { AnimePlanet } from '../Service/AnimePlanet';
+import { MangaUpdates } from '../Service/MangaUpdates';
 
-class ServiceOptions {
-	service: Service;
-	node: HTMLElement;
-	mainButton: HTMLElement;
-	checkStatusButton: HTMLElement;
-	loginButton: HTMLElement;
-	loginForm?: HTMLFormElement;
-	removeButton: HTMLElement;
+export enum ServiceName {
+	MyMangaDex = 'MyMangaDex',
+	SyncDex = 'SyncDex',
+	MangaDex = 'MangaDex',
+	MyAnimeList = 'MyAnimeList',
+	MangaUpdates = 'MangaUpdates',
+	Anilist = 'Anilist',
+	Kitsu = 'Kitsu',
+	AnimePlanet = 'AnimePlanet',
+}
 
-	constructor(service: Service) {
-		this.service = service;
-		this.node = ServiceHelper.createBlock(this.service.name, this.service.key);
-		this.node.classList.add('loading');
-		const buttons = DOM.create('div', { class: 'button-group' });
-		this.mainButton = DOM.create('button', {
-			class: 'default',
-			attributes: { title: 'Set as main' },
-			childs: [DOM.create('i', { class: 'lni lni-angle-double-left' })],
-		});
-		this.checkStatusButton = DOM.create('button', {
-			class: 'action',
-			attributes: { title: 'Check login status' },
-			childs: [DOM.create('i', { class: 'lni lni-reload' })],
-		});
-		this.loginButton = DOM.create('a', {
-			class: 'button success hidden',
-			attributes: {
-				title: 'Login',
-				href: this.service.loginUrl,
-				rel: 'noreferrer noopener',
-				target: '_blank',
-			},
-			childs: [DOM.create('i', { class: 'lni lni-link' }), DOM.space(), DOM.text('Login')],
-		});
-		this.removeButton = DOM.create('button', {
-			class: 'danger grow',
-			childs: [DOM.create('i', { class: 'lni lni-cross-circle' }), DOM.space(), DOM.text('Remove')],
-		});
-		DOM.append(
-			this.node,
-			DOM.append(buttons, this.mainButton, this.loginButton, this.checkStatusButton, this.removeButton)
-		);
-	}
-
-	bind = async (manager: ServiceManager): Promise<void> => {
-		// Load current state
-		if (Options.mainService == this.service.name) {
-			this.node.classList.add('main');
-			this.mainButton.classList.add('hidden');
-		}
-		this.service.loggedIn().then((loggedIn) => this.updateStatus(manager, loggedIn));
-		manager.removeSelectorRow(this.service.name);
-		// Add events
-		this.mainButton.addEventListener('click', () => {
-			// Make service the first in the list
-			const index = Options.services.indexOf(this.service.name);
-			manager.services.splice(0, 0, manager.services.splice(index, 1)[0]);
-			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
-			Options.mainService = this.service.name;
-			Options.save();
-			// Remove main button and add the main button to the previous main
-			if (manager.mainService) {
-				manager.mainService.node.classList.remove('main');
-				manager.mainService.mainButton.classList.remove('hidden');
-			}
-			manager.mainService = this;
-			this.mainButton.classList.add('hidden');
-			this.node.classList.add('main');
-			this.node.parentElement?.insertBefore(this.node, this.node.parentElement.firstElementChild);
-		});
-		let busy = false;
-		this.checkStatusButton.addEventListener('click', () => {
-			if (!busy) {
-				busy = true;
-				this.loginButton.classList.add('hidden');
-				this.node.classList.remove('active', 'inactive');
-				this.node.classList.add('loading');
-				if (this.loginForm) {
-					this.loginForm.remove();
-					this.loginForm = undefined;
-				}
-				this.service.loggedIn().then((loggedIn) => this.updateStatus(manager, loggedIn));
-				busy = false;
-			}
-		});
-		this.removeButton.addEventListener('click', async () => {
-			// Remove service from Service list and assign new main if possible
-			const index = Options.services.indexOf(this.service.name);
-			if (index > -1) {
-				manager.services.splice(index, 1);
-				Options.services.splice(index, 1);
-				if (Options.mainService == this.service.name) {
-					Options.mainService = Options.services.length > 0 ? Options.services[0] : undefined;
-				}
-			}
-			// Execute logout actions
-			if (this.service.logout !== undefined) {
-				await this.service.logout();
-			}
-			// Save
-			Options.save();
-			// Remove service block and add the option back to the selector
-			this.node.remove();
-			manager.addSelectorRow(this.service.name);
-			// Set the new main
-			if (Options.mainService) {
-				manager.services[0].node.classList.add('main');
-				manager.services[0].mainButton.classList.add('hidden');
-				manager.mainService = manager.services[0];
-			} else {
-				manager.mainService = undefined;
-			}
-		});
-		this.loginButton.addEventListener('click', (event) => {
-			if (this.service.loginMethod == LoginMethod.FORM) {
-				event.preventDefault();
-				if (this.loginForm) return;
-				this.loginForm = DOM.create('form', {
-					class: 'service-login',
-					childs: [
-						DOM.create('input', {
-							attributes: { type: 'text', name: 'username', placeholder: 'Email', required: 'true' },
-						}),
-						DOM.create('input', {
-							attributes: {
-								type: 'password',
-								name: 'password',
-								placeholder: 'Password',
-								required: 'true',
-							},
-						}),
-						DOM.create('button', {
-							class: 'success',
-							attributes: { type: 'submit' },
-							textContent: 'Login',
-						}),
-					],
-				});
-				let busy = false;
-				this.loginForm.addEventListener('submit', async (event) => {
-					event.preventDefault();
-					if (this.loginForm === undefined) return;
-					if (!busy) {
-						busy = true;
-						this.node.classList.add('loading');
-						this.loginForm.classList.add('hidden');
-						if (this.service.login) {
-							// Login call Options.save itself
-							const res = await this.service.login(
-								this.loginForm.username.value.trim(),
-								this.loginForm.password.value
-							);
-							if (res == LoginStatus.SUCCESS) {
-								this.loginForm.remove();
-								this.loginForm = undefined;
-								this.node.classList.remove('inactive', 'loading');
-								this.node.classList.add('active');
-								this.loginButton.classList.add('hidden');
-								this.updateStatus(manager, res);
-								return;
-							}
-						}
-						// If there was an error -- show the form again
-						// TODO: Notification
-						this.loginForm.classList.remove('hidden');
-						busy = false;
-					}
-				});
-				this.node.appendChild(this.loginForm);
-			}
-		});
-	};
-
-	updateStatus = (manager: ServiceManager, status: LoginStatus): void => {
-		this.node.classList.remove('loading');
-		if (status == LoginStatus.SUCCESS) {
-			this.node.classList.add('active');
-		} else {
-			this.node.classList.add('inactive');
-			this.loginButton.classList.remove('hidden');
-		}
-		manager.updateServiceStatus(this.service.name, status);
-	};
+export const enum SaveMethod {
+	IMPORT = 'IMPORT',
+	EXPORT = 'EXPORT',
 }
 
 export class ServiceManager {
-	node: HTMLElement;
-	services: ServiceOptions[] = [];
+	services: Service[] = [
+		new MyMangaDex(this),
+		new SyncDex(this),
+		new MangaDex(this),
+		new MyAnimeList(this),
+		new Anilist(this),
+		new Kitsu(this),
+		new AnimePlanet(this),
+		new MangaUpdates(this),
+	];
+	// Active
+	activeContainer: HTMLElement;
 	addForm: HTMLElement;
 	selector: HTMLSelectElement;
-	mainService?: ServiceOptions;
+	mainService?: Service;
 	noServices: HTMLElement;
+	activeServices: ServiceName[] = [];
 	inactiveServices: ServiceName[] = [];
 	inactiveWarning: HTMLElement;
+	// Import/Export
+	saveContainer: HTMLElement;
 
-	constructor(node: HTMLElement) {
-		this.node = node;
+	constructor(active: HTMLElement, saveContainer: HTMLElement) {
+		this.activeContainer = active;
+		this.saveContainer = saveContainer;
+		// Active
 		this.addForm = DOM.create('div', {
 			class: 'service add',
 		});
@@ -210,18 +63,35 @@ export class ServiceManager {
 		this.noServices = document.getElementById('no-service') as HTMLElement;
 		this.inactiveWarning = document.getElementById('inactive-service') as HTMLElement;
 		this.createAddForm();
-		this.updateAll();
+		// Initialize
+		for (const service of this.services) {
+			if (service.activable) {
+				service.initActive();
+				this.addSelectorRow(service.name);
+			}
+			if (service.importable) service.initImport();
+			if (service.exportable) service.initExport();
+		}
+		// Default State
+		this.refreshActive();
+		this.resetSaveContainer();
 	}
 
-	addService = (serviceName: ServiceName): void => {
-		const service = ServiceClass(serviceName);
-		const serviceOptions = new ServiceOptions(service);
+	// Active
+
+	activateService = (serviceName: ServiceName): void => {
+		let service = this.services.find((service) => service.name == serviceName);
+		if (!service || !service.activeOptions || !service.isLoggedIn) return;
 		if (Options.mainService == serviceName) {
-			this.mainService = serviceOptions;
+			this.mainService = service;
+			service.activeOptions.node.classList.add('main');
+			service.activeOptions.mainButton.classList.add('hidden');
 		}
-		serviceOptions.bind(this);
-		this.services.push(serviceOptions);
-		this.node.insertBefore(serviceOptions.node, this.node.lastElementChild);
+		this.services.push(service);
+		// Main Service is always first -- if a Service is upgraded to Main it's moved to the first position
+		this.activeContainer.insertBefore(service.activeOptions.node, this.activeContainer.lastElementChild);
+		service.isLoggedIn().then((loggedIn) => (service as Service).updateStatus(loggedIn));
+		this.removeSelectorRow(service.name);
 	};
 
 	removeSelectorRow = (service: ServiceName): void => {
@@ -260,30 +130,30 @@ export class ServiceManager {
 
 	createAddForm = (): HTMLElement => {
 		// Add all options to the selector
-		for (const service in ServiceName) {
-			if (isNaN(Number(service))) {
-				this.addSelectorRow(service as ServiceName);
+		for (const service of this.services) {
+			if (service.activeOptions) {
+				this.addSelectorRow(service.name);
 			}
 		}
 		// Button to add the service to the active list
 		const button = DOM.create('button', {
 			class: 'success',
-			childs: [DOM.create('i', { class: 'lni lni-circle-plus' }), DOM.space(), DOM.text('Add')],
+			childs: [DOM.icon('circle-plus'), DOM.space(), DOM.text('Add')],
 			events: {
 				click: async (): Promise<any> => {
 					if (this.selector.value != 'Select Service') {
 						const name = this.selector.value as ServiceName;
 						if (Options.services.length == 0) {
-							Options.mainService = name;
+							Options.mainService = name as any;
 						}
-						Options.services.push(name);
+						Options.services.push(name as any);
 						await Options.save();
-						this.addService(name);
+						this.activateService(name);
 					}
 				},
 			},
 		});
-		this.node.appendChild(DOM.append(this.addForm, this.selector, button));
+		this.activeContainer.appendChild(DOM.append(this.addForm, this.selector, button));
 		return this.selector;
 	};
 
@@ -302,19 +172,118 @@ export class ServiceManager {
 		}
 	};
 
-	updateAll = (): void => {
+	refreshActive = (): void => {
 		// Remove previous
 		for (const service of this.services) {
-			service.node.remove();
+			if (service.activable && service.activeOptions) {
+				service.activeOptions.node.remove();
+			}
 		}
-		this.services = [];
+		this.activeServices = [];
 		this.inactiveServices = [];
 		// Insert current Services
 		for (const serviceName of Options.services) {
-			this.addService(serviceName);
+			this.activateService(serviceName);
 		}
 		if (Options.services.length == 0) {
 			this.noServices.classList.remove('hidden');
 		}
+	};
+
+	// Import/Export
+
+	fullHeader = (value: string | AppendableElement[]): HTMLElement => {
+		return this.header(value, 'h1');
+	};
+
+	header = (value: string | AppendableElement[], headerType: 'h1' | 'h2' = 'h2'): HTMLElement => {
+		const isArray = Array.isArray(value);
+		return this.saveContainer.appendChild(
+			DOM.create('h2', {
+				class: 'full',
+				textContent: isArray ? '' : (value as string),
+				childs: isArray ? (value as AppendableElement[]) : [],
+			})
+		);
+	};
+
+	clearSaveContainer = (): void => {
+		DOM.clear(this.saveContainer);
+	};
+
+	resetSaveContainer = (): void => {
+		this.clearSaveContainer();
+		// Import/Export containers
+		const importContainer = DOM.create('div', {
+			class: 'services selectable',
+			childs: [],
+		});
+		const exportContainer = DOM.create('div', {
+			class: 'services selectable',
+			childs: [],
+		});
+		// Insert Service cards
+		for (const service of this.services) {
+			if (service.importCard) {
+				DOM.append(importContainer, service.importCard);
+			}
+			if (service.exportCard) {
+				DOM.append(exportContainer, service.exportCard);
+			}
+		}
+		// Append to container
+		DOM.append(
+			this.saveContainer,
+			DOM.create('h1', {
+				attributes: { id: 'import' },
+				childs: [DOM.icon('upload'), DOM.space(), DOM.text('Import')],
+			}),
+			DOM.create('div', {
+				childs: [
+					DOM.create('div', {
+						class: 'block notification info',
+						childs: [
+							DOM.create('b', { textContent: 'Importing' }),
+							DOM.text(' will only update your '),
+							DOM.create('b', { textContent: 'SyncDex' }),
+							DOM.text(' save and is used to initialize '),
+							DOM.create('b', { textContent: 'SyncDex' }),
+							DOM.create('br'),
+							DOM.text('If you wish to update any external Service, see '),
+							DOM.create('b', {
+								childs: [DOM.create('a', { attributes: { href: '#Export' }, textContent: 'Export' })],
+							}),
+						],
+					}),
+					importContainer,
+				],
+			}),
+			DOM.create('h1', {
+				attributes: { id: 'export' },
+				childs: [DOM.icon('download'), DOM.space(), DOM.text('Export')],
+			}),
+			DOM.create('div', {
+				childs: [
+					DOM.create('div', {
+						class: 'block notification info',
+						childs: [
+							DOM.create('b', { textContent: 'Exporting' }),
+							DOM.text(' will update your '),
+							DOM.create('b', { textContent: 'Online' }),
+							DOM.text(' save on the Service you choose using your '),
+							DOM.create('b', { textContent: 'SyncDex' }),
+							DOM.text(' save.'),
+							DOM.create('br'),
+							DOM.text('You should '),
+							DOM.create('b', {
+								childs: [DOM.create('a', { attributes: { href: '#Import' }, textContent: 'Import' })],
+							}),
+							DOM.text(' from somewhere before exporting to somewhere else !'),
+						],
+					}),
+					exportContainer,
+				],
+			})
+		);
 	};
 }

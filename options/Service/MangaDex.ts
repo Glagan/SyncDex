@@ -1,24 +1,31 @@
-import { ServiceSave, Input, ImportState } from './Save';
 import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Runtime, RawResponse } from '../../src/Runtime';
-import { Status } from '../../src/Service/Service';
+import { Status, LoginStatus } from '../../src/Service/Service';
+import { Service, ImportState } from './Service';
+import { ServiceName } from '../Manager/Service';
 
-export class MangaDex extends ServiceSave {
-	name: string = 'MangaDex';
+export class MangaDex extends Service {
+	name: ServiceName = ServiceName.MangaDex;
 	key: string = 'md';
+	activable: boolean = false;
+	importable: boolean = true;
+	exportable: boolean = true;
 
 	parser: DOMParser = new DOMParser();
 	form?: HTMLFormElement;
 
-	isLoggedIn = async (): Promise<number> => {
+	login = undefined;
+	logout = undefined;
+
+	isLoggedIn = async <T = { id: number }>(reference?: T): Promise<LoginStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: `https://mangadex.org/about`,
 			credentials: 'include',
 		});
 		if (response.status >= 400) {
-			this.error('The request failed, maybe MangaDex is having problems, retry later.');
-			return 0;
+			this.notification('danger', 'The request failed, maybe MangaDex is having problems, retry later.');
+			return LoginStatus.FAIL;
 		}
 		try {
 			const body = this.parser.parseFromString(response.body, 'text/html');
@@ -30,16 +37,17 @@ export class MangaDex extends ServiceSave {
 			if (res === null) {
 				throw 'Could not find User ID';
 			}
-			return parseInt(res[1]);
+			if (reference) {
+				(reference as any).id = parseInt(res[1]);
+			}
+			return LoginStatus.SUCCESS;
 		} catch (error) {
-			this.error(`Could not find your ID, are you sure you're logged in ?`);
-			return 0;
+			this.notification('danger', `Could not find your ID, are you sure you're logged in ?`);
+			return LoginStatus.FAIL;
 		}
 	};
 
-	import = (): void => {
-		this.manager.clear();
-		this.manager.header('Importing from MangaDex');
+	import = async (): Promise<void> => {
 		this.notification(
 			'info',
 			`Importing from MangaDex doesn't do much and only initialize your SyncDex save with "empty" titles since there is no progress saved on MangaDex.`
@@ -57,9 +65,10 @@ export class MangaDex extends ServiceSave {
 					if (!busy) {
 						busy = true;
 						startButton.classList.add('loading');
-						const userId = await this.isLoggedIn();
-						if (!isNaN(userId) && userId > 0) {
-							await this.handleImport(userId);
+						const userId: { id: number } = { id: 0 };
+						const status = await this.isLoggedIn<{ id: number }>(userId);
+						if (status == LoginStatus.SUCCESS) {
+							await this.handleImport(userId.id);
 						} else {
 							startButton.classList.remove('loading');
 						}
@@ -68,7 +77,7 @@ export class MangaDex extends ServiceSave {
 				},
 			},
 		});
-		DOM.append(this.manager.node, DOM.append(block, startButton, this.resetButton()));
+		DOM.append(this.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
 	};
 
 	toStatus = (statusNode: HTMLElement | null): Status => {
@@ -96,11 +105,14 @@ export class MangaDex extends ServiceSave {
 			credentials: 'include',
 		});
 		if (response.status >= 400 || typeof response.body !== 'string') {
-			this.error('The request failed, maybe MangaDex is having problems, retry later.');
+			this.notification('danger', 'The request failed, maybe MangaDex is having problems, retry later.');
 			return false;
 		}
 		if (response.body.indexOf(`You do not have permission to view this user's list.`) >= 0) {
-			this.error('You do not have the required Permissions to view this list, check if you are logged in.');
+			this.notification(
+				'danger',
+				'You do not have the required Permissions to view this list, check if you are logged in.'
+			);
 			return false;
 		}
 		const body = this.parser.parseFromString(response.body, 'text/html');
@@ -133,7 +145,6 @@ export class MangaDex extends ServiceSave {
 	};
 
 	handleImport = async (userId: number): Promise<void> => {
-		this.removeNotifications();
 		let titles = new TitleCollection();
 		// Check if everything is valid by getting the first page
 		const state = {
@@ -143,7 +154,7 @@ export class MangaDex extends ServiceSave {
 		if (!(await this.singlePage(titles, userId, state))) {
 			return;
 		}
-		this.manager.clear();
+		this.manager.resetSaveContainer();
 		this.manager.header('Importing MangaDex Titles');
 		// Then fetch remaining pages
 		let res = true;
@@ -163,7 +174,7 @@ export class MangaDex extends ServiceSave {
 		notification.classList.remove('loading');
 		stopButton.remove();
 		if (doStop) {
-			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
 			return;
 		}
 		if (!res) {
@@ -174,7 +185,11 @@ export class MangaDex extends ServiceSave {
 		titles.merge(await TitleCollection.get(titles.ids));
 		await titles.save();
 		notification.remove();
-		this.success([DOM.text(`Successfully imported ${titles.length} titles !`), DOM.space(), this.resetButton()]);
+		this.notification('success', [
+			DOM.text(`Successfully imported ${titles.length} titles !`),
+			DOM.space(),
+			this.resetButton(),
+		]);
 	};
 
 	fromStatus = (status: Status): number => {
@@ -198,8 +213,6 @@ export class MangaDex extends ServiceSave {
 	};
 
 	export = async (): Promise<void> => {
-		this.manager.clear();
-		this.manager.header('Exporting to MangaDex');
 		let loading = this.notification('info loading', `Step 1: Loading your local Save`);
 		const titles = await TitleCollection.get();
 		loading.classList.remove('loading');
@@ -240,6 +253,10 @@ export class MangaDex extends ServiceSave {
 		if (doStop) {
 			this.notification('warning', 'You canceled the Export.');
 		}
-		this.success([DOM.text(`Done ! ${total} Titles have been exported.`), DOM.space(), this.resetButton()]);
+		this.notification('success', [
+			DOM.text(`Done ! ${total} Titles have been exported.`),
+			DOM.space(),
+			this.resetButton(),
+		]);
 	};
 }

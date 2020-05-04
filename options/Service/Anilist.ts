@@ -1,10 +1,11 @@
-import { ServiceSave, Input } from './Save';
 import { DOM } from '../../src/DOM';
 import { Options } from '../../src/Options';
-import { ServiceName, Status } from '../../src/Service/Service';
+import { ServiceName, Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
+import { Service } from './Service';
+import { ServiceManager } from '../Manager/Service';
 
 interface ViewerResponse {
 	data: {
@@ -43,37 +44,77 @@ interface AnilistResponse {
 	};
 }
 
-export class Anilist extends ServiceSave {
-	name: string = 'Anilist';
+export class Anilist extends Service {
+	name: ServiceName = ServiceName.Anilist;
 	key: string = 'al';
+	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
+	loginUrl: string = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
 
+	activable: boolean = true;
+	importable: boolean = true;
+	exportable: boolean = true;
 	form?: HTMLFormElement;
 
 	static viewerQuery = `
-	query {
-		Viewer {
-			name
-		}
-	}`;
+		query {
+			Viewer {
+				name
+			}
+		}`;
 
 	static listQuery = `
-	query ($userId: Int, $userName: String) {
-		MediaListCollection(userId: $userId, userName: $userName, type: MANGA) {
-			lists {
-				entries {
-					mediaId
-					status
-					progress
-					progressVolumes
+		query ($userId: Int, $userName: String) {
+			MediaListCollection(userId: $userId, userName: $userName, type: MANGA) {
+				lists {
+					entries {
+						mediaId
+						status
+						progress
+						progressVolumes
+					}
 				}
 			}
-		}
-	}`; // Require $userName
+		}`; // Require $userName
 
-	// TODO: Cancel button
-	import = (): void => {
-		this.manager.clear();
-		this.manager.header('Importing from Anilist');
+	isLoggedIn = async <T>(reference?: T): Promise<LoginStatus> => {
+		if (!Options.tokens.anilistToken === undefined) return LoginStatus.MISSING_TOKEN;
+		const query = `query { Viewer { id } }`;
+		const response = await Runtime.request<JSONResponse>({
+			method: 'POST',
+			url: 'https://graphql.anilist.co',
+			isJson: true,
+			headers: {
+				Authorization: `Bearer ${Options.tokens.anilistToken}`,
+				'Content-Type': 'application/json',
+				Accept: 'application/json',
+			},
+			body: JSON.stringify({ query: query }),
+		});
+		if (response.status >= 500) {
+			return LoginStatus.SERVER_ERROR;
+		} else if (response.status >= 400 && response.status < 500) {
+			return LoginStatus.BAD_REQUEST;
+		}
+		return LoginStatus.SUCCESS;
+	};
+
+	login = undefined;
+	logout = undefined;
+
+	createTitle = (): HTMLElement => {
+		return DOM.create('span', {
+			class: this.name.toLowerCase(),
+			textContent: 'Ani',
+			childs: [
+				DOM.create('span', {
+					class: 'list',
+					textContent: 'List',
+				}),
+			],
+		});
+	};
+
+	import = async (): Promise<void> => {
 		this.notification('warning', `You need to have Anilist activated and to be logged in to import.`);
 		const block = DOM.create('div', {
 			class: 'block',
@@ -89,7 +130,10 @@ export class Anilist extends ServiceSave {
 						Options.services.indexOf(ServiceName.Anilist) < 0 ||
 						Options.tokens.anilistToken === undefined
 					) {
-						this.error('You need to have Anilist activated and to be logged in to Import.');
+						this.notification(
+							'danger',
+							'You need to have Anilist activated and to be logged in to Import.'
+						);
 						return;
 					}
 					if (!busy) {
@@ -110,7 +154,8 @@ export class Anilist extends ServiceSave {
 						});
 						let username = '';
 						if (response.status >= 400) {
-							this.error(
+							this.notification(
+								'danger',
 								`The request failed, maybe Anilist is having problems or your token expired, retry later.`
 							);
 							startButton.classList.remove('loading');
@@ -123,7 +168,7 @@ export class Anilist extends ServiceSave {
 				},
 			},
 		});
-		DOM.append(this.manager.node, DOM.append(block, startButton, this.resetButton()));
+		DOM.append(this.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
 	};
 
 	toStatus = (status: AnilistStatus): Status => {
@@ -144,7 +189,6 @@ export class Anilist extends ServiceSave {
 	};
 
 	handleImport = async (username: string): Promise<void> => {
-		this.removeNotifications();
 		// Send a simple query to Anilist
 		let notification = this.notification('info loading', 'Importing Manga list form Anilist...');
 		const response = await Runtime.request<JSONResponse>({
@@ -164,11 +208,11 @@ export class Anilist extends ServiceSave {
 		});
 		notification.remove();
 		if (response.status >= 500) {
-			this.error('The request failed, maybe Anilist is having problems, retry later.');
+			this.notification('danger', 'The request failed, maybe Anilist is having problems, retry later.');
 			return;
 		}
 		if (response.status >= 400) {
-			this.error('Bad Request, check if your token is valid.');
+			this.notification('danger', 'Bad Request, check if your token is valid.');
 			return;
 		}
 		// data.MediaListCollection.lists[]
@@ -177,7 +221,7 @@ export class Anilist extends ServiceSave {
 		let total = body.data.MediaListCollection.lists.reduce((acc, list) => acc + list.entries.length, 0);
 		let processed = 0;
 		let added = 0;
-		this.manager.clear();
+		this.manager.resetSaveContainer();
 		this.manager.header('Importing from Anilist');
 		let doStop = false;
 		const stopButton = this.stopButton(() => {
@@ -213,18 +257,18 @@ export class Anilist extends ServiceSave {
 		notification.classList.remove('loading');
 		stopButton.remove();
 		if (doStop) {
-			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
 			return;
 		}
 		// Done, merge and save
 		titles.merge(await TitleCollection.get(titles.ids));
 		await titles.save();
-		this.success([
+		this.notification('success', [
 			DOM.text(`Done ! Imported ${added} Titles (out of ${total}) from Anilist.`),
 			DOM.space(),
 			this.resetButton(),
 		]);
 	};
 
-	export = (): void => {};
+	export = async (): Promise<void> => {};
 }

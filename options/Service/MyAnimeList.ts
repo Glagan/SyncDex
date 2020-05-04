@@ -1,9 +1,10 @@
-import { ServiceSave, Input, FileInput } from './Save';
 import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
-import { Progress } from '../../src/interfaces';
 import { Mochi } from '../../src/Mochi';
-import { Status } from '../../src/Service/Service';
+import { Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
+import { Service, FileInput } from './Service';
+import { ServiceName } from '../Manager/Service';
+import { RawResponse, Runtime } from '../../src/Runtime';
 
 enum MyAnimeListStatus {
 	Completed = 'Completed',
@@ -21,16 +22,40 @@ interface MyAnimeListTitle {
 	status: MyAnimeListStatus;
 }
 
-export class MyAnimeList extends ServiceSave {
-	name: string = 'MyAnimeList';
+export class MyAnimeList extends Service {
+	name: ServiceName = ServiceName.MyAnimeList;
 	key: string = 'mal';
+	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
+	loginUrl: string = 'https://myanimelist.net/login.php';
+
+	activable: boolean = true;
+	importable: boolean = true;
+	exportable: boolean = true;
 
 	parser: DOMParser = new DOMParser();
 	form?: HTMLFormElement;
 
-	import = (): void => {
-		this.manager.clear();
-		this.manager.header('Select your MyAnimeList export file');
+	isLoggedIn = async <T>(reference?: T): Promise<LoginStatus> => {
+		const response = await Runtime.request<RawResponse>({
+			url: this.loginUrl,
+			method: 'GET',
+			credentials: 'include',
+		});
+		if (response.status >= 500) {
+			return LoginStatus.SERVER_ERROR;
+		} else if (response.status >= 400 && response.status < 500) {
+			return LoginStatus.BAD_REQUEST;
+		}
+		if (response.status >= 200 && response.status < 400 && response.body && response.url.indexOf('login.php') < 0)
+			return LoginStatus.SUCCESS;
+		return LoginStatus.FAIL;
+	};
+
+	login = undefined;
+	logout = undefined;
+
+	import = async (): Promise<void> => {
+		this.notification('success', 'Select your MyAnimeList export file.');
 		this.notification('info', [
 			DOM.text('You can download your Manga list'),
 			DOM.space(),
@@ -81,7 +106,6 @@ export class MyAnimeList extends ServiceSave {
 
 	handleExportFile = (event: Event): void => {
 		event.preventDefault();
-		this.removeNotifications();
 		if (this.form === undefined) return;
 		var reader = new FileReader();
 		reader.onload = async (): Promise<void> => {
@@ -92,10 +116,10 @@ export class MyAnimeList extends ServiceSave {
 					const infos = body.querySelector('myinfo') ?? undefined;
 					const exportType = infos?.querySelector('user_export_type') ?? undefined;
 					if (infos === undefined || exportType === undefined || exportType.textContent !== '2') {
-						this.error('Invalid file !');
+						this.notification('danger', 'Invalid file !');
 						return;
 					}
-					this.manager.clear();
+					this.manager.resetSaveContainer();
 					this.manager.header('Import MyAnimeList Save');
 					let notification = this.notification('info loading', 'Step 1: Reading Save file');
 					// Get a list of MAL Titles
@@ -151,7 +175,7 @@ export class MyAnimeList extends ServiceSave {
 					notification.classList.remove('loading');
 					stopButton.remove();
 					if (doStop) {
-						this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+						this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
 						return;
 					}
 					notification = this.notification(
@@ -161,25 +185,25 @@ export class MyAnimeList extends ServiceSave {
 					// Done, merge and save
 					titles.merge(await TitleCollection.get(titles.ids));
 					await titles.save();
-					this.success([
+					this.notification('success', [
 						DOM.text(`Done ! Imported ${totalAdded} Titles from MyAnimeList`),
 						DOM.space(),
 						this.resetButton(),
 					]);
 				} catch (error) {
 					console.error(error);
-					this.error('Invalid file !');
+					this.notification('danger', 'Invalid file !');
 				}
 			}
 		};
 		if (this.form.file.files.length > 0) {
 			reader.readAsText(this.form.file.files[0]);
 		} else {
-			this.error('No file selected !');
+			this.notification('danger', 'No file selected !');
 		}
 	};
 
 	/* TODO: MyAnimeList doesn't have the same URL for adding/editing titles
 			 I need to get the list of titles *really* in the list before adding or updating things */
-	export = (): void => {};
+	export = async (): Promise<void> => {};
 }

@@ -1,10 +1,11 @@
-import { ServiceSave } from './Save';
 import { DOM } from '../../src/DOM';
 import { Progress } from '../../src/interfaces';
-import { Status } from '../../src/Service/Service';
+import { Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
 import { Runtime, RawResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
+import { Service } from './Service';
+import { ServiceName, ServiceManager } from '../Manager/Service';
 
 interface MUTitle {
 	id: number;
@@ -12,15 +13,42 @@ interface MUTitle {
 	status: Status;
 }
 
-export class MangaUpdates extends ServiceSave {
-	name: string = 'MangaUpdates';
+export class MangaUpdates extends Service {
+	name: ServiceName = ServiceName.MangaUpdates;
 	key: string = 'mu';
+	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
+	loginUrl: string = 'https://www.mangaupdates.com/login.html';
 	parser: DOMParser = new DOMParser();
 	static lists: string[] = ['read', 'wish', 'complete', 'unfinished', 'hold'];
 
-	import = (): void => {
-		this.manager.clear();
-		this.manager.header('Importing from MangaUpdates');
+	activable: boolean = true;
+	importable: boolean = true;
+	exportable: boolean = true;
+
+	isLoggedIn = async <T>(reference?: T): Promise<LoginStatus> => {
+		const response = await Runtime.request<RawResponse>({
+			url: 'https://www.mangaupdates.com/aboutus.html',
+			credentials: 'include',
+		});
+		if (response.status >= 500) {
+			return LoginStatus.SERVER_ERROR;
+		} else if (response.status >= 400 && response.status < 500) {
+			return LoginStatus.BAD_REQUEST;
+		}
+		if (
+			response.status >= 200 &&
+			response.status < 400 &&
+			response.body &&
+			response.body.indexOf(`You are currently logged in as`) >= 0
+		)
+			return LoginStatus.SUCCESS;
+		return LoginStatus.FAIL;
+	};
+
+	login = undefined;
+	logout = undefined;
+
+	import = async (): Promise<void> => {
 		const block = DOM.create('div', {
 			class: 'block',
 		});
@@ -34,7 +62,7 @@ export class MangaUpdates extends ServiceSave {
 				},
 			},
 		});
-		DOM.append(this.manager.node, DOM.append(block, startButton, this.resetButton()));
+		DOM.append(this.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
 	};
 
 	getProgress = (node: HTMLElement | null): number => {
@@ -88,8 +116,7 @@ export class MangaUpdates extends ServiceSave {
 	};
 
 	handleImport = async (): Promise<void> => {
-		this.manager.clear();
-		this.removeNotifications();
+		this.manager.resetSaveContainer();
 		this.manager.header('Importing from MangaUpdates');
 		let muTitles: MUTitle[] = [];
 		let doStop = false;
@@ -105,7 +132,8 @@ export class MangaUpdates extends ServiceSave {
 			const listName = MangaUpdates.lists[i];
 			(notification.firstChild as Text).textContent = `Importing list ${i + 1} out of 5.`;
 			if (!(await this.listPage(muTitles, listName))) {
-				this.error(
+				this.notification(
+					'danger',
 					`The request failed, maybe MangaUpdates is having problems or you aren't logged in, retry later.`
 				);
 				break;
@@ -114,7 +142,7 @@ export class MangaUpdates extends ServiceSave {
 		notification.classList.remove('loading');
 		stopButton.remove();
 		if (doStop) {
-			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
 			return;
 		}
 		// Find MangaDex IDs
@@ -146,18 +174,18 @@ export class MangaUpdates extends ServiceSave {
 		notification.classList.remove('loading');
 		stopButton.remove();
 		if (doStop) {
-			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
 			return;
 		}
 		// Done, merge and save
 		titles.merge(await TitleCollection.get(titles.ids));
 		await titles.save();
-		this.success([
+		this.notification('success', [
 			DOM.text(`Done ! Imported ${added} Titles (out of ${total}) from MangaUpdates.`),
 			DOM.space(),
 			this.resetButton(),
 		]);
 	};
 
-	export = (): void => {};
+	export = async (): Promise<void> => {};
 }

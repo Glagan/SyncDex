@@ -1,12 +1,11 @@
 import { setBrowser } from '../src/Browser';
-import { Options, DefaultOptions } from '../src/Options';
+import { Options } from '../src/Options';
 import { CheckboxManager } from './Manager/Checkbox';
 import { ColorManager } from './Manager/Color';
 import { HighlightsManager } from './Manager/Highlights';
 import { MenuHighlight } from './MenuHighlight';
 import { InputManager } from './Manager/Input';
 import { ServiceManager } from './Manager/Service';
-import { SaveImportManager, SaveExportManager } from './Manager/Save';
 import { LocalStorage } from '../src/Storage';
 
 class OptionsManager {
@@ -16,8 +15,6 @@ class OptionsManager {
 	inputManager?: InputManager;
 	menuHighlight?: MenuHighlight;
 	serviceManager?: ServiceManager;
-	importManager?: SaveImportManager;
-	exportManager?: SaveExportManager;
 
 	execute = async (): Promise<void> => {
 		// await LocalStorage.clear();
@@ -28,15 +25,8 @@ class OptionsManager {
 		this.inputManager = new InputManager();
 		this.menuHighlight = new MenuHighlight(document.getElementById('content') as HTMLElement);
 		this.serviceManager = new ServiceManager(
-			document.getElementById('service-list') as HTMLElement
-		);
-		this.importManager = new SaveImportManager(
-			document.getElementById('import-container') as HTMLElement,
-			this.reload
-		);
-		this.exportManager = new SaveExportManager(
-			document.getElementById('export-container') as HTMLElement,
-			this.reload
+			document.getElementById('service-list') as HTMLElement,
+			document.getElementById('save-container') as HTMLElement
 		);
 		// Delete save
 		const deleteSave = document.getElementById('delete-save');
@@ -73,7 +63,7 @@ class OptionsManager {
 		this.colorManager?.updateAll();
 		this.checkboxManager?.updateAll();
 		this.inputManager?.updateAll();
-		this.serviceManager?.updateAll();
+		this.serviceManager?.refreshActive();
 	};
 }
 

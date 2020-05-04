@@ -1,9 +1,10 @@
 import { LocalStorage } from '../../src/Storage';
-import { ExtensionSave, ImportSummary } from './ExtensionSave';
 import { Options } from '../../src/Options';
 import { Title, FullTitle, TitleCollection } from '../../src/Title';
-import { ServiceName, Status } from '../../src/Service/Service';
-import { Checkbox, FileInput } from './Save';
+import { Status } from '../../src/Service/Service';
+import { Service, FileInput, Checkbox, ImportSummary } from './Service';
+import { ServiceName } from '../Manager/Service';
+import { DOM } from '../../src/DOM';
 
 interface MyMangaDexHistoryEntry {
 	chapter: number;
@@ -69,14 +70,21 @@ type MyMangaDexSave = {
 	[key: string]: MyMangaDexTitle;
 };
 
-export class MyMangaDex extends ExtensionSave {
-	name: string = 'MyMangaDex';
+export class MyMangaDex extends Service {
+	name: ServiceName = ServiceName.MyMangaDex;
 	key: string = 'mmd';
 	form?: HTMLFormElement;
 
-	import = (): void => {
-		this.manager.clear();
-		this.manager.header('Select your MyMangaDex save file');
+	activable: boolean = false;
+	importable: boolean = true;
+	exportable: boolean = false;
+
+	isLoggedIn = undefined;
+	login = undefined;
+	logout = undefined;
+
+	import = async (): Promise<void> => {
+		this.notification('success', 'Select your MyMangaDex save file.');
 		this.notification(
 			'info',
 			"All of your MyMangaDex options will also be imported and MyAnimeList will be enabled if it's not already."
@@ -94,7 +102,6 @@ export class MyMangaDex extends ExtensionSave {
 
 	handle = (event: Event): void => {
 		event.preventDefault();
-		this.removeNotifications();
 		if (!this.form) return;
 		const merge = this.form.override.checked == false;
 		var reader = new FileReader();
@@ -118,13 +125,8 @@ export class MyMangaDex extends ExtensionSave {
 					Object.keys(data).forEach((value): void => {
 						if (value !== 'options' && value !== 'history') {
 							// Check if Title keys are valid and contain a valid Title
-							if (
-								!isNaN(parseInt(value)) &&
-								this.isValidMyMangaDexTitle(data[value])
-							) {
-								titles.add(
-									new Title(parseInt(value), this.convertTitle(data[value]))
-								);
+							if (!isNaN(parseInt(value)) && this.isValidMyMangaDexTitle(data[value])) {
+								titles.add(new Title(parseInt(value), this.convertTitle(data[value])));
 							} else {
 								summary.invalid++;
 							}
@@ -159,25 +161,25 @@ export class MyMangaDex extends ExtensionSave {
 						await LocalStorage.set('history', history);
 					}
 					// Add MyAnimeList and save options
-					if (Options.services.indexOf(ServiceName.MyAnimeList) < 0) {
-						Options.services.unshift(ServiceName.MyAnimeList);
-						Options.mainService = ServiceName.MyAnimeList;
+					if (Options.services.indexOf(ServiceName.MyAnimeList as any) < 0) {
+						Options.services.unshift(ServiceName.MyAnimeList as any);
+						Options.mainService = ServiceName.MyAnimeList as any;
 					}
 					await Options.save();
-					this.end(summary);
-					this.manager.reload();
+					this.displaySummary(summary);
+					// this.manager.reload(); // TODO: Reload Options
 				} catch (error) {
 					console.error(error);
-					this.error('Invalid file !');
+					this.notification('danger', 'Invalid file !');
 				}
 			} else {
-				this.error('Unknown error, wrong file type.');
+				this.notification('danger', 'Unknown error, wrong file type.');
 			}
 		};
 		if (this.form.file.files.length > 0) {
 			reader.readAsText(this.form.file.files[0]);
 		} else {
-			this.error('No file !');
+			this.notification('danger', 'No file !');
 		}
 	};
 

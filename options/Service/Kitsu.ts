@@ -1,10 +1,11 @@
-import { ServiceSave, ImportState } from './Save';
 import { DOM } from '../../src/DOM';
 import { Options } from '../../src/Options';
-import { ServiceName, Status } from '../../src/Service/Service';
+import { ServiceName, Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { Mochi } from '../../src/Mochi';
 import { TitleCollection, Title } from '../../src/Title';
+import { ServiceManager } from '../Manager/Service';
+import { Service, ImportState } from './Service';
 
 enum KitsuStatus {
 	'current' = 'current',
@@ -61,9 +62,84 @@ interface KitsuTitle {
 	volume: number;
 }
 
-export class Kitsu extends ServiceSave {
-	name: string = 'Kitsu';
+export class Kitsu extends Service {
+	name: ServiceName = ServiceName.Kitsu;
 	key: string = 'ku';
+	loginMethod: LoginMethod = LoginMethod.FORM;
+
+	activable: boolean = true;
+	importable: boolean = true;
+	exportable: boolean = true;
+
+	isLoggedIn = async (): Promise<LoginStatus> => {
+		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken) return LoginStatus.MISSING_TOKEN;
+		const response = await Runtime.request<JSONResponse>({
+			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
+			isJson: true,
+			headers: {
+				Authorization: `Bearer ${Options.tokens.kitsuToken}`,
+				Accept: 'application/vnd.api+json',
+			},
+		});
+		if (response.status >= 500) {
+			return LoginStatus.SERVER_ERROR;
+		} else if (response.status >= 400 && response.status < 500) {
+			return LoginStatus.BAD_REQUEST;
+		}
+		return LoginStatus.SUCCESS;
+	};
+
+	getUserId = async (): Promise<LoginStatus> => {
+		if (Options.tokens.kitsuToken === undefined) return LoginStatus.MISSING_TOKEN;
+		let data = await Runtime.request<JSONResponse>({
+			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
+			isJson: true,
+			method: 'GET',
+			headers: {
+				Authorization: `Bearer ${Options.tokens.kitsuToken}`,
+				Accept: 'application/vnd.api+json',
+				'Content-Type': 'application/vnd.api+json',
+			},
+		});
+		if (data.status >= 200 && data.status < 400) {
+			Options.tokens.kitsuUser = data.body.data[0].id;
+			return LoginStatus.SUCCESS;
+		} else if (data.status >= 500) {
+			return LoginStatus.SERVER_ERROR;
+		}
+		return LoginStatus.BAD_REQUEST;
+	};
+
+	login = async (username: string, password: string): Promise<LoginStatus> => {
+		let data = await Runtime.request<JSONResponse>({
+			url: 'https://kitsu.io/api/oauth/token',
+			isJson: true,
+			method: 'POST',
+			headers: {
+				Accept: 'application/vnd.api+json',
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+			body: `grant_type=password&username=${encodeURIComponent(username)}&password=${encodeURIComponent(
+				password
+			)}`,
+		});
+		if (data.status == 200) {
+			Options.tokens.kitsuToken = data.body.access_token;
+			const userIdResp = await this.getUserId();
+			await Options.save();
+			if (userIdResp !== LoginStatus.SUCCESS) return userIdResp;
+			return LoginStatus.SUCCESS;
+		} else if (data.status >= 500) {
+			return LoginStatus.SERVER_ERROR;
+		}
+		return LoginStatus.BAD_REQUEST;
+	};
+
+	logout = async (): Promise<void> => {
+		delete Options.tokens.kitsuToken;
+		delete Options.tokens.kitsuUser;
+		return await Options.save();
+	};
 
 	toStatus = (status: KitsuStatus): Status => {
 		if (status === 'current') {
@@ -97,11 +173,14 @@ export class Kitsu extends ServiceSave {
 			},
 		});
 		if (response.status >= 400) {
-			this.error('The request failed, maybe Kitsu is having problems, retry later.');
+			this.notification('danger', 'The request failed, maybe Kitsu is having problems, retry later.');
 			return false;
 		}
 		if (response.body.errors !== undefined) {
-			this.error('The Request failed, check if you are logged in and your token is valid or retry later.');
+			this.notification(
+				'danger',
+				'The Request failed, check if you are logged in and your token is valid or retry later.'
+			);
 			return false;
 		}
 		const body = response.body as KitsuResponse;
@@ -122,10 +201,7 @@ export class Kitsu extends ServiceSave {
 		return true;
 	};
 
-	// TODO: Cancel button
 	import = async (): Promise<void> => {
-		this.manager.clear();
-		this.manager.header('Importing from Kitsu');
 		this.notification('warning', `You need to have Kitsu activated and to be logged in to import.`);
 		const block = DOM.create('div', {
 			class: 'block',
@@ -141,19 +217,18 @@ export class Kitsu extends ServiceSave {
 						Options.tokens.kitsuUser === undefined ||
 						Options.tokens.kitsuToken === undefined
 					) {
-						this.error('You need to have Kitsu activated and to be logged in to Import.');
+						this.notification('danger', 'You need to have Kitsu activated and to be logged in to Import.');
 						return;
 					}
 					await this.handleImport();
 				},
 			},
 		});
-		DOM.append(this.manager.node, DOM.append(block, startButton, this.resetButton()));
+		DOM.append(this.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
 	};
 
 	handleImport = async (): Promise<void> => {
-		this.manager.clear();
-		this.removeNotifications();
+		this.manager.resetSaveContainer();
 		this.manager.header('Importing from Kitsu');
 		// Check if everything is valid by getting the first page
 		let kitsuTitles: KitsuTitle[] = [];
@@ -179,7 +254,7 @@ export class Kitsu extends ServiceSave {
 		notification.classList.remove('loading');
 		stopButton.remove();
 		if (doStop) {
-			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
 			return;
 		}
 		// Find MangaDex IDs
@@ -214,18 +289,18 @@ export class Kitsu extends ServiceSave {
 		notification.classList.remove('loading');
 		stopButton.remove();
 		if (doStop) {
-			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
 			return;
 		}
 		// Done, merge and save
 		titles.merge(await TitleCollection.get(titles.ids));
 		await titles.save();
-		this.success([
+		this.notification('success', [
 			DOM.text(`Done ! Imported ${added} Titles (out of ${total}) from Kitsu.`),
 			DOM.space(),
 			this.resetButton(),
 		]);
 	};
 
-	export = (): void => {};
+	export = async (): Promise<void> => {};
 }

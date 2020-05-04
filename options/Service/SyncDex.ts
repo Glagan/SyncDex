@@ -1,21 +1,28 @@
 import { ExportedSave } from '../../src/interfaces';
 import { Options, AvailableOptions } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
-import { ExtensionSave, ImportSummary } from './ExtensionSave';
 import { Title, TitleCollection } from '../../src/Title';
 import { DOM } from '../../src/DOM';
-import { Checkbox, FileInput } from './Save';
+import { Service, Checkbox, FileInput, ImportSummary } from './Service';
+import { ServiceName } from '../Manager/Service';
 
-export class SyncDex extends ExtensionSave {
-	name: string = 'SyncDex';
+export class SyncDex extends Service {
+	name: ServiceName = ServiceName.SyncDex;
 	key: string = 'sc';
+
+	activable: boolean = false;
+	importable: boolean = true;
+	exportable: boolean = true;
+
+	isLoggedIn = undefined;
+	login = undefined;
+	logout = undefined;
 
 	busy: boolean = false;
 	form?: HTMLFormElement;
 
-	import = (): void => {
-		this.manager.clear();
-		this.manager.header('Select your SyncDex save file');
+	import = async (): Promise<void> => {
+		this.notification('success', 'Select your SyncDex save file.');
 		this.form = this.createForm(
 			[
 				new Checkbox('override', 'Erase current Save'),
@@ -27,7 +34,6 @@ export class SyncDex extends ExtensionSave {
 
 	handle = (event: Event): void => {
 		event.preventDefault();
-		this.removeNotifications();
 		if (!this.form) return;
 		const merge = this.form.override.checked == false;
 		var reader = new FileReader();
@@ -100,20 +106,20 @@ export class SyncDex extends ExtensionSave {
 						await LocalStorage.set('history', history);
 					}
 					await Options.save();
-					this.end(summary);
-					this.manager.reload();
+					this.displaySummary(summary);
+					// this.manager.reload(); // TODO: Reload
 				} catch (error) {
 					console.error(error);
-					this.error('Invalid file !');
+					this.notification('danger', 'Invalid file !');
 				}
 			} else {
-				this.error('Unknown error, wrong file type.');
+				this.notification('danger', 'Unknown error, wrong file type.');
 			}
 		};
 		if (this.form.file.files.length > 0) {
 			reader.readAsText(this.form.file.files[0]);
 		} else {
-			this.error('No file !');
+			this.notification('danger', 'No file !');
 		}
 	};
 
@@ -132,12 +138,16 @@ export class SyncDex extends ExtensionSave {
 	};
 
 	export = async (): Promise<void> => {
-		if (this.block && !this.busy) {
+		let notification = this.notification(
+			'success',
+			'Exporting your save file, you can use it as a backup or Import it on another browser/computer.'
+		);
+		if (this.exportCard && !this.busy) {
 			this.busy = true;
-			this.block.classList.add('loading');
+			this.exportCard.classList.add('loading');
 			let data = await LocalStorage.getAll();
 			if (data) {
-				delete data.tokens;
+				data.options.tokens = {};
 				let downloadLink = DOM.create('a', {
 					style: {
 						display: 'none',
@@ -152,8 +162,9 @@ export class SyncDex extends ExtensionSave {
 				downloadLink.click();
 				downloadLink.remove();
 			}
-			this.block.classList.remove('loading');
+			this.exportCard.classList.remove('loading');
 			this.busy = false;
 		}
+		DOM.append(notification, DOM.space(), this.resetButton());
 	};
 }

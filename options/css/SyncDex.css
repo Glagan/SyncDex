@@ -82,7 +82,7 @@ body {
 	overflow: auto;
 }
 
-#content > h1,
+#content h1,
 h1.full {
 	background-color: #5f5d60;
 	border-top: 1px solid #d6d6d6;
@@ -91,6 +91,9 @@ h1.full {
 	text-shadow: 1px 1px 1px #19201a;
 	padding: 1rem;
 	user-select: none;
+	transition: 0.1s cubic-bezier(0.6, 0.04, 0.98, 0.335);
+	opacity: 0.4;
+	margin: 1rem 0;
 }
 
 #content > h2,
@@ -105,19 +108,13 @@ h2.full {
 	user-select: none;
 }
 
-#content > h1 {
-	transition: 0.1s cubic-bezier(0.6, 0.04, 0.98, 0.335);
-	opacity: 0.4;
-	margin: 1rem 0;
-}
-
 #content > div {
 	transition: 0.1s cubic-bezier(0.6, 0.04, 0.98, 0.335);
 	opacity: 0.4;
 }
 
-#content > h1.active,
-#content > div.active {
+#content > .active,
+#content > .active h1 {
 	/* background-color: #b6b6b6; */
 	opacity: 1;
 }

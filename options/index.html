@@ -21,8 +21,7 @@
 			<li data-link="general"><i class="lni lni-bubble"></i> General</li>
 			<li data-link="notifications"><i class="lni lni-bubble"></i> Notifications</li>
 			<li data-link="history"><i class="lni lni-list"></i> History</li>
-			<li data-link="import"><i class="lni lni-upload"></i> Import</li>
-			<li data-link="export"><i class="lni lni-download"></i> Export</li>
+			<li data-link="import-export"><i class="lni lni-reload"></i> Import/Export</li>
 			<li data-link="other"><i class="lni lni-more-alt"></i> Other</li>
 			<li data-link="delete"><i class="lni lni-trash"></i> Delete</li>
 		</ul>
@@ -293,24 +292,8 @@
 				</div>
 			</div>
 		</div>
-		<h1 id="import"><i class="lni lni-upload"></i> Import</h1>
-		<div>
-			<div class="block notification info">
-				<b>Importing</b> will only update your <b>SyncDex</b> save and is used to initialize
-				<b>SyncDex</b>.<br />
-				If you wish to update any external Service, see <b><a href="#Export">Export</a></b>.
-			</div>
-			<div id="import-container"></div>
-		</div>
-		<h1 id="export"><i class="lni lni-download"></i> Export</h1>
-		<div>
-			<div class="block notification info">
-				<b>Exporting</b> will update your <b>online</b> save on the Service you choose using your <b>SyncDex</b>
-				save.<br />
-				You should <b><a href="#Import">Import</a></b> from somewhere before exporting to somewhere else !
-			</div>
-			<div id="export-container"></div>
-		</div>
+		<div id="import-export"></div>
+		<div id="save-container"></div>
 		<h1 id="other"><i class="lni lni-more"></i> Other</h1>
 		<div>
 			<!--<div class="block">

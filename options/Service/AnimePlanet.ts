@@ -1,10 +1,11 @@
-import { ServiceSave, ImportState } from './Save';
 import { RawResponse, Runtime } from '../../src/Runtime';
 import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
-import { Status } from '../../src/Service/Service';
 import { Progress } from '../../src/interfaces';
+import { Service, ImportState } from './Service';
+import { Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
+import { ServiceName, ServiceManager } from '../Manager/Service';
 
 interface APTitle {
 	id: string;
@@ -12,19 +13,28 @@ interface APTitle {
 	progress: Progress;
 }
 
-export class AnimePlanet extends ServiceSave {
-	name: string = 'AnimePlanet';
+export class AnimePlanet extends Service {
+	name: ServiceName = ServiceName.AnimePlanet;
 	key: string = 'ap';
 	parser: DOMParser = new DOMParser();
+	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
+	loginUrl: string = 'https://www.anime-planet.com/login.php';
 
-	isLoggedIn = async (): Promise<string> => {
+	activable: boolean = true;
+	importable: boolean = true;
+	exportable: boolean = true;
+
+	login = undefined;
+	logout = undefined;
+
+	isLoggedIn = async <T = { username: string }>(reference?: T): Promise<LoginStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: `https://www.anime-planet.com/contact`,
 			credentials: 'include',
 		});
 		if (response.status >= 400) {
-			this.error('The request failed, maybe AnimePlanet is having problems, retry later.');
-			return '';
+			this.notification('danger', 'The request failed, maybe AnimePlanet is having problems, retry later.');
+			return LoginStatus.FAIL;
 		}
 		try {
 			const body = this.parser.parseFromString(response.body, 'text/html');
@@ -33,16 +43,17 @@ export class AnimePlanet extends ServiceSave {
 				console.log();
 				throw 'Could not find Profile link';
 			}
-			return profileLink.getAttribute('title') ?? '';
+			if (reference) {
+				(reference as any).username = profileLink.getAttribute('title') ?? '';
+			}
+			return LoginStatus.SUCCESS;
 		} catch (error) {
-			this.error(`Could not find your Username, are you sure you're logged in ?`);
-			return '';
+			this.notification('danger', `Could not find your Username, are you sure you're logged in ?`);
+			return LoginStatus.FAIL;
 		}
 	};
 
-	import = (): void => {
-		this.manager.clear();
-		this.manager.header('Importing from AnimePlanet');
+	import = async (): Promise<void> => {
 		const block = DOM.create('div', {
 			class: 'block',
 		});
@@ -56,9 +67,10 @@ export class AnimePlanet extends ServiceSave {
 					if (!busy) {
 						busy = true;
 						startButton.classList.add('loading');
-						const username = await this.isLoggedIn();
-						if (username !== '') {
-							await this.handleImport(username);
+						const username: { username: string } = { username: '' };
+						const status = await this.isLoggedIn(username);
+						if (status == LoginStatus.SUCCESS && username.username !== '') {
+							await this.handleImport(username.username);
 						} else {
 							startButton.classList.remove('loading');
 						}
@@ -67,7 +79,7 @@ export class AnimePlanet extends ServiceSave {
 				},
 			},
 		});
-		DOM.append(this.manager.node, DOM.append(block, startButton, this.resetButton()));
+		DOM.append(this.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
 	};
 
 	toStatus = (status: string): Status => {
@@ -99,7 +111,7 @@ export class AnimePlanet extends ServiceSave {
 			credentials: 'include',
 		});
 		if (response.status >= 400 || typeof response.body !== 'string') {
-			this.error('The request failed, maybe AnimePlanet is having problems, retry later.');
+			this.notification('danger', 'The request failed, maybe AnimePlanet is having problems, retry later.');
 			return false;
 		}
 		const body = this.parser.parseFromString(response.body, 'text/html');
@@ -132,8 +144,7 @@ export class AnimePlanet extends ServiceSave {
 	};
 
 	handleImport = async (username: string): Promise<void> => {
-		this.manager.clear();
-		this.removeNotifications();
+		this.manager.resetSaveContainer();
 		this.manager.header('Importing from AnimePlanet');
 		let apTitles: APTitle[] = [];
 		const state = {
@@ -156,7 +167,7 @@ export class AnimePlanet extends ServiceSave {
 		notification.classList.remove('loading');
 		stopButton.remove();
 		if (doStop) {
-			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
 			return;
 		}
 		// Find MangaDex IDs
@@ -189,18 +200,18 @@ export class AnimePlanet extends ServiceSave {
 		notification.classList.remove('loading');
 		stopButton.remove();
 		if (doStop) {
-			this.success([DOM.text('You canceled the Import. '), this.resetButton()]);
+			this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
 			return;
 		}
 		// Done, merge and save
 		titles.merge(await TitleCollection.get(titles.ids));
 		await titles.save();
-		this.success([
+		this.notification('success', [
 			DOM.text(`Done ! Imported ${added} Titles (out of ${total}) from AnimePlanet.`),
 			DOM.space(),
 			this.resetButton(),
 		]);
 	};
 
-	export = (): void => {};
+	export = async (): Promise<void> => {};
 }
