@@ -6,10 +6,6 @@ interface Progress {
 	volume?: number;
 }
 
-interface HistoryList {
-	[key: number]: number;
-}
-
 type ExportOptions = {
 	options?: AvailableOptions;
 };

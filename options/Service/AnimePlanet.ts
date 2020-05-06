@@ -33,7 +33,6 @@ class AnimePlanetActive extends ActivableModule {
 			const body = this.parser.parseFromString(response.body, 'text/html');
 			const profileLink = body.querySelector('.loggedIn a[href^="/users/"]');
 			if (profileLink === null) {
-				console.log();
 				throw 'Could not find Profile link';
 			}
 			if (reference) {

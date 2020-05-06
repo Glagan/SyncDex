@@ -3,10 +3,15 @@ import { ServiceKey, Status } from './Service/Service';
 import { LocalStorage } from './Storage';
 import { Options } from './Options';
 
+interface SaveProgress {
+	c: number;
+	v?: number;
+}
+
 interface SaveTitle {
 	s: { [key in ServiceKey]?: number | string };
 	st: Status;
-	p: Progress;
+	p: SaveProgress;
 	c?: number[];
 	i?: {
 		s: number;
@@ -41,8 +46,9 @@ export interface FullTitle {
 type NumberKey = Pick<FullTitle, 'lastRead' | 'lastTitle' | 'lastCheck' | 'lastChapter'>;
 
 /**
- * Handle conversion between a SaveTitle in LocalStorage and a Title.
- * Storing only short keys for each Title save about 80% space (from 86 to 17 bytes)
+ * Handle conversion between a SaveTitle in LocalStorage and a FullTitle.
+ * Storing only short keys for each Title save about 80% space (from 86 to 17 bytes for keys)
+ * Also using SaveProgress reduce Progress space from 12 to 2 bytes for keys.
  */
 export class Title implements FullTitle {
 	new: boolean;
@@ -62,6 +68,7 @@ export class Title implements FullTitle {
 	lastChapter?: number;
 	name?: string;
 	lastRead?: number;
+	static numberKeys: (keyof NumberKey)[] = ['lastRead', 'lastTitle', 'lastCheck', 'lastChapter'];
 
 	constructor(id: number, title?: Partial<FullTitle>) {
 		this.new = title == undefined;
@@ -74,7 +81,10 @@ export class Title implements FullTitle {
 	static toTitle(title: SaveTitle): FullTitle {
 		const mapped: FullTitle = {
 			services: title.s,
-			progress: title.p,
+			progress: {
+				chapter: title.p.c,
+				volume: title.p.v,
+			},
 			status: title.st,
 			chapters: title.c || [],
 			lastTitle: title.lt,
@@ -106,7 +116,6 @@ export class Title implements FullTitle {
 		return new Title(rid, Title.toTitle(title));
 	}
 
-	static numberKeys: (keyof NumberKey)[] = ['lastRead', 'lastTitle', 'lastCheck', 'lastChapter'];
 	/**
 	 * Select highest values of both Titles and assign them to *this*
 	 */
@@ -142,7 +151,10 @@ export class Title implements FullTitle {
 		const mapped: SaveTitle = {
 			s: this.services,
 			st: this.status,
-			p: this.progress,
+			p: {
+				c: this.progress.chapter,
+				v: this.progress.volume,
+			},
 			lt: this.lastTitle,
 			lc: this.lastCheck,
 			id: this.lastChapter,

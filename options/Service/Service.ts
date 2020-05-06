@@ -198,7 +198,6 @@ export abstract class ActivableModule {
 		this.service = service;
 		// Create
 		this.activeCard = this.service.createBlock();
-		console.log('activeCard', this.activeCard);
 		this.activeCard.classList.add('loading');
 		const buttons = DOM.create('div', { class: 'button-group' });
 		this.mainButton = DOM.create('button', {
@@ -504,7 +503,6 @@ export abstract class ImportableModule extends SaveModule {
 	constructor(service: Service) {
 		super(service);
 		this.importCard = this.service.createBlock();
-		console.log('importCard', this.importCard);
 		this.importCard.addEventListener('click', () => {
 			if (this.import) {
 				this.service.manager.clearSaveContainer();
@@ -531,7 +529,6 @@ export abstract class ExportableModule extends SaveModule {
 	constructor(service: Service) {
 		super(service);
 		this.exportCard = this.service.createBlock();
-		console.log('exportCard', this.exportCard);
 		this.exportCard.addEventListener('click', () => {
 			if (this.export) {
 				this.service.manager.clearSaveContainer();

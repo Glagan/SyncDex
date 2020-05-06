@@ -169,7 +169,6 @@ export class ServiceManager {
 		// Remove previous
 		for (const service of this.services) {
 			if (service.activeModule) {
-				console.log('service', service.name, Object.assign({}, service));
 				service.activeModule.activeCard.remove();
 			}
 		}
@@ -193,7 +192,7 @@ export class ServiceManager {
 	header = (value: string | AppendableElement[], headerType: 'h1' | 'h2' = 'h2'): HTMLElement => {
 		const isArray = Array.isArray(value);
 		return this.saveContainer.appendChild(
-			DOM.create('h2', {
+			DOM.create(headerType, {
 				class: 'full',
 				textContent: isArray ? '' : (value as string),
 				childs: isArray ? (value as AppendableElement[]) : [],
@@ -230,7 +229,7 @@ export class ServiceManager {
 			this.saveContainer,
 			DOM.create('h1', {
 				attributes: { id: 'import' },
-				childs: [DOM.icon('upload'), DOM.space(), DOM.text('Import')],
+				childs: [DOM.icon('download'), DOM.space(), DOM.text('Import')],
 			}),
 			DOM.create('div', {
 				childs: [
@@ -254,7 +253,7 @@ export class ServiceManager {
 			}),
 			DOM.create('h1', {
 				attributes: { id: 'export' },
-				childs: [DOM.icon('download'), DOM.space(), DOM.text('Export')],
+				childs: [DOM.icon('upload'), DOM.space(), DOM.text('Export')],
 			}),
 			DOM.create('div', {
 				childs: [
