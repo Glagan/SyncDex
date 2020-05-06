@@ -4,8 +4,7 @@ import { ServiceName, Status, LoginStatus, LoginMethod } from '../../src/Service
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
-import { Service } from './Service';
-import { ServiceManager } from '../Manager/Service';
+import { Service, ActivableModule, ImportableModule, ExportableModule, ImportType } from './Service';
 
 interface ViewerResponse {
 	data: {
@@ -44,37 +43,12 @@ interface AnilistResponse {
 	};
 }
 
-export class Anilist extends Service {
-	name: ServiceName = ServiceName.Anilist;
-	key: string = 'al';
+class AnilistActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	loginUrl: string = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
-
-	activable: boolean = true;
-	importable: boolean = true;
-	exportable: boolean = true;
 	form?: HTMLFormElement;
-
-	static viewerQuery = `
-		query {
-			Viewer {
-				name
-			}
-		}`;
-
-	static listQuery = `
-		query ($userId: Int, $userName: String) {
-			MediaListCollection(userId: $userId, userName: $userName, type: MANGA) {
-				lists {
-					entries {
-						mediaId
-						status
-						progress
-						progressVolumes
-					}
-				}
-			}
-		}`; // Require $userName
+	login = undefined;
+	logout = undefined;
 
 	isLoggedIn = async <T>(reference?: T): Promise<LoginStatus> => {
 		if (!Options.tokens.anilistToken === undefined) return LoginStatus.MISSING_TOKEN;
@@ -97,22 +71,32 @@ export class Anilist extends Service {
 		}
 		return LoginStatus.SUCCESS;
 	};
+}
+class AnilistImport extends ImportableModule {
+	importType: ImportType = ImportType.LIST;
+	convertOptions = undefined;
+	fileToTitles = undefined;
 
-	login = undefined;
-	logout = undefined;
+	static viewerQuery = `
+		query {
+			Viewer {
+				name
+			}
+		}`;
 
-	createTitle = (): HTMLElement => {
-		return DOM.create('span', {
-			class: this.name.toLowerCase(),
-			textContent: 'Ani',
-			childs: [
-				DOM.create('span', {
-					class: 'list',
-					textContent: 'List',
-				}),
-			],
-		});
-	};
+	static listQuery = `
+		query ($userId: Int, $userName: String) {
+			MediaListCollection(userId: $userId, userName: $userName, type: MANGA) {
+				lists {
+					entries {
+						mediaId
+						status
+						progress
+						progressVolumes
+					}
+				}
+			}
+		}`; // Require $userName
 
 	import = async (): Promise<void> => {
 		this.notification('warning', `You need to have Anilist activated and to be logged in to import.`);
@@ -149,7 +133,7 @@ export class Anilist extends Service {
 								Authorization: `Bearer ${Options.tokens.anilistToken}`,
 							},
 							body: JSON.stringify({
-								query: Anilist.viewerQuery,
+								query: AnilistImport.viewerQuery,
 							}),
 						});
 						let username = '';
@@ -168,7 +152,7 @@ export class Anilist extends Service {
 				},
 			},
 		});
-		DOM.append(this.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
+		DOM.append(this.service.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
 	};
 
 	toStatus = (status: AnilistStatus): Status => {
@@ -200,7 +184,7 @@ export class Anilist extends Service {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify({
-				query: Anilist.listQuery,
+				query: AnilistImport.listQuery,
 				variables: {
 					userName: username,
 				},
@@ -221,8 +205,8 @@ export class Anilist extends Service {
 		let total = body.data.MediaListCollection.lists.reduce((acc, list) => acc + list.entries.length, 0);
 		let processed = 0;
 		let added = 0;
-		this.manager.resetSaveContainer();
-		this.manager.header('Importing from Anilist');
+		this.service.manager.resetSaveContainer();
+		this.service.manager.header('Importing from Anilist');
 		let doStop = false;
 		const stopButton = this.stopButton(() => {
 			doStop = true;
@@ -269,6 +253,29 @@ export class Anilist extends Service {
 			this.resetButton(),
 		]);
 	};
+}
 
+class AnilistExport extends ExportableModule {
 	export = async (): Promise<void> => {};
+}
+
+export class Anilist extends Service {
+	name: ServiceName = ServiceName.Anilist;
+	key: string = 'al';
+	activeModule: ActivableModule = new AnilistActive(this);
+	importModule: ImportableModule = new AnilistImport(this);
+	exportModule: ExportableModule = new AnilistExport(this);
+
+	createTitle = (): HTMLElement => {
+		return DOM.create('span', {
+			class: this.name.toLowerCase(),
+			textContent: 'Ani',
+			childs: [
+				DOM.create('span', {
+					class: 'list',
+					textContent: 'List',
+				}),
+			],
+		});
+	};
 }

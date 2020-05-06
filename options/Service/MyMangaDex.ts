@@ -2,9 +2,8 @@ import { LocalStorage } from '../../src/Storage';
 import { Options } from '../../src/Options';
 import { Title, FullTitle, TitleCollection } from '../../src/Title';
 import { Status } from '../../src/Service/Service';
-import { Service, FileInput, Checkbox, ImportSummary } from './Service';
+import { FileInput, Checkbox, ImportSummary, Service, ImportableModule, ImportType } from './Service';
 import { ServiceName } from '../Manager/Service';
-import { DOM } from '../../src/DOM';
 
 interface MyMangaDexHistoryEntry {
 	chapter: number;
@@ -70,18 +69,14 @@ type MyMangaDexSave = {
 	[key: string]: MyMangaDexTitle;
 };
 
-export class MyMangaDex extends Service {
-	name: ServiceName = ServiceName.MyMangaDex;
-	key: string = 'mmd';
+class MyMangaDexImport extends ImportableModule {
+	importType: ImportType = ImportType.FILE;
 	form?: HTMLFormElement;
+	convertOptions = undefined;
 
-	activable: boolean = false;
-	importable: boolean = true;
-	exportable: boolean = false;
-
-	isLoggedIn = undefined;
-	login = undefined;
-	logout = undefined;
+	fileToTitles = <T extends MyMangaDexSave>(file: T): TitleCollection => {
+		return new TitleCollection();
+	};
 
 	import = async (): Promise<void> => {
 		this.notification('success', 'Select your MyMangaDex save file.');
@@ -97,8 +92,6 @@ export class MyMangaDex extends Service {
 			(event) => this.handle(event)
 		);
 	};
-
-	export = undefined;
 
 	handle = (event: Event): void => {
 		event.preventDefault();
@@ -261,4 +254,13 @@ export class MyMangaDex extends Service {
 		}
 		return history;
 	};
+}
+
+export class MyMangaDex extends Service {
+	name: ServiceName = ServiceName.MyMangaDex;
+	key: string = 'mmd';
+
+	activeModule = undefined;
+	importModule: ImportableModule = new MyMangaDexImport(this);
+	exportModule = undefined;
 }

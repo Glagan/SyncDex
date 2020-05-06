@@ -2,19 +2,15 @@ import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Runtime, RawResponse } from '../../src/Runtime';
 import { Status, LoginStatus } from '../../src/Service/Service';
-import { Service, ImportState } from './Service';
+import { ImportState, Service, ImportableModule, ExportableModule, ImportType } from './Service';
 import { ServiceName } from '../Manager/Service';
 
-export class MangaDex extends Service {
-	name: ServiceName = ServiceName.MangaDex;
-	key: string = 'md';
-	activable: boolean = false;
-	importable: boolean = true;
-	exportable: boolean = true;
-
+class MangaDexImport extends ImportableModule {
+	importType: ImportType = ImportType.LIST;
 	parser: DOMParser = new DOMParser();
 	form?: HTMLFormElement;
-
+	convertOptions = undefined;
+	fileToTitles = undefined;
 	login = undefined;
 	logout = undefined;
 
@@ -77,7 +73,7 @@ export class MangaDex extends Service {
 				},
 			},
 		});
-		DOM.append(this.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
+		DOM.append(this.service.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
 	};
 
 	toStatus = (statusNode: HTMLElement | null): Status => {
@@ -154,8 +150,8 @@ export class MangaDex extends Service {
 		if (!(await this.singlePage(titles, userId, state))) {
 			return;
 		}
-		this.manager.resetSaveContainer();
-		this.manager.header('Importing MangaDex Titles');
+		this.service.manager.resetSaveContainer();
+		this.service.manager.header('Importing MangaDex Titles');
 		// Then fetch remaining pages
 		let res = true;
 		let doStop = false;
@@ -191,7 +187,9 @@ export class MangaDex extends Service {
 			this.resetButton(),
 		]);
 	};
+}
 
+class MangaDexExport extends ExportableModule {
 	fromStatus = (status: Status): number => {
 		switch (status) {
 			case Status.NONE:
@@ -259,4 +257,13 @@ export class MangaDex extends Service {
 			this.resetButton(),
 		]);
 	};
+}
+
+export class MangaDex extends Service {
+	name: ServiceName = ServiceName.MangaDex;
+	key: string = 'md';
+
+	activeModule = undefined;
+	importModule: ImportableModule = new MangaDexImport(this);
+	exportModule: ExportableModule = new MangaDexExport(this);
 }

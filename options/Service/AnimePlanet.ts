@@ -3,9 +3,9 @@ import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { Progress } from '../../src/interfaces';
-import { Service, ImportState } from './Service';
+import { ImportState, Service, ActivableModule, ImportableModule, ExportableModule, ImportType } from './Service';
 import { Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
-import { ServiceName, ServiceManager } from '../Manager/Service';
+import { ServiceName } from '../Manager/Service';
 
 interface APTitle {
 	id: string;
@@ -13,17 +13,10 @@ interface APTitle {
 	progress: Progress;
 }
 
-export class AnimePlanet extends Service {
-	name: ServiceName = ServiceName.AnimePlanet;
-	key: string = 'ap';
-	parser: DOMParser = new DOMParser();
+class AnimePlanetActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	loginUrl: string = 'https://www.anime-planet.com/login.php';
-
-	activable: boolean = true;
-	importable: boolean = true;
-	exportable: boolean = true;
-
+	parser: DOMParser = new DOMParser();
 	login = undefined;
 	logout = undefined;
 
@@ -33,7 +26,7 @@ export class AnimePlanet extends Service {
 			credentials: 'include',
 		});
 		if (response.status >= 400) {
-			this.notification('danger', 'The request failed, maybe AnimePlanet is having problems, retry later.');
+			// this.service.notification('danger', 'The request failed, maybe AnimePlanet is having problems, retry later.');
 			return LoginStatus.FAIL;
 		}
 		try {
@@ -48,10 +41,16 @@ export class AnimePlanet extends Service {
 			}
 			return LoginStatus.SUCCESS;
 		} catch (error) {
-			this.notification('danger', `Could not find your Username, are you sure you're logged in ?`);
+			// this.notification('danger', `Could not find your Username, are you sure you're logged in ?`);
 			return LoginStatus.FAIL;
 		}
 	};
+}
+class AnimePlanetImport extends ImportableModule {
+	importType: ImportType = ImportType.LIST;
+	convertOptions = undefined;
+	fileToTitles = undefined;
+	parser: DOMParser = new DOMParser();
 
 	import = async (): Promise<void> => {
 		const block = DOM.create('div', {
@@ -68,7 +67,7 @@ export class AnimePlanet extends Service {
 						busy = true;
 						startButton.classList.add('loading');
 						const username: { username: string } = { username: '' };
-						const status = await this.isLoggedIn(username);
+						const status = await (this.service.activeModule as ActivableModule).isLoggedIn(username); // TODO: InterfaceModule
 						if (status == LoginStatus.SUCCESS && username.username !== '') {
 							await this.handleImport(username.username);
 						} else {
@@ -79,7 +78,7 @@ export class AnimePlanet extends Service {
 				},
 			},
 		});
-		DOM.append(this.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
+		DOM.append(this.service.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
 	};
 
 	toStatus = (status: string): Status => {
@@ -144,8 +143,8 @@ export class AnimePlanet extends Service {
 	};
 
 	handleImport = async (username: string): Promise<void> => {
-		this.manager.resetSaveContainer();
-		this.manager.header('Importing from AnimePlanet');
+		this.service.manager.resetSaveContainer();
+		this.service.manager.header('Importing from AnimePlanet');
 		let apTitles: APTitle[] = [];
 		const state = {
 			current: 0,
@@ -212,6 +211,17 @@ export class AnimePlanet extends Service {
 			this.resetButton(),
 		]);
 	};
+}
 
+class AnimePlanetExport extends ExportableModule {
 	export = async (): Promise<void> => {};
+}
+
+export class AnimePlanet extends Service {
+	name: ServiceName = ServiceName.AnimePlanet;
+	key: string = 'ap';
+
+	activeModule: ActivableModule = new AnimePlanetActive(this);
+	importModule: ImportableModule = new AnimePlanetImport(this);
+	exportModule: ExportableModule = new AnimePlanetExport(this);
 }

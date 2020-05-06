@@ -63,15 +63,6 @@ export class ServiceManager {
 		this.noServices = document.getElementById('no-service') as HTMLElement;
 		this.inactiveWarning = document.getElementById('inactive-service') as HTMLElement;
 		this.createAddForm();
-		// Initialize
-		for (const service of this.services) {
-			if (service.activable) {
-				service.initActive();
-				this.addSelectorRow(service.name);
-			}
-			if (service.importable) service.initImport();
-			if (service.exportable) service.initExport();
-		}
 		// Default State
 		this.refreshActive();
 		this.resetSaveContainer();
@@ -79,19 +70,21 @@ export class ServiceManager {
 
 	// Active
 
-	activateService = (serviceName: ServiceName): void => {
+	activateService = async (serviceName: ServiceName): Promise<void> => {
 		let service = this.services.find((service) => service.name == serviceName);
-		if (!service || !service.activeOptions || !service.isLoggedIn) return;
+		if (!service || !service.activeModule) return;
 		if (Options.mainService == serviceName) {
 			this.mainService = service;
-			service.activeOptions.node.classList.add('main');
-			service.activeOptions.mainButton.classList.add('hidden');
+			service.activeModule.activeCard.classList.add('main');
+			service.activeModule.mainButton.classList.add('hidden');
 		}
 		this.services.push(service);
 		// Main Service is always first -- if a Service is upgraded to Main it's moved to the first position
-		this.activeContainer.insertBefore(service.activeOptions.node, this.activeContainer.lastElementChild);
-		service.isLoggedIn().then((loggedIn) => (service as Service).updateStatus(loggedIn));
+		this.activeContainer.insertBefore(service.activeModule.activeCard, this.activeContainer.lastElementChild);
 		this.removeSelectorRow(service.name);
+		// Set logged in state
+		const loggedIn = await service.activeModule.isLoggedIn();
+		service.activeModule.updateStatus(loggedIn);
 	};
 
 	removeSelectorRow = (service: ServiceName): void => {
@@ -131,7 +124,7 @@ export class ServiceManager {
 	createAddForm = (): HTMLElement => {
 		// Add all options to the selector
 		for (const service of this.services) {
-			if (service.activeOptions) {
+			if (service.activeModule) {
 				this.addSelectorRow(service.name);
 			}
 		}
@@ -175,8 +168,9 @@ export class ServiceManager {
 	refreshActive = (): void => {
 		// Remove previous
 		for (const service of this.services) {
-			if (service.activable && service.activeOptions) {
-				service.activeOptions.node.remove();
+			if (service.activeModule) {
+				console.log('service', service.name, Object.assign({}, service));
+				service.activeModule.activeCard.remove();
 			}
 		}
 		this.activeServices = [];
@@ -224,11 +218,11 @@ export class ServiceManager {
 		});
 		// Insert Service cards
 		for (const service of this.services) {
-			if (service.importCard) {
-				DOM.append(importContainer, service.importCard);
+			if (service.importModule) {
+				DOM.append(importContainer, service.importModule.importCard);
 			}
-			if (service.exportCard) {
-				DOM.append(exportContainer, service.exportCard);
+			if (service.exportModule) {
+				DOM.append(exportContainer, service.exportModule.exportCard);
 			}
 		}
 		// Append to container

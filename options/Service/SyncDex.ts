@@ -3,23 +3,18 @@ import { Options, AvailableOptions } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
 import { Title, TitleCollection } from '../../src/Title';
 import { DOM } from '../../src/DOM';
-import { Service, Checkbox, FileInput, ImportSummary } from './Service';
+import { Checkbox, FileInput, ImportSummary, ImportType, Service, ImportableModule, ExportableModule } from './Service';
 import { ServiceName } from '../Manager/Service';
 
-export class SyncDex extends Service {
-	name: ServiceName = ServiceName.SyncDex;
-	key: string = 'sc';
-
-	activable: boolean = false;
-	importable: boolean = true;
-	exportable: boolean = true;
-
-	isLoggedIn = undefined;
-	login = undefined;
-	logout = undefined;
-
+class SyncDexImport extends ImportableModule {
+	importType: ImportType = ImportType.FILE;
 	busy: boolean = false;
 	form?: HTMLFormElement;
+	convertOptions = undefined;
+
+	fileToTitles = <T extends ExportedSave>(file: T): TitleCollection => {
+		return new TitleCollection();
+	};
 
 	import = async (): Promise<void> => {
 		this.notification('success', 'Select your SyncDex save file.');
@@ -136,6 +131,10 @@ export class SyncDex extends Service {
 			(title.n === undefined || typeof title.n === 'string')
 		);
 	};
+}
+
+class SyncDexExport extends ExportableModule {
+	busy: boolean = false;
 
 	export = async (): Promise<void> => {
 		let notification = this.notification(
@@ -167,4 +166,13 @@ export class SyncDex extends Service {
 		}
 		DOM.append(notification, DOM.space(), this.resetButton());
 	};
+}
+
+export class SyncDex extends Service {
+	name: ServiceName = ServiceName.SyncDex;
+	key: string = 'sc';
+
+	activeModule = undefined;
+	importModule: ImportableModule = new SyncDexImport(this);
+	exportModule: ExportableModule = new SyncDexExport(this);
 }

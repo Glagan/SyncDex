@@ -4,8 +4,7 @@ import { ServiceName, Status, LoginStatus, LoginMethod } from '../../src/Service
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { Mochi } from '../../src/Mochi';
 import { TitleCollection, Title } from '../../src/Title';
-import { ServiceManager } from '../Manager/Service';
-import { Service, ImportState } from './Service';
+import { ImportState, Service, ActivableModule, ImportableModule, ExportableModule, ImportType } from './Service';
 
 enum KitsuStatus {
 	'current' = 'current',
@@ -62,14 +61,8 @@ interface KitsuTitle {
 	volume: number;
 }
 
-export class Kitsu extends Service {
-	name: ServiceName = ServiceName.Kitsu;
-	key: string = 'ku';
+class KitsuActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.FORM;
-
-	activable: boolean = true;
-	importable: boolean = true;
-	exportable: boolean = true;
 
 	isLoggedIn = async (): Promise<LoginStatus> => {
 		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken) return LoginStatus.MISSING_TOKEN;
@@ -140,6 +133,12 @@ export class Kitsu extends Service {
 		delete Options.tokens.kitsuUser;
 		return await Options.save();
 	};
+}
+
+class KitsuImport extends ImportableModule {
+	importType: ImportType = ImportType.LIST;
+	convertOptions = undefined;
+	fileToTitles = undefined;
 
 	toStatus = (status: KitsuStatus): Status => {
 		if (status === 'current') {
@@ -224,12 +223,12 @@ export class Kitsu extends Service {
 				},
 			},
 		});
-		DOM.append(this.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
+		DOM.append(this.service.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
 	};
 
 	handleImport = async (): Promise<void> => {
-		this.manager.resetSaveContainer();
-		this.manager.header('Importing from Kitsu');
+		this.service.manager.resetSaveContainer();
+		this.service.manager.header('Importing from Kitsu');
 		// Check if everything is valid by getting the first page
 		let kitsuTitles: KitsuTitle[] = [];
 		const state = {
@@ -301,6 +300,17 @@ export class Kitsu extends Service {
 			this.resetButton(),
 		]);
 	};
+}
 
+class KitsuExport extends ExportableModule {
 	export = async (): Promise<void> => {};
+}
+
+export class Kitsu extends Service {
+	name: ServiceName = ServiceName.Kitsu;
+	key: string = 'ku';
+
+	activeModule: ActivableModule = new KitsuActive(this);
+	importModule: ImportableModule = new KitsuImport(this);
+	exportModule: ExportableModule = new KitsuExport(this);
 }

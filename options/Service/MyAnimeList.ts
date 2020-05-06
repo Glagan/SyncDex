@@ -2,7 +2,7 @@ import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
-import { Service, FileInput } from './Service';
+import { FileInput, Service, ActivableModule, ImportableModule, ExportableModule, ImportType } from './Service';
 import { ServiceName } from '../Manager/Service';
 import { RawResponse, Runtime } from '../../src/Runtime';
 
@@ -22,18 +22,15 @@ interface MyAnimeListTitle {
 	status: MyAnimeListStatus;
 }
 
-export class MyAnimeList extends Service {
-	name: ServiceName = ServiceName.MyAnimeList;
-	key: string = 'mal';
+interface MyAnimeListSave {
+	// TODO
+}
+
+class MyAnimeListActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	loginUrl: string = 'https://myanimelist.net/login.php';
-
-	activable: boolean = true;
-	importable: boolean = true;
-	exportable: boolean = true;
-
-	parser: DOMParser = new DOMParser();
-	form?: HTMLFormElement;
+	login = undefined;
+	logout = undefined;
 
 	isLoggedIn = async <T>(reference?: T): Promise<LoginStatus> => {
 		const response = await Runtime.request<RawResponse>({
@@ -50,9 +47,17 @@ export class MyAnimeList extends Service {
 			return LoginStatus.SUCCESS;
 		return LoginStatus.FAIL;
 	};
+}
 
-	login = undefined;
-	logout = undefined;
+class MyAnimeListImport extends ImportableModule {
+	importType: ImportType = ImportType.FILE;
+	parser: DOMParser = new DOMParser();
+	form?: HTMLFormElement;
+	convertOptions = undefined;
+
+	fileToTitles = <T extends MyAnimeListSave>(file: T): TitleCollection => {
+		return new TitleCollection();
+	};
 
 	import = async (): Promise<void> => {
 		this.notification('success', 'Select your MyAnimeList export file.');
@@ -119,8 +124,8 @@ export class MyAnimeList extends Service {
 						this.notification('danger', 'Invalid file !');
 						return;
 					}
-					this.manager.resetSaveContainer();
-					this.manager.header('Import MyAnimeList Save');
+					this.service.manager.resetSaveContainer();
+					this.service.manager.header('Import MyAnimeList Save');
 					let notification = this.notification('info loading', 'Step 1: Reading Save file');
 					// Get a list of MAL Titles
 					const titles = new TitleCollection();
@@ -202,8 +207,19 @@ export class MyAnimeList extends Service {
 			this.notification('danger', 'No file selected !');
 		}
 	};
+}
 
+class MyAnimeListExport extends ExportableModule {
 	/* TODO: MyAnimeList doesn't have the same URL for adding/editing titles
 			 I need to get the list of titles *really* in the list before adding or updating things */
 	export = async (): Promise<void> => {};
+}
+
+export class MyAnimeList extends Service {
+	name: ServiceName = ServiceName.MyAnimeList;
+	key: string = 'mal';
+
+	activeModule: ActivableModule = new MyAnimeListActive(this);
+	importModule: ImportableModule = new MyAnimeListImport(this);
+	exportModule: ExportableModule = new MyAnimeListExport(this);
 }

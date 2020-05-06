@@ -4,8 +4,8 @@ import { Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
 import { Runtime, RawResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
-import { Service } from './Service';
-import { ServiceName, ServiceManager } from '../Manager/Service';
+import { Service, ActivableModule, ImportableModule, ExportableModule, ImportType } from './Service';
+import { ServiceName } from '../Manager/Service';
 
 interface MUTitle {
 	id: number;
@@ -13,17 +13,11 @@ interface MUTitle {
 	status: Status;
 }
 
-export class MangaUpdates extends Service {
-	name: ServiceName = ServiceName.MangaUpdates;
-	key: string = 'mu';
+class MangaUpdatesActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	loginUrl: string = 'https://www.mangaupdates.com/login.html';
-	parser: DOMParser = new DOMParser();
-	static lists: string[] = ['read', 'wish', 'complete', 'unfinished', 'hold'];
-
-	activable: boolean = true;
-	importable: boolean = true;
-	exportable: boolean = true;
+	login = undefined;
+	logout = undefined;
 
 	isLoggedIn = async <T>(reference?: T): Promise<LoginStatus> => {
 		const response = await Runtime.request<RawResponse>({
@@ -44,9 +38,14 @@ export class MangaUpdates extends Service {
 			return LoginStatus.SUCCESS;
 		return LoginStatus.FAIL;
 	};
+}
 
-	login = undefined;
-	logout = undefined;
+class MangaUpdatesImport extends ImportableModule {
+	importType: ImportType = ImportType.LIST;
+	parser: DOMParser = new DOMParser();
+	static lists: string[] = ['read', 'wish', 'complete', 'unfinished', 'hold'];
+	convertOptions = undefined;
+	fileToTitles = undefined;
 
 	import = async (): Promise<void> => {
 		const block = DOM.create('div', {
@@ -62,7 +61,7 @@ export class MangaUpdates extends Service {
 				},
 			},
 		});
-		DOM.append(this.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
+		DOM.append(this.service.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
 	};
 
 	getProgress = (node: HTMLElement | null): number => {
@@ -116,8 +115,8 @@ export class MangaUpdates extends Service {
 	};
 
 	handleImport = async (): Promise<void> => {
-		this.manager.resetSaveContainer();
-		this.manager.header('Importing from MangaUpdates');
+		this.service.manager.resetSaveContainer();
+		this.service.manager.header('Importing from MangaUpdates');
 		let muTitles: MUTitle[] = [];
 		let doStop = false;
 		const stopButton = this.stopButton(() => {
@@ -128,8 +127,8 @@ export class MangaUpdates extends Service {
 			DOM.space(),
 			stopButton,
 		]);
-		for (let i = 0; i < MangaUpdates.lists.length; i++) {
-			const listName = MangaUpdates.lists[i];
+		for (let i = 0; i < MangaUpdatesImport.lists.length; i++) {
+			const listName = MangaUpdatesImport.lists[i];
 			(notification.firstChild as Text).textContent = `Importing list ${i + 1} out of 5.`;
 			if (!(await this.listPage(muTitles, listName))) {
 				this.notification(
@@ -186,6 +185,17 @@ export class MangaUpdates extends Service {
 			this.resetButton(),
 		]);
 	};
+}
 
+class MangaUpdatesExport extends ExportableModule {
 	export = async (): Promise<void> => {};
+}
+
+export class MangaUpdates extends Service {
+	name: ServiceName = ServiceName.MangaUpdates;
+	key: string = 'mu';
+
+	activeModule: ActivableModule = new MangaUpdatesActive(this);
+	importModule: ImportableModule = new MangaUpdatesImport(this);
+	exportModule: ExportableModule = new MangaUpdatesExport(this);
 }

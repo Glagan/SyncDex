@@ -2,6 +2,18 @@ import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceName, ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
 import { LoginStatus, LoginMethod } from '../../src/Service/Service';
+import { TitleCollection } from '../../src/Title';
+
+export const enum ImportType {
+	FILE,
+	LIST,
+}
+
+export interface FileImport {
+	ImportType: ImportType.FILE;
+	fileToTitles<T extends Object>(file: T): TitleCollection;
+	convertOptions<T extends Object>(options: T): Partial<AvailableOptions>;
+}
 
 export interface ImportState {
 	current: number;
@@ -126,208 +138,21 @@ export class FileInput extends Row {
 	}
 }
 
-interface ActiveOptions {
-	node: HTMLElement;
-	mainButton: HTMLElement;
-	checkStatusButton: HTMLElement;
-	loginButton: HTMLElement;
-	loginForm?: HTMLFormElement;
-	removeButton: HTMLElement;
+interface Module {
+	service: Service;
 }
 
 export abstract class Service {
 	manager: ServiceManager;
 	abstract name: ServiceName;
 	abstract key: string;
-	abstract activable: boolean;
-	loginMethod?: LoginMethod;
-	loginUrl?: string;
-	activeOptions?: ActiveOptions;
-	abstract isLoggedIn?<T extends {}>(reference?: T): Promise<LoginStatus>;
-	abstract login?(username: string, password: string): Promise<LoginStatus>;
-	abstract logout?(): Promise<void>;
-
-	abstract importable: boolean;
-	abstract import?(): Promise<void>;
-	importCard?: HTMLElement;
-	abstract exportable: boolean;
-	abstract export?(): Promise<void>;
-	exportCard?: HTMLElement;
+	abstract activeModule?: ActivableModule;
+	abstract importModule?: ImportableModule;
+	abstract exportModule?: ExportableModule;
 
 	constructor(manager: ServiceManager) {
 		this.manager = manager;
 	}
-
-	// Active
-
-	initActive = (): void => {
-		// Create
-		this.activeOptions = {} as ActiveOptions;
-		this.activeOptions.node = this.createBlock();
-		this.activeOptions.node.classList.add('loading');
-		const buttons = DOM.create('div', { class: 'button-group' });
-		this.activeOptions.mainButton = DOM.create('button', {
-			class: 'default',
-			attributes: { title: 'Set as main' },
-			childs: [DOM.icon('angle-double-left')],
-		});
-		this.activeOptions.checkStatusButton = DOM.create('button', {
-			class: 'action',
-			attributes: { title: 'Check login status' },
-			childs: [DOM.icon('reload')],
-		});
-		this.activeOptions.loginButton = DOM.create('a', {
-			class: 'button success hidden',
-			attributes: {
-				title: 'Login',
-				href: this.loginUrl || '',
-				rel: 'noreferrer noopener',
-				target: '_blank',
-			},
-			childs: [DOM.icon('link'), DOM.space(), DOM.text('Login')],
-		});
-		this.activeOptions.removeButton = DOM.create('button', {
-			class: 'danger grow',
-			childs: [DOM.icon('cross-circle'), DOM.space(), DOM.text('Remove')],
-		});
-		DOM.append(
-			this.activeOptions.node,
-			DOM.append(
-				buttons,
-				this.activeOptions.mainButton,
-				this.activeOptions.loginButton,
-				this.activeOptions.checkStatusButton,
-				this.activeOptions.removeButton
-			)
-		);
-		// Bind
-		this.activeOptions.mainButton.addEventListener('click', () => {
-			if (!this.activeOptions) return;
-			// Make service the first in the list
-			const index = Options.services.indexOf(this.name as any);
-			this.manager.services.splice(0, 0, this.manager.services.splice(index, 1)[0]);
-			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
-			Options.mainService = this.name as any;
-			Options.save();
-			// Remove main button and add the main button to the previous main
-			if (this.manager.mainService) {
-				this.manager.mainService.activeOptions?.mainButton.classList.remove('main');
-				this.manager.mainService.activeOptions?.mainButton.classList.remove('hidden');
-			}
-			this.manager.mainService = this;
-			this.activeOptions.mainButton.classList.add('hidden');
-			this.activeOptions.node.classList.add('main');
-			// Move the card to the first position
-			this.activeOptions.node.parentElement?.insertBefore(
-				this.activeOptions.node,
-				this.activeOptions.node.parentElement.firstElementChild
-			);
-		});
-		let busy = false;
-		this.activeOptions.checkStatusButton.addEventListener('click', async () => {
-			if (!busy && this.activeOptions) {
-				busy = true;
-				this.activeOptions.loginButton.classList.add('hidden');
-				this.activeOptions.node.classList.remove('active', 'inactive');
-				this.activeOptions.node.classList.add('loading');
-				if (this.activeOptions.loginForm) {
-					this.activeOptions.loginForm.remove();
-					this.activeOptions.loginForm = undefined;
-				}
-				if (this.isLoggedIn) {
-					const status = await this.isLoggedIn();
-					this.updateStatus(status);
-				}
-				busy = false;
-			}
-		});
-		this.activeOptions.removeButton.addEventListener('click', async () => {
-			// Remove service from Service list and assign new main if possible
-			const index = Options.services.indexOf(this.name as any);
-			if (index > -1) {
-				this.manager.services.splice(index, 1);
-				Options.services.splice(index, 1);
-				if (Options.mainService == this.name) {
-					Options.mainService = Options.services.length > 0 ? Options.services[0] : undefined;
-				}
-			}
-			// Execute logout actions
-			if (this.logout !== undefined) {
-				await this.logout();
-			}
-			// Save
-			Options.save();
-			// Remove service block and add the option back to the selector
-			this.activeOptions?.node.remove();
-			this.manager.addSelectorRow(this.name);
-			// Set the new main
-			if (Options.mainService) {
-				this.manager.services[0].activeOptions?.node.classList.add('main');
-				this.manager.services[0].activeOptions?.mainButton.classList.add('hidden');
-				this.manager.mainService = this.manager.services[0];
-			} else {
-				this.manager.mainService = undefined;
-			}
-		});
-		this.activeOptions.loginButton.addEventListener('click', (event) => {
-			if (this.loginMethod == LoginMethod.FORM) {
-				event.preventDefault();
-				if (!this.activeOptions || this.activeOptions?.loginForm) return;
-				this.activeOptions.loginForm = DOM.create('form', {
-					class: 'service-login',
-					childs: [
-						DOM.create('input', {
-							attributes: { type: 'text', name: 'username', placeholder: 'Email', required: 'true' },
-						}),
-						DOM.create('input', {
-							attributes: {
-								type: 'password',
-								name: 'password',
-								placeholder: 'Password',
-								required: 'true',
-							},
-						}),
-						DOM.create('button', {
-							class: 'success',
-							attributes: { type: 'submit' },
-							textContent: 'Login',
-						}),
-					],
-				});
-				let busy = false;
-				this.activeOptions.loginForm.addEventListener('submit', async (event) => {
-					event.preventDefault();
-					if (this.activeOptions?.loginForm === undefined) return;
-					if (!busy) {
-						busy = true;
-						this.activeOptions?.node.classList.add('loading');
-						this.activeOptions?.loginForm.classList.add('hidden');
-						if (this.login) {
-							// Login call Options.save itself
-							const res = await this.login(
-								this.activeOptions?.loginForm.username.value.trim(),
-								this.activeOptions?.loginForm.password.value
-							);
-							if (res == LoginStatus.SUCCESS) {
-								this.activeOptions?.loginForm.remove();
-								this.activeOptions.loginForm = undefined;
-								this.activeOptions?.node.classList.remove('inactive', 'loading');
-								this.activeOptions?.node.classList.add('active');
-								this.activeOptions?.loginButton.classList.add('hidden');
-								this.updateStatus(res);
-								return;
-							}
-						}
-						// If there was an error -- show the form again
-						// TODO: Notification
-						this.activeOptions?.loginForm.classList.remove('hidden');
-						busy = false;
-					}
-				});
-				this.activeOptions?.node.appendChild(this.activeOptions?.loginForm);
-			}
-		});
-	};
 
 	createBlock(): HTMLElement {
 		let node = DOM.create('div', {
@@ -352,58 +177,206 @@ export abstract class Service {
 			textContent: this.name,
 		});
 	}
+}
+
+export abstract class ActivableModule {
+	service: Service;
+	activable: boolean = true;
+	loginMethod?: LoginMethod;
+	loginUrl?: string;
+	activeCard: HTMLElement;
+	mainButton: HTMLElement;
+	checkStatusButton: HTMLElement;
+	loginButton: HTMLElement;
+	loginForm?: HTMLFormElement;
+	removeButton: HTMLElement;
+	abstract isLoggedIn<T extends {}>(reference?: T): Promise<LoginStatus>;
+	abstract login?(username: string, password: string): Promise<LoginStatus>;
+	abstract logout?(): Promise<void>;
+
+	constructor(service: Service) {
+		this.service = service;
+		// Create
+		this.activeCard = this.service.createBlock();
+		console.log('activeCard', this.activeCard);
+		this.activeCard.classList.add('loading');
+		const buttons = DOM.create('div', { class: 'button-group' });
+		this.mainButton = DOM.create('button', {
+			class: 'default',
+			attributes: { title: 'Set as main' },
+			childs: [DOM.icon('angle-double-left')],
+		});
+		this.checkStatusButton = DOM.create('button', {
+			class: 'action',
+			attributes: { title: 'Check login status' },
+			childs: [DOM.icon('reload')],
+		});
+		this.loginButton = DOM.create('a', {
+			class: 'button success hidden',
+			attributes: {
+				title: 'Login',
+				href: this.loginUrl || '',
+				rel: 'noreferrer noopener',
+				target: '_blank',
+			},
+			childs: [DOM.icon('link'), DOM.space(), DOM.text('Login')],
+		});
+		this.removeButton = DOM.create('button', {
+			class: 'danger grow',
+			childs: [DOM.icon('cross-circle'), DOM.space(), DOM.text('Remove')],
+		});
+		DOM.append(
+			this.activeCard,
+			DOM.append(buttons, this.mainButton, this.loginButton, this.checkStatusButton, this.removeButton)
+		);
+		// Bind
+		this.mainButton.addEventListener('click', () => {
+			if (!this) return;
+			// Make service the first in the list
+			const index = Options.services.indexOf(this.service.name as any);
+			this.service.manager.services.splice(0, 0, this.service.manager.services.splice(index, 1)[0]);
+			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
+			Options.mainService = this.service.name as any;
+			Options.save();
+			// Remove main button and add the main button to the previous main
+			if (this.service.manager.mainService) {
+				this.service.manager.mainService.activeModule?.mainButton.classList.remove('main');
+				this.service.manager.mainService.activeModule?.mainButton.classList.remove('hidden');
+			}
+			this.service.manager.mainService = this.service;
+			this.mainButton.classList.add('hidden');
+			this.activeCard.classList.add('main');
+			// Move the card to the first position
+			this.activeCard.parentElement?.insertBefore(
+				this.activeCard,
+				this.activeCard.parentElement.firstElementChild
+			);
+		});
+		let busy = false;
+		this.checkStatusButton.addEventListener('click', async () => {
+			if (!busy && this) {
+				busy = true;
+				this.loginButton.classList.add('hidden');
+				this.activeCard.classList.remove('active', 'inactive');
+				this.activeCard.classList.add('loading');
+				if (this.loginForm) {
+					this.loginForm.remove();
+					this.loginForm = undefined;
+				}
+				if (this.isLoggedIn) {
+					const status = await this.isLoggedIn();
+					this.updateStatus(status);
+				}
+				busy = false;
+			}
+		});
+		this.removeButton.addEventListener('click', async () => {
+			// Remove service from Service list and assign new main if possible
+			const index = Options.services.indexOf(this.service.name as any);
+			if (index > -1) {
+				this.service.manager.services.splice(index, 1);
+				Options.services.splice(index, 1);
+				if (Options.mainService == this.service.name) {
+					Options.mainService = Options.services.length > 0 ? Options.services[0] : undefined;
+				}
+			}
+			// Execute logout actions
+			if (this.logout !== undefined) {
+				await this.logout();
+			}
+			// Save
+			Options.save();
+			// Remove service block and add the option back to the selector
+			this.activeCard.remove();
+			this.service.manager.addSelectorRow(this.service.name);
+			// Set the new main
+			if (Options.mainService) {
+				const mainService = this.service.manager.services[0];
+				mainService.activeModule?.activeCard.classList.add('main');
+				mainService.activeModule?.mainButton.classList.add('hidden');
+				this.service.manager.mainService = this.service.manager.services[0];
+			} else {
+				this.service.manager.mainService = undefined;
+			}
+		});
+		this.loginButton.addEventListener('click', (event) => {
+			if (this.loginMethod == LoginMethod.FORM) {
+				event.preventDefault();
+				if (!this || this?.loginForm) return;
+				this.loginForm = DOM.create('form', {
+					class: 'service-login',
+					childs: [
+						DOM.create('input', {
+							attributes: { type: 'text', name: 'username', placeholder: 'Email', required: 'true' },
+						}),
+						DOM.create('input', {
+							attributes: {
+								type: 'password',
+								name: 'password',
+								placeholder: 'Password',
+								required: 'true',
+							},
+						}),
+						DOM.create('button', {
+							class: 'success',
+							attributes: { type: 'submit' },
+							textContent: 'Login',
+						}),
+					],
+				});
+				let busy = false;
+				this.loginForm.addEventListener('submit', async (event) => {
+					event.preventDefault();
+					if (!this || this.loginForm === undefined) return;
+					if (!busy) {
+						busy = true;
+						this.activeCard.classList.add('loading');
+						this.loginForm.classList.add('hidden');
+						if (this.login) {
+							// Login call Options.save itself
+							const res = await this.login(
+								this.loginForm.username.value.trim(),
+								this.loginForm.password.value
+							);
+							if (res == LoginStatus.SUCCESS) {
+								this.loginForm.remove();
+								this.loginForm = undefined;
+								this.activeCard.classList.remove('inactive', 'loading');
+								this.activeCard.classList.add('active');
+								this.loginButton.classList.add('hidden');
+								this.updateStatus(res);
+								return;
+							}
+						}
+						// If there was an error -- show the form again
+						// TODO: Notification
+						this.loginForm.classList.remove('hidden');
+						busy = false;
+					}
+				});
+				this.activeCard.appendChild(this.loginForm);
+			}
+		});
+	}
 
 	updateStatus = (status: LoginStatus): void => {
-		this.activeOptions?.node.classList.remove('loading');
+		this.activeCard.classList.remove('loading');
 		if (status == LoginStatus.SUCCESS) {
-			this.activeOptions?.node.classList.add('active');
+			this.activeCard.classList.add('active');
 		} else {
-			this.activeOptions?.node.classList.add('inactive');
-			this.activeOptions?.loginButton.classList.remove('hidden');
+			this.activeCard.classList.add('inactive');
+			this.loginButton.classList.remove('hidden');
 		}
-		this.manager.updateServiceStatus(this.name, status);
+		this.service.manager.updateServiceStatus(this.service.name, status);
 	};
+}
 
-	// Import/Export
+export abstract class SaveModule implements Module {
+	service: Service;
 
-	initImport = (): void => {
-		this.importCard = this.createBlock();
-		this.importCard.addEventListener('click', () => {
-			if (this.import) {
-				this.manager.clearSaveContainer();
-				this.manager.fullHeader([DOM.icon('download'), DOM.text(' Import')]);
-				this.manager.header([
-					DOM.create('img', { attributes: { src: `/icons/${this.key}.png` } }),
-					DOM.space(),
-					DOM.text(`Importing from ${this.name}`),
-				]);
-				this.import();
-			}
-		});
-	};
-
-	initExport = (): void => {
-		this.exportCard = this.createBlock();
-		this.exportCard.addEventListener('click', () => {
-			if (this.export) {
-				this.manager.clearSaveContainer();
-				this.manager.fullHeader([DOM.icon('upload'), DOM.text(' Export')]);
-				this.manager.header([
-					DOM.create('img', { attributes: { src: `/icons/${this.key}.png` } }),
-					DOM.space(),
-					DOM.text(`Exporting to ${this.name}`),
-				]);
-				this.export();
-			}
-		});
-	};
-
-	title = (): HTMLElement => {
-		return DOM.create('span', {
-			class: this.name.toLowerCase(),
-			textContent: this.name,
-		});
-	};
+	constructor(service: Service) {
+		this.service = service;
+	}
 
 	notification = (type: string, content: string | AppendableElement[]): HTMLElement => {
 		let notification = DOM.create('div', {
@@ -414,7 +387,7 @@ export abstract class Service {
 		} else {
 			DOM.append(notification, ...content);
 		}
-		this.manager.saveContainer.appendChild(notification);
+		this.service.manager.saveContainer.appendChild(notification);
 		return notification;
 	};
 
@@ -437,7 +410,7 @@ export abstract class Service {
 			class: type,
 			textContent: content,
 			events: {
-				click: () => this.manager.resetSaveContainer(),
+				click: () => this.service.manager.resetSaveContainer(),
 			},
 		});
 	};
@@ -461,11 +434,9 @@ export abstract class Service {
 			this.resetButton('Cancel', 'danger')
 		);
 		form.addEventListener('submit', callback);
-		DOM.append(this.manager.saveContainer, form);
+		DOM.append(this.service.manager.saveContainer, form);
 		return form;
 	};
-
-	// ExtensionSave
 
 	/**
 	 * Assign a value to the corresponding Option if it exists and it's the same type.
@@ -486,10 +457,10 @@ export abstract class Service {
 	 * Display summary and button to go back to Service selection
 	 */
 	displaySummary = (summary: ImportSummary): void => {
-		this.manager.resetSaveContainer();
-		this.manager.header(`Done Importing ${this.name}`);
+		this.service.manager.resetSaveContainer();
+		this.service.manager.header(`Done Importing ${this.service.name}`);
 		if (summary.options == 0) {
-			this.manager.saveContainer.appendChild(
+			this.service.manager.saveContainer.appendChild(
 				DOM.create('div', {
 					class: 'block notification warning',
 					textContent: 'Options were not imported since there was none.',
@@ -497,7 +468,7 @@ export abstract class Service {
 			);
 		}
 		if (summary.invalid > 0) {
-			this.manager.saveContainer.appendChild(
+			this.service.manager.saveContainer.appendChild(
 				DOM.create('div', {
 					class: 'block notification warning',
 					textContent: `${summary.invalid} (of ${summary.total}) titles were not imported since they had invalid properties.`,
@@ -515,9 +486,63 @@ export abstract class Service {
 				class: 'action',
 				textContent: 'Go Back',
 				events: {
-					click: () => this.manager.resetSaveContainer(),
+					click: () => this.service.manager.resetSaveContainer(),
 				},
 			}),
 		]);
 	};
+}
+
+export abstract class ImportableModule extends SaveModule {
+	importable: boolean = true;
+	importCard: HTMLElement;
+	abstract import(): Promise<void>;
+	abstract importType: ImportType;
+	abstract fileToTitles?<T extends {}>(file: T): TitleCollection;
+	abstract convertOptions?<T extends {}>(options: T): Partial<AvailableOptions>;
+
+	constructor(service: Service) {
+		super(service);
+		this.importCard = this.service.createBlock();
+		console.log('importCard', this.importCard);
+		this.importCard.addEventListener('click', () => {
+			if (this.import) {
+				this.service.manager.clearSaveContainer();
+				this.service.manager.fullHeader([DOM.icon('download'), DOM.text(' Import')]);
+				this.service.manager.header([
+					DOM.create('img', { attributes: { src: `/icons/${this.service.key}.png` } }),
+					DOM.space(),
+					DOM.text(`Importing from ${this.service.name}`),
+				]);
+				this.import();
+			}
+		});
+	}
+}
+
+export abstract class ExportableModule extends SaveModule {
+	exportable: boolean = true;
+	exportCard: HTMLElement;
+	abstract export(): Promise<void>;
+	// abstract importType: ImportType;
+	// abstract fileToTitles?<T extends Object>(file: T): TitleCollection;
+	// abstract convertOptions?<T extends Object>(options: T): Partial<AvailableOptions>;
+
+	constructor(service: Service) {
+		super(service);
+		this.exportCard = this.service.createBlock();
+		console.log('exportCard', this.exportCard);
+		this.exportCard.addEventListener('click', () => {
+			if (this.export) {
+				this.service.manager.clearSaveContainer();
+				this.service.manager.fullHeader([DOM.icon('upload'), DOM.text(' Export')]);
+				this.service.manager.header([
+					DOM.create('img', { attributes: { src: `/icons/${this.service.key}.png` } }),
+					DOM.space(),
+					DOM.text(`Exporting to ${this.service.name}`),
+				]);
+				this.export();
+			}
+		});
+	}
 }
