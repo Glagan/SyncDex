@@ -70,6 +70,10 @@ export class ServiceManager {
 
 	// Active
 
+	/**
+	 * Activate a service, display it's card and remove it from the "Add" form list.
+	 * Check if the user is logged in on the Service and calls updateStatus to display warnings.
+	 */
 	activateService = async (serviceName: ServiceName): Promise<void> => {
 		let service = this.services.find((service) => service.name == serviceName);
 		if (!service || !service.activeModule) return;
@@ -87,6 +91,10 @@ export class ServiceManager {
 		service.activeModule.updateStatus(loggedIn);
 	};
 
+	/**
+	 * Remove an element from the "Add" form.
+	 * Also hide the form is there is no other non actived services.
+	 */
 	removeSelectorRow = (service: ServiceName): void => {
 		const option = this.selector.querySelector(`[value="${service}"]`);
 		if (option) {
@@ -98,6 +106,9 @@ export class ServiceManager {
 		this.noServices.classList.add('hidden');
 	};
 
+	/**
+	 * Add an element to the list of Services that can be added in the "Add" form
+	 */
 	addSelectorRow = (service: ServiceName): void => {
 		this.addForm.classList.remove('hidden');
 		DOM.append(
@@ -121,10 +132,14 @@ export class ServiceManager {
 		}
 	};
 
+	/**
+	 * Create and append the "Add" button in the active (services) container
+	 */
 	createAddForm = (): HTMLElement => {
 		// Add all options to the selector
 		for (const service of this.services) {
 			if (service.activeModule) {
+				service.activeModule.bind();
 				this.addSelectorRow(service.name);
 			}
 		}
@@ -150,6 +165,9 @@ export class ServiceManager {
 		return this.selector;
 	};
 
+	/**
+	 * Update the inactiveServices list and display warnings if the status isn't SUCCESS
+	 */
 	updateServiceStatus = (name: ServiceName, status: LoginStatus): void => {
 		const index = this.inactiveServices.indexOf(name);
 		if (index > -1) {
@@ -165,6 +183,10 @@ export class ServiceManager {
 		}
 	};
 
+	/**
+	 * Remove all visible activable services and insert them in order.
+	 * Also check the status with activateService
+	 */
 	refreshActive = (): void => {
 		// Remove previous
 		for (const service of this.services) {
@@ -185,10 +207,16 @@ export class ServiceManager {
 
 	// Import/Export
 
+	/**
+	 * Proxy to the header function with an h1 header
+	 */
 	fullHeader = (value: string | AppendableElement[]): HTMLElement => {
 		return this.header(value, 'h1');
 	};
 
+	/**
+	 * Append an header in the save container
+	 */
 	header = (value: string | AppendableElement[], headerType: 'h1' | 'h2' = 'h2'): HTMLElement => {
 		const isArray = Array.isArray(value);
 		return this.saveContainer.appendChild(
@@ -200,10 +228,16 @@ export class ServiceManager {
 		);
 	};
 
+	/**
+	 * Remove everything from the save container
+	 */
 	clearSaveContainer = (): void => {
 		DOM.clear(this.saveContainer);
 	};
 
+	/**
+	 * Remove the save container and the Import/Export categories with buttons for each services
+	 */
 	resetSaveContainer = (): void => {
 		this.clearSaveContainer();
 		// Import/Export containers
@@ -279,4 +313,6 @@ export class ServiceManager {
 			})
 		);
 	};
+
+	reloadOptions = (): void => {};
 }

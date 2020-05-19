@@ -1,135 +1,65 @@
 import { ExportedSave } from '../../src/interfaces';
-import { Options, AvailableOptions } from '../../src/Options';
+import { AvailableOptions } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
-import { Title, TitleCollection } from '../../src/Title';
+import { SaveTitle, Title, TitleCollection } from '../../src/Title';
 import { DOM } from '../../src/DOM';
-import { Checkbox, FileInput, ImportSummary, ImportType, Service, ImportableModule, ExportableModule } from './Service';
+import { ImportSummary, Service, ExportableModule, FileImportableModule, FileImportFormat } from './Service';
 import { ServiceName } from '../Manager/Service';
 
-class SyncDexImport extends ImportableModule {
-	importType: ImportType = ImportType.FILE;
-	busy: boolean = false;
-	form?: HTMLFormElement;
-	convertOptions = undefined;
+class SyncDexImport extends FileImportableModule<ExportedSave, Title> {
+	fileType: FileImportFormat = 'JSON';
 
-	fileToTitles = <T extends ExportedSave>(file: T): TitleCollection => {
-		return new TitleCollection();
-	};
-
-	import = async (): Promise<void> => {
-		this.notification('success', 'Select your SyncDex save file.');
-		this.form = this.createForm(
-			[
-				new Checkbox('override', 'Erase current Save'),
-				new FileInput('file', 'SyncDex save file', 'application/json'),
-			],
-			(event) => this.handle(event)
-		);
-	};
-
-	handle = (event: Event): void => {
-		event.preventDefault();
-		if (!this.form) return;
-		const merge = this.form.override.checked == false;
-		var reader = new FileReader();
-		reader.onload = async (): Promise<void> => {
-			if (typeof reader.result == 'string') {
-				try {
-					let summary: ImportSummary = {
-						options: 0,
-						history: false,
-						total: 0,
-						invalid: 0,
-					};
-					const titleList: string[] = [];
-					let titles: TitleCollection = new TitleCollection();
-					let history: number[] | undefined = undefined;
-					let data = JSON.parse(reader.result) as ExportedSave;
-					// Options
-					if (data.options !== undefined) {
-						for (const key in data.options) {
-							summary.options += this.assignValidOption(
-								key as keyof AvailableOptions,
-								data.options[key as keyof AvailableOptions]
-							);
-						}
-					}
-					// Merge or override Titles
-					Object.keys(data).forEach((value): void => {
-						if (value !== 'options' && value !== 'history') {
-							if (!isNaN(parseInt(value)) && this.isValidTitle(data[value])) {
-								titleList.push(value);
-								titles.add(new Title(parseInt(value), data[value]));
-							} else {
-								summary.invalid++;
-							}
-							summary.total++;
-						}
-					});
-					if (merge) {
-						titles.merge(await TitleCollection.get(titles.ids));
-					}
-					// History
-					if (Options.biggerHistory && data.history) {
-						history = [];
-						if (merge) {
-							const currentHistory = await LocalStorage.get('history');
-							if (currentHistory !== undefined) {
-								history.concat(data.history);
-							} else {
-								history = data.history;
-							}
-						} else {
-							history = data.history;
-						}
-						summary.history = false;
-					}
-					// Check if we did not import anything at all
-					if (
-						(summary.total == 0 || summary.total == summary.invalid) &&
-						summary.options == 0 &&
-						!summary.history
-					) {
-						throw 'Invalid file !';
-					}
-					// Save
-					if (!merge) {
-						await LocalStorage.clear();
-					}
-					await titles.save();
-					if (history) {
-						await LocalStorage.set('history', history);
-					}
-					await Options.save();
-					this.displaySummary(summary);
-					// this.manager.reload(); // TODO: Reload
-				} catch (error) {
-					console.error(error);
-					this.notification('danger', 'Invalid file !');
-				}
-			} else {
-				this.notification('danger', 'Unknown error, wrong file type.');
-			}
-		};
-		if (this.form.file.files.length > 0) {
-			reader.readAsText(this.form.file.files[0]);
-		} else {
-			this.notification('danger', 'No file !');
-		}
-	};
-
-	isValidTitle = (title: Record<string, any>): boolean => {
+	isValidTitle = (title: SaveTitle): boolean => {
 		return (
 			typeof title.s === 'object' &&
 			typeof title.st === 'number' &&
 			typeof title.p === 'object' &&
-			Array.isArray(title.c) &&
+			title.p.c !== undefined &&
+			(title.c === undefined || Array.isArray(title.c)) &&
 			(title.lt === undefined || typeof title.lt === 'number') &&
 			(title.lc === undefined || typeof title.lc === 'number') &&
 			(title.id === undefined || typeof title.id === 'number') &&
+			(title.h === undefined || (typeof title.h === 'object' && title.h.c !== undefined)) &&
+			(title.hi === undefined || typeof title.hi === 'number') &&
 			(title.lr === undefined || typeof title.lr === 'number') &&
 			(title.n === undefined || typeof title.n === 'string')
 		);
+	};
+
+	handleTitles = async (save: ExportedSave): Promise<Title[]> => {
+		let titles: Title[] = [];
+		for (const key in save) {
+			if (key !== 'options' && key !== 'history') {
+				if (!isNaN(parseInt(key)) && this.isValidTitle(save[key])) {
+					titles.push(new Title(parseInt(key), Title.toTitle(save[key])));
+				}
+			}
+		}
+		return titles;
+	};
+
+	convertTitle = async (title: Title, titles: TitleCollection): Promise<boolean> => {
+		titles.add(title);
+		return true;
+	};
+
+	handleOptions = (save: ExportedSave, summary: ImportSummary): void => {
+		if (save.options !== undefined) {
+			for (const key in save.options) {
+				summary.options += this.assignValidOption(
+					key as keyof AvailableOptions,
+					save.options[key as keyof AvailableOptions]
+				);
+			}
+		}
+	};
+
+	handleHistory = (save: ExportedSave, _titles: TitleCollection, summary: ImportSummary): number[] => {
+		if (save.history) {
+			summary.history = true;
+			return save.history;
+		}
+		return [];
 	};
 }
 
@@ -173,6 +103,6 @@ export class SyncDex extends Service {
 	key: string = 'sc';
 
 	activeModule = undefined;
-	importModule: ImportableModule = new SyncDexImport(this);
+	importModule: FileImportableModule<ExportedSave, Title> = new SyncDexImport(this);
 	exportModule: ExportableModule = new SyncDexExport(this);
 }

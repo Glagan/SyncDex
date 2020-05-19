@@ -1,10 +1,9 @@
-import { DOM } from '../../src/DOM';
 import { Options } from '../../src/Options';
 import { ServiceName, Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { Mochi } from '../../src/Mochi';
 import { TitleCollection, Title } from '../../src/Title';
-import { ImportState, Service, ActivableModule, ImportableModule, ExportableModule, ImportType } from './Service';
+import { Service, ActivableModule, ExportableModule, APIImportableModule } from './Service';
 
 enum KitsuStatus {
 	'current' = 'current',
@@ -135,11 +134,7 @@ class KitsuActive extends ActivableModule {
 	};
 }
 
-class KitsuImport extends ImportableModule {
-	importType: ImportType = ImportType.LIST;
-	convertOptions = undefined;
-	fileToTitles = undefined;
-
+class KitsuImport extends APIImportableModule<KitsuTitle> {
 	toStatus = (status: KitsuStatus): Status => {
 		if (status === 'current') {
 			return Status.READING;
@@ -155,15 +150,16 @@ class KitsuImport extends ImportableModule {
 		return Status.NONE;
 	};
 
-	singlePage = async (titles: KitsuTitle[], state: ImportState): Promise<boolean> => {
+	handlePage = async (): Promise<KitsuTitle[] | false> => {
 		const response = await Runtime.request<JSONResponse>({
-			url: `https://kitsu.io/api/edge/library-entries?filter[user_id]=${Options.tokens.kitsuUser}&
-							filter[kind]=manga&
-							fields[libraryEntries]=status,progress,volumesOwned,manga&
-							include=manga&
-							fields[manga]=id&
-							page[limit]=500&
-							page[offset]=${state.current++ * 500}`,
+			url: `https://kitsu.io/api/edge/library-entries?
+					filter[user_id]=${Options.tokens.kitsuUser}&
+					filter[kind]=manga&
+					fields[libraryEntries]=status,progress,volumesOwned,manga&
+					include=manga&
+					fields[manga]=id&
+					page[limit]=500&
+					page[offset]=${(this.state.current - 1) * 500}`,
 			isJson: true,
 			headers: {
 				Accept: 'application/vnd.api+json',
@@ -182,6 +178,7 @@ class KitsuImport extends ImportableModule {
 			);
 			return false;
 		}
+		let titles: KitsuTitle[] = [];
 		const body = response.body as KitsuResponse;
 		// Each row has a data-id field
 		for (const title of body.data) {
@@ -196,109 +193,27 @@ class KitsuImport extends ImportableModule {
 			}
 		}
 		// We get 500 entries per page
-		state.max = Math.floor(body.meta.count / 500);
-		return true;
+		this.state.max = Math.floor(body.meta.count / 500);
+		return titles;
 	};
 
-	import = async (): Promise<void> => {
-		this.notification('warning', `You need to have Kitsu activated and to be logged in to import.`);
-		const block = DOM.create('div', {
-			class: 'block',
-		});
-		const startButton = DOM.create('button', {
-			class: 'success mr-1',
-			textContent: 'Start',
-			events: {
-				click: async (event): Promise<void> => {
-					event.preventDefault();
-					if (
-						Options.services.indexOf(ServiceName.Kitsu) < 0 ||
-						Options.tokens.kitsuUser === undefined ||
-						Options.tokens.kitsuToken === undefined
-					) {
-						this.notification('danger', 'You need to have Kitsu activated and to be logged in to Import.');
-						return;
-					}
-					await this.handleImport();
-				},
-			},
-		});
-		DOM.append(this.service.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
-	};
-
-	handleImport = async (): Promise<void> => {
-		this.service.manager.resetSaveContainer();
-		this.service.manager.header('Importing from Kitsu');
-		// Check if everything is valid by getting the first page
-		let kitsuTitles: KitsuTitle[] = [];
-		const state = {
-			current: 0,
-			max: 1,
-		};
-		let doStop = false;
-		const stopButton = this.stopButton(() => {
-			doStop = true;
-		});
-		let notification = this.notification('info loading', [
-			DOM.text(`Importing page 1 of your list.`),
-			DOM.space(),
-			stopButton,
-		]);
-		while (!doStop && state.current < state.max) {
-			(notification.firstChild as Text).textContent = `Importing page ${state.current + 1} out of ${
-				state.max
-			} of your list.`;
-			await this.singlePage(kitsuTitles, state);
+	convertTitle = async (titles: TitleCollection, title: KitsuTitle): Promise<boolean> => {
+		const connections = await Mochi.find(title.id, 'Kitsu');
+		if (connections !== undefined && connections['MangaDex'] !== undefined) {
+			titles.add(
+				new Title(connections['MangaDex'] as number, {
+					services: { ku: title.id },
+					progress: {
+						chapter: title.chapter,
+						volume: title.volume,
+					},
+					status: title.status,
+					chapters: [],
+				})
+			);
+			return true;
 		}
-		notification.classList.remove('loading');
-		stopButton.remove();
-		if (doStop) {
-			this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
-			return;
-		}
-		// Find MangaDex IDs
-		let titles = new TitleCollection();
-		const total = kitsuTitles.length;
-		let added = 0;
-		this.notification('success', `Found a total of ${kitsuTitles.length} Titles.`);
-		notification = this.notification('info loading', [
-			DOM.text(`Finding MangaDex IDs from Kitsu IDs, 0 out of ${total}.`),
-			DOM.space(),
-			stopButton,
-		]);
-		let index = 0;
-		for (const kitsuTitle of kitsuTitles) {
-			const connections = await Mochi.find(kitsuTitle.id, 'Kitsu');
-			if (connections !== undefined && connections['MangaDex'] !== undefined) {
-				titles.add(
-					new Title(connections['MangaDex'] as number, {
-						services: { ku: kitsuTitle.id },
-						progress: {
-							chapter: kitsuTitle.chapter,
-							volume: kitsuTitle.volume,
-						},
-						status: kitsuTitle.status,
-						chapters: [],
-					})
-				);
-				added++;
-			}
-			(notification.firstChild as Text).textContent = `Finding MangaDex IDs from Kitsu IDs, ${++index} out of ${total}.`;
-		}
-		notification.classList.remove('loading');
-		stopButton.remove();
-		if (doStop) {
-			this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
-			return;
-		}
-		// Done, merge and save
-		titles.merge(await TitleCollection.get(titles.ids));
-		await titles.save();
-		this.notification('success', [
-			DOM.text(`Done ! Imported ${added} Titles (out of ${total}) from Kitsu.`),
-			DOM.space(),
-			this.resetButton(),
-		]);
+		return false;
 	};
 }
 
@@ -311,6 +226,6 @@ export class Kitsu extends Service {
 	key: string = 'ku';
 
 	activeModule: ActivableModule = new KitsuActive(this);
-	importModule: ImportableModule = new KitsuImport(this);
+	importModule: APIImportableModule<KitsuTitle> = new KitsuImport(this);
 	exportModule: ExportableModule = new KitsuExport(this);
 }

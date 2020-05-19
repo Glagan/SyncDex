@@ -8,22 +8,30 @@ interface SaveProgress {
 	v?: number;
 }
 
-interface SaveTitle {
-	s: { [key in ServiceKey]?: number | string };
-	st: Status;
-	p: SaveProgress;
-	c?: number[];
+interface InitialState {
+	start: number;
+	end?: number;
+	status: Status;
+}
+
+export interface SaveTitle {
+	s: { [key in ServiceKey]?: number | string }; // services
+	st: Status; // status
+	p: SaveProgress; // progress
+	c?: number[]; // chapters
 	i?: {
-		s: number;
-		e: number;
-		st: Status;
+		s: number; // start
+		e?: number; // end
+		st: number; // status
 	};
-	lt?: number;
-	lc?: number;
+	lt?: number; // lastTitle
+	lc?: number; // lastCheck
 	// History
-	id?: number;
-	n?: string;
-	lr?: number;
+	id?: number; // lastChapter
+	h?: SaveProgress; // history
+	hi?: number; // highest
+	n?: string; // name
+	lr?: number; // lastRead
 }
 
 export interface FullTitle {
@@ -31,19 +39,17 @@ export interface FullTitle {
 	status: Status;
 	progress: Progress;
 	chapters: number[];
-	initial?: {
-		start: number;
-		end: number;
-		status: Status;
-	};
+	initial?: InitialState;
 	lastTitle?: number;
 	lastCheck?: number;
 	// History
 	lastChapter?: number;
+	history?: Progress;
+	highest?: number;
 	name?: string;
 	lastRead?: number;
 }
-type NumberKey = Pick<FullTitle, 'lastRead' | 'lastTitle' | 'lastCheck' | 'lastChapter'>;
+type NumberKey = Pick<FullTitle, 'lastTitle' | 'lastCheck' | 'lastChapter' | 'highest' | 'lastRead'>;
 
 /**
  * Handle conversion between a SaveTitle in LocalStorage and a FullTitle.
@@ -66,6 +72,8 @@ export class Title implements FullTitle {
 	lastCheck?: number;
 	// History
 	lastChapter?: number;
+	history?: Progress;
+	highest?: number;
 	name?: string;
 	lastRead?: number;
 	static numberKeys: (keyof NumberKey)[] = ['lastRead', 'lastTitle', 'lastCheck', 'lastChapter'];
@@ -90,9 +98,16 @@ export class Title implements FullTitle {
 			lastTitle: title.lt,
 			lastCheck: title.lc,
 			lastChapter: title.id,
+			highest: title.hi,
 			name: title.n,
 			lastRead: title.lr,
 		};
+		if (title.h) {
+			mapped.history = {
+				chapter: title.h.c,
+				volume: title.h.v,
+			};
+		}
 		if (title.i) {
 			mapped.initial = {
 				start: title.i.s,
@@ -158,11 +173,18 @@ export class Title implements FullTitle {
 			lt: this.lastTitle,
 			lc: this.lastCheck,
 			id: this.lastChapter,
+			hi: this.highest,
 			n: this.name,
 			lr: this.lastRead,
 		};
 		if (this.chapters.length > 0) {
 			mapped.c = this.chapters;
+		}
+		if (this.history) {
+			mapped.h = {
+				c: this.history.chapter,
+				v: this.history.volume,
+			};
 		}
 		if (this.initial) {
 			mapped.i = {

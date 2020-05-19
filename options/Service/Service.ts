@@ -2,30 +2,27 @@ import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceName, ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
 import { LoginStatus, LoginMethod } from '../../src/Service/Service';
-import { TitleCollection } from '../../src/Title';
-
-export const enum ImportType {
-	FILE,
-	LIST,
-}
-
-export interface FileImport {
-	ImportType: ImportType.FILE;
-	fileToTitles<T extends Object>(file: T): TitleCollection;
-	convertOptions<T extends Object>(options: T): Partial<AvailableOptions>;
-}
+import { TitleCollection, Title } from '../../src/Title';
+import { LocalStorage } from '../../src/Storage';
 
 export interface ImportState {
 	current: number;
 	max: number;
 }
 
-export interface ImportSummary {
-	options: number;
-	history: boolean;
-	total: number;
-	invalid: number;
+export const enum ImportStep {
+	FETCH_PAGES,
+	CONVERT_TITLES,
 }
+
+export class ImportSummary {
+	options: number = 0;
+	history: boolean = false;
+	total: number = 0;
+	valid: number = 0;
+}
+
+export type FileImportFormat = 'JSON' | 'XML';
 
 export class Row {
 	node: HTMLElement;
@@ -42,7 +39,7 @@ export class Checkbox extends Row {
 	label: HTMLElement;
 	input: HTMLInputElement;
 
-	constructor(fieldName: string, label: string) {
+	constructor(fieldName: string, label: string, checked: boolean = false) {
 		super();
 		this.label = DOM.create('label', {
 			textContent: label,
@@ -54,12 +51,14 @@ export class Checkbox extends Row {
 				type: 'checkbox',
 			},
 		});
-		const checkbox = DOM.create('div', { class: 'checkbox disabled' });
+		let state = 'disabled';
+		if (checked) {
+			this.input.checked = true;
+			state = 'enabled';
+		}
+		const checkbox = DOM.create('div', { class: `checkbox ${state}` });
 		const enable = DOM.create('button', { class: 'on', textContent: 'Enable' });
-		const disable = DOM.create('button', {
-			class: 'off',
-			textContent: 'Disable',
-		});
+		const disable = DOM.create('button', { class: 'off', textContent: 'Disable' });
 		this.label.addEventListener('click', () => {
 			if (this.input.checked) {
 				checkbox.classList.remove('enabled');
@@ -185,12 +184,12 @@ export abstract class ActivableModule {
 	loginMethod?: LoginMethod;
 	loginUrl?: string;
 	activeCard: HTMLElement;
-	mainButton: HTMLElement;
+	mainButton: HTMLButtonElement;
 	checkStatusButton: HTMLElement;
-	loginButton: HTMLElement;
+	loginButton: HTMLAnchorElement;
 	loginForm?: HTMLFormElement;
 	removeButton: HTMLElement;
-	abstract isLoggedIn<T extends {}>(reference?: T): Promise<LoginStatus>;
+	abstract isLoggedIn(): Promise<LoginStatus>;
 	abstract login?(username: string, password: string): Promise<LoginStatus>;
 	abstract logout?(): Promise<void>;
 
@@ -214,7 +213,6 @@ export abstract class ActivableModule {
 			class: 'button success hidden',
 			attributes: {
 				title: 'Login',
-				href: this.loginUrl || '',
 				rel: 'noreferrer noopener',
 				target: '_blank',
 			},
@@ -228,9 +226,14 @@ export abstract class ActivableModule {
 			this.activeCard,
 			DOM.append(buttons, this.mainButton, this.loginButton, this.checkStatusButton, this.removeButton)
 		);
+	}
+
+	bind = (): void => {
+		if (this.loginUrl !== undefined) {
+			this.loginButton.href = this.loginUrl;
+		}
 		// Bind
 		this.mainButton.addEventListener('click', () => {
-			if (!this) return;
 			// Make service the first in the list
 			const index = Options.services.indexOf(this.service.name as any);
 			this.service.manager.services.splice(0, 0, this.service.manager.services.splice(index, 1)[0]);
@@ -239,7 +242,7 @@ export abstract class ActivableModule {
 			Options.save();
 			// Remove main button and add the main button to the previous main
 			if (this.service.manager.mainService) {
-				this.service.manager.mainService.activeModule?.mainButton.classList.remove('main');
+				this.service.manager.mainService.activeModule?.activeCard.classList.remove('main');
 				this.service.manager.mainService.activeModule?.mainButton.classList.remove('hidden');
 			}
 			this.service.manager.mainService = this.service;
@@ -253,7 +256,7 @@ export abstract class ActivableModule {
 		});
 		let busy = false;
 		this.checkStatusButton.addEventListener('click', async () => {
-			if (!busy && this) {
+			if (!busy) {
 				busy = true;
 				this.loginButton.classList.add('hidden');
 				this.activeCard.classList.remove('active', 'inactive');
@@ -263,6 +266,10 @@ export abstract class ActivableModule {
 					this.loginForm = undefined;
 				}
 				if (this.isLoggedIn) {
+					// If it's an external login, we don't have the tokens saved outside of this page
+					if (this.loginMethod == LoginMethod.EXTERNAL) {
+						await Options.reloadTokens();
+					}
 					const status = await this.isLoggedIn();
 					this.updateStatus(status);
 				}
@@ -290,10 +297,14 @@ export abstract class ActivableModule {
 			this.service.manager.addSelectorRow(this.service.name);
 			// Set the new main
 			if (Options.mainService) {
-				const mainService = this.service.manager.services[0];
-				mainService.activeModule?.activeCard.classList.add('main');
-				mainService.activeModule?.mainButton.classList.add('hidden');
-				this.service.manager.mainService = this.service.manager.services[0];
+				const mainService = this.service.manager.services.find(
+					(service: Service) => service.name == Options.mainService
+				);
+				if (mainService) {
+					mainService.activeModule?.activeCard.classList.add('main');
+					mainService.activeModule?.mainButton.classList.add('hidden');
+					this.service.manager.mainService = mainService;
+				}
 			} else {
 				this.service.manager.mainService = undefined;
 			}
@@ -354,9 +365,9 @@ export abstract class ActivableModule {
 					}
 				});
 				this.activeCard.appendChild(this.loginForm);
-			}
+			} // else LoginMethod.EXTERNAL and it just opens a link
 		});
-	}
+	};
 
 	updateStatus = (status: LoginStatus): void => {
 		this.activeCard.classList.remove('loading');
@@ -371,10 +382,23 @@ export abstract class ActivableModule {
 }
 
 export abstract class SaveModule implements Module {
+	doStop: boolean = false;
 	service: Service;
+	abstract saveModuleHeader(): void;
+	stopButton: HTMLElement;
 
 	constructor(service: Service) {
 		this.service = service;
+		this.stopButton = DOM.create('button', {
+			class: 'danger',
+			textContent: 'Cancel',
+			events: {
+				click: () => {
+					this.doStop = true;
+					this.stopButton.remove();
+				},
+			},
+		});
 	}
 
 	notification = (type: string, content: string | AppendableElement[]): HTMLElement => {
@@ -388,20 +412,6 @@ export abstract class SaveModule implements Module {
 		}
 		this.service.manager.saveContainer.appendChild(notification);
 		return notification;
-	};
-
-	stopButton = (callback: () => void, content: string = 'Cancel'): HTMLButtonElement => {
-		const stopButton = DOM.create('button', {
-			class: 'danger',
-			textContent: content,
-			events: {
-				click: () => {
-					callback();
-					stopButton.remove();
-				},
-			},
-		});
-		return stopButton;
 	};
 
 	resetButton = (content: string = 'Go back', type: string = 'action'): HTMLButtonElement => {
@@ -433,7 +443,6 @@ export abstract class SaveModule implements Module {
 			this.resetButton('Cancel', 'danger')
 		);
 		form.addEventListener('submit', callback);
-		DOM.append(this.service.manager.saveContainer, form);
 		return form;
 	};
 
@@ -456,30 +465,25 @@ export abstract class SaveModule implements Module {
 	 * Display summary and button to go back to Service selection
 	 */
 	displaySummary = (summary: ImportSummary): void => {
-		this.service.manager.resetSaveContainer();
-		this.service.manager.header(`Done Importing ${this.service.name}`);
-		if (summary.options == 0) {
+		// this.service.manager.clearSaveContainer();
+		// this.saveModuleHeader();
+		this.notification('success', `Done Importing ${this.service.name} !`);
+		if (summary.total != summary.valid) {
 			this.service.manager.saveContainer.appendChild(
 				DOM.create('div', {
 					class: 'block notification warning',
-					textContent: 'Options were not imported since there was none.',
+					textContent: `${summary.total - summary.valid} (of ${
+						summary.total
+					}) titles were not imported since they had invalid or missing properties.`,
 				})
 			);
 		}
-		if (summary.invalid > 0) {
-			this.service.manager.saveContainer.appendChild(
-				DOM.create('div', {
-					class: 'block notification warning',
-					textContent: `${summary.invalid} (of ${summary.total}) titles were not imported since they had invalid properties.`,
-				})
-			);
-		}
+		let report = `Successfully imported ${summary.valid} titles`;
+		if (summary.options > 0) report += `${summary.history ? ', ' : ' and '} ${summary.options} Options`;
+		if (summary.history) report += ` and History`;
+		report += ` !`;
 		this.notification('success', [
-			DOM.text(
-				`Successfully imported ${summary.total - summary.invalid} titles, ${
-					summary.options
-				} Options and History !`
-			),
+			DOM.text(report),
 			DOM.space(),
 			DOM.create('button', {
 				class: 'action',
@@ -496,26 +500,272 @@ export abstract class ImportableModule extends SaveModule {
 	importable: boolean = true;
 	importCard: HTMLElement;
 	abstract import(): Promise<void>;
-	abstract importType: ImportType;
-	abstract fileToTitles?<T extends {}>(file: T): TitleCollection;
-	abstract convertOptions?<T extends {}>(options: T): Partial<AvailableOptions>;
 
 	constructor(service: Service) {
 		super(service);
 		this.importCard = this.service.createBlock();
 		this.importCard.addEventListener('click', () => {
-			if (this.import) {
-				this.service.manager.clearSaveContainer();
-				this.service.manager.fullHeader([DOM.icon('download'), DOM.text(' Import')]);
-				this.service.manager.header([
-					DOM.create('img', { attributes: { src: `/icons/${this.service.key}.png` } }),
-					DOM.space(),
-					DOM.text(`Importing from ${this.service.name}`),
-				]);
-				this.import();
-			}
+			this.mainHeader();
+			this.import();
 		});
 	}
+
+	saveModuleHeader = (): void => {
+		this.service.manager.fullHeader([DOM.icon('download'), DOM.text(' Import')]);
+	};
+
+	mainHeader = (): void => {
+		this.service.manager.clearSaveContainer();
+		this.saveModuleHeader();
+		this.service.manager.header([
+			DOM.create('img', { attributes: { src: `/icons/${this.service.key}.png` } }),
+			DOM.space(),
+			DOM.text('Importing from '),
+			this.service.createTitle(),
+		]);
+	};
+
+	cancel = (): void => {
+		this.notification('warning', [
+			DOM.text('You cancelled the import, nothing was saved.'),
+			DOM.space(),
+			this.resetButton(),
+		]);
+	};
+}
+
+export abstract class FileImportableModule<T extends Object | Document, R extends Object> extends ImportableModule {
+	abstract fileType: FileImportFormat;
+	abstract handleTitles(save: T | Document): Promise<R[]>;
+	abstract convertTitle(title: R, titles: TitleCollection): Promise<boolean>;
+	abstract handleOptions?(save: T | Document, summary: ImportSummary): void;
+	abstract handleHistory?(save: T | Document, titles: TitleCollection, summary: ImportSummary): number[];
+	preForm?(): void;
+
+	inputMessage = (): string => {
+		return `${this.service.name} save file`;
+	};
+
+	import = async (): Promise<void> => {
+		this.notification('success', `Select your ${this.service.name} save file.`);
+		let notification: HTMLElement | undefined = undefined;
+		const form = this.createForm(
+			[
+				new Checkbox('merge', 'Merge with current save', true),
+				new FileInput(
+					'file',
+					this.inputMessage(),
+					this.fileType == 'JSON' ? 'application/json' : 'application/xml'
+				),
+			],
+			(event) => {
+				event.preventDefault();
+				if (notification) notification.remove();
+				if (form.file.files.length < 1) {
+					notification = this.notification('danger', 'No file !');
+				}
+				notification = this.notification('info loading', 'Loading file...');
+				var reader = new FileReader();
+				reader.onload = async (): Promise<void> => {
+					if (typeof reader.result !== 'string') {
+						if (notification) notification.remove();
+						notification = this.notification('danger', 'Unknown error, wrong file type.');
+						return;
+					}
+					let data: T | Document;
+					try {
+						if (this.fileType == 'JSON') {
+							data = JSON.parse(reader.result) as T;
+						} else {
+							const parser: DOMParser = new DOMParser();
+							data = parser.parseFromString(reader.result, 'application/xml');
+						}
+					} catch (error) {
+						console.error(error);
+						if (notification) notification.remove();
+						notification = this.notification('danger', 'Invalid file !');
+						return;
+					}
+					this.handleImport(data, form.merge.checked);
+				};
+				reader.readAsText(form.file.files[0]);
+			}
+		);
+		if (this.preForm) {
+			this.preForm();
+		}
+		DOM.append(this.service.manager.saveContainer, form);
+	};
+
+	handleImport = async (data: T | Document, merge: boolean): Promise<void> => {
+		this.service.manager.clearSaveContainer();
+		this.mainHeader();
+		let summary = new ImportSummary();
+		// Import everything first
+		let progress = this.notification('info loading', [DOM.text('Importing Titles'), DOM.space(), this.stopButton]);
+		const titles: R[] = await this.handleTitles(data);
+		this.stopButton.remove();
+		progress.classList.remove('loading');
+		if (this.doStop) return this.cancel();
+		// Abort if there is nothing
+		summary.total = titles.length;
+		if (summary.total == 0) {
+			this.notification('success', [DOM.text('No titles found !'), DOM.space(), this.resetButton()]);
+			return;
+		}
+		// Convert Service titles to Title
+		let collection = new TitleCollection();
+		progress = this.notification('info loading', []);
+		let index = 0;
+		for (const title of titles) {
+			DOM.clear(progress);
+			DOM.append(
+				progress,
+				DOM.text(`Converting title ${++index} out of ${summary.total}.`), // TODO: Update .textContent of firtstChild instead of reconstructing everything every time
+				DOM.space(),
+				this.stopButton
+			);
+			if (await this.convertTitle(title, collection)) {
+				summary.valid++;
+			}
+			if (this.doStop) break;
+		}
+		this.stopButton.remove();
+		progress.classList.remove('loading');
+		if (this.doStop) return this.cancel();
+		// Handle options and history
+		if (this.handleOptions) {
+			progress = this.notification('info', 'Importing Options');
+			this.handleOptions(data, summary);
+		}
+		let history: number[] = [];
+		if (this.handleHistory) {
+			progress = this.notification('info', 'Importing History');
+			history = this.handleHistory(data, collection, summary);
+		}
+		// We're double checking and saving only at the end in case of abort
+		if (!merge) {
+			await LocalStorage.clear();
+		} else {
+			collection.merge(await TitleCollection.get(collection.ids));
+		}
+		collection.save();
+		if (this.handleHistory && history.length > 0) {
+			await LocalStorage.set('history', history);
+		}
+		if (this.handleOptions) {
+			await Options.save();
+			this.service.manager.reloadOptions(); // TODO: Reload
+		}
+		this.displaySummary(summary);
+	};
+}
+
+export abstract class APIImportableModule<T> extends ImportableModule {
+	currentTitle: number = 0;
+	state: ImportState = { current: 0, max: 1 };
+	abstract handlePage(): Promise<T[] | false>;
+	abstract convertTitle(titles: TitleCollection, title: T): Promise<boolean>;
+	async isLoggedIn?(): Promise<LoginStatus>;
+
+	getNextPage = (): boolean => {
+		if (this.state.current < this.state.max || this.state.current == 0) {
+			this.state.current++;
+			return true;
+		}
+		return false;
+	};
+
+	getProgress = (step: ImportStep, total?: number): string => {
+		if (step == ImportStep.FETCH_PAGES) {
+			// ImportStep.CONVERT_TITLES
+			return `Importing page ${this.state.current} out of ${this.state.max}.`;
+		}
+		return `Converting title ${++this.currentTitle} out of ${total}.`;
+	};
+
+	import = async (): Promise<void> => {
+		const block = DOM.create('div', {
+			class: 'block',
+		});
+		const startButton = DOM.create('button', {
+			class: 'success mr-1',
+			textContent: 'Start',
+			events: {
+				click: async (event): Promise<void> => {
+					event.preventDefault();
+					this.handleImport();
+				},
+			},
+		});
+		DOM.append(this.service.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
+	};
+
+	handleImport = async (): Promise<void> => {
+		this.mainHeader();
+		let progress: HTMLElement = this.notification('info loading', [
+			DOM.text('Checking login status'),
+			DOM.space(),
+			this.stopButton,
+		]);
+		if (
+			(this.service.activeModule !== undefined &&
+				(await this.service.activeModule?.isLoggedIn()) !== LoginStatus.SUCCESS) ||
+			(this.isLoggedIn && (await this.isLoggedIn()) !== LoginStatus.SUCCESS)
+		) {
+			this.stopButton.remove();
+			progress.classList.remove('loading');
+			this.notification('danger', [DOM.text('You are not logged in !'), DOM.space(), this.resetButton()]);
+			return;
+		}
+		console.log('logged in');
+		this.stopButton.remove();
+		progress.classList.remove('loading');
+		if (this.doStop) return this.cancel();
+		let titles: T[] = [];
+		let summary = new ImportSummary();
+		progress = this.notification('info loading', '');
+		// Fetch each pages to get a list of titles in the Service format
+		while (!this.doStop && this.getNextPage() !== false) {
+			DOM.clear(progress);
+			DOM.append(progress, DOM.text(this.getProgress(ImportStep.FETCH_PAGES)), DOM.space(), this.stopButton);
+			let tmp: T[] | false = await this.handlePage();
+			if (tmp === false) return;
+			titles.push(...tmp);
+		}
+		this.stopButton.remove();
+		progress.classList.remove('loading');
+		if (this.doStop) return this.cancel();
+		summary.total = titles.length;
+		if (summary.total == 0) {
+			this.notification('success', [DOM.text('No titles found !'), DOM.space(), this.resetButton()]);
+			return;
+		}
+		this.notification('success', `Found a total of ${titles.length} Titles.`);
+		// Convert the list to a TitleCollection
+		progress = this.notification('info loading', []);
+		let collection = new TitleCollection();
+		for (let i = 0, max = titles.length; !this.doStop && i < max; i++) {
+			const title = titles[i];
+			DOM.clear(progress);
+			DOM.append(
+				progress,
+				DOM.text(this.getProgress(ImportStep.CONVERT_TITLES, titles.length)),
+				DOM.space(),
+				this.stopButton
+			);
+			if (await this.convertTitle(collection, title)) {
+				summary.valid++;
+			}
+		}
+		this.stopButton.remove();
+		progress.classList.remove('loading');
+		if (this.doStop) return this.cancel();
+		// Done !
+		collection.merge(await TitleCollection.get(collection.ids));
+		await collection.save();
+		this.displaySummary(summary);
+	};
 }
 
 export abstract class ExportableModule extends SaveModule {
@@ -526,13 +776,17 @@ export abstract class ExportableModule extends SaveModule {
 	// abstract fileToTitles?<T extends Object>(file: T): TitleCollection;
 	// abstract convertOptions?<T extends Object>(options: T): Partial<AvailableOptions>;
 
+	saveModuleHeader = (): void => {
+		this.service.manager.fullHeader([DOM.icon('upload'), DOM.text(' Export')]);
+	};
+
 	constructor(service: Service) {
 		super(service);
 		this.exportCard = this.service.createBlock();
 		this.exportCard.addEventListener('click', () => {
 			if (this.export) {
 				this.service.manager.clearSaveContainer();
-				this.service.manager.fullHeader([DOM.icon('upload'), DOM.text(' Export')]);
+				this.saveModuleHeader();
 				this.service.manager.header([
 					DOM.create('img', { attributes: { src: `/icons/${this.service.key}.png` } }),
 					DOM.space(),

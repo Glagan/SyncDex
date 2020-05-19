@@ -2,7 +2,7 @@ import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
-import { FileInput, Service, ActivableModule, ImportableModule, ExportableModule, ImportType } from './Service';
+import { Service, ActivableModule, ExportableModule, FileImportableModule, FileImportFormat } from './Service';
 import { ServiceName } from '../Manager/Service';
 import { RawResponse, Runtime } from '../../src/Runtime';
 
@@ -22,17 +22,13 @@ interface MyAnimeListTitle {
 	status: MyAnimeListStatus;
 }
 
-interface MyAnimeListSave {
-	// TODO
-}
-
 class MyAnimeListActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	loginUrl: string = 'https://myanimelist.net/login.php';
 	login = undefined;
 	logout = undefined;
 
-	isLoggedIn = async <T>(reference?: T): Promise<LoginStatus> => {
+	isLoggedIn = async (): Promise<LoginStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: this.loginUrl,
 			method: 'GET',
@@ -49,18 +45,48 @@ class MyAnimeListActive extends ActivableModule {
 	};
 }
 
-class MyAnimeListImport extends ImportableModule {
-	importType: ImportType = ImportType.FILE;
-	parser: DOMParser = new DOMParser();
-	form?: HTMLFormElement;
-	convertOptions = undefined;
+/**
+ * MyAnimeList Document
+ * <myanimelist>
+ * 		<myinfo>
+ * 			user_id: number
+ * 			user_name: string
+ * 			user_export_type: 1 (anime), 2 (manga)
+ * 			user_total_manga: number
+ * 			user_total_reading: number
+ * 			user_total_completed: number
+ * 			user_total_onhold: number
+ * 			user_total_dropped: number
+ * 			user_total_plantoread: number
+ * 		</myinfo>
+ * 		<manga>
+ * 			 manga_mangadb_id: number
+ * 			 manga_title: string, CDATA
+ * 			 manga_volumes: number
+ * 			 manga_chapters: number
+ * 			 my_id: number
+ * 			 my_read_volumes: number
+ * 			 my_read_chapters: number
+ * 			 my_start_date: date, default to 0000-00-00 (year-month-day)
+ * 			 my_finish_date: date, ^
+ * 			 my_scanalation_group: string, CDATA
+ * 			 my_score: number
+ * 			 my_storage: TODO
+ * 			 my_status: TODO
+ * 			 my_comments: string, CDATA
+ * 			 my_times_read: number
+ * 			 my_tags: string, CDATA
+ * 			 my_reread_value: TODO
+ * 			 update_on_import: number, 0 to not edit, 1 to edit
+ * 		</manga>
+ * </myanimelist>
+ */
+class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle> {
+	fileType: FileImportFormat = 'XML';
+	handleHistory = undefined;
+	handleOptions = undefined;
 
-	fileToTitles = <T extends MyAnimeListSave>(file: T): TitleCollection => {
-		return new TitleCollection();
-	};
-
-	import = async (): Promise<void> => {
-		this.notification('success', 'Select your MyAnimeList export file.');
+	preForm = (): void => {
 		this.notification('info', [
 			DOM.text('You can download your Manga list'),
 			DOM.space(),
@@ -78,10 +104,10 @@ class MyAnimeListImport extends ImportableModule {
 			'warning',
 			'You need to extract the downloaded file before uploading, the extension need to be xml and not gz.'
 		);
-		this.form = this.createForm(
-			[new FileInput('file', 'MyAnimeList export file (.xml)', 'application/xml')],
-			(event) => this.handleExportFile(event)
-		);
+	};
+
+	inputMessage = (): string => {
+		return 'MyAnimeList export file (.xml)';
 	};
 
 	validMyAnimeListTitle = (title: MyAnimeListTitle): boolean => {
@@ -109,109 +135,45 @@ class MyAnimeListImport extends ImportableModule {
 		return Status.NONE;
 	};
 
-	handleExportFile = (event: Event): void => {
-		event.preventDefault();
-		if (this.form === undefined) return;
-		var reader = new FileReader();
-		reader.onload = async (): Promise<void> => {
-			if (typeof reader.result == 'string') {
-				try {
-					const body = this.parser.parseFromString(reader.result, 'application/xml');
-					// Check if user_export_type is set and equals 2 for manga lists
-					const infos = body.querySelector('myinfo') ?? undefined;
-					const exportType = infos?.querySelector('user_export_type') ?? undefined;
-					if (infos === undefined || exportType === undefined || exportType.textContent !== '2') {
-						this.notification('danger', 'Invalid file !');
-						return;
-					}
-					this.service.manager.resetSaveContainer();
-					this.service.manager.header('Import MyAnimeList Save');
-					let notification = this.notification('info loading', 'Step 1: Reading Save file');
-					// Get a list of MAL Titles
-					const titles = new TitleCollection();
-					const myAnimeListTitles: MyAnimeListTitle[] = [];
-					const mangaList = body.querySelectorAll<HTMLElement>('manga');
-					for (const manga of mangaList) {
-						const title = {
-							id: parseInt(manga.querySelector('manga_mangadb_id')?.textContent || ''),
-							chapters: parseInt(manga.querySelector('my_read_chapters')?.textContent || ''),
-							volumes: parseInt(manga.querySelector('my_read_volumes')?.textContent || ''),
-							status: (manga.querySelector('my_status')?.textContent || 'Invalid') as MyAnimeListStatus,
-						};
-						if (this.validMyAnimeListTitle(title)) {
-							myAnimeListTitles.push(title);
-						}
-					}
-					notification.classList.remove('loading');
-					const totalValid = myAnimeListTitles.length;
-					this.notification('success', `Found ${myAnimeListTitles.length} valid titles.`);
-					// Get a list of MangaDex ID for every MAL IDs
-					let totalAdded = 0;
-					let doStop = false;
-					const stopButton = this.stopButton(() => {
-						doStop = true;
-					});
-					notification = this.notification('info loading', [
-						DOM.text(`Step 2: Find MangaDex IDs from MyAnimeList IDs, 0 out of ${totalValid}`),
-						DOM.space(),
-						stopButton,
-					]);
-					for (let i = 0, len = myAnimeListTitles.length; !doStop && i < len; i++) {
-						const myAnimeListTitle = myAnimeListTitles[i];
-						const connections = await Mochi.find(myAnimeListTitle.id, 'MyAnimeList');
-						if (connections !== undefined && connections['MangaDex'] !== undefined) {
-							titles.add(
-								new Title(connections['MangaDex'] as number, {
-									services: { mal: myAnimeListTitle.id },
-									progress: {
-										chapter: myAnimeListTitle.chapters,
-										volume: myAnimeListTitle.volumes,
-									},
-									status: this.toStatus(myAnimeListTitle.status),
-									chapters: [],
-								})
-							);
-							totalAdded++;
-						}
-						(notification.firstChild as Text).textContent = `Step 2: Find MangaDex IDs from MyAnimeList IDs, ${
-							i + 1
-						} out of ${totalValid}.`;
-					}
-					notification.classList.remove('loading');
-					stopButton.remove();
-					if (doStop) {
-						this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
-						return;
-					}
-					notification = this.notification(
-						'info',
-						`Step 3: Saving a total of ${totalAdded} (ouf of ${totalValid}).`
-					);
-					// Done, merge and save
-					titles.merge(await TitleCollection.get(titles.ids));
-					await titles.save();
-					this.notification('success', [
-						DOM.text(`Done ! Imported ${totalAdded} Titles from MyAnimeList`),
-						DOM.space(),
-						this.resetButton(),
-					]);
-				} catch (error) {
-					console.error(error);
-					this.notification('danger', 'Invalid file !');
-				}
-			}
-		};
-		if (this.form.file.files.length > 0) {
-			reader.readAsText(this.form.file.files[0]);
-		} else {
-			this.notification('danger', 'No file selected !');
+	convertTitle = async (title: MyAnimeListTitle, titles: TitleCollection): Promise<boolean> => {
+		const connections = await Mochi.find(title.id, 'MyAnimeList');
+		if (connections !== undefined && connections['MangaDex'] !== undefined) {
+			titles.add(
+				new Title(connections['MangaDex'] as number, {
+					services: { mal: title.id },
+					progress: {
+						chapter: title.chapters,
+						volume: title.volumes,
+					},
+					status: this.toStatus(title.status),
+					chapters: [],
+				})
+			);
+			return true;
 		}
+		return false;
+	};
+
+	handleTitles = async (save: Document): Promise<MyAnimeListTitle[]> => {
+		let titles: MyAnimeListTitle[] = [];
+		const mangaList = save.querySelectorAll<HTMLElement>('manga');
+		for (const manga of mangaList) {
+			const title = {
+				id: parseInt(manga.querySelector('manga_mangadb_id')?.textContent || ''),
+				chapters: parseInt(manga.querySelector('my_read_chapters')?.textContent || ''),
+				volumes: parseInt(manga.querySelector('my_read_volumes')?.textContent || ''),
+				status: (manga.querySelector('my_status')?.textContent || 'Invalid') as MyAnimeListStatus,
+			};
+			if (this.validMyAnimeListTitle(title)) {
+				titles.push(title);
+			}
+		}
+		return titles;
 	};
 }
 
 class MyAnimeListExport extends ExportableModule {
-	/* TODO: MyAnimeList doesn't have the same URL for adding/editing titles
-			 I need to get the list of titles *really* in the list before adding or updating things */
+	// TODO: Export to XML and upload file
 	export = async (): Promise<void> => {};
 }
 
@@ -220,6 +182,6 @@ export class MyAnimeList extends Service {
 	key: string = 'mal';
 
 	activeModule: ActivableModule = new MyAnimeListActive(this);
-	importModule: ImportableModule = new MyAnimeListImport(this);
+	importModule: FileImportableModule<Document, MyAnimeListTitle> = new MyAnimeListImport(this);
 	exportModule: ExportableModule = new MyAnimeListExport(this);
 }

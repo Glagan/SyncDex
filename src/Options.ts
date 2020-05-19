@@ -40,11 +40,11 @@ export interface AvailableOptions {
 	services: ServiceName[];
 	mainService: ServiceName | undefined;
 	noReloadStatus: boolean;
-	tokens: {
+	tokens: Partial<{
 		anilistToken: string | undefined;
 		kitsuUser: string | undefined;
 		kitsuToken: string | undefined;
-	};
+	}>;
 	// Colors
 	colors: {
 		highlights: string[];
@@ -120,6 +120,7 @@ const updates: Update[] = [];
 
 interface ManageOptions {
 	load: () => Promise<void>;
+	reloadTokens: () => Promise<void>;
 	checkUpdate: () => boolean;
 	update: () => void;
 	save: () => Promise<void>;
@@ -143,6 +144,14 @@ export const Options: AvailableOptions & ManageOptions = Object.assign(
 			return new Promise<void>((resolve) => resolve());
 		},
 
+		reloadTokens: async (): Promise<void> => {
+			const options = await LocalStorage.get<AvailableOptions>('options');
+			if (options !== undefined && options.tokens !== undefined) {
+				Options.tokens = {};
+				Object.assign(Options.tokens, options.tokens);
+			}
+		},
+
 		checkUpdate: (): boolean => {
 			if (Options.version !== DefaultOptions.version) {
 				return true;
@@ -163,6 +172,7 @@ export const Options: AvailableOptions & ManageOptions = Object.assign(
 		save: async (): Promise<void> => {
 			const values = Object.assign({}, Options);
 			delete values.load;
+			delete values.reloadTokens;
 			delete values.checkUpdate;
 			delete values.update;
 			delete values.save;

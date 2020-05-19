@@ -8,12 +8,17 @@ declare module 'SimpleNotification' {
 		onDeath?: eventCallback;
 		onClose?: (notification: SimpleNotification, fromUser: boolean) => void;
 	};
+	type Button = {
+		type?: Type;
+		value?: string;
+		onClick?: eventCallback;
+	};
 
 	interface Content {
 		image?: string;
 		text?: string;
 		title?: string;
-		buttons?: string;
+		buttons?: Button[];
 	}
 
 	interface Options {

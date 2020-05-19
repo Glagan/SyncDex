@@ -1,13 +1,12 @@
-import { DOM } from '../../src/DOM';
 import { Progress } from '../../src/interfaces';
 import { Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
 import { Runtime, RawResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
-import { Service, ActivableModule, ImportableModule, ExportableModule, ImportType } from './Service';
+import { Service, ActivableModule, ExportableModule, APIImportableModule, ImportStep } from './Service';
 import { ServiceName } from '../Manager/Service';
 
-interface MUTitle {
+interface MangaUpdatesTitle {
 	id: number;
 	progress: Progress;
 	status: Status;
@@ -19,7 +18,7 @@ class MangaUpdatesActive extends ActivableModule {
 	login = undefined;
 	logout = undefined;
 
-	isLoggedIn = async <T>(reference?: T): Promise<LoginStatus> => {
+	isLoggedIn = async (): Promise<LoginStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: 'https://www.mangaupdates.com/aboutus.html',
 			credentials: 'include',
@@ -40,31 +39,14 @@ class MangaUpdatesActive extends ActivableModule {
 	};
 }
 
-class MangaUpdatesImport extends ImportableModule {
-	importType: ImportType = ImportType.LIST;
+class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
+	needReference: boolean = false;
 	parser: DOMParser = new DOMParser();
+	currentPage: string = '';
+	currentList: number = 0;
 	static lists: string[] = ['read', 'wish', 'complete', 'unfinished', 'hold'];
-	convertOptions = undefined;
-	fileToTitles = undefined;
 
-	import = async (): Promise<void> => {
-		const block = DOM.create('div', {
-			class: 'block',
-		});
-		const startButton = DOM.create('button', {
-			class: 'success mr-1',
-			textContent: 'Start',
-			events: {
-				click: async (event): Promise<void> => {
-					event.preventDefault();
-					this.handleImport();
-				},
-			},
-		});
-		DOM.append(this.service.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
-	};
-
-	getProgress = (node: HTMLElement | null): number => {
+	progressFromNode = (node: HTMLElement | null): number => {
 		if (node !== null) {
 			return parseInt((node.textContent as string).slice(2));
 		}
@@ -86,9 +68,25 @@ class MangaUpdatesImport extends ImportableModule {
 		return Status.NONE;
 	};
 
-	listPage = async (titles: MUTitle[], list: string): Promise<boolean> => {
+	getNextPage = (): boolean => {
+		if (this.currentList == MangaUpdatesImport.lists.length) {
+			return false;
+		}
+		this.currentPage = MangaUpdatesImport.lists[this.currentList++];
+		return true;
+	};
+
+	getProgress = (step: ImportStep, total?: number): string => {
+		if (step == ImportStep.FETCH_PAGES) {
+			return `Importing list ${this.currentList} out of 5.`;
+		}
+		// ImportStep.CONVERT_TITLES
+		return `Converting title ${++this.currentTitle} out of ${total}.`;
+	};
+
+	handlePage = async (): Promise<MangaUpdatesTitle[] | false> => {
 		const response = await Runtime.request<RawResponse>({
-			url: `https://www.mangaupdates.com/mylist.html?list=${list}`,
+			url: `https://www.mangaupdates.com/mylist.html?list=${this.currentPage}`,
 			credentials: 'include',
 		});
 		if (
@@ -98,92 +96,37 @@ class MangaUpdatesImport extends ImportableModule {
 		) {
 			const body = this.parser.parseFromString(response.body, 'text/html');
 			const rows = body.querySelectorAll(`div[id^='r']`);
-			const status = this.toStatus(list);
+			const status = this.toStatus(MangaUpdatesImport.lists[this.currentList - 1]);
+			let titles: MangaUpdatesTitle[] = [];
 			for (const row of rows) {
 				titles.push({
 					id: parseInt(row.id.slice(1)),
 					progress: {
-						chapter: this.getProgress(row.querySelector(`a[title='Increment Chapter']`)),
-						volume: this.getProgress(row.querySelector(`a[title='Increment Volume']`)),
+						chapter: this.progressFromNode(row.querySelector(`a[title='Increment Chapter']`)),
+						volume: this.progressFromNode(row.querySelector(`a[title='Increment Volume']`)),
 					},
 					status: status,
 				});
 			}
-			return true;
+			return titles;
 		}
 		return false;
 	};
 
-	handleImport = async (): Promise<void> => {
-		this.service.manager.resetSaveContainer();
-		this.service.manager.header('Importing from MangaUpdates');
-		let muTitles: MUTitle[] = [];
-		let doStop = false;
-		const stopButton = this.stopButton(() => {
-			doStop = true;
-		});
-		let notification = this.notification('info loading', [
-			DOM.text(`Importing list 1 out of 5.`),
-			DOM.space(),
-			stopButton,
-		]);
-		for (let i = 0; i < MangaUpdatesImport.lists.length; i++) {
-			const listName = MangaUpdatesImport.lists[i];
-			(notification.firstChild as Text).textContent = `Importing list ${i + 1} out of 5.`;
-			if (!(await this.listPage(muTitles, listName))) {
-				this.notification(
-					'danger',
-					`The request failed, maybe MangaUpdates is having problems or you aren't logged in, retry later.`
-				);
-				break;
-			}
+	convertTitle = async (titles: TitleCollection, title: MangaUpdatesTitle): Promise<boolean> => {
+		const connections = await Mochi.find(title.id, 'MangaUpdates');
+		if (connections !== undefined && connections['MangaDex'] !== undefined) {
+			titles.add(
+				new Title(connections['MangaDex'] as number, {
+					services: { mu: title.id },
+					progress: title.progress,
+					status: title.status,
+					chapters: [],
+				})
+			);
+			return true;
 		}
-		notification.classList.remove('loading');
-		stopButton.remove();
-		if (doStop) {
-			this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
-			return;
-		}
-		// Find MangaDex IDs
-		let titles = new TitleCollection();
-		const total = muTitles.length;
-		let added = 0;
-		this.notification('success', `Found a total of ${muTitles.length} Titles.`);
-		notification = this.notification('info loading', [
-			DOM.text(`Finding MangaDex IDs from MangaUpdates IDs, 0 out of ${total}.`),
-			DOM.space(),
-			stopButton,
-		]);
-		let index = 0;
-		for (const muTitle of muTitles) {
-			const connections = await Mochi.find(muTitle.id, 'MangaUpdates');
-			if (connections !== undefined && connections['MangaDex'] !== undefined) {
-				titles.add(
-					new Title(connections['MangaDex'] as number, {
-						services: { mu: muTitle.id },
-						progress: muTitle.progress,
-						status: muTitle.status,
-						chapters: [],
-					})
-				);
-				added++;
-			}
-			notification.textContent = `Finding MangaDex IDs from MangaUpdates IDs, ${++index} out of ${total}.`;
-		}
-		notification.classList.remove('loading');
-		stopButton.remove();
-		if (doStop) {
-			this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
-			return;
-		}
-		// Done, merge and save
-		titles.merge(await TitleCollection.get(titles.ids));
-		await titles.save();
-		this.notification('success', [
-			DOM.text(`Done ! Imported ${added} Titles (out of ${total}) from MangaUpdates.`),
-			DOM.space(),
-			this.resetButton(),
-		]);
+		return false;
 	};
 }
 
@@ -196,6 +139,6 @@ export class MangaUpdates extends Service {
 	key: string = 'mu';
 
 	activeModule: ActivableModule = new MangaUpdatesActive(this);
-	importModule: ImportableModule = new MangaUpdatesImport(this);
+	importModule: APIImportableModule<MangaUpdatesTitle> = new MangaUpdatesImport(this);
 	exportModule: ExportableModule = new MangaUpdatesExport(this);
 }

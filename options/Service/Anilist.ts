@@ -4,7 +4,7 @@ import { ServiceName, Status, LoginStatus, LoginMethod } from '../../src/Service
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
-import { Service, ActivableModule, ImportableModule, ExportableModule, ImportType } from './Service';
+import { Service, ActivableModule, ExportableModule, APIImportableModule, ImportStep } from './Service';
 
 interface ViewerResponse {
 	data: {
@@ -23,7 +23,7 @@ enum AnilistStatus {
 	'REPEATING' = 'REPEATING',
 }
 
-interface AnilistEntry {
+interface AnilistTitle {
 	mediaId: number;
 	status: AnilistStatus;
 	progress: number;
@@ -32,7 +32,7 @@ interface AnilistEntry {
 
 interface AnilistList {
 	name: string;
-	entries: AnilistEntry[];
+	entries: AnilistTitle[];
 }
 
 interface AnilistResponse {
@@ -48,11 +48,9 @@ class AnilistActive extends ActivableModule {
 	loginUrl: string = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
 	form?: HTMLFormElement;
 	login = undefined;
-	logout = undefined;
 
-	isLoggedIn = async <T>(reference?: T): Promise<LoginStatus> => {
+	isLoggedIn = async (): Promise<LoginStatus> => {
 		if (!Options.tokens.anilistToken === undefined) return LoginStatus.MISSING_TOKEN;
-		const query = `query { Viewer { id } }`;
 		const response = await Runtime.request<JSONResponse>({
 			method: 'POST',
 			url: 'https://graphql.anilist.co',
@@ -62,20 +60,23 @@ class AnilistActive extends ActivableModule {
 				'Content-Type': 'application/json',
 				Accept: 'application/json',
 			},
-			body: JSON.stringify({ query: query }),
+			body: JSON.stringify({ query: `query { Viewer { id } }` }),
 		});
 		if (response.status >= 500) {
 			return LoginStatus.SERVER_ERROR;
-		} else if (response.status >= 400 && response.status < 500) {
+		} else if (response.status >= 400) {
 			return LoginStatus.BAD_REQUEST;
 		}
 		return LoginStatus.SUCCESS;
 	};
+
+	logout = async (): Promise<void> => {
+		delete Options.tokens.anilistToken;
+		return await Options.save();
+	};
 }
-class AnilistImport extends ImportableModule {
-	importType: ImportType = ImportType.LIST;
-	convertOptions = undefined;
-	fileToTitles = undefined;
+class AnilistImport extends APIImportableModule<AnilistTitle> {
+	currentPage: number = 0;
 
 	static viewerQuery = `
 		query {
@@ -98,61 +99,78 @@ class AnilistImport extends ImportableModule {
 			}
 		}`; // Require $userName
 
-	import = async (): Promise<void> => {
-		this.notification('warning', `You need to have Anilist activated and to be logged in to import.`);
-		const block = DOM.create('div', {
-			class: 'block',
-		});
-		let busy = false;
-		const startButton = DOM.create('button', {
-			class: 'success mr-1',
-			textContent: 'Start',
-			events: {
-				click: async (event): Promise<void> => {
-					event.preventDefault();
-					if (
-						Options.services.indexOf(ServiceName.Anilist) < 0 ||
-						Options.tokens.anilistToken === undefined
-					) {
-						this.notification(
-							'danger',
-							'You need to have Anilist activated and to be logged in to Import.'
-						);
-						return;
-					}
-					if (!busy) {
-						busy = true;
-						startButton.classList.add('loading');
-						const response = await Runtime.request<JSONResponse>({
-							url: 'https://graphql.anilist.co/',
-							method: 'POST',
-							isJson: true,
-							headers: {
-								Accept: 'application/json',
-								'Content-Type': 'application/json',
-								Authorization: `Bearer ${Options.tokens.anilistToken}`,
-							},
-							body: JSON.stringify({
-								query: AnilistImport.viewerQuery,
-							}),
-						});
-						let username = '';
-						if (response.status >= 400) {
-							this.notification(
-								'danger',
-								`The request failed, maybe Anilist is having problems or your token expired, retry later.`
-							);
-							startButton.classList.remove('loading');
-						} else {
-							username = (response.body as ViewerResponse).data.Viewer.name;
-							await this.handleImport(username);
-						}
-						busy = false;
-					}
-				},
+	getNextPage = (): boolean => {
+		return this.currentPage++ == 0;
+	};
+
+	getProgress = (step: ImportStep, total?: number): string => {
+		if (step == ImportStep.FETCH_PAGES) {
+			return `Importing Titles.`;
+		}
+		// ImportStep.CONVERT_TITLES
+		return `Converting title ${++this.currentTitle} out of ${total}.`;
+	};
+
+	handlePage = async (): Promise<AnilistTitle[] | false> => {
+		// Find required username
+		let response = await Runtime.request<JSONResponse>({
+			url: 'https://graphql.anilist.co/',
+			method: 'POST',
+			isJson: true,
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${Options.tokens.anilistToken}`,
 			},
+			body: JSON.stringify({
+				query: AnilistImport.viewerQuery,
+			}),
 		});
-		DOM.append(this.service.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
+		if (response.status >= 400) {
+			this.notification(
+				'danger',
+				`The request failed, maybe Anilist is having problems or your token expired, retry later.`
+			);
+			return false;
+		}
+		const username = (response.body as ViewerResponse).data.Viewer.name;
+		// Get list of *all* titles
+		response = await Runtime.request<JSONResponse>({
+			url: 'https://graphql.anilist.co/',
+			method: 'POST',
+			isJson: true,
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				query: AnilistImport.listQuery,
+				variables: {
+					userName: username,
+				},
+			}),
+		});
+		if (response.status >= 500) {
+			this.notification('danger', 'The request failed, maybe Anilist is having problems, retry later.');
+			return false;
+		} else if (response.status >= 400) {
+			this.notification('danger', 'Bad Request, check if your token is valid.');
+			return false;
+		}
+		// Transform to array
+		let titles: AnilistTitle[] = [];
+		const body = response.body as AnilistResponse;
+		for (const list of body.data.MediaListCollection.lists) {
+			for (const entry of list.entries) {
+				titles.push({
+					mediaId: entry.mediaId,
+					progress: entry.progress,
+					progressVolumes: entry.progressVolumes,
+					status: entry.status,
+				});
+			}
+		}
+		return titles;
 	};
 
 	toStatus = (status: AnilistStatus): Status => {
@@ -172,86 +190,23 @@ class AnilistImport extends ImportableModule {
 		return Status.NONE;
 	};
 
-	handleImport = async (username: string): Promise<void> => {
-		// Send a simple query to Anilist
-		let notification = this.notification('info loading', 'Importing Manga list form Anilist...');
-		const response = await Runtime.request<JSONResponse>({
-			url: 'https://graphql.anilist.co/',
-			method: 'POST',
-			isJson: true,
-			headers: {
-				Accept: 'application/json',
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({
-				query: AnilistImport.listQuery,
-				variables: {
-					userName: username,
-				},
-			}),
-		});
-		notification.remove();
-		if (response.status >= 500) {
-			this.notification('danger', 'The request failed, maybe Anilist is having problems, retry later.');
-			return;
+	convertTitle = async (titles: TitleCollection, title: AnilistTitle): Promise<boolean> => {
+		const connections = await Mochi.find(title.mediaId, 'Anilist');
+		if (connections !== undefined && connections['MangaDex'] !== undefined) {
+			titles.add(
+				new Title(connections['MangaDex'] as number, {
+					services: { al: title.mediaId },
+					progress: {
+						chapter: title.progress,
+						volume: title.progressVolumes,
+					},
+					status: this.toStatus(title.status),
+					chapters: [],
+				})
+			);
+			return true;
 		}
-		if (response.status >= 400) {
-			this.notification('danger', 'Bad Request, check if your token is valid.');
-			return;
-		}
-		// data.MediaListCollection.lists[]
-		let titles = new TitleCollection();
-		const body = response.body as AnilistResponse;
-		let total = body.data.MediaListCollection.lists.reduce((acc, list) => acc + list.entries.length, 0);
-		let processed = 0;
-		let added = 0;
-		this.service.manager.resetSaveContainer();
-		this.service.manager.header('Importing from Anilist');
-		let doStop = false;
-		const stopButton = this.stopButton(() => {
-			doStop = true;
-		});
-		notification = this.notification('success loading', [
-			DOM.text(`Finding MangaDex IDs from Anilist IDs, 0 out of ${total}.`),
-			DOM.space(),
-			stopButton,
-		]);
-		// Flatten entries and search MangaDex IDs
-		for (const list of body.data.MediaListCollection.lists) {
-			for (const entry of list.entries) {
-				const connections = await Mochi.find(entry.mediaId, 'Anilist');
-				if (connections !== undefined && connections['MangaDex'] !== undefined) {
-					titles.add(
-						new Title(connections['MangaDex'] as number, {
-							services: { al: entry.mediaId },
-							progress: {
-								chapter: entry.progress,
-								volume: entry.progressVolumes,
-							},
-							status: this.toStatus(entry.status),
-							chapters: [],
-						})
-					);
-					added++;
-				}
-				processed++;
-				(notification.firstChild as Text).textContent = `Finding MangaDex IDs from Anilist IDs, ${processed} out of ${total}.`;
-			}
-		}
-		notification.classList.remove('loading');
-		stopButton.remove();
-		if (doStop) {
-			this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
-			return;
-		}
-		// Done, merge and save
-		titles.merge(await TitleCollection.get(titles.ids));
-		await titles.save();
-		this.notification('success', [
-			DOM.text(`Done ! Imported ${added} Titles (out of ${total}) from Anilist.`),
-			DOM.space(),
-			this.resetButton(),
-		]);
+		return false;
 	};
 }
 
@@ -263,7 +218,7 @@ export class Anilist extends Service {
 	name: ServiceName = ServiceName.Anilist;
 	key: string = 'al';
 	activeModule: ActivableModule = new AnilistActive(this);
-	importModule: ImportableModule = new AnilistImport(this);
+	importModule: APIImportableModule<AnilistTitle> = new AnilistImport(this);
 	exportModule: ExportableModule = new AnilistExport(this);
 
 	createTitle = (): HTMLElement => {

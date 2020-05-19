@@ -1,13 +1,12 @@
 import { RawResponse, Runtime } from '../../src/Runtime';
-import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { Progress } from '../../src/interfaces';
-import { ImportState, Service, ActivableModule, ImportableModule, ExportableModule, ImportType } from './Service';
+import { Service, ActivableModule, ExportableModule, APIImportableModule } from './Service';
 import { Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
 import { ServiceName } from '../Manager/Service';
 
-interface APTitle {
+interface AnimePlanetTitle {
 	id: string;
 	status: Status;
 	progress: Progress;
@@ -15,12 +14,13 @@ interface APTitle {
 
 class AnimePlanetActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
-	loginUrl: string = 'https://www.anime-planet.com/login.php';
+	loginUrl: string = 'https://www.anime-planet.com/login';
 	parser: DOMParser = new DOMParser();
 	login = undefined;
 	logout = undefined;
+	username: string = '';
 
-	isLoggedIn = async <T = { username: string }>(reference?: T): Promise<LoginStatus> => {
+	isLoggedIn = async (): Promise<LoginStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: `https://www.anime-planet.com/contact`,
 			credentials: 'include',
@@ -35,9 +35,7 @@ class AnimePlanetActive extends ActivableModule {
 			if (profileLink === null) {
 				throw 'Could not find Profile link';
 			}
-			if (reference) {
-				(reference as any).username = profileLink.getAttribute('title') ?? '';
-			}
+			this.username = profileLink.getAttribute('title') ?? '';
 			return LoginStatus.SUCCESS;
 		} catch (error) {
 			// this.notification('danger', `Could not find your Username, are you sure you're logged in ?`);
@@ -45,40 +43,8 @@ class AnimePlanetActive extends ActivableModule {
 		}
 	};
 }
-class AnimePlanetImport extends ImportableModule {
-	importType: ImportType = ImportType.LIST;
-	convertOptions = undefined;
-	fileToTitles = undefined;
+class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 	parser: DOMParser = new DOMParser();
-
-	import = async (): Promise<void> => {
-		const block = DOM.create('div', {
-			class: 'block',
-		});
-		let busy = false;
-		const startButton = DOM.create('button', {
-			class: 'success mr-1',
-			textContent: 'Start',
-			events: {
-				click: async (event): Promise<void> => {
-					event.preventDefault();
-					if (!busy) {
-						busy = true;
-						startButton.classList.add('loading');
-						const username: { username: string } = { username: '' };
-						const status = await (this.service.activeModule as ActivableModule).isLoggedIn(username); // TODO: InterfaceModule
-						if (status == LoginStatus.SUCCESS && username.username !== '') {
-							await this.handleImport(username.username);
-						} else {
-							startButton.classList.remove('loading');
-						}
-						busy = false;
-					}
-				},
-			},
-		});
-		DOM.append(this.service.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
-	};
 
 	toStatus = (status: string): Status => {
 		if (status === '1') {
@@ -103,21 +69,26 @@ class AnimePlanetImport extends ImportableModule {
 		return Status.NONE;
 	};
 
-	singlePage = async (titles: APTitle[], username: string, state: ImportState): Promise<boolean> => {
+	/**
+	 * Adding `per_page=560` result in a 302, we can't use that
+	 */
+	handlePage = async (): Promise<AnimePlanetTitle[] | false> => {
+		const username = (this.service.activeModule as AnimePlanetActive).username;
 		const response = await Runtime.request<RawResponse>({
-			url: `https://www.anime-planet.com/users/${username}/manga?sort=title&per_page=560&page=${++state.current}`,
+			url: `https://www.anime-planet.com/users/${username}/manga?sort=title&page=${this.state.current}&mylist_view=list`,
 			credentials: 'include',
 		});
 		if (response.status >= 400 || typeof response.body !== 'string') {
 			this.notification('danger', 'The request failed, maybe AnimePlanet is having problems, retry later.');
 			return false;
 		}
+		let titles: AnimePlanetTitle[] = [];
 		const body = this.parser.parseFromString(response.body, 'text/html');
 		const rows = body.querySelectorAll('table.personalList tbody tr');
 		for (const row of rows) {
 			const apTitle = {
 				progress: {},
-			} as APTitle;
+			} as AnimePlanetTitle;
 			const title = row.querySelector('a[href^="/manga/"]') as HTMLElement;
 			apTitle.id = title.getAttribute('href')?.slice(7) as string;
 			const chapter = row.querySelector('select[name="chapters"]') as HTMLSelectElement;
@@ -130,85 +101,30 @@ class AnimePlanetImport extends ImportableModule {
 				titles.push(apTitle);
 			}
 		}
-		// Next page: TODO, test if there is more than 2 pages...
 		const navigation = body.querySelector('div.pagination > ul.nav');
 		if (navigation !== null) {
 			const last = navigation.lastElementChild?.previousElementSibling;
 			if (last !== null && last !== undefined) {
-				state.max = parseInt(last.textContent as string);
+				this.state.max = parseInt(last.textContent as string);
 			}
 		}
-		return true;
+		return titles;
 	};
 
-	handleImport = async (username: string): Promise<void> => {
-		this.service.manager.resetSaveContainer();
-		this.service.manager.header('Importing from AnimePlanet');
-		let apTitles: APTitle[] = [];
-		const state = {
-			current: 0,
-			max: 1,
-		};
-		let doStop = false;
-		const stopButton = this.stopButton(() => {
-			doStop = true;
-		});
-		let notification = this.notification('info loading', [
-			DOM.text(`Importing page 1 of your list.`),
-			DOM.space(),
-			stopButton,
-		]);
-		while (!doStop && state.current < state.max) {
-			await this.singlePage(apTitles, username, state);
-			(notification.firstChild as Text).textContent = `Importing page ${state.current} out of ${state.max} of your list.`;
+	convertTitle = async (titles: TitleCollection, title: AnimePlanetTitle): Promise<boolean> => {
+		const connections = await Mochi.find(title.id, 'AnimePlanet');
+		if (connections !== undefined && connections['MangaDex'] !== undefined) {
+			titles.add(
+				new Title(connections['MangaDex'] as number, {
+					services: { ap: title.id },
+					progress: title.progress,
+					status: title.status,
+					chapters: [],
+				})
+			);
+			return true;
 		}
-		notification.classList.remove('loading');
-		stopButton.remove();
-		if (doStop) {
-			this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
-			return;
-		}
-		// Find MangaDex IDs
-		let titles = new TitleCollection();
-		const total = apTitles.length;
-		let added = 0;
-		this.notification('success', `Found a total of ${apTitles.length} Titles.`);
-		notification = this.notification('info loading', [
-			DOM.text(`Finding MangaDex IDs from AnimePlanet IDs, 0 out of ${total}.`),
-			DOM.space(),
-			stopButton,
-		]);
-		let index = 0;
-		for (const apTitle of apTitles) {
-			if (doStop) break;
-			const connections = await Mochi.find(apTitle.id, 'AnimePlanet');
-			if (connections !== undefined && connections['MangaDex'] !== undefined) {
-				titles.add(
-					new Title(connections['MangaDex'] as number, {
-						services: { ap: apTitle.id },
-						progress: apTitle.progress,
-						status: apTitle.status,
-						chapters: [],
-					})
-				);
-				added++;
-			}
-			(notification.firstChild as Text).textContent = `Finding MangaDex IDs from AnimePlanet IDs, ${++index} out of ${total}.`;
-		}
-		notification.classList.remove('loading');
-		stopButton.remove();
-		if (doStop) {
-			this.notification('success', [DOM.text('You canceled the Import. '), this.resetButton()]);
-			return;
-		}
-		// Done, merge and save
-		titles.merge(await TitleCollection.get(titles.ids));
-		await titles.save();
-		this.notification('success', [
-			DOM.text(`Done ! Imported ${added} Titles (out of ${total}) from AnimePlanet.`),
-			DOM.space(),
-			this.resetButton(),
-		]);
+		return false;
 	};
 }
 
@@ -221,6 +137,6 @@ export class AnimePlanet extends Service {
 	key: string = 'ap';
 
 	activeModule: ActivableModule = new AnimePlanetActive(this);
-	importModule: ImportableModule = new AnimePlanetImport(this);
+	importModule: APIImportableModule<AnimePlanetTitle> = new AnimePlanetImport(this);
 	exportModule: ExportableModule = new AnimePlanetExport(this);
 }
