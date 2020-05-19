@@ -218,7 +218,10 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 }
 
 class KitsuExport extends ExportableModule {
-	export = async (): Promise<void> => {};
+	export = async (): Promise<void> => {
+		// 1: Load all titles with Kitsu ID
+		// 2: Export all titles one by one to the API endpoint
+	};
 }
 
 export class Kitsu extends Service {

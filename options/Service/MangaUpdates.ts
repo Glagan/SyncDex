@@ -131,7 +131,10 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 }
 
 class MangaUpdatesExport extends ExportableModule {
-	export = async (): Promise<void> => {};
+	export = async (): Promise<void> => {
+		// 1: Load all titles with MangaUpdates ID
+		// 2: Update entries one by one
+	};
 }
 
 export class MangaUpdates extends Service {

@@ -15,7 +15,10 @@ class SyncDexImport extends FileImportableModule<ExportedSave, Title> {
 			typeof title.st === 'number' &&
 			typeof title.p === 'object' &&
 			title.p.c !== undefined &&
+			(title.sc === undefined || typeof title.sc === 'number') &&
 			(title.c === undefined || Array.isArray(title.c)) &&
+			(title.sd === undefined || typeof title.sd === 'number') &&
+			(title.ed === undefined || typeof title.ed === 'number') &&
 			(title.lt === undefined || typeof title.lt === 'number') &&
 			(title.lc === undefined || typeof title.lc === 'number') &&
 			(title.id === undefined || typeof title.id === 'number') &&

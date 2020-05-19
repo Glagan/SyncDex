@@ -2,7 +2,7 @@ import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceName, ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
 import { LoginStatus, LoginMethod } from '../../src/Service/Service';
-import { TitleCollection, Title } from '../../src/Title';
+import { TitleCollection } from '../../src/Title';
 import { LocalStorage } from '../../src/Storage';
 
 export interface ImportState {
@@ -359,7 +359,10 @@ export abstract class ActivableModule {
 							}
 						}
 						// If there was an error -- show the form again
-						// TODO: Notification
+						// SimpleNotification.error({
+						// 	title: 'Error',
+						// 	text: 'Invalid credentials.',
+						// });
 						this.loginForm.classList.remove('hidden');
 						busy = false;
 					}
@@ -621,7 +624,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 			DOM.clear(progress);
 			DOM.append(
 				progress,
-				DOM.text(`Converting title ${++index} out of ${summary.total}.`), // TODO: Update .textContent of firtstChild instead of reconstructing everything every time
+				DOM.text(`Converting title ${++index} out of ${summary.total}.`),
 				DOM.space(),
 				this.stopButton
 			);
@@ -678,9 +681,9 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 
 	getProgress = (step: ImportStep, total?: number): string => {
 		if (step == ImportStep.FETCH_PAGES) {
-			// ImportStep.CONVERT_TITLES
 			return `Importing page ${this.state.current} out of ${this.state.max}.`;
 		}
+		// ImportStep.CONVERT_TITLES
 		return `Converting title ${++this.currentTitle} out of ${total}.`;
 	};
 

@@ -211,7 +211,10 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 }
 
 class AnilistExport extends ExportableModule {
-	export = async (): Promise<void> => {};
+	export = async (): Promise<void> => {
+		// 1: Load all titles with Anilist ID
+		// 2: Update entries one by one
+	};
 }
 
 export class Anilist extends Service {

@@ -8,22 +8,14 @@ interface SaveProgress {
 	v?: number;
 }
 
-interface InitialState {
-	start: number;
-	end?: number;
-	status: Status;
-}
-
 export interface SaveTitle {
 	s: { [key in ServiceKey]?: number | string }; // services
 	st: Status; // status
+	sc: number; // score
 	p: SaveProgress; // progress
 	c?: number[]; // chapters
-	i?: {
-		s: number; // start
-		e?: number; // end
-		st: number; // status
-	};
+	sd?: number; // start
+	ed?: number; // end
 	lt?: number; // lastTitle
 	lc?: number; // lastCheck
 	// History
@@ -37,9 +29,11 @@ export interface SaveTitle {
 export interface FullTitle {
 	services: { [key in ServiceKey]?: number | string };
 	status: Status;
+	score: number;
 	progress: Progress;
 	chapters: number[];
-	initial?: InitialState;
+	start?: number;
+	end?: number;
 	lastTitle?: number;
 	lastCheck?: number;
 	// History
@@ -49,7 +43,10 @@ export interface FullTitle {
 	name?: string;
 	lastRead?: number;
 }
-type NumberKey = Pick<FullTitle, 'lastTitle' | 'lastCheck' | 'lastChapter' | 'highest' | 'lastRead'>;
+type NumberKey = Pick<
+	FullTitle,
+	'score' | 'start' | 'end' | 'lastTitle' | 'lastCheck' | 'lastChapter' | 'highest' | 'lastRead'
+>;
 
 /**
  * Handle conversion between a SaveTitle in LocalStorage and a FullTitle.
@@ -61,13 +58,11 @@ export class Title implements FullTitle {
 	id: number;
 	services: { [key in ServiceKey]?: number | string } = {};
 	status: Status = 0;
+	score: number = -1;
 	progress: Progress = { chapter: -1, volume: 0 };
 	chapters: number[] = [];
-	initial?: {
-		start: number;
-		end: number;
-		status: Status;
-	};
+	start?: number;
+	end?: number;
 	lastTitle?: number;
 	lastCheck?: number;
 	// History
@@ -76,7 +71,16 @@ export class Title implements FullTitle {
 	highest?: number;
 	name?: string;
 	lastRead?: number;
-	static numberKeys: (keyof NumberKey)[] = ['lastRead', 'lastTitle', 'lastCheck', 'lastChapter'];
+	static numberKeys: (keyof NumberKey)[] = [
+		'score',
+		'start',
+		'end',
+		'lastTitle',
+		'lastCheck',
+		'lastChapter',
+		'highest',
+		'lastRead',
+	];
 
 	constructor(id: number, title?: Partial<FullTitle>) {
 		this.new = title == undefined;
@@ -94,7 +98,10 @@ export class Title implements FullTitle {
 				volume: title.p.v,
 			},
 			status: title.st,
+			score: title.sc,
 			chapters: title.c || [],
+			start: title.sd,
+			end: title.ed,
 			lastTitle: title.lt,
 			lastCheck: title.lc,
 			lastChapter: title.id,
@@ -106,13 +113,6 @@ export class Title implements FullTitle {
 			mapped.history = {
 				chapter: title.h.c,
 				volume: title.h.v,
-			};
-		}
-		if (title.i) {
-			mapped.initial = {
-				start: title.i.s,
-				end: title.i.e,
-				status: title.i.st,
 			};
 		}
 		return mapped;
@@ -133,6 +133,7 @@ export class Title implements FullTitle {
 
 	/**
 	 * Select highest values of both Titles and assign them to *this*
+	 * TODO: Select lower start and end Date
 	 */
 	merge = (other: Title): void => {
 		// Update *this* Status if it's NONE or/and if other is not NONE
@@ -141,9 +142,6 @@ export class Title implements FullTitle {
 		}
 		if (this.progress.chapter < other.progress.chapter) {
 			this.progress = other.progress;
-		}
-		if (this.initial === undefined) {
-			this.initial = other.initial;
 		}
 		Object.assign(this.services, other.services); // Merge Services - other erase *this*
 		// Update all 'number' properties (last...) to select the highest ones
@@ -166,10 +164,13 @@ export class Title implements FullTitle {
 		const mapped: SaveTitle = {
 			s: this.services,
 			st: this.status,
+			sc: this.score,
 			p: {
 				c: this.progress.chapter,
 				v: this.progress.volume,
 			},
+			sd: this.start,
+			ed: this.end,
 			lt: this.lastTitle,
 			lc: this.lastCheck,
 			id: this.lastChapter,
@@ -184,13 +185,6 @@ export class Title implements FullTitle {
 			mapped.h = {
 				c: this.history.chapter,
 				v: this.history.volume,
-			};
-		}
-		if (this.initial) {
-			mapped.i = {
-				s: this.initial.start,
-				e: this.initial.end,
-				st: this.initial.status,
 			};
 		}
 		return mapped;
