@@ -2,8 +2,7 @@ import { ExportedSave } from '../../src/interfaces';
 import { AvailableOptions } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
 import { SaveTitle, Title, TitleCollection } from '../../src/Title';
-import { DOM } from '../../src/DOM';
-import { ImportSummary, Service, ExportableModule, FileImportableModule, FileImportFormat } from './Service';
+import { ImportSummary, Service, FileImportableModule, FileImportFormat, FileExportableModule } from './Service';
 import { ServiceName } from '../Manager/Service';
 
 class SyncDexImport extends FileImportableModule<ExportedSave, Title> {
@@ -66,38 +65,14 @@ class SyncDexImport extends FileImportableModule<ExportedSave, Title> {
 	};
 }
 
-class SyncDexExport extends ExportableModule {
-	busy: boolean = false;
-
-	export = async (): Promise<void> => {
-		let notification = this.notification(
-			'success',
-			'Exporting your save file, you can use it as a backup or Import it on another browser/computer.'
-		);
-		if (this.exportCard && !this.busy) {
-			this.busy = true;
-			this.exportCard.classList.add('loading');
-			let data = await LocalStorage.getAll();
-			if (data) {
-				data.options.tokens = {};
-				let downloadLink = DOM.create('a', {
-					style: {
-						display: 'none',
-					},
-					attributes: {
-						download: 'SyncDex.json',
-						target: '_blank',
-						href: `data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(data))}`,
-					},
-				});
-				document.body.appendChild(downloadLink);
-				downloadLink.click();
-				downloadLink.remove();
-			}
-			this.exportCard.classList.remove('loading');
-			this.busy = false;
+class SyncDexExport extends FileExportableModule {
+	fileContent = async (): Promise<string> => {
+		let data = await LocalStorage.getAll();
+		if (data) {
+			data.options.tokens = {};
+			return JSON.stringify(data);
 		}
-		DOM.append(notification, DOM.space(), this.resetButton());
+		return '';
 	};
 }
 
@@ -107,5 +82,5 @@ export class SyncDex extends Service {
 
 	activeModule = undefined;
 	importModule: FileImportableModule<ExportedSave, Title> = new SyncDexImport(this);
-	exportModule: ExportableModule = new SyncDexExport(this);
+	exportModule: FileExportableModule = new SyncDexExport(this);
 }

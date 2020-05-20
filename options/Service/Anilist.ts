@@ -1,6 +1,6 @@
 import { DOM } from '../../src/DOM';
 import { Options } from '../../src/Options';
-import { ServiceName, Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
+import { ServiceName, Status, LoginStatus, LoginMethod, ServiceKey } from '../../src/Service/Service';
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
@@ -219,7 +219,8 @@ class AnilistExport extends ExportableModule {
 
 export class Anilist extends Service {
 	name: ServiceName = ServiceName.Anilist;
-	key: string = 'al';
+	key: ServiceKey = ServiceKey.Anilist;
+
 	activeModule: ActivableModule = new AnilistActive(this);
 	importModule: APIImportableModule<AnilistTitle> = new AnilistImport(this);
 	exportModule: ExportableModule = new AnilistExport(this);

@@ -3,7 +3,7 @@ import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { Progress } from '../../src/interfaces';
 import { Service, ActivableModule, ExportableModule, APIImportableModule } from './Service';
-import { Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
+import { Status, LoginStatus, LoginMethod, ServiceKey } from '../../src/Service/Service';
 import { ServiceName } from '../Manager/Service';
 
 interface AnimePlanetTitle {
@@ -137,7 +137,7 @@ class AnimePlanetExport extends ExportableModule {
 
 export class AnimePlanet extends Service {
 	name: ServiceName = ServiceName.AnimePlanet;
-	key: string = 'ap';
+	key: ServiceKey = ServiceKey.AnimePlanet;
 
 	activeModule: ActivableModule = new AnimePlanetActive(this);
 	importModule: APIImportableModule<AnimePlanetTitle> = new AnimePlanetImport(this);

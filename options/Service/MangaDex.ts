@@ -2,7 +2,7 @@ import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Runtime, RawResponse } from '../../src/Runtime';
 import { Status, LoginStatus } from '../../src/Service/Service';
-import { Service, ImportableModule, ExportableModule, APIImportableModule } from './Service';
+import { Service, ImportableModule, APIImportableModule, APIExportableModule } from './Service';
 import { ServiceName } from '../Manager/Service';
 
 class MangaDexImport extends APIImportableModule<Title> {
@@ -107,7 +107,7 @@ class MangaDexImport extends APIImportableModule<Title> {
 	};
 }
 
-class MangaDexExport extends ExportableModule {
+class MangaDexExport extends APIExportableModule {
 	fromStatus = (status: Status): number => {
 		switch (status) {
 			case Status.NONE:
@@ -128,49 +128,25 @@ class MangaDexExport extends ExportableModule {
 		}
 	};
 
-	export = async (): Promise<void> => {
-		let loading = this.notification('info loading', `Step 1: Loading your local Save`);
-		const titles = await TitleCollection.get();
-		loading.classList.remove('loading');
-		let notification = this.notification(
-			'info loading',
-			`Step 2: Adding all Titles to your MangaDex List (0 out of ${titles.length}).
-			This can take a long time if you have a lot of titles, be patient.`
-		);
-		let len = titles.collection.length,
-			total = 0;
-		let doStop = false;
-		let index = 0;
-		for (const title of titles.collection) {
-			if (doStop) break;
-			const status = this.fromStatus(title.status);
-			if (status > 0) {
-				const response = await Runtime.request<RawResponse>({
-					url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_follow&id=${
-						title.id
-					}&type=${status}&_=${Date.now()}`,
-					credentials: 'include',
-					headers: {
-						'X-Requested-With': 'XMLHttpRequest',
-					},
-				});
-				if (response.status >= 200 && response.status < 400) {
-					total++;
-				}
-			}
-			(notification.firstChild as Text).textContent = `Step 2: Adding all Titles to your MangaDex List (${++index} out of ${len}).
-			This can take a long time if you have a lot of titles, be patient.`;
+	selectTitles = async (): Promise<Title[]> => {
+		return (await TitleCollection.get()).collection;
+	};
+
+	exportTitle = async (title: Title): Promise<boolean> => {
+		const status = this.fromStatus(title.status);
+		if (status > 0) {
+			const response = await Runtime.request<RawResponse>({
+				url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_follow&id=${
+					title.id
+				}&type=${status}&_=${Date.now()}`,
+				credentials: 'include',
+				headers: {
+					'X-Requested-With': 'XMLHttpRequest',
+				},
+			});
+			return response.status >= 200 && response.status < 400;
 		}
-		notification.classList.remove('loading');
-		this.stopButton.remove();
-		if (doStop) {
-			this.notification('warning', 'You canceled the Export.');
-		}
-		this.notification('success', [
-			DOM.text(`Done ! ${total} Titles have been exported.`),
-			DOM.space(),
-			this.resetButton(),
-		]);
+		return false;
 	};
 }
 
@@ -179,6 +155,6 @@ export class MangaDex extends Service {
 	key: string = 'md';
 
 	activeModule = undefined;
-	importModule: ImportableModule = new MangaDexImport(this);
-	exportModule: ExportableModule = new MangaDexExport(this);
+	importModule: APIImportableModule<Title> = new MangaDexImport(this);
+	exportModule: APIExportableModule = new MangaDexExport(this);
 }

@@ -78,16 +78,16 @@ export const DefaultOptions: AvailableOptions = {
 	showOverview: true,
 	overviewMainOnly: true,
 	// History
-	biggerHistory: false,
-	historySize: 100,
+	biggerHistory: true,
+	historySize: 200,
 	chapterStatus: false,
 	// Notifications
 	notifications: true,
 	errorNotifications: true,
 	// Global
-	useXHR: true,
+	useXHR: false,
 	useMochi: true,
-	acceptLowScore: true,
+	acceptLowScore: false,
 	updateMD: false,
 	// Services
 	services: [],

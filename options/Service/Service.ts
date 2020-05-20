@@ -2,7 +2,7 @@ import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceName, ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
 import { LoginStatus, LoginMethod } from '../../src/Service/Service';
-import { TitleCollection } from '../../src/Title';
+import { TitleCollection, Title } from '../../src/Title';
 import { LocalStorage } from '../../src/Storage';
 
 export interface ImportState {
@@ -389,6 +389,8 @@ export abstract class SaveModule implements Module {
 	service: Service;
 	abstract saveModuleHeader(): void;
 	stopButton: HTMLElement;
+	abstract mainHeader(): void;
+	abstract cancel(): void;
 
 	constructor(service: Service) {
 		this.service = service;
@@ -468,16 +470,14 @@ export abstract class SaveModule implements Module {
 	 * Display summary and button to go back to Service selection
 	 */
 	displaySummary = (summary: ImportSummary): void => {
-		// this.service.manager.clearSaveContainer();
-		// this.saveModuleHeader();
-		this.notification('success', `Done Importing ${this.service.name} !`);
+		// this.notification('success', `Done Importing ${this.service.name} !`);
 		if (summary.total != summary.valid) {
 			this.service.manager.saveContainer.appendChild(
 				DOM.create('div', {
 					class: 'block notification warning',
-					textContent: `${summary.total - summary.valid} (of ${
-						summary.total
-					}) titles were not imported since they had invalid or missing properties.`,
+					textContent: `${
+						summary.total - summary.valid
+					} titles were not imported since they had invalid or missing properties.`,
 				})
 			);
 		}
@@ -500,9 +500,9 @@ export abstract class SaveModule implements Module {
 }
 
 export abstract class ImportableModule extends SaveModule {
-	importable: boolean = true;
 	importCard: HTMLElement;
 	abstract import(): Promise<void>;
+	preForm?(): void;
 
 	constructor(service: Service) {
 		super(service);
@@ -543,7 +543,6 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 	abstract convertTitle(title: R, titles: TitleCollection): Promise<boolean>;
 	abstract handleOptions?(save: T | Document, summary: ImportSummary): void;
 	abstract handleHistory?(save: T | Document, titles: TitleCollection, summary: ImportSummary): number[];
-	preForm?(): void;
 
 	inputMessage = (): string => {
 		return `${this.service.name} save file`;
@@ -594,9 +593,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 				reader.readAsText(form.file.files[0]);
 			}
 		);
-		if (this.preForm) {
-			this.preForm();
-		}
+		if (this.preForm) this.preForm();
 		DOM.append(this.service.manager.saveContainer, form);
 	};
 
@@ -647,6 +644,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 			history = this.handleHistory(data, collection, summary);
 		}
 		// We're double checking and saving only at the end in case of abort
+		progress = this.notification('info loading', 'Saving...');
 		if (!merge) {
 			await LocalStorage.clear();
 		} else {
@@ -660,6 +658,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 			await Options.save();
 			this.service.manager.reloadOptions(); // TODO: Reload
 		}
+		progress.remove();
 		this.displaySummary(summary);
 	};
 }
@@ -688,29 +687,22 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 	};
 
 	import = async (): Promise<void> => {
-		const block = DOM.create('div', {
-			class: 'block',
+		const form = this.createForm([new Checkbox('merge', 'Merge with current save', true)], (event) => {
+			event.preventDefault();
+			this.handleImport(form.merge.checked);
 		});
-		const startButton = DOM.create('button', {
-			class: 'success mr-1',
-			textContent: 'Start',
-			events: {
-				click: async (event): Promise<void> => {
-					event.preventDefault();
-					this.handleImport();
-				},
-			},
-		});
-		DOM.append(this.service.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
+		if (this.preForm) this.preForm();
+		DOM.append(this.service.manager.saveContainer, form);
 	};
 
-	handleImport = async (): Promise<void> => {
+	handleImport = async (merge: boolean): Promise<void> => {
 		this.mainHeader();
 		let progress: HTMLElement = this.notification('info loading', [
-			DOM.text('Checking login status'),
+			DOM.text('Checking login status...'),
 			DOM.space(),
 			this.stopButton,
 		]);
+		// Check login status
 		if (
 			(this.service.activeModule !== undefined &&
 				(await this.service.activeModule?.isLoggedIn()) !== LoginStatus.SUCCESS) ||
@@ -721,9 +713,9 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 			this.notification('danger', [DOM.text('You are not logged in !'), DOM.space(), this.resetButton()]);
 			return;
 		}
-		console.log('logged in');
 		this.stopButton.remove();
 		progress.classList.remove('loading');
+		DOM.append(progress, DOM.space(), DOM.text('logged in !'));
 		if (this.doStop) return this.cancel();
 		let titles: T[] = [];
 		let summary = new ImportSummary();
@@ -765,38 +757,161 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 		progress.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		// Done !
-		collection.merge(await TitleCollection.get(collection.ids));
+		progress = this.notification('info loading', 'Saving...');
+		if (!merge) {
+			await LocalStorage.clear();
+		} else {
+			collection.merge(await TitleCollection.get(collection.ids));
+		}
 		await collection.save();
+		progress.remove();
 		this.displaySummary(summary);
 	};
 }
 
 export abstract class ExportableModule extends SaveModule {
-	exportable: boolean = true;
 	exportCard: HTMLElement;
 	abstract export(): Promise<void>;
-	// abstract importType: ImportType;
-	// abstract fileToTitles?<T extends Object>(file: T): TitleCollection;
-	// abstract convertOptions?<T extends Object>(options: T): Partial<AvailableOptions>;
-
-	saveModuleHeader = (): void => {
-		this.service.manager.fullHeader([DOM.icon('upload'), DOM.text(' Export')]);
-	};
 
 	constructor(service: Service) {
 		super(service);
 		this.exportCard = this.service.createBlock();
 		this.exportCard.addEventListener('click', () => {
-			if (this.export) {
-				this.service.manager.clearSaveContainer();
-				this.saveModuleHeader();
-				this.service.manager.header([
-					DOM.create('img', { attributes: { src: `/icons/${this.service.key}.png` } }),
-					DOM.space(),
-					DOM.text(`Exporting to ${this.service.name}`),
-				]);
-				this.export();
-			}
+			this.mainHeader();
+			this.export();
 		});
 	}
+
+	saveModuleHeader = (): void => {
+		this.service.manager.fullHeader([DOM.icon('upload'), DOM.text(' Export')]);
+	};
+
+	mainHeader = (): void => {
+		this.service.manager.clearSaveContainer();
+		this.saveModuleHeader();
+		this.service.manager.header([
+			DOM.create('img', { attributes: { src: `/icons/${this.service.key}.png` } }),
+			DOM.space(),
+			DOM.text('Exporting to '),
+			this.service.createTitle(),
+		]);
+	};
+
+	cancel = (): void => {
+		this.notification('warning', [DOM.text('You cancelled the export.'), DOM.space(), this.resetButton()]);
+	};
+}
+
+export abstract class FileExportableModule extends ExportableModule {
+	abstract fileContent(): Promise<string>;
+
+	export = async (): Promise<void> => {
+		let notification = this.notification('info loading', 'Creating file...');
+		let save = await this.fileContent();
+		DOM.append(notification, DOM.space(), DOM.text('done !'));
+		notification.classList.remove('loading');
+		if (save === '') {
+			this.notification('danger', [
+				DOM.text(`There was an error while creating your file.`),
+				DOM.space(),
+				this.resetButton(),
+			]);
+			return;
+		}
+		let downloadLink = DOM.create('a', {
+			style: {
+				display: 'none',
+			},
+			attributes: {
+				download: 'SyncDex.json',
+				target: '_blank',
+				href: `data:application/json;charset=utf-8,${encodeURIComponent(save)}`,
+			},
+		});
+		document.body.appendChild(downloadLink);
+		downloadLink.click();
+		downloadLink.remove();
+		this.notification('success', [DOM.text('Save exported !'), DOM.space(), this.resetButton()]);
+	};
+}
+
+export abstract class APIExportableModule extends ExportableModule {
+	async isLoggedIn?(): Promise<LoginStatus>;
+	abstract selectTitles(): Promise<Title[]>;
+	abstract exportTitle(title: Title): Promise<boolean>;
+	preForm?(parent: HTMLElement): void;
+
+	export = async (): Promise<void> => {
+		const block = DOM.create('div', {
+			class: 'block',
+		});
+		const startButton = DOM.create('button', {
+			class: 'success mr-1',
+			textContent: 'Start',
+			events: {
+				click: async (event): Promise<void> => {
+					event.preventDefault();
+					this.handleExport();
+				},
+			},
+		});
+		if (this.preForm) this.preForm(block);
+		DOM.append(this.service.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
+	};
+
+	handleExport = async (): Promise<void> => {
+		// Check login status
+		let notification: HTMLElement = this.notification('info loading', [
+			DOM.text('Checking login status...'),
+			DOM.space(),
+			this.stopButton,
+		]);
+		if (
+			(this.service.activeModule !== undefined &&
+				(await this.service.activeModule?.isLoggedIn()) !== LoginStatus.SUCCESS) ||
+			(this.isLoggedIn && (await this.isLoggedIn()) !== LoginStatus.SUCCESS)
+		) {
+			this.stopButton.remove();
+			notification.classList.remove('loading');
+			this.notification('danger', [DOM.text('You are not logged in !'), DOM.space(), this.resetButton()]);
+			return;
+		}
+		this.stopButton.remove();
+		notification.classList.remove('loading');
+		DOM.append(notification, DOM.text('logged in !'));
+		if (this.doStop) return this.cancel();
+		// Select local titles
+		notification = this.notification('info loading', 'Loading Titles...');
+		let titles = await this.selectTitles();
+		notification.classList.remove('loading');
+		if (titles.length == 0) {
+			DOM.clear(notification);
+			this.notification('info', [
+				DOM.text(`You don't have any Titles in your list that can be exported.`),
+				DOM.space(),
+				this.resetButton(),
+			]);
+		}
+		let summary = new ImportSummary(); // TODO: ExportSummary
+		summary.total = titles.length;
+		// Export one by one...
+		notification = this.notification('info loading', '');
+		for (let i = 0; !this.doStop && i < summary.total; i++) {
+			DOM.append(
+				notification,
+				DOM.text(`Exporting title ${i + 1} out of ${summary.total}.`),
+				DOM.space(),
+				this.stopButton
+			);
+			const title = titles[i];
+			if (await this.exportTitle(title)) {
+				summary.valid++;
+			}
+		}
+		this.stopButton.remove();
+		notification.classList.remove('loading');
+		if (this.doStop) return this.cancel();
+		// Done
+		this.displaySummary(summary);
+	};
 }

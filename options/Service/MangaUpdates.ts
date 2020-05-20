@@ -1,5 +1,5 @@
 import { Progress } from '../../src/interfaces';
-import { Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
+import { Status, LoginStatus, LoginMethod, ServiceKey } from '../../src/Service/Service';
 import { Runtime, RawResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
@@ -139,7 +139,7 @@ class MangaUpdatesExport extends ExportableModule {
 
 export class MangaUpdates extends Service {
 	name: ServiceName = ServiceName.MangaUpdates;
-	key: string = 'mu';
+	key: ServiceKey = ServiceKey.MangaUpdates;
 
 	activeModule: ActivableModule = new MangaUpdatesActive(this);
 	importModule: APIImportableModule<MangaUpdatesTitle> = new MangaUpdatesImport(this);

@@ -1,5 +1,5 @@
 import { Options } from '../../src/Options';
-import { ServiceName, Status, LoginStatus, LoginMethod } from '../../src/Service/Service';
+import { ServiceName, Status, LoginStatus, LoginMethod, ServiceKey } from '../../src/Service/Service';
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { Mochi } from '../../src/Mochi';
 import { TitleCollection, Title } from '../../src/Title';
@@ -226,7 +226,7 @@ class KitsuExport extends ExportableModule {
 
 export class Kitsu extends Service {
 	name: ServiceName = ServiceName.Kitsu;
-	key: string = 'ku';
+	key: ServiceKey = ServiceKey.Kitsu;
 
 	activeModule: ActivableModule = new KitsuActive(this);
 	importModule: APIImportableModule<KitsuTitle> = new KitsuImport(this);
