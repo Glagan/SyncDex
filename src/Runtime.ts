@@ -3,13 +3,23 @@ export enum MessageAction {
 	openOptions = 'openOptions',
 }
 
+export interface FormDataFile {
+	content: string[];
+	name: string;
+	options?: FilePropertyBag | undefined;
+}
+
+export interface FormDataProxy {
+	[key: string]: string | FormDataFile;
+}
+
 export interface RequestMessage {
 	action: MessageAction.request;
 	method?: 'GET' | 'POST' | 'HEAD' | 'OPTIONS' | 'DELETE' | 'PUT' | 'PATCH';
 	url: string;
 	isJson?: boolean;
 	with?: 'XHR' | 'request';
-	body?: string | null;
+	body?: FormDataProxy | FormData | string | null;
 	headers?: { [key: string]: string };
 	credentials?: RequestCredentials;
 }

@@ -1,5 +1,5 @@
 import { setBrowser } from '../src/Browser';
-import { Message, MessageAction } from '../src/Runtime';
+import { Message, MessageAction, FormDataProxy, FormDataFile } from '../src/Runtime';
 
 console.log('SyncDex :: Background');
 
@@ -37,6 +37,23 @@ browser.runtime.onMessage.addListener(
 			message.with = message.with || 'request';
 			message.method = message.method || 'GET';
 			message.body = message.body || null;
+			let body: FormData | string | undefined;
+			if (typeof message.body === 'object' && message.body !== null) {
+				let data = new FormData();
+				for (const key in message.body as FormDataProxy) {
+					if (message.body.hasOwnProperty(key)) {
+						const element = (message.body as FormDataProxy)[key] as string | FormDataFile;
+						if (typeof element === 'string') {
+							data.append(key, element);
+						} else if (typeof element === 'object') {
+							data.append(key, new File(element.content, element.name, element.options));
+						}
+					}
+				}
+				body = data;
+			} else if (message.body !== null) {
+				body = message.body;
+			}
 			message.credentials = message.credentials || 'same-origin';
 			message.headers = message.headers || {};
 			// XMLHttpRequest or Fetch
@@ -48,7 +65,7 @@ browser.runtime.onMessage.addListener(
 					xhr.setRequestHeader(name, message.headers[key]);
 				}
 				xhr.withCredentials = true;
-				xhr.send(message.body);
+				xhr.send(body);
 				return new Promise((resolve) => {
 					xhr.addEventListener('readystatechange', () => {
 						if (xhr.readyState == 4) {
@@ -69,7 +86,10 @@ browser.runtime.onMessage.addListener(
 				});
 			} else {
 				try {
-					return fetch(message.url, message).then(async (response) => {
+					return fetch(message.url, {
+						...message,
+						body,
+					}).then(async (response) => {
 						return {
 							url: response.url,
 							status: response.status,
