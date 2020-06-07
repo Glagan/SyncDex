@@ -2,7 +2,14 @@ import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { Status, LoginStatus, LoginMethod, ServiceKey } from '../../src/Service/Service';
-import { Service, ActivableModule, ExportableModule, FileImportableModule, FileImportFormat } from './Service';
+import {
+	Service,
+	ActivableModule,
+	FileImportableModule,
+	FileImportFormat,
+	BatchExportableModule,
+	Summary,
+} from './Service';
 import { ServiceName } from '../Manager/Service';
 import { RawResponse, Runtime } from '../../src/Runtime';
 
@@ -178,7 +185,7 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
  * The only two required fields in each manga are manga_mangadb_id and update_on_import set to 1
  * XMLHeader: <?xml version="1.0" encoding="UTF-8" ?>
  */
-class MyAnimeListExport extends ExportableModule {
+class MyAnimeListExport extends BatchExportableModule<string> {
 	node = (document: Document, type: string, value?: string | number): HTMLElement => {
 		const node = document.createElement(type);
 		if (value !== undefined) node.textContent = typeof value === 'number' ? value.toString() : value;
@@ -226,64 +233,37 @@ class MyAnimeListExport extends ExportableModule {
 		return node;
 	};
 
-	export = async (): Promise<void> => {
-		// Load all titles with MyAnimeList ID
-		let notification = this.notification('info loading', `Loading your local Save.`);
-		const titles = await TitleCollection.get();
-		notification.classList.remove('loading');
-		const malTitles = titles.collection.filter((title) => {
+	selectTitles = async (): Promise<Title[]> => {
+		return (await TitleCollection.get()).collection.filter((title) => {
 			return title.services.mal !== undefined && title.services.mal > 0 && title.status !== Status.NONE;
 		});
-		if (malTitles.length == 0) {
-			this.notification('info', [
-				DOM.text(`You don't have any titles with a MyAnimeList ID.`),
-				DOM.space(),
-				this.resetButton(),
-			]);
-			return;
-		}
-		// Create XML file
-		notification = this.notification('info loading', [
-			DOM.text(`Generating XML file with ${malTitles.length} titles.`),
-			DOM.space(),
-			this.stopButton,
-		]);
+	};
+
+	generateBatch = async (titles: Title[]): Promise<string> => {
 		const xmlDocument = document.implementation.createDocument('myanimelist', '', null);
 		const main = xmlDocument.createElement('myanimelist');
 		xmlDocument.appendChild(main);
 		const myinfo = xmlDocument.createElement('myinfo');
 		myinfo.appendChild(this.node(xmlDocument, 'user_export_type', 2));
 		main.appendChild(myinfo);
-		for (const title of malTitles) {
+		for (const title of titles) {
 			main.appendChild(this.createTitle(xmlDocument, title));
 		}
-		this.stopButton.remove();
-		notification.classList.remove('loading');
-		if (this.doStop) return this.cancel();
-		const xmlBody = `<?xml version="1.0" encoding="UTF-8" ?>${new XMLSerializer().serializeToString(xmlDocument)}`;
+		return `<?xml version="1.0" encoding="UTF-8" ?>${new XMLSerializer().serializeToString(xmlDocument)}`;
+	};
+
+	sendBatch = async (batch: string, summary: Summary): Promise<boolean> => {
 		// Get CSRF token
-		notification = this.notification('info loading', [DOM.text(`Get CSRF token`), DOM.space(), this.stopButton]);
 		const importPage = await Runtime.request<RawResponse>({
 			url: `https://myanimelist.net/import.php`,
 			method: 'GET',
 			credentials: 'include',
 		});
-		this.stopButton.remove();
-		notification.classList.remove('loading');
-		if (this.doStop) return this.cancel();
 		const csrfTokenArr = /'csrf_token'\scontent='(.{40})'/.exec(importPage.body);
-		if (!csrfTokenArr) {
-			this.notification('danger', [
-				DOM.text('There was an error while getting a CSRF token, are you logged in ?'),
-				DOM.space(),
-				this.resetButton(),
-			]);
-			return;
-		}
+		if (!csrfTokenArr) return false;
 		// Upload file and look at response
-		notification = this.notification('info loading', `Uploading XML file to MyAnimeList.`);
 		const response = await Runtime.request<RawResponse>({
-			url: `https://myanimelist.net/import.php`,
+			url: `http://localhost/import.php`,
 			method: 'POST',
 			credentials: 'include',
 			body: {
@@ -291,7 +271,7 @@ class MyAnimeListExport extends ExportableModule {
 				subimport: 'Import Data',
 				csrf_token: csrfTokenArr[1],
 				mal: {
-					content: [xmlBody],
+					content: [batch],
 					name: 'mal_export.xml',
 					options: {
 						type: 'text/xml',
@@ -299,24 +279,14 @@ class MyAnimeListExport extends ExportableModule {
 				},
 			},
 		});
-		notification.classList.remove('loading');
+		// Update summary with number of updated titles
 		if (response.status == 200) {
 			const totalArr = /Total\s*Entries\s*Updated:\s*(\d+)/.exec(response.body);
 			const totalUpdated = totalArr ? +totalArr[1] : 0;
-			this.notification('success', [
-				DOM.text(
-					`Done ! ${totalUpdated} (out of ${malTitles.length}) Titles have been exported to MyAnimeList.`
-				),
-				DOM.space(),
-				this.resetButton(),
-			]);
-		} else {
-			this.notification('danger', [
-				DOM.text(`There was an error while exporting to MyAnimeList, maybe retry later.`),
-				DOM.space(),
-				this.resetButton(),
-			]);
+			summary.valid = totalUpdated;
+			return true;
 		}
+		return false;
 	};
 }
 
@@ -326,5 +296,5 @@ export class MyAnimeList extends Service {
 
 	activeModule: ActivableModule = new MyAnimeListActive(this);
 	importModule: FileImportableModule<Document, MyAnimeListTitle> = new MyAnimeListImport(this);
-	exportModule: ExportableModule = new MyAnimeListExport(this);
+	exportModule: BatchExportableModule<string> = new MyAnimeListExport(this);
 }

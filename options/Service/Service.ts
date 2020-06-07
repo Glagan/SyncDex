@@ -15,11 +15,14 @@ export const enum ImportStep {
 	CONVERT_TITLES,
 }
 
-export class ImportSummary {
-	options: number = 0;
-	history: boolean = false;
+export class Summary {
 	total: number = 0;
 	valid: number = 0;
+}
+
+export class ImportSummary extends Summary {
+	options: number = 0;
+	history: boolean = false;
 }
 
 export type FileImportFormat = 'JSON' | 'XML';
@@ -391,6 +394,9 @@ export abstract class SaveModule implements Module {
 	stopButton: HTMLElement;
 	abstract mainHeader(): void;
 	abstract cancel(): void;
+	async isLoggedIn?(): Promise<LoginStatus>;
+	// Display summary and button to go back to Service selection
+	abstract displaySummary(summary: Summary): void;
 
 	constructor(service: Service) {
 		this.service = service;
@@ -405,6 +411,14 @@ export abstract class SaveModule implements Module {
 			},
 		});
 	}
+
+	checkLogin = async (): Promise<boolean> => {
+		return (
+			(this.service.activeModule !== undefined &&
+				(await this.service.activeModule?.isLoggedIn()) === LoginStatus.SUCCESS) ||
+			(this.isLoggedIn !== undefined && (await this.isLoggedIn()) === LoginStatus.SUCCESS)
+		);
+	};
 
 	notification = (type: string, content: string | AppendableElement[]): HTMLElement => {
 		let notification = DOM.create('div', {
@@ -465,38 +479,6 @@ export abstract class SaveModule implements Module {
 		}
 		return 0;
 	};
-
-	/**
-	 * Display summary and button to go back to Service selection
-	 */
-	displaySummary = (summary: ImportSummary): void => {
-		// this.notification('success', `Done Importing ${this.service.name} !`);
-		if (summary.total != summary.valid) {
-			this.service.manager.saveContainer.appendChild(
-				DOM.create('div', {
-					class: 'block notification warning',
-					textContent: `${
-						summary.total - summary.valid
-					} titles were not imported since they had invalid or missing properties.`,
-				})
-			);
-		}
-		let report = `Successfully imported ${summary.valid} titles`;
-		if (summary.options > 0) report += `${summary.history ? ', ' : ' and '} ${summary.options} Options`;
-		if (summary.history) report += ` and History`;
-		report += ` !`;
-		this.notification('success', [
-			DOM.text(report),
-			DOM.space(),
-			DOM.create('button', {
-				class: 'action',
-				textContent: 'Go Back',
-				events: {
-					click: () => this.service.manager.resetSaveContainer(),
-				},
-			}),
-		]);
-	};
 }
 
 export abstract class ImportableModule extends SaveModule {
@@ -534,6 +516,25 @@ export abstract class ImportableModule extends SaveModule {
 			DOM.space(),
 			this.resetButton(),
 		]);
+	};
+
+	displaySummary = (summary: ImportSummary): void => {
+		// this.notification('success', `Done Importing ${this.service.name} !`);
+		if (summary.total != summary.valid) {
+			this.service.manager.saveContainer.appendChild(
+				DOM.create('div', {
+					class: 'block notification warning',
+					textContent: `${
+						summary.total - summary.valid
+					} titles were not imported since they had invalid or missing properties.`,
+				})
+			);
+		}
+		let report = `Successfully imported ${summary.valid} titles`;
+		if (summary.options > 0) report += `${summary.history ? ', ' : ' and '} ${summary.options} Options`;
+		if (summary.history) report += ` and History`;
+		report += ` !`;
+		this.notification('success', [DOM.text(report), DOM.space(), this.resetButton()]);
 	};
 }
 
@@ -668,7 +669,6 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 	state: ImportState = { current: 0, max: 1 };
 	abstract handlePage(): Promise<T[] | false>;
 	abstract convertTitle(titles: TitleCollection, title: T): Promise<boolean>;
-	async isLoggedIn?(): Promise<LoginStatus>;
 
 	getNextPage = (): boolean => {
 		if (this.state.current < this.state.max || this.state.current == 0) {
@@ -703,11 +703,7 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 			this.stopButton,
 		]);
 		// Check login status
-		if (
-			(this.service.activeModule !== undefined &&
-				(await this.service.activeModule?.isLoggedIn()) !== LoginStatus.SUCCESS) ||
-			(this.isLoggedIn && (await this.isLoggedIn()) !== LoginStatus.SUCCESS)
-		) {
+		if (!(await this.checkLogin())) {
 			this.stopButton.remove();
 			progress.classList.remove('loading');
 			this.notification('danger', [DOM.text('You are not logged in !'), DOM.space(), this.resetButton()]);
@@ -772,6 +768,7 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 export abstract class ExportableModule extends SaveModule {
 	exportCard: HTMLElement;
 	abstract export(): Promise<void>;
+	preForm?(parent: HTMLElement): void;
 
 	constructor(service: Service) {
 		super(service);
@@ -799,6 +796,23 @@ export abstract class ExportableModule extends SaveModule {
 
 	cancel = (): void => {
 		this.notification('warning', [DOM.text('You cancelled the export.'), DOM.space(), this.resetButton()]);
+	};
+
+	displaySummary = (summary: Summary): void => {
+		// this.notification('success', `Done Importing ${this.service.name} !`);
+		if (summary.total != summary.valid) {
+			this.service.manager.saveContainer.appendChild(
+				DOM.create('div', {
+					class: 'block notification warning',
+					textContent: `${
+						summary.total - summary.valid
+					} titles were not exported since they had invalid or missing properties.`,
+				})
+			);
+		}
+		let report = `Successfully exported ${summary.valid} titles`;
+		report += ` !`;
+		this.notification('success', [DOM.text(report), DOM.space(), this.resetButton()]);
 	};
 }
 
@@ -836,10 +850,8 @@ export abstract class FileExportableModule extends ExportableModule {
 }
 
 export abstract class APIExportableModule extends ExportableModule {
-	async isLoggedIn?(): Promise<LoginStatus>;
 	abstract selectTitles(): Promise<Title[]>;
 	abstract exportTitle(title: Title): Promise<boolean>;
-	preForm?(parent: HTMLElement): void;
 
 	export = async (): Promise<void> => {
 		const block = DOM.create('div', {
@@ -860,17 +872,14 @@ export abstract class APIExportableModule extends ExportableModule {
 	};
 
 	handleExport = async (): Promise<void> => {
+		this.mainHeader();
 		// Check login status
 		let notification: HTMLElement = this.notification('info loading', [
 			DOM.text('Checking login status...'),
 			DOM.space(),
 			this.stopButton,
 		]);
-		if (
-			(this.service.activeModule !== undefined &&
-				(await this.service.activeModule?.isLoggedIn()) !== LoginStatus.SUCCESS) ||
-			(this.isLoggedIn && (await this.isLoggedIn()) !== LoginStatus.SUCCESS)
-		) {
+		if (!(await this.checkLogin())) {
 			this.stopButton.remove();
 			notification.classList.remove('loading');
 			this.notification('danger', [DOM.text('You are not logged in !'), DOM.space(), this.resetButton()]);
@@ -892,7 +901,7 @@ export abstract class APIExportableModule extends ExportableModule {
 				this.resetButton(),
 			]);
 		}
-		let summary = new ImportSummary(); // TODO: ExportSummary
+		let summary = new Summary();
 		summary.total = titles.length;
 		// Export one by one...
 		notification = this.notification('info loading', '');
@@ -912,6 +921,84 @@ export abstract class APIExportableModule extends ExportableModule {
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		// Done
+		this.displaySummary(summary);
+	};
+}
+
+export abstract class BatchExportableModule<T> extends ExportableModule {
+	abstract selectTitles(): Promise<Title[]>;
+	abstract generateBatch(titles: Title[]): Promise<T>;
+	abstract sendBatch(batch: T, summary: Summary): Promise<boolean>;
+
+	export = async (): Promise<void> => {
+		const block = DOM.create('div', {
+			class: 'block',
+		});
+		const startButton = DOM.create('button', {
+			class: 'success mr-1',
+			textContent: 'Start',
+			events: {
+				click: async (event): Promise<void> => {
+					event.preventDefault();
+					this.handleExport();
+				},
+			},
+		});
+		if (this.preForm) this.preForm(block);
+		DOM.append(this.service.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
+	};
+
+	handleExport = async (): Promise<void> => {
+		this.mainHeader();
+		// Check login status
+		let notification: HTMLElement = this.notification('info loading', [
+			DOM.text('Checking login status...'),
+			DOM.space(),
+			this.stopButton,
+		]);
+		if (!(await this.checkLogin())) {
+			this.stopButton.remove();
+			notification.classList.remove('loading');
+			this.notification('danger', [DOM.text('You are not logged in !'), DOM.space(), this.resetButton()]);
+			return;
+		}
+		this.stopButton.remove();
+		notification.classList.remove('loading');
+		DOM.append(notification, DOM.text('logged in !'));
+		if (this.doStop) return this.cancel();
+		// Select local titles
+		notification = this.notification('info loading', 'Loading Titles...');
+		let titles = await this.selectTitles();
+		notification.classList.remove('loading');
+		if (titles.length == 0) {
+			DOM.clear(notification);
+			this.notification('info', [
+				DOM.text(`You don't have any Titles in your list that can be exported.`),
+				DOM.space(),
+				this.resetButton(),
+			]);
+		}
+		// Generate batch
+		let summary = new Summary();
+		summary.total = titles.length;
+		notification = this.notification('info loading', 'Generating batch');
+		const batch = await this.generateBatch(titles);
+		this.stopButton.remove();
+		notification.classList.remove('loading');
+		if (this.doStop) return this.cancel();
+		// Export batch
+		notification = this.notification('info loading', 'Sending batch');
+		const batchResult = await this.sendBatch(batch, summary);
+		notification.classList.remove('loading');
+		// Done
+		if (batchResult === false) {
+			this.notification('danger', [
+				DOM.text('There was an error while exporting the batch, maybe retry later'),
+				DOM.space(),
+				this.resetButton(),
+			]);
+			return;
+		}
 		this.displaySummary(summary);
 	};
 }

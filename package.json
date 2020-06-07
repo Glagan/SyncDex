@@ -1,0 +1,38 @@
+{
+	"name": "syncdex",
+	"version": "0.0.1",
+	"description": "Automatically update your manga lists on multiple services while reading on MangaDex.",
+	"main": "build.js",
+	"dependencies": {
+		"@rollup/plugin-typescript": "^4.1.2",
+		"minimist": "^1.2.5",
+		"rimraf": "^3.0.2",
+		"rollup": "^2.13.1",
+		"rollup-plugin-terser": "^6.1.0",
+		"terser": "^4.7.0",
+		"web-ext": "^4.2.0"
+	},
+	"devDependencies": {},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Glagan/SyncDex.git"
+	},
+	"keywords": [
+		"manga",
+		"mangadex",
+		"myanimelist",
+		"firefox",
+		"mal",
+		"chrome",
+		"anilist",
+		"kitsu",
+		"animeplanet",
+		"mangaupdates"
+	],
+	"author": "Glagan",
+	"license": "MPL-2.0",
+	"bugs": {
+		"url": "https://github.com/Glagan/SyncDex/issues"
+	},
+	"homepage": "https://github.com/Glagan/SyncDex#readme"
+}
