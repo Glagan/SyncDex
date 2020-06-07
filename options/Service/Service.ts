@@ -721,7 +721,11 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 			DOM.clear(progress);
 			DOM.append(progress, DOM.text(this.getProgress(ImportStep.FETCH_PAGES)), DOM.space(), this.stopButton);
 			let tmp: T[] | false = await this.handlePage();
-			if (tmp === false) return;
+			if (tmp === false) {
+				this.stopButton.remove();
+				progress.classList.remove('loading');
+				return;
+			}
 			titles.push(...tmp);
 		}
 		this.stopButton.remove();

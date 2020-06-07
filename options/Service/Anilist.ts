@@ -4,7 +4,7 @@ import { ServiceName, Status, LoginStatus, LoginMethod, ServiceKey } from '../..
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
-import { Service, ActivableModule, ExportableModule, APIImportableModule, ImportStep } from './Service';
+import { Service, ActivableModule, APIImportableModule, ImportStep, APIExportableModule } from './Service';
 
 interface ViewerResponse {
 	data: {
@@ -23,11 +23,19 @@ enum AnilistStatus {
 	'REPEATING' = 'REPEATING',
 }
 
+interface AnilistDate {
+	day: number | null;
+	month: number | null;
+	year: number | null;
+}
+
 interface AnilistTitle {
 	mediaId: number;
 	status: AnilistStatus;
 	progress: number;
 	progressVolumes: number;
+	startedAt: AnilistDate;
+	completedAt: AnilistDate;
 }
 
 interface AnilistList {
@@ -53,7 +61,7 @@ class AnilistActive extends ActivableModule {
 		if (!Options.tokens.anilistToken === undefined) return LoginStatus.MISSING_TOKEN;
 		const response = await Runtime.request<JSONResponse>({
 			method: 'POST',
-			url: 'https://graphql.anilist.co',
+			url: Anilist.APIUrl,
 			isJson: true,
 			headers: {
 				Authorization: `Bearer ${Options.tokens.anilistToken}`,
@@ -94,6 +102,16 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 						status
 						progress
 						progressVolumes
+						startedAt {
+							year
+							month
+							day
+						}
+						completedAt {
+							year
+							month
+							day
+						}
 					}
 				}
 			}
@@ -114,14 +132,10 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 	handlePage = async (): Promise<AnilistTitle[] | false> => {
 		// Find required username
 		let response = await Runtime.request<JSONResponse>({
-			url: 'https://graphql.anilist.co/',
+			url: Anilist.APIUrl,
 			method: 'POST',
 			isJson: true,
-			headers: {
-				Accept: 'application/json',
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${Options.tokens.anilistToken}`,
-			},
+			headers: Anilist.APIHeaders(),
 			body: JSON.stringify({
 				query: AnilistImport.viewerQuery,
 			}),
@@ -136,7 +150,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 		const username = (response.body as ViewerResponse).data.Viewer.name;
 		// Get list of *all* titles
 		response = await Runtime.request<JSONResponse>({
-			url: 'https://graphql.anilist.co/',
+			url: Anilist.APIUrl,
 			method: 'POST',
 			isJson: true,
 			headers: {
@@ -167,6 +181,8 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 					progress: entry.progress,
 					progressVolumes: entry.progressVolumes,
 					status: entry.status,
+					startedAt: entry.startedAt,
+					completedAt: entry.completedAt,
 				});
 			}
 		}
@@ -190,6 +206,13 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 		return Status.NONE;
 	};
 
+	dateToNumber = (date: AnilistDate): number | undefined => {
+		if (date.day !== null && date.month !== null && date.year !== null) {
+			return new Date(date.year, date.month, date.day).getTime();
+		}
+		return undefined;
+	};
+
 	convertTitle = async (titles: TitleCollection, title: AnilistTitle): Promise<boolean> => {
 		const connections = await Mochi.find(title.mediaId, 'Anilist');
 		if (connections !== undefined && connections['MangaDex'] !== undefined) {
@@ -202,6 +225,8 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 					},
 					status: this.toStatus(title.status),
 					chapters: [],
+					start: this.dateToNumber(title.startedAt),
+					end: this.dateToNumber(title.completedAt),
 				})
 			);
 			return true;
@@ -210,20 +235,104 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 	};
 }
 
-class AnilistExport extends ExportableModule {
-	export = async (): Promise<void> => {
-		// 1: Load all titles with Anilist ID
-		// 2: Update entries one by one
+class AnilistExport extends APIExportableModule {
+	// Fields can have missing values and will be ignored
+	static singleUpdateQuery = `
+		mutation ($mediaId: Int, $status: MediaListStatus, $score: Float, $progress: Int, $progressVolumes: Int, $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput) {
+			SaveMediaListEntry (mediaId: $mediaId, status: $status, score: $score, progress: $progress, progressVolumes: $progressVolumes, startedAt: $startedAt, completedAt: $completedAt) {
+				mediaId
+				status
+				score
+				progress
+				progressVolumes
+				startedAt {
+					year
+					month
+					day
+				}
+				completedAt {
+					year
+					month
+					day
+				}
+			}
+		}`;
+
+	fromStatus = (status: Status): string => {
+		switch (status) {
+			case Status.READING:
+				return 'CURRENT';
+			case Status.COMPLETED:
+				return 'COMPLETED';
+			case Status.PLAN_TO_READ:
+				return 'PLANNING';
+			case Status.DROPPED:
+				return 'DROPPED';
+			case Status.PAUSED:
+				return 'PAUSED';
+			case Status.REREADING:
+				return 'REPEATING';
+		}
+		return 'INVALID';
+	};
+
+	selectTitles = async (): Promise<Title[]> => {
+		return (await TitleCollection.get()).collection.filter((title) => {
+			return title.services.al !== undefined && title.services.al > 0 && title.status !== Status.NONE;
+		});
+	};
+
+	createTitle = (title: Title): Partial<AnilistTitle & { score: number | null }> => {
+		let values: Partial<AnilistTitle & { score: number | null }> = {
+			mediaId: title.services.al as number,
+			status: this.fromStatus(title.status) as AnilistStatus,
+			progress: title.progress.chapter,
+			progressVolumes: title.progress.volume || 0,
+		};
+		if (title.score !== undefined && title.score > 0) values.score = title.score;
+		if (title.start !== undefined) {
+			const date = new Date(title.start);
+			values.startedAt = { day: date.getDate(), month: date.getMonth() + 1, year: date.getUTCFullYear() };
+		}
+		if (title.end !== undefined) {
+			const date = new Date(title.end);
+			values.completedAt = { day: date.getDate(), month: date.getMonth() + 1, year: date.getUTCFullYear() };
+		}
+		return values;
+	};
+
+	exportTitle = async (title: Title): Promise<boolean> => {
+		if (this.fromStatus(title.status) !== 'INVALID') {
+			const response = await Runtime.request<JSONResponse>({
+				url: Anilist.APIUrl,
+				method: 'POST',
+				headers: Anilist.APIHeaders(),
+				body: JSON.stringify({
+					query: AnilistExport.singleUpdateQuery,
+					variables: this.createTitle(title),
+				}),
+			});
+			return response.status >= 200 && response.status < 400;
+		}
+		return false;
 	};
 }
 
 export class Anilist extends Service {
 	name: ServiceName = ServiceName.Anilist;
 	key: ServiceKey = ServiceKey.Anilist;
+	static APIUrl: string = 'https://graphql.anilist.co';
+	static APIHeaders = (): {} => {
+		return {
+			'Content-Type': 'application/json',
+			Accept: 'application/json',
+			Authorization: `Bearer ${Options.tokens.anilistToken}`,
+		};
+	};
 
 	activeModule: ActivableModule = new AnilistActive(this);
 	importModule: APIImportableModule<AnilistTitle> = new AnilistImport(this);
-	exportModule: ExportableModule = new AnilistExport(this);
+	exportModule: APIExportableModule = new AnilistExport(this);
 
 	createTitle = (): HTMLElement => {
 		return DOM.create('span', {
