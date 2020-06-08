@@ -1,25 +1,22 @@
-import { Service, Status, ServiceName, LoginStatus, LoginMethod, ServiceKey } from './Service';
+import { Service, Status, ServiceName, LoginStatus, ServiceKey } from './Service';
 import { Runtime, RawResponse } from '../Runtime';
 
-export class MyAnimeList extends Service {
+export const enum MyAnimeListStatus {
+	READING = 1,
+	COMPLETED = 2,
+	PAUSED = 3,
+	DROPPED = 4,
+	PLAN_TO_READ = 6,
+	NONE = -1,
+}
+
+export class MyAnimeList extends Service<MyAnimeListStatus> {
 	key: ServiceKey = ServiceKey.MyAnimeList;
 	name: ServiceName = ServiceName.MyAnimeList;
-	status: { [key in Status]: number } = {
-		[Status.NONE]: -1,
-		[Status.WONT_READ]: -1,
-		[Status.REREADING]: -1,
-		[Status.READING]: 1,
-		[Status.COMPLETED]: 2,
-		[Status.PAUSED]: 3,
-		[Status.DROPPED]: 4,
-		[Status.PLAN_TO_READ]: 6,
-	};
-	loginUrl: string = 'https://myanimelist.net/login.php';
-	loginMethod = LoginMethod.EXTERNAL;
 
 	loggedIn = async (): Promise<LoginStatus> => {
 		const response = await Runtime.request<RawResponse>({
-			url: this.loginUrl,
+			url: 'https://myanimelist.net/login.php',
 			method: 'GET',
 			credentials: 'include',
 		});
@@ -31,5 +28,37 @@ export class MyAnimeList extends Service {
 		if (response.status >= 200 && response.status < 400 && response.body && response.url.indexOf('login.php') < 0)
 			return LoginStatus.SUCCESS;
 		return LoginStatus.FAIL;
+	};
+
+	toStatus = (status: MyAnimeListStatus): Status => {
+		switch (status) {
+			case MyAnimeListStatus.READING:
+				return Status.READING;
+			case MyAnimeListStatus.COMPLETED:
+				return Status.COMPLETED;
+			case MyAnimeListStatus.PAUSED:
+				return Status.PAUSED;
+			case MyAnimeListStatus.DROPPED:
+				return Status.DROPPED;
+			case MyAnimeListStatus.PLAN_TO_READ:
+				return Status.PLAN_TO_READ;
+		}
+		return Status.NONE;
+	};
+
+	fromStatus = (status: Status): MyAnimeListStatus => {
+		switch (status) {
+			case Status.READING:
+				return MyAnimeListStatus.READING;
+			case Status.COMPLETED:
+				return MyAnimeListStatus.COMPLETED;
+			case Status.PAUSED:
+				return MyAnimeListStatus.PAUSED;
+			case Status.DROPPED:
+				return MyAnimeListStatus.DROPPED;
+			case Status.PLAN_TO_READ:
+				return MyAnimeListStatus.PLAN_TO_READ;
+		}
+		return MyAnimeListStatus.NONE;
 	};
 }

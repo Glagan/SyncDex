@@ -25,11 +25,6 @@ export const enum Status {
 	WONT_READ,
 }
 
-export const enum LoginMethod {
-	EXTERNAL,
-	FORM,
-}
-
 export const enum LoginStatus {
 	MISSING_TOKEN,
 	SUCCESS,
@@ -38,13 +33,10 @@ export const enum LoginStatus {
 	BAD_REQUEST,
 }
 
-export abstract class Service {
+export abstract class Service<T> {
 	abstract key: ServiceKey;
 	abstract name: ServiceName;
 	abstract loggedIn(): Promise<LoginStatus>;
-	abstract status: { [key in Status]: number | string };
-	abstract loginMethod: LoginMethod;
-	abstract loginUrl: string;
-	login?: (username: string, password: string) => Promise<LoginStatus> = undefined;
-	logout?: () => Promise<void> = undefined;
+	abstract toStatus(status: T): Status;
+	abstract fromStatus(status: Status): T;
 }

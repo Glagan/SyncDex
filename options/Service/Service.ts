@@ -1,9 +1,14 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceName, ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
-import { LoginStatus, LoginMethod } from '../../src/Service/Service';
+import { LoginStatus, Service as SyncDexService } from '../../src/Service/Service';
 import { TitleCollection, Title } from '../../src/Title';
 import { LocalStorage } from '../../src/Storage';
+
+export const enum LoginMethod {
+	EXTERNAL,
+	FORM,
+}
 
 export interface ImportState {
 	current: number;

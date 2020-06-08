@@ -1,21 +1,18 @@
-import { Service, Status, ServiceName, LoginStatus, LoginMethod, ServiceKey } from './Service';
+import { Service, Status, ServiceName, LoginStatus, ServiceKey } from './Service';
 import { Runtime, RawResponse } from '../Runtime';
 
-export class MangaUpdates extends Service {
+export const enum MangaUpdatesStatus {
+	READING = 0,
+	PLAN_TO_READ = 1,
+	COMPLETED = 2,
+	DROPPED = 3,
+	PAUSED = 4,
+	NONE = -1,
+}
+
+export class MangaUpdates extends Service<MangaUpdatesStatus> {
 	key: ServiceKey = ServiceKey.MangaUpdates;
 	name: ServiceName = ServiceName.MangaUpdates;
-	status: { [key in Status]: number } = {
-		[Status.NONE]: -1,
-		[Status.REREADING]: -1,
-		[Status.WONT_READ]: -1,
-		[Status.READING]: 0, // "read"
-		[Status.PLAN_TO_READ]: 1, // "wish"
-		[Status.COMPLETED]: 2, // "complete"
-		[Status.DROPPED]: 3, // "unfinished"
-		[Status.PAUSED]: 4, // "hold"
-	};
-	loginUrl: string = 'https://www.mangaupdates.com/login.html';
-	loginMethod = LoginMethod.EXTERNAL;
 
 	loggedIn = async (): Promise<LoginStatus> => {
 		const response = await Runtime.request<RawResponse>({
@@ -35,5 +32,37 @@ export class MangaUpdates extends Service {
 		)
 			return LoginStatus.SUCCESS;
 		return LoginStatus.FAIL;
+	};
+
+	toStatus = (status: MangaUpdatesStatus): Status => {
+		switch (status) {
+			case MangaUpdatesStatus.READING:
+				return Status.READING;
+			case MangaUpdatesStatus.COMPLETED:
+				return Status.COMPLETED;
+			case MangaUpdatesStatus.PAUSED:
+				return Status.PAUSED;
+			case MangaUpdatesStatus.DROPPED:
+				return Status.DROPPED;
+			case MangaUpdatesStatus.PLAN_TO_READ:
+				return Status.PLAN_TO_READ;
+		}
+		return Status.NONE;
+	};
+
+	fromStatus = (status: Status): MangaUpdatesStatus => {
+		switch (status) {
+			case Status.READING:
+				return MangaUpdatesStatus.READING;
+			case Status.COMPLETED:
+				return MangaUpdatesStatus.COMPLETED;
+			case Status.PAUSED:
+				return MangaUpdatesStatus.PAUSED;
+			case Status.DROPPED:
+				return MangaUpdatesStatus.DROPPED;
+			case Status.PLAN_TO_READ:
+				return MangaUpdatesStatus.PLAN_TO_READ;
+		}
+		return MangaUpdatesStatus.NONE;
 	};
 }

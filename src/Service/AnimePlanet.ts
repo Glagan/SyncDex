@@ -1,21 +1,19 @@
-import { Service, Status, ServiceName, LoginStatus, LoginMethod, ServiceKey } from './Service';
+import { Service, Status, ServiceName, LoginStatus, ServiceKey } from './Service';
 import { Runtime, RawResponse } from '../Runtime';
 
-export class AnimePlanet extends Service {
+export const enum AnimePlanetStatus {
+	COMPLETED = 1,
+	READING = 2,
+	DROPPED = 3,
+	PLAN_TO_READ = 4,
+	PAUSED = 5,
+	WONT_READ = 6,
+	NONE = -1,
+}
+
+export class AnimePlanet extends Service<AnimePlanetStatus> {
 	key: ServiceKey = ServiceKey.AnimePlanet;
 	name: ServiceName = ServiceName.AnimePlanet;
-	status: { [key in Status]: number } = {
-		[Status.NONE]: -1,
-		[Status.REREADING]: -1,
-		[Status.COMPLETED]: 1,
-		[Status.READING]: 2,
-		[Status.DROPPED]: 3,
-		[Status.PLAN_TO_READ]: 4,
-		[Status.PAUSED]: 5,
-		[Status.WONT_READ]: 6,
-	};
-	loginUrl = 'https://www.anime-planet.com/login.php';
-	loginMethod = LoginMethod.EXTERNAL;
 
 	loggedIn = async (): Promise<LoginStatus> => {
 		const response = await Runtime.request<RawResponse>({
@@ -29,5 +27,41 @@ export class AnimePlanet extends Service {
 		}
 		if (response.body && response.body.indexOf(`"/login.php"`) < 0) return LoginStatus.SUCCESS;
 		return LoginStatus.FAIL;
+	};
+
+	toStatus = (status: AnimePlanetStatus): Status => {
+		switch (status) {
+			case AnimePlanetStatus.COMPLETED:
+				return Status.COMPLETED;
+			case AnimePlanetStatus.READING:
+				return Status.READING;
+			case AnimePlanetStatus.DROPPED:
+				return Status.DROPPED;
+			case AnimePlanetStatus.PLAN_TO_READ:
+				return Status.PLAN_TO_READ;
+			case AnimePlanetStatus.PAUSED:
+				return Status.PAUSED;
+			case AnimePlanetStatus.WONT_READ:
+				return Status.WONT_READ;
+		}
+		return Status.NONE;
+	};
+
+	fromStatus = (status: Status): AnimePlanetStatus => {
+		switch (status) {
+			case Status.COMPLETED:
+				return AnimePlanetStatus.COMPLETED;
+			case Status.READING:
+				return AnimePlanetStatus.READING;
+			case Status.DROPPED:
+				return AnimePlanetStatus.DROPPED;
+			case Status.PLAN_TO_READ:
+				return AnimePlanetStatus.PLAN_TO_READ;
+			case Status.PAUSED:
+				return AnimePlanetStatus.PAUSED;
+			case Status.WONT_READ:
+				return AnimePlanetStatus.WONT_READ;
+		}
+		return AnimePlanetStatus.NONE;
 	};
 }
