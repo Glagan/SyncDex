@@ -57,7 +57,7 @@ export class Title implements FullTitle {
 	new: boolean;
 	id: number;
 	services: { [key in ServiceKey]?: number | string } = {};
-	status: Status = 0;
+	status: Status = Status.NONE;
 	score: number = -1;
 	progress: Progress = { chapter: -1, volume: 0 };
 	chapters: number[] = [];
@@ -199,7 +199,6 @@ export class Title implements FullTitle {
 }
 
 export class TitleCollection {
-	private counter = 0;
 	collection: Title[] = [];
 
 	constructor(titles: Title[] = []) {
