@@ -1,10 +1,18 @@
 import { DOM } from '../../src/DOM';
 import { Options } from '../../src/Options';
-import { ServiceName, Status, LoginStatus, LoginMethod, ServiceKey } from '../../src/Service/Service';
+import { Status, LoginStatus } from '../../src/Service/Service';
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
-import { Service, ActivableModule, APIImportableModule, ImportStep, APIExportableModule } from './Service';
+import {
+	ManageableService,
+	ActivableModule,
+	APIImportableModule,
+	ImportStep,
+	APIExportableModule,
+	LoginMethod,
+} from './Service';
+import { Anilist as AnilistService } from '../../src/Service/Anilist';
 
 interface ViewerResponse {
 	data: {
@@ -61,7 +69,7 @@ class AnilistActive extends ActivableModule {
 		if (!Options.tokens.anilistToken === undefined) return LoginStatus.MISSING_TOKEN;
 		const response = await Runtime.request<JSONResponse>({
 			method: 'POST',
-			url: Anilist.APIUrl,
+			url: AnilistService.APIUrl,
 			isJson: true,
 			headers: {
 				Authorization: `Bearer ${Options.tokens.anilistToken}`,
@@ -132,10 +140,10 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 	handlePage = async (): Promise<AnilistTitle[] | false> => {
 		// Find required username
 		let response = await Runtime.request<JSONResponse>({
-			url: Anilist.APIUrl,
+			url: AnilistService.APIUrl,
 			method: 'POST',
 			isJson: true,
-			headers: Anilist.APIHeaders(),
+			headers: AnilistService.LoggedHeaders(),
 			body: JSON.stringify({
 				query: AnilistImport.viewerQuery,
 			}),
@@ -150,7 +158,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 		const username = (response.body as ViewerResponse).data.Viewer.name;
 		// Get list of *all* titles
 		response = await Runtime.request<JSONResponse>({
-			url: Anilist.APIUrl,
+			url: AnilistService.APIUrl,
 			method: 'POST',
 			isJson: true,
 			headers: {
@@ -304,9 +312,9 @@ class AnilistExport extends APIExportableModule {
 	exportTitle = async (title: Title): Promise<boolean> => {
 		if (this.fromStatus(title.status) !== 'INVALID') {
 			const response = await Runtime.request<JSONResponse>({
-				url: Anilist.APIUrl,
+				url: AnilistService.APIUrl,
 				method: 'POST',
-				headers: Anilist.APIHeaders(),
+				headers: AnilistService.LoggedHeaders(),
 				body: JSON.stringify({
 					query: AnilistExport.singleUpdateQuery,
 					variables: this.createTitle(title),
@@ -318,25 +326,15 @@ class AnilistExport extends APIExportableModule {
 	};
 }
 
-export class Anilist extends Service {
-	name: ServiceName = ServiceName.Anilist;
-	key: ServiceKey = ServiceKey.Anilist;
-	static APIUrl: string = 'https://graphql.anilist.co';
-	static APIHeaders = (): {} => {
-		return {
-			'Content-Type': 'application/json',
-			Accept: 'application/json',
-			Authorization: `Bearer ${Options.tokens.anilistToken}`,
-		};
-	};
-
+export class Anilist extends ManageableService {
+	service: AnilistService = new AnilistService();
 	activeModule: ActivableModule = new AnilistActive(this);
 	importModule: APIImportableModule<AnilistTitle> = new AnilistImport(this);
 	exportModule: APIExportableModule = new AnilistExport(this);
 
 	createTitle = (): HTMLElement => {
 		return DOM.create('span', {
-			class: this.name.toLowerCase(),
+			class: this.service.name.toLowerCase(),
 			textContent: 'Ani',
 			childs: [
 				DOM.create('span', {

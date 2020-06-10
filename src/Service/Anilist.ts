@@ -19,10 +19,11 @@ export const enum AnilistStatus {
 	NONE = 'NONE',
 }
 
-export class Anilist extends Service<AnilistStatus> {
+export class Anilist extends Service {
 	key: ServiceKey = ServiceKey.Anilist;
 	name: ServiceName = ServiceName.Anilist;
-	static APIUrl: string = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
+	// static APIUrl: string = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
+	static APIUrl: string = 'https://graphql.anilist.co';
 	static LoginQuery: string = `query { Viewer { id } }`;
 	static LoggedHeaders = (): AnilistHeaders => {
 		return {

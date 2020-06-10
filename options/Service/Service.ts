@@ -1,7 +1,7 @@
 import { DOM, AppendableElement } from '../../src/DOM';
-import { ServiceName, ServiceManager } from '../Manager/Service';
+import { ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
-import { LoginStatus, Service as SyncDexService } from '../../src/Service/Service';
+import { LoginStatus, Service } from '../../src/Service/Service';
 import { TitleCollection, Title } from '../../src/Title';
 import { LocalStorage } from '../../src/Storage';
 
@@ -146,13 +146,12 @@ export class FileInput extends Row {
 }
 
 interface Module {
-	service: Service;
+	manager: ManageableService;
 }
 
-export abstract class Service {
+export abstract class ManageableService {
 	manager: ServiceManager;
-	abstract name: ServiceName;
-	abstract key: string;
+	abstract service: Service;
 	abstract activeModule?: ActivableModule;
 	abstract importModule?: ImportableModule;
 	abstract exportModule?: ExportableModule;
@@ -163,13 +162,13 @@ export abstract class Service {
 
 	createBlock(): HTMLElement {
 		let node = DOM.create('div', {
-			class: `service ${this.name.toLowerCase()}`,
+			class: `service ${this.service.name.toLowerCase()}`,
 		});
 		const title = DOM.create('span', {
 			class: 'title',
 			childs: [
 				DOM.create('img', {
-					attributes: { src: `/icons/${this.key}.png` },
+					attributes: { src: `/icons/${this.service.key}.png` },
 				}),
 				DOM.space(),
 				this.createTitle(),
@@ -180,14 +179,14 @@ export abstract class Service {
 
 	createTitle(): HTMLElement {
 		return DOM.create('span', {
-			class: this.name.toLowerCase(),
-			textContent: this.name,
+			class: this.service.name.toLowerCase(),
+			textContent: this.service.name,
 		});
 	}
 }
 
 export abstract class ActivableModule {
-	service: Service;
+	manager: ManageableService;
 	activable: boolean = true;
 	loginMethod?: LoginMethod;
 	loginUrl?: string;
@@ -197,14 +196,13 @@ export abstract class ActivableModule {
 	loginButton: HTMLAnchorElement;
 	loginForm?: HTMLFormElement;
 	removeButton: HTMLElement;
-	abstract isLoggedIn(): Promise<LoginStatus>;
 	abstract login?(username: string, password: string): Promise<LoginStatus>;
 	abstract logout?(): Promise<void>;
 
-	constructor(service: Service) {
-		this.service = service;
+	constructor(service: ManageableService) {
+		this.manager = service;
 		// Create
-		this.activeCard = this.service.createBlock();
+		this.activeCard = this.manager.createBlock();
 		this.activeCard.classList.add('loading');
 		const buttons = DOM.create('div', { class: 'button-group' });
 		this.mainButton = DOM.create('button', {
@@ -243,17 +241,17 @@ export abstract class ActivableModule {
 		// Bind
 		this.mainButton.addEventListener('click', () => {
 			// Make service the first in the list
-			const index = Options.services.indexOf(this.service.name as any);
-			this.service.manager.services.splice(0, 0, this.service.manager.services.splice(index, 1)[0]);
+			const index = Options.services.indexOf(this.manager.service.name);
+			this.manager.manager.managers.splice(0, 0, this.manager.manager.managers.splice(index, 1)[0]);
 			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
-			Options.mainService = this.service.name as any;
+			Options.mainService = this.manager.service.name;
 			Options.save();
 			// Remove main button and add the main button to the previous main
-			if (this.service.manager.mainService) {
-				this.service.manager.mainService.activeModule?.activeCard.classList.remove('main');
-				this.service.manager.mainService.activeModule?.mainButton.classList.remove('hidden');
+			if (this.manager.manager.mainService) {
+				this.manager.manager.mainService.activeModule?.activeCard.classList.remove('main');
+				this.manager.manager.mainService.activeModule?.mainButton.classList.remove('hidden');
 			}
-			this.service.manager.mainService = this.service;
+			this.manager.manager.mainService = this.manager;
 			this.mainButton.classList.add('hidden');
 			this.activeCard.classList.add('main');
 			// Move the card to the first position
@@ -273,24 +271,22 @@ export abstract class ActivableModule {
 					this.loginForm.remove();
 					this.loginForm = undefined;
 				}
-				if (this.isLoggedIn) {
-					// If it's an external login, we don't have the tokens saved outside of this page
-					if (this.loginMethod == LoginMethod.EXTERNAL) {
-						await Options.reloadTokens();
-					}
-					const status = await this.isLoggedIn();
-					this.updateStatus(status);
+				// If it's an external login, we don't have the tokens saved outside of this page
+				if (this.loginMethod == LoginMethod.EXTERNAL) {
+					await Options.reloadTokens();
 				}
+				const status = await this.manager.service.loggedIn();
+				this.updateStatus(status);
 				busy = false;
 			}
 		});
 		this.removeButton.addEventListener('click', async () => {
 			// Remove service from Service list and assign new main if possible
-			const index = Options.services.indexOf(this.service.name as any);
+			const index = Options.services.indexOf(this.manager.service.name);
 			if (index > -1) {
-				this.service.manager.services.splice(index, 1);
+				this.manager.manager.managers.splice(index, 1);
 				Options.services.splice(index, 1);
-				if (Options.mainService == this.service.name) {
+				if (Options.mainService == this.manager.service.name) {
 					Options.mainService = Options.services.length > 0 ? Options.services[0] : undefined;
 				}
 			}
@@ -302,19 +298,19 @@ export abstract class ActivableModule {
 			Options.save();
 			// Remove service block and add the option back to the selector
 			this.activeCard.remove();
-			this.service.manager.addSelectorRow(this.service.name);
+			this.manager.manager.addSelectorRow(this.manager.service.name);
 			// Set the new main
 			if (Options.mainService) {
-				const mainService = this.service.manager.services.find(
-					(service: Service) => service.name == Options.mainService
+				const mainService = this.manager.manager.managers.find(
+					(manager: ManageableService) => manager.service.name == Options.mainService
 				);
 				if (mainService) {
 					mainService.activeModule?.activeCard.classList.add('main');
 					mainService.activeModule?.mainButton.classList.add('hidden');
-					this.service.manager.mainService = mainService;
+					this.manager.manager.mainService = mainService;
 				}
 			} else {
-				this.service.manager.mainService = undefined;
+				this.manager.manager.mainService = undefined;
 			}
 		});
 		this.loginButton.addEventListener('click', (event) => {
@@ -388,23 +384,22 @@ export abstract class ActivableModule {
 			this.activeCard.classList.add('inactive');
 			this.loginButton.classList.remove('hidden');
 		}
-		this.service.manager.updateServiceStatus(this.service.name, status);
+		this.manager.manager.updateServiceStatus(this.manager.service.name, status);
 	};
 }
 
 export abstract class SaveModule implements Module {
 	doStop: boolean = false;
-	service: Service;
+	manager: ManageableService;
 	abstract saveModuleHeader(): void;
 	stopButton: HTMLElement;
 	abstract mainHeader(): void;
 	abstract cancel(): void;
-	async isLoggedIn?(): Promise<LoginStatus>;
 	// Display summary and button to go back to Service selection
 	abstract displaySummary(summary: Summary): void;
 
-	constructor(service: Service) {
-		this.service = service;
+	constructor(service: ManageableService) {
+		this.manager = service;
 		this.stopButton = DOM.create('button', {
 			class: 'danger',
 			textContent: 'Cancel',
@@ -418,11 +413,7 @@ export abstract class SaveModule implements Module {
 	}
 
 	checkLogin = async (): Promise<boolean> => {
-		return (
-			(this.service.activeModule !== undefined &&
-				(await this.service.activeModule?.isLoggedIn()) === LoginStatus.SUCCESS) ||
-			(this.isLoggedIn !== undefined && (await this.isLoggedIn()) === LoginStatus.SUCCESS)
-		);
+		return (await this.manager.service.loggedIn()) === LoginStatus.SUCCESS;
 	};
 
 	notification = (type: string, content: string | AppendableElement[]): HTMLElement => {
@@ -434,7 +425,7 @@ export abstract class SaveModule implements Module {
 		} else {
 			DOM.append(notification, ...content);
 		}
-		this.service.manager.saveContainer.appendChild(notification);
+		this.manager.manager.saveContainer.appendChild(notification);
 		return notification;
 	};
 
@@ -443,7 +434,7 @@ export abstract class SaveModule implements Module {
 			class: type,
 			textContent: content,
 			events: {
-				click: () => this.service.manager.resetSaveContainer(),
+				click: () => this.manager.manager.resetSaveContainer(),
 			},
 		});
 	};
@@ -491,9 +482,9 @@ export abstract class ImportableModule extends SaveModule {
 	abstract import(): Promise<void>;
 	preForm?(): void;
 
-	constructor(service: Service) {
+	constructor(service: ManageableService) {
 		super(service);
-		this.importCard = this.service.createBlock();
+		this.importCard = this.manager.createBlock();
 		this.importCard.addEventListener('click', () => {
 			this.mainHeader();
 			this.import();
@@ -501,17 +492,17 @@ export abstract class ImportableModule extends SaveModule {
 	}
 
 	saveModuleHeader = (): void => {
-		this.service.manager.fullHeader([DOM.icon('download'), DOM.text(' Import')]);
+		this.manager.manager.fullHeader([DOM.icon('download'), DOM.text(' Import')]);
 	};
 
 	mainHeader = (): void => {
-		this.service.manager.clearSaveContainer();
+		this.manager.manager.clearSaveContainer();
 		this.saveModuleHeader();
-		this.service.manager.header([
-			DOM.create('img', { attributes: { src: `/icons/${this.service.key}.png` } }),
+		this.manager.manager.header([
+			DOM.create('img', { attributes: { src: `/icons/${this.manager.service.key}.png` } }),
 			DOM.space(),
 			DOM.text('Importing from '),
-			this.service.createTitle(),
+			this.manager.createTitle(),
 		]);
 	};
 
@@ -526,7 +517,7 @@ export abstract class ImportableModule extends SaveModule {
 	displaySummary = (summary: ImportSummary): void => {
 		// this.notification('success', `Done Importing ${this.service.name} !`);
 		if (summary.total != summary.valid) {
-			this.service.manager.saveContainer.appendChild(
+			this.manager.manager.saveContainer.appendChild(
 				DOM.create('div', {
 					class: 'block notification warning',
 					textContent: `${
@@ -551,11 +542,11 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 	abstract handleHistory?(save: T | Document, titles: TitleCollection, summary: ImportSummary): number[];
 
 	inputMessage = (): string => {
-		return `${this.service.name} save file`;
+		return `${this.manager.service.name} save file`;
 	};
 
 	import = async (): Promise<void> => {
-		this.notification('success', `Select your ${this.service.name} save file.`);
+		this.notification('success', `Select your ${this.manager.service.name} save file.`);
 		let notification: HTMLElement | undefined = undefined;
 		const form = this.createForm(
 			[
@@ -600,11 +591,11 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 			}
 		);
 		if (this.preForm) this.preForm();
-		DOM.append(this.service.manager.saveContainer, form);
+		DOM.append(this.manager.manager.saveContainer, form);
 	};
 
 	handleImport = async (data: T | Document, merge: boolean): Promise<void> => {
-		this.service.manager.clearSaveContainer();
+		this.manager.manager.clearSaveContainer();
 		this.mainHeader();
 		let summary = new ImportSummary();
 		// Import everything first
@@ -662,7 +653,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		}
 		if (this.handleOptions) {
 			await Options.save();
-			this.service.manager.reloadOptions(); // TODO: Reload
+			this.manager.manager.reloadOptions(); // TODO: Reload
 		}
 		progress.remove();
 		this.displaySummary(summary);
@@ -697,7 +688,7 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 			this.handleImport(form.merge.checked);
 		});
 		if (this.preForm) this.preForm();
-		DOM.append(this.service.manager.saveContainer, form);
+		DOM.append(this.manager.manager.saveContainer, form);
 	};
 
 	handleImport = async (merge: boolean): Promise<void> => {
@@ -779,9 +770,9 @@ export abstract class ExportableModule extends SaveModule {
 	abstract export(): Promise<void>;
 	preForm?(parent: HTMLElement): void;
 
-	constructor(service: Service) {
+	constructor(service: ManageableService) {
 		super(service);
-		this.exportCard = this.service.createBlock();
+		this.exportCard = this.manager.createBlock();
 		this.exportCard.addEventListener('click', () => {
 			this.mainHeader();
 			this.export();
@@ -789,17 +780,17 @@ export abstract class ExportableModule extends SaveModule {
 	}
 
 	saveModuleHeader = (): void => {
-		this.service.manager.fullHeader([DOM.icon('upload'), DOM.text(' Export')]);
+		this.manager.manager.fullHeader([DOM.icon('upload'), DOM.text(' Export')]);
 	};
 
 	mainHeader = (): void => {
-		this.service.manager.clearSaveContainer();
+		this.manager.manager.clearSaveContainer();
 		this.saveModuleHeader();
-		this.service.manager.header([
-			DOM.create('img', { attributes: { src: `/icons/${this.service.key}.png` } }),
+		this.manager.manager.header([
+			DOM.create('img', { attributes: { src: `/icons/${this.manager.service.key}.png` } }),
 			DOM.space(),
 			DOM.text('Exporting to '),
-			this.service.createTitle(),
+			this.manager.createTitle(),
 		]);
 	};
 
@@ -810,7 +801,7 @@ export abstract class ExportableModule extends SaveModule {
 	displaySummary = (summary: Summary): void => {
 		// this.notification('success', `Done Importing ${this.service.name} !`);
 		if (summary.total != summary.valid) {
-			this.service.manager.saveContainer.appendChild(
+			this.manager.manager.saveContainer.appendChild(
 				DOM.create('div', {
 					class: 'block notification warning',
 					textContent: `${
@@ -877,7 +868,7 @@ export abstract class APIExportableModule extends ExportableModule {
 			},
 		});
 		if (this.preForm) this.preForm(block);
-		DOM.append(this.service.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
+		DOM.append(this.manager.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
 	};
 
 	handleExport = async (): Promise<void> => {
@@ -954,7 +945,7 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 			},
 		});
 		if (this.preForm) this.preForm(block);
-		DOM.append(this.service.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
+		DOM.append(this.manager.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
 	};
 
 	handleExport = async (): Promise<void> => {

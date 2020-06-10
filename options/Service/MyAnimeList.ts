@@ -1,25 +1,26 @@
 import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
-import { Status, LoginStatus, LoginMethod, ServiceKey } from '../../src/Service/Service';
+import { Status, LoginStatus } from '../../src/Service/Service';
 import {
-	Service,
-	ActivableModule,
+	ManageableService,
 	FileImportableModule,
 	FileImportFormat,
 	BatchExportableModule,
 	Summary,
+	LoginMethod,
+	ActivableModule,
 } from './Service';
-import { ServiceName } from '../Manager/Service';
 import { RawResponse, Runtime } from '../../src/Runtime';
+import { MyAnimeList as MyAnimeListService } from '../../src/Service/MyAnimeList';
 
 enum MyAnimeListStatus {
-	Completed = 'Completed',
-	'Plan to Read' = 'Plan to Read',
-	Reading = 'Reading',
-	'On-Hold' = 'On-Hold',
-	Dropped = 'Dropped',
-	Invalid = 'Invalid',
+	COMPLETED = 'Completed',
+	PLAN_TO_READ = 'Plan to Read',
+	READING = 'Reading',
+	PAUSED = 'On-Hold',
+	DROPPED = 'Dropped',
+	NONE = 'Invalid',
 }
 
 interface MyAnimeListTitle {
@@ -122,24 +123,9 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 			!isNaN(title.id) &&
 			!isNaN(title.chapters) &&
 			!isNaN(title.volumes) &&
-			MyAnimeListStatus[title.status] !== undefined &&
-			title.status !== MyAnimeListStatus.Invalid
+			this.manager.service.toStatus(title.status) !== Status.NONE &&
+			title.status !== MyAnimeListStatus.NONE
 		);
-	};
-
-	toStatus = (status: MyAnimeListStatus): Status => {
-		if (status == 'Completed') {
-			return Status.COMPLETED;
-		} else if (status == 'Plan to Read') {
-			return Status.PLAN_TO_READ;
-		} else if (status == 'Reading') {
-			return Status.READING;
-		} else if (status == 'On-Hold') {
-			return Status.PAUSED;
-		} else if (status == 'Dropped') {
-			return Status.DROPPED;
-		}
-		return Status.NONE;
 	};
 
 	convertTitle = async (title: MyAnimeListTitle, titles: TitleCollection): Promise<boolean> => {
@@ -152,7 +138,7 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 						chapter: title.chapters,
 						volume: title.volumes,
 					},
-					status: this.toStatus(title.status),
+					status: this.manager.service.toStatus(title.status),
 					chapters: [],
 				})
 			);
@@ -192,21 +178,6 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 		return node;
 	};
 
-	fromStatus = (status: Status): MyAnimeListStatus => {
-		if (status == Status.COMPLETED) {
-			return MyAnimeListStatus.Completed;
-		} else if (status == Status.PLAN_TO_READ) {
-			return MyAnimeListStatus['Plan to Read'];
-		} else if (status == Status.READING) {
-			return MyAnimeListStatus.Reading;
-		} else if (status == Status.PAUSED) {
-			return MyAnimeListStatus['On-Hold'];
-		} else if (status == Status.DROPPED) {
-			return MyAnimeListStatus.Dropped;
-		}
-		return MyAnimeListStatus.Invalid;
-	};
-
 	timeToDate = (time: number): string => {
 		const d = new Date(time);
 		return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
@@ -217,7 +188,7 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 		DOM.append(
 			node,
 			this.node(document, 'manga_mangadb_id', title.services.mal as number),
-			this.node(document, 'my_status', this.fromStatus(title.status)),
+			this.node(document, 'my_status', this.manager.service.fromStatus(title.status)),
 			this.node(document, 'my_read_chapters', title.progress.chapter),
 			this.node(document, 'update_on_import', 1)
 		);
@@ -290,11 +261,9 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 	};
 }
 
-export class MyAnimeList extends Service {
-	name: ServiceName = ServiceName.MyAnimeList;
-	key: ServiceKey = ServiceKey.MyAnimeList;
-
-	activeModule: ActivableModule = new MyAnimeListActive(this);
-	importModule: FileImportableModule<Document, MyAnimeListTitle> = new MyAnimeListImport(this);
-	exportModule: BatchExportableModule<string> = new MyAnimeListExport(this);
+export class MyAnimeList extends ManageableService {
+	service = new MyAnimeListService();
+	activeModule: MyAnimeListActive = new MyAnimeListActive(this);
+	importModule: MyAnimeListImport = new MyAnimeListImport(this);
+	exportModule: MyAnimeListExport = new MyAnimeListExport(this);
 }

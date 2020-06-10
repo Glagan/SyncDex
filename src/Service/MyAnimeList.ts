@@ -1,7 +1,7 @@
 import { Service, Status, ServiceName, LoginStatus, ServiceKey } from './Service';
 import { Runtime, RawResponse } from '../Runtime';
 
-export const enum MyAnimeListStatus {
+export enum MyAnimeListStatus {
 	READING = 1,
 	COMPLETED = 2,
 	PAUSED = 3,
@@ -10,7 +10,7 @@ export const enum MyAnimeListStatus {
 	NONE = -1,
 }
 
-export class MyAnimeList extends Service<MyAnimeListStatus> {
+export class MyAnimeList extends Service {
 	key: ServiceKey = ServiceKey.MyAnimeList;
 	name: ServiceName = ServiceName.MyAnimeList;
 

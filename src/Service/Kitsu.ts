@@ -11,7 +11,7 @@ export const enum KitsuStatus {
 	NONE = 'none',
 }
 
-export class Kitsu extends Service<KitsuStatus> {
+export class Kitsu extends Service {
 	key: ServiceKey = ServiceKey.Kitsu;
 	name: ServiceName = ServiceName.Kitsu;
 

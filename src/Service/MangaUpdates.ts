@@ -10,7 +10,7 @@ export const enum MangaUpdatesStatus {
 	NONE = -1,
 }
 
-export class MangaUpdates extends Service<MangaUpdatesStatus> {
+export class MangaUpdates extends Service {
 	key: ServiceKey = ServiceKey.MangaUpdates;
 	name: ServiceName = ServiceName.MangaUpdates;
 

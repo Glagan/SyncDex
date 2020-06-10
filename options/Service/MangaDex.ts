@@ -1,21 +1,20 @@
-import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Runtime, RawResponse } from '../../src/Runtime';
-import { Status, LoginStatus } from '../../src/Service/Service';
-import { Service, ImportableModule, APIImportableModule, APIExportableModule } from './Service';
-import { ServiceName } from '../Manager/Service';
+import { Status, Service, ServiceKey, LoginStatus, ServiceName } from '../../src/Service/Service';
+import { ManageableService, APIImportableModule, APIExportableModule } from './Service';
 
-class MangaDexImport extends APIImportableModule<Title> {
+class MangaDexService extends Service {
+	key: ServiceKey = ServiceKey.MangaDex;
+	name: ServiceName = ServiceName.MangaDex;
 	parser: DOMParser = new DOMParser();
 	user: number = 0;
 
-	isLoggedIn = async (): Promise<LoginStatus> => {
+	loggedIn = async (): Promise<LoginStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: `https://mangadex.org/about`,
 			credentials: 'include',
 		});
 		if (response.status >= 400) {
-			this.notification('danger', 'The request failed, maybe MangaDex is having problems, retry later.');
 			return LoginStatus.FAIL;
 		}
 		try {
@@ -31,14 +30,25 @@ class MangaDexImport extends APIImportableModule<Title> {
 			this.user = parseInt(res[1]);
 			return LoginStatus.SUCCESS;
 		} catch (error) {
-			this.notification('danger', `Could not find your ID, are you sure you're logged in ?`);
 			return LoginStatus.FAIL;
 		}
 	};
+	toStatus = (status: Status): Status => {
+		return status;
+	};
+	fromStatus = (status: Status): Status => {
+		return status;
+	};
+}
+
+class MangaDexImport extends APIImportableModule<Title> {
+	parser: DOMParser = new DOMParser();
 
 	handlePage = async (): Promise<Title[] | false> => {
 		const response = await Runtime.request<RawResponse>({
-			url: `https://mangadex.org/list/${this.user}/0/2/${this.state.current}`,
+			url: `https://mangadex.org/list/${(this.manager.service as MangaDexService).user}/0/2/${
+				this.state.current
+			}`,
 			credentials: 'include',
 		});
 		if (response.status >= 400 || typeof response.body !== 'string') {
@@ -150,10 +160,8 @@ class MangaDexExport extends APIExportableModule {
 	};
 }
 
-export class MangaDex extends Service {
-	name: ServiceName = ServiceName.MangaDex;
-	key: string = 'md';
-
+export class MangaDex extends ManageableService {
+	service: MangaDexService = new MangaDexService();
 	activeModule = undefined;
 	importModule: APIImportableModule<Title> = new MangaDexImport(this);
 	exportModule: APIExportableModule = new MangaDexExport(this);

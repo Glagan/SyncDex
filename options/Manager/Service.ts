@@ -1,7 +1,7 @@
 import { Options } from '../../src/Options';
 import { DOM, AppendableElement } from '../../src/DOM';
 import { LoginStatus } from '../../src/Service/Service';
-import { Service } from '../Service/Service';
+import { ManageableService } from '../Service/Service';
 import { MyMangaDex } from '../Service/MyMangaDex';
 import { SyncDex } from '../Service/SyncDex';
 import { MangaDex } from '../Service/MangaDex';
@@ -28,7 +28,7 @@ export const enum SaveMethod {
 }
 
 export class ServiceManager {
-	services: Service[] = [
+	managers: ManageableService[] = [
 		new MyMangaDex(this),
 		new SyncDex(this),
 		new MangaDex(this),
@@ -42,7 +42,7 @@ export class ServiceManager {
 	activeContainer: HTMLElement;
 	addForm: HTMLElement;
 	selector: HTMLSelectElement;
-	mainService?: Service;
+	mainService?: ManageableService;
 	noServices: HTMLElement;
 	activeServices: ServiceName[] = [];
 	inactiveServices: ServiceName[] = [];
@@ -75,20 +75,20 @@ export class ServiceManager {
 	 * Check if the user is logged in on the Service and calls updateStatus to display warnings.
 	 */
 	activateService = async (serviceName: ServiceName): Promise<void> => {
-		let service = this.services.find((service) => service.name == serviceName);
-		if (!service || !service.activeModule) return;
+		let manager = this.managers.find((manager) => manager.service.name == serviceName);
+		if (!manager || !manager.activeModule) return;
 		if (Options.mainService == serviceName) {
-			this.mainService = service;
-			service.activeModule.activeCard.classList.add('main');
-			service.activeModule.mainButton.classList.add('hidden');
+			this.mainService = manager;
+			manager.activeModule.activeCard.classList.add('main');
+			manager.activeModule.mainButton.classList.add('hidden');
 		}
-		this.services.push(service);
+		this.managers.push(manager);
 		// Main Service is always first -- if a Service is upgraded to Main it's moved to the first position
-		this.activeContainer.insertBefore(service.activeModule.activeCard, this.activeContainer.lastElementChild);
-		this.removeSelectorRow(service.name);
+		this.activeContainer.insertBefore(manager.activeModule.activeCard, this.activeContainer.lastElementChild);
+		this.removeSelectorRow(manager.service.name);
 		// Set logged in state
-		const loggedIn = await service.activeModule.isLoggedIn();
-		service.activeModule.updateStatus(loggedIn);
+		const loggedIn = await manager.service.loggedIn();
+		manager.activeModule.updateStatus(loggedIn);
 	};
 
 	/**
@@ -137,10 +137,10 @@ export class ServiceManager {
 	 */
 	createAddForm = (): HTMLElement => {
 		// Add all options to the selector
-		for (const service of this.services) {
-			if (service.activeModule) {
-				service.activeModule.bind();
-				this.addSelectorRow(service.name);
+		for (const manager of this.managers) {
+			if (manager.activeModule) {
+				manager.activeModule.bind();
+				this.addSelectorRow(manager.service.name);
 			}
 		}
 		// Button to add the service to the active list
@@ -189,7 +189,7 @@ export class ServiceManager {
 	 */
 	refreshActive = (): void => {
 		// Remove previous
-		for (const service of this.services) {
+		for (const service of this.managers) {
 			if (service.activeModule) {
 				service.activeModule.activeCard.remove();
 			}
@@ -250,7 +250,7 @@ export class ServiceManager {
 			childs: [],
 		});
 		// Insert Service cards
-		for (const service of this.services) {
+		for (const service of this.managers) {
 			if (service.importModule) {
 				DOM.append(importContainer, service.importModule.importCard);
 			}

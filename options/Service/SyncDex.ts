@@ -2,9 +2,29 @@ import { ExportedSave } from '../../src/interfaces';
 import { AvailableOptions } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
 import { SaveTitle, Title, TitleCollection } from '../../src/Title';
-import { ImportSummary, Service, FileImportableModule, FileImportFormat, FileExportableModule } from './Service';
-import { ServiceName } from '../Manager/Service';
+import {
+	ImportSummary,
+	ManageableService,
+	FileImportableModule,
+	FileImportFormat,
+	FileExportableModule,
+} from './Service';
+import { Service, ServiceKey, ServiceName, LoginStatus, Status } from '../../src/Service/Service';
 
+class SyncDexService extends Service {
+	key: ServiceKey = ServiceKey.SyncDex;
+	name: ServiceName = ServiceName.SyncDex;
+
+	loggedIn = async (): Promise<LoginStatus> => {
+		return LoginStatus.SUCCESS;
+	};
+	toStatus = (status: Status): Status => {
+		return status;
+	};
+	fromStatus = (status: Status): Status => {
+		return status;
+	};
+}
 class SyncDexImport extends FileImportableModule<ExportedSave, Title> {
 	fileType: FileImportFormat = 'JSON';
 
@@ -76,11 +96,9 @@ class SyncDexExport extends FileExportableModule {
 	};
 }
 
-export class SyncDex extends Service {
-	name: ServiceName = ServiceName.SyncDex;
-	key: string = 'sc';
-
+export class SyncDex extends ManageableService {
+	service: SyncDexService = new SyncDexService();
 	activeModule = undefined;
-	importModule: FileImportableModule<ExportedSave, Title> = new SyncDexImport(this);
-	exportModule: FileExportableModule = new SyncDexExport(this);
+	importModule: SyncDexImport = new SyncDexImport(this);
+	exportModule: SyncDexExport = new SyncDexExport(this);
 }

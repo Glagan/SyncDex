@@ -2,9 +2,9 @@ import { RawResponse, Runtime } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { Progress } from '../../src/interfaces';
-import { Service, ActivableModule, ExportableModule, APIImportableModule } from './Service';
-import { Status, LoginStatus, LoginMethod, ServiceKey } from '../../src/Service/Service';
-import { ServiceName } from '../Manager/Service';
+import { ManageableService, ActivableModule, ExportableModule, APIImportableModule, LoginMethod } from './Service';
+import { Status, LoginStatus } from '../../src/Service/Service';
+import { AnimePlanet as AnimePlanetService } from '../../src/Service/AnimePlanet';
 
 interface AnimePlanetTitle {
 	id: string;
@@ -73,7 +73,7 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 	 * Adding `per_page=560` result in a 302, we can't use that
 	 */
 	handlePage = async (): Promise<AnimePlanetTitle[] | false> => {
-		const username = (this.service.activeModule as AnimePlanetActive).username;
+		const username = (this.manager.activeModule as AnimePlanetActive).username;
 		const response = await Runtime.request<RawResponse>({
 			url: `https://www.anime-planet.com/users/${username}/manga?sort=title&page=${this.state.current}&mylist_view=list`,
 			credentials: 'include',
@@ -135,10 +135,8 @@ class AnimePlanetExport extends ExportableModule {
 	};
 }
 
-export class AnimePlanet extends Service {
-	name: ServiceName = ServiceName.AnimePlanet;
-	key: ServiceKey = ServiceKey.AnimePlanet;
-
+export class AnimePlanet extends ManageableService {
+	service: AnimePlanetService = new AnimePlanetService();
 	activeModule: ActivableModule = new AnimePlanetActive(this);
 	importModule: APIImportableModule<AnimePlanetTitle> = new AnimePlanetImport(this);
 	exportModule: ExportableModule = new AnimePlanetExport(this);

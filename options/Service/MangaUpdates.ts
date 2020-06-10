@@ -1,10 +1,17 @@
 import { Progress } from '../../src/interfaces';
-import { Status, LoginStatus, LoginMethod, ServiceKey } from '../../src/Service/Service';
+import { Status, LoginStatus } from '../../src/Service/Service';
 import { Runtime, RawResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
-import { Service, ActivableModule, ExportableModule, APIImportableModule, ImportStep } from './Service';
-import { ServiceName } from '../Manager/Service';
+import {
+	ManageableService,
+	ActivableModule,
+	ExportableModule,
+	APIImportableModule,
+	ImportStep,
+	LoginMethod,
+} from './Service';
+import { MangaUpdates as MangaUpdatesService } from '../../src/Service/MangaUpdates';
 
 interface MangaUpdatesTitle {
 	id: number;
@@ -137,10 +144,8 @@ class MangaUpdatesExport extends ExportableModule {
 	};
 }
 
-export class MangaUpdates extends Service {
-	name: ServiceName = ServiceName.MangaUpdates;
-	key: ServiceKey = ServiceKey.MangaUpdates;
-
+export class MangaUpdates extends ManageableService {
+	service: MangaUpdatesService = new MangaUpdatesService();
 	activeModule: ActivableModule = new MangaUpdatesActive(this);
 	importModule: APIImportableModule<MangaUpdatesTitle> = new MangaUpdatesImport(this);
 	exportModule: ExportableModule = new MangaUpdatesExport(this);

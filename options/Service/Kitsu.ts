@@ -1,9 +1,10 @@
 import { Options } from '../../src/Options';
-import { ServiceName, Status, LoginStatus, LoginMethod, ServiceKey } from '../../src/Service/Service';
+import { Status, LoginStatus } from '../../src/Service/Service';
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { Mochi } from '../../src/Mochi';
 import { TitleCollection, Title } from '../../src/Title';
-import { Service, ActivableModule, ExportableModule, APIImportableModule } from './Service';
+import { ManageableService, ActivableModule, ExportableModule, APIImportableModule, LoginMethod } from './Service';
+import { Kitsu as KitsuService } from '../../src/Service/Kitsu';
 
 enum KitsuStatus {
 	'current' = 'current',
@@ -224,10 +225,8 @@ class KitsuExport extends ExportableModule {
 	};
 }
 
-export class Kitsu extends Service {
-	name: ServiceName = ServiceName.Kitsu;
-	key: ServiceKey = ServiceKey.Kitsu;
-
+export class Kitsu extends ManageableService {
+	service: KitsuService = new KitsuService();
 	activeModule: ActivableModule = new KitsuActive(this);
 	importModule: APIImportableModule<KitsuTitle> = new KitsuImport(this);
 	exportModule: ExportableModule = new KitsuExport(this);

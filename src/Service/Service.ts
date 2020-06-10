@@ -4,6 +4,9 @@ export enum ServiceName {
 	Anilist = 'Anilist',
 	Kitsu = 'Kitsu',
 	AnimePlanet = 'AnimePlanet',
+	MangaDex = 'MangaDex',
+	MyMangaDex = 'MyMangaDex',
+	SyncDex = 'SyncDex',
 }
 
 export enum ServiceKey {
@@ -12,6 +15,9 @@ export enum ServiceKey {
 	Anilist = 'al',
 	Kitsu = 'ku',
 	AnimePlanet = 'ap',
+	MangaDex = 'md',
+	MyMangaDex = 'mmd',
+	SyncDex = 'sc',
 }
 
 export const enum Status {
@@ -33,10 +39,10 @@ export const enum LoginStatus {
 	BAD_REQUEST,
 }
 
-export abstract class Service<T> {
+export abstract class Service {
 	abstract key: ServiceKey;
 	abstract name: ServiceName;
 	abstract loggedIn(): Promise<LoginStatus>;
-	abstract toStatus(status: T): Status;
-	abstract fromStatus(status: Status): T;
+	abstract toStatus(status: any): Status;
+	abstract fromStatus(status: Status): any;
 }

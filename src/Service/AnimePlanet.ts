@@ -11,7 +11,7 @@ export const enum AnimePlanetStatus {
 	NONE = -1,
 }
 
-export class AnimePlanet extends Service<AnimePlanetStatus> {
+export class AnimePlanet extends Service {
 	key: ServiceKey = ServiceKey.AnimePlanet;
 	name: ServiceName = ServiceName.AnimePlanet;
 
