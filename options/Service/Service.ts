@@ -1,7 +1,7 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
-import { LoginStatus, Service } from '../../src/Service/Service';
+import { LoginStatus, Service, Status } from '../../src/Service/Service';
 import { TitleCollection, Title } from '../../src/Title';
 import { LocalStorage } from '../../src/Storage';
 
@@ -506,9 +506,11 @@ export abstract class ImportableModule extends SaveModule {
 		]);
 	};
 
-	cancel = (): void => {
+	cancel = (forced = false): void => {
 		this.notification('warning', [
-			DOM.text('You cancelled the import, nothing was saved.'),
+			DOM.text(
+				forced ? 'The import was cancelled, nothing was saved' : 'You cancelled the import, nothing was saved.'
+			),
 			DOM.space(),
 			this.resetButton(),
 		]);
@@ -607,8 +609,8 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		// Abort if there is nothing
 		summary.total = titles.length;
 		if (summary.total == 0) {
-			this.notification('success', [DOM.text('No titles found !'), DOM.space(), this.resetButton()]);
-			return;
+			this.notification('success', 'No titles found !');
+			return this.cancel(true);
 		}
 		// Convert Service titles to Title
 		let collection = new TitleCollection();
@@ -651,8 +653,8 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		if (this.handleHistory && history.length > 0) {
 			await LocalStorage.set('history', history);
 		}
+		await Options.save(); // Always save -- options are deleted in LocalStorage
 		if (this.handleOptions) {
-			await Options.save();
 			this.manager.manager.reloadOptions(); // TODO: Reload
 		}
 		progress.remove();
@@ -702,8 +704,8 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 		if (!(await this.checkLogin())) {
 			this.stopButton.remove();
 			progress.classList.remove('loading');
-			this.notification('danger', [DOM.text('You are not logged in !'), DOM.space(), this.resetButton()]);
-			return;
+			this.notification('danger', 'You are not logged in !');
+			return this.cancel(true);
 		}
 		this.stopButton.remove();
 		progress.classList.remove('loading');
@@ -720,7 +722,7 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 			if (tmp === false) {
 				this.stopButton.remove();
 				progress.classList.remove('loading');
-				return;
+				return this.cancel(true);
 			}
 			titles.push(...tmp);
 		}
@@ -729,8 +731,8 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 		if (this.doStop) return this.cancel();
 		summary.total = titles.length;
 		if (summary.total == 0) {
-			this.notification('success', [DOM.text('No titles found !'), DOM.space(), this.resetButton()]);
-			return;
+			this.notification('success', 'No titles found !');
+			return this.cancel(true);
 		}
 		this.notification('success', `Found a total of ${titles.length} Titles.`);
 		// Convert the list to a TitleCollection
@@ -794,8 +796,20 @@ export abstract class ExportableModule extends SaveModule {
 		]);
 	};
 
-	cancel = (): void => {
-		this.notification('warning', [DOM.text('You cancelled the export.'), DOM.space(), this.resetButton()]);
+	// Default select all titles with a Service key for the current service and a status
+	selectTitles = async (): Promise<Title[]> => {
+		return (await TitleCollection.get()).collection.filter((title) => {
+			const id = title.services[this.manager.service.key];
+			return id !== undefined && id > 0 && title.status !== Status.NONE;
+		});
+	};
+
+	cancel = (forced = false): void => {
+		this.notification('warning', [
+			DOM.text(forced ? 'The export was cancelled' : 'You cancelled the export.'),
+			DOM.space(),
+			this.resetButton(),
+		]);
 	};
 
 	displaySummary = (summary: Summary): void => {
@@ -825,12 +839,8 @@ export abstract class FileExportableModule extends ExportableModule {
 		DOM.append(notification, DOM.space(), DOM.text('done !'));
 		notification.classList.remove('loading');
 		if (save === '') {
-			this.notification('danger', [
-				DOM.text(`There was an error while creating your file.`),
-				DOM.space(),
-				this.resetButton(),
-			]);
-			return;
+			this.notification('danger', `There was an error while creating your file.`);
+			return this.cancel(true);
 		}
 		let downloadLink = DOM.create('a', {
 			style: {
@@ -850,8 +860,8 @@ export abstract class FileExportableModule extends ExportableModule {
 }
 
 export abstract class APIExportableModule extends ExportableModule {
-	abstract selectTitles(): Promise<Title[]>;
 	abstract exportTitle(title: Title): Promise<boolean>;
+	preMain?(titles: Title[]): Promise<boolean>;
 
 	export = async (): Promise<void> => {
 		const block = DOM.create('div', {
@@ -874,7 +884,7 @@ export abstract class APIExportableModule extends ExportableModule {
 	handleExport = async (): Promise<void> => {
 		this.mainHeader();
 		// Check login status
-		let notification: HTMLElement = this.notification('info loading', [
+		let notification = this.notification('info loading', [
 			DOM.text('Checking login status...'),
 			DOM.space(),
 			this.stopButton,
@@ -882,8 +892,8 @@ export abstract class APIExportableModule extends ExportableModule {
 		if (!(await this.checkLogin())) {
 			this.stopButton.remove();
 			notification.classList.remove('loading');
-			this.notification('danger', [DOM.text('You are not logged in !'), DOM.space(), this.resetButton()]);
-			return;
+			this.notification('danger', 'You are not logged in !');
+			return this.cancel(true);
 		}
 		this.stopButton.remove();
 		notification.classList.remove('loading');
@@ -894,18 +904,20 @@ export abstract class APIExportableModule extends ExportableModule {
 		let titles = await this.selectTitles();
 		notification.classList.remove('loading');
 		if (titles.length == 0) {
-			DOM.clear(notification);
-			this.notification('info', [
-				DOM.text(`You don't have any Titles in your list that can be exported.`),
-				DOM.space(),
-				this.resetButton(),
-			]);
+			this.notification('info', `You don't have any Titles in your list that can be exported.`);
+			return this.cancel(true);
 		}
 		let summary = new Summary();
 		summary.total = titles.length;
+		if (this.preMain) {
+			if (!(await this.preMain(titles))) {
+				return this.cancel(true);
+			}
+		}
 		// Export one by one...
 		notification = this.notification('info loading', '');
 		for (let i = 0; !this.doStop && i < summary.total; i++) {
+			DOM.clear(notification);
 			DOM.append(
 				notification,
 				DOM.text(`Exporting title ${i + 1} out of ${summary.total}.`),
@@ -926,7 +938,6 @@ export abstract class APIExportableModule extends ExportableModule {
 }
 
 export abstract class BatchExportableModule<T> extends ExportableModule {
-	abstract selectTitles(): Promise<Title[]>;
 	abstract generateBatch(titles: Title[]): Promise<T>;
 	abstract sendBatch(batch: T, summary: Summary): Promise<boolean>;
 
@@ -959,8 +970,8 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 		if (!(await this.checkLogin())) {
 			this.stopButton.remove();
 			notification.classList.remove('loading');
-			this.notification('danger', [DOM.text('You are not logged in !'), DOM.space(), this.resetButton()]);
-			return;
+			this.notification('danger', 'You are not logged in !');
+			return this.cancel(true);
 		}
 		this.stopButton.remove();
 		notification.classList.remove('loading');
@@ -971,12 +982,8 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 		let titles = await this.selectTitles();
 		notification.classList.remove('loading');
 		if (titles.length == 0) {
-			DOM.clear(notification);
-			this.notification('info', [
-				DOM.text(`You don't have any Titles in your list that can be exported.`),
-				DOM.space(),
-				this.resetButton(),
-			]);
+			this.notification('info', `You don't have any Titles in your list that can be exported.`);
+			return this.cancel(true);
 		}
 		// Generate batch
 		let summary = new Summary();
@@ -992,12 +999,8 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 		notification.classList.remove('loading');
 		// Done
 		if (batchResult === false) {
-			this.notification('danger', [
-				DOM.text('There was an error while exporting the batch, maybe retry later'),
-				DOM.space(),
-				this.resetButton(),
-			]);
-			return;
+			this.notification('danger', 'There was an error while exporting the batch, maybe retry later');
+			return this.cancel(true);
 		}
 		this.displaySummary(summary);
 	};

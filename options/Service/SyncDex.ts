@@ -87,8 +87,8 @@ class SyncDexImport extends FileImportableModule<ExportedSave, Title> {
 
 class SyncDexExport extends FileExportableModule {
 	fileContent = async (): Promise<string> => {
-		let data = await LocalStorage.getAll();
-		if (data) {
+		let data: ExportedSave | undefined = await LocalStorage.getAll();
+		if (data && data.options) {
 			data.options.tokens = {};
 			return JSON.stringify(data);
 		}

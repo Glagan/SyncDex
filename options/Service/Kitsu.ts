@@ -3,15 +3,24 @@ import { Status, LoginStatus } from '../../src/Service/Service';
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { Mochi } from '../../src/Mochi';
 import { TitleCollection, Title } from '../../src/Title';
-import { ManageableService, ActivableModule, ExportableModule, APIImportableModule, LoginMethod } from './Service';
-import { Kitsu as KitsuService } from '../../src/Service/Kitsu';
+import {
+	ManageableService,
+	ActivableModule,
+	ExportableModule,
+	APIImportableModule,
+	LoginMethod,
+	APIExportableModule,
+} from './Service';
+import { Kitsu as KitsuService, KitsuStatus } from '../../src/Service/Kitsu';
+import { DOM } from '../../src/DOM';
 
-enum KitsuStatus {
-	'current' = 'current',
-	'completed' = 'completed',
-	'planned' = 'planned',
-	'on_hold' = 'on_hold',
-	'dropped' = 'dropped',
+interface EntryAttributes {
+	status: KitsuStatus;
+	progress: number;
+	volumesOwned: number;
+	ratingTwenty: number;
+	startedAt: string | null;
+	finishedAt: string | null;
 }
 
 interface KitsuManga {
@@ -25,11 +34,7 @@ interface KitsuResponse {
 		id: string;
 		type: string;
 		links: any;
-		attributes: {
-			status: KitsuStatus;
-			progress: number;
-			volumesOwned: number;
-		};
+		attributes: EntryAttributes;
 		relationships: {
 			manga: {
 				links: any;
@@ -59,28 +64,13 @@ interface KitsuTitle {
 	status: Status;
 	chapter: number;
 	volume: number;
+	score: number;
+	start: string | null;
+	end: string | null;
 }
 
 class KitsuActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.FORM;
-
-	isLoggedIn = async (): Promise<LoginStatus> => {
-		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken) return LoginStatus.MISSING_TOKEN;
-		const response = await Runtime.request<JSONResponse>({
-			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
-			isJson: true,
-			headers: {
-				Authorization: `Bearer ${Options.tokens.kitsuToken}`,
-				Accept: 'application/vnd.api+json',
-			},
-		});
-		if (response.status >= 500) {
-			return LoginStatus.SERVER_ERROR;
-		} else if (response.status >= 400 && response.status < 500) {
-			return LoginStatus.BAD_REQUEST;
-		}
-		return LoginStatus.SUCCESS;
-	};
 
 	getUserId = async (): Promise<LoginStatus> => {
 		if (Options.tokens.kitsuToken === undefined) return LoginStatus.MISSING_TOKEN;
@@ -88,11 +78,7 @@ class KitsuActive extends ActivableModule {
 			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
 			isJson: true,
 			method: 'GET',
-			headers: {
-				Authorization: `Bearer ${Options.tokens.kitsuToken}`,
-				Accept: 'application/vnd.api+json',
-				'Content-Type': 'application/vnd.api+json',
-			},
+			headers: KitsuService.LoggedHeaders(),
 		});
 		if (data.status >= 200 && data.status < 400) {
 			Options.tokens.kitsuUser = data.body.data[0].id;
@@ -136,37 +122,18 @@ class KitsuActive extends ActivableModule {
 }
 
 class KitsuImport extends APIImportableModule<KitsuTitle> {
-	toStatus = (status: KitsuStatus): Status => {
-		if (status === 'current') {
-			return Status.READING;
-		} else if (status === 'completed') {
-			return Status.COMPLETED;
-		} else if (status === 'planned') {
-			return Status.PLAN_TO_READ;
-		} else if (status === 'on_hold') {
-			return Status.PAUSED;
-		} else if (status === 'dropped') {
-			return Status.DROPPED;
-		}
-		return Status.NONE;
-	};
-
 	handlePage = async (): Promise<KitsuTitle[] | false> => {
 		const response = await Runtime.request<JSONResponse>({
 			url: `https://kitsu.io/api/edge/library-entries?
 					filter[user_id]=${Options.tokens.kitsuUser}&
 					filter[kind]=manga&
-					fields[libraryEntries]=status,progress,volumesOwned,manga&
+					fields[libraryEntries]=status,progress,volumesOwned,ratingTwenty,startedAt,finishedAt,manga&
 					include=manga&
 					fields[manga]=id&
 					page[limit]=500&
 					page[offset]=${(this.state.current - 1) * 500}`,
 			isJson: true,
-			headers: {
-				Accept: 'application/vnd.api+json',
-				'Content-Type': 'application/vnd.api+json',
-				Authorization: `Bearer ${Options.tokens.kitsuToken}`,
-			},
+			headers: KitsuService.LoggedHeaders(),
 		});
 		if (response.status >= 400) {
 			this.notification('danger', 'The request failed, maybe Kitsu is having problems, retry later.');
@@ -187,7 +154,10 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 				id: parseInt(title.relationships.manga.data.id),
 				chapter: title.attributes.progress,
 				volume: title.attributes.volumesOwned,
-				status: this.toStatus(title.attributes.status),
+				status: this.manager.service.toStatus(title.attributes.status),
+				score: title.attributes.ratingTwenty,
+				start: title.attributes.startedAt,
+				end: title.attributes.finishedAt,
 			};
 			if (kitsuTitle.status !== Status.NONE) {
 				titles.push(kitsuTitle);
@@ -210,6 +180,9 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 					},
 					status: title.status,
 					chapters: [],
+					score: title.score,
+					start: title.start ? new Date(title.start).getTime() : undefined,
+					end: title.end ? new Date(title.end).getTime() : undefined,
 				})
 			);
 			return true;
@@ -218,10 +191,99 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 	};
 }
 
-class KitsuExport extends ExportableModule {
-	export = async (): Promise<void> => {
-		// 1: Load all titles with Kitsu ID
-		// 2: Export all titles one by one to the API endpoint
+class KitsuExport extends APIExportableModule {
+	inList: { [key: string]: number } = {};
+
+	// Fetch all Kitsu titles to check if they already are in user list
+	preMain = async (titles: Title[]): Promise<boolean> => {
+		let notification = this.notification('info loading', [
+			DOM.text('Checking current status of each titles'),
+			DOM.space(),
+			this.stopButton,
+		]);
+		let max = Math.ceil(titles.length / 500);
+		for (let current = 1; current <= max; current++) {
+			const ids = titles.slice((current - 1) * 500, current * 500).map((title) => title.services.ku as number);
+			const response = await Runtime.request<JSONResponse>({
+				url: `${KitsuService.APIUrl}
+					?filter[user_id]=${Options.tokens.kitsuUser}
+					&filter[mangaId]=${ids.join(',')}
+					&fields[libraryEntries]=id,manga
+					&include=manga
+					&fields[manga]=id
+					&page[limit]=500
+					&page[offset]=${(current - 1) * 500}`,
+				isJson: true,
+				headers: KitsuService.LoggedHeaders(),
+			});
+			if (response.status >= 400) {
+				this.stopButton.remove();
+				notification.classList.remove('loading');
+				this.notification('danger', 'The request failed, maybe Kitsu is having problems, retry later.');
+				return false;
+			}
+			const body = response.body as KitsuResponse;
+			for (const title of body.data) {
+				this.inList[title.relationships.manga.data.id] = +title.id;
+			}
+		}
+		this.stopButton.remove();
+		notification.classList.remove('loading');
+		return true;
+	};
+
+	createTitle = (title: Title): Partial<EntryAttributes> => {
+		let values: Partial<EntryAttributes> = {
+			status: this.manager.service.fromStatus(title.status),
+			progress: title.progress.chapter,
+			volumesOwned: title.progress.volume || 0,
+			startedAt: null,
+			finishedAt: null,
+		};
+		if (title.score !== undefined && title.score > 0) values.ratingTwenty = title.score; // TODO: convert ratingTwenty
+		if (title.start !== undefined) {
+			values.startedAt = new Date(title.start).toISOString();
+		}
+		if (title.end !== undefined) {
+			values.finishedAt = new Date(title.end).toISOString();
+		}
+		return values;
+	};
+
+	exportTitle = async (title: Title): Promise<boolean> => {
+		if (this.manager.service.fromStatus(title.status) !== KitsuStatus.NONE) {
+			const libraryEntryId = this.inList[title.services.ku as number];
+			const method = libraryEntryId !== undefined ? 'PATCH' : 'POST';
+			const url = `${KitsuService.APIUrl}${libraryEntryId !== undefined ? `/${libraryEntryId}` : ''}`;
+			const response = await Runtime.request<JSONResponse>({
+				url: url,
+				method: method,
+				headers: KitsuService.LoggedHeaders(),
+				body: JSON.stringify({
+					// TODO: id: libraryEntryId ?
+					data: {
+						attributes: this.createTitle(title),
+					},
+					relationships: {
+						manga: {
+							data: {
+								type: 'manga',
+								id: title.services.ku,
+							},
+						},
+						user: {
+							data: {
+								type: 'users',
+								id: Options.tokens.kitsuUser,
+							},
+						},
+					},
+					type: 'library-entries',
+				}),
+			});
+			return response.status >= 200 && response.status < 400;
+		}
+		return false;
 	};
 }
 

@@ -33,9 +33,11 @@ class MangaDexService extends Service {
 			return LoginStatus.FAIL;
 		}
 	};
+
 	toStatus = (status: Status): Status => {
 		return status;
 	};
+
 	fromStatus = (status: Status): Status => {
 		return status;
 	};
@@ -68,11 +70,13 @@ class MangaDexImport extends APIImportableModule<Title> {
 		const rows = body.querySelectorAll<HTMLElement>('.manga-entry');
 		for (const row of rows) {
 			const id = parseInt(row.dataset.id || '');
-			const status: Status = this.toStatus(row.querySelector<HTMLElement>('.dropdown-menu > .disabled'));
 			if (!isNaN(id)) {
+				const status: Status = this.toStatus(row.querySelector<HTMLElement>('.dropdown-menu > .disabled'));
+				const score = row.querySelector('.disabled.manga_rating_button');
 				titles.push(
 					new Title(id, {
 						status: status,
+						score: score ? parseInt(score.getAttribute('id') as string) : undefined,
 					})
 				);
 			}

@@ -66,5 +66,4 @@
 		// "listFiles": true
 	},
 	"exclude": ["node_modules", "build", "build.js"]
-	// "exclude": ["background/index.ts", "options/index.ts"]
 }

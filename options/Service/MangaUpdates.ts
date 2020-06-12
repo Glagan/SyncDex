@@ -17,6 +17,7 @@ interface MangaUpdatesTitle {
 	id: number;
 	progress: Progress;
 	status: Status;
+	// TODO: Add score, start and end
 }
 
 class MangaUpdatesActive extends ActivableModule {
@@ -24,26 +25,6 @@ class MangaUpdatesActive extends ActivableModule {
 	loginUrl: string = 'https://www.mangaupdates.com/login.html';
 	login = undefined;
 	logout = undefined;
-
-	isLoggedIn = async (): Promise<LoginStatus> => {
-		const response = await Runtime.request<RawResponse>({
-			url: 'https://www.mangaupdates.com/aboutus.html',
-			credentials: 'include',
-		});
-		if (response.status >= 500) {
-			return LoginStatus.SERVER_ERROR;
-		} else if (response.status >= 400 && response.status < 500) {
-			return LoginStatus.BAD_REQUEST;
-		}
-		if (
-			response.status >= 200 &&
-			response.status < 400 &&
-			response.body &&
-			response.body.indexOf(`You are currently logged in as`) >= 0
-		)
-			return LoginStatus.SUCCESS;
-		return LoginStatus.FAIL;
-	};
 }
 
 class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {

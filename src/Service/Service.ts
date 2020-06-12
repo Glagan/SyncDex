@@ -39,10 +39,10 @@ export const enum LoginStatus {
 	BAD_REQUEST,
 }
 
-export abstract class Service {
+export abstract class Service<T = any> {
 	abstract key: ServiceKey;
 	abstract name: ServiceName;
 	abstract loggedIn(): Promise<LoginStatus>;
-	abstract toStatus(status: any): Status;
-	abstract fromStatus(status: Status): any;
+	abstract toStatus(status: T): Status;
+	abstract fromStatus(status: Status): T;
 }

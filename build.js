@@ -6,7 +6,7 @@ const path = require('path');
 const loadConfigFile = require('rollup/dist/loadConfigFile');
 const rollup = require('rollup');
 const typescript = require('@rollup/plugin-typescript');
-const terser = require('rollup-plugin-terser');
+const { terser } = require('rollup-plugin-terser');
 const options = require('minimist')(process.argv.slice(2), {
 	default: {
 		'web-ext': false,
@@ -101,19 +101,19 @@ console.log(`SyncDex ${mainManifest.version} :: mode: ${options.mode} | web-ext:
 let bundleList = [{
 	name: 'Core',
 	input: 'src/index.ts',
-	output: 'build/SyncDex.js',
+	output: 'build/SyncDex.js'
 }, {
 	name: 'Background',
 	input: 'background/index.ts',
-	output: 'build/SyncDex_background.js',
+	output: 'build/SyncDex_background.js'
 }, {
 	name: 'Options',
 	input: 'options/index.ts',
-	output: 'build/SyncDex_options.js',
+	output: 'build/SyncDex_options.js'
 }, {
 	name: 'External',
 	input: 'external/Anilist.ts',
-	output: 'build/SyncDex_Anilist.js',
+	output: 'build/SyncDex_Anilist.js'
 }];
 const bundles = bundleList.map(bundle => {
 	return {
@@ -128,8 +128,14 @@ const bundles = bundleList.map(bundle => {
 		output: {
 			file: bundle.output,
 			format: 'es',
-			sourcemap: true,
-		}
+			sourcemap: (options.mode == 'dev'),
+		},
+		watch: {
+			buildDelay: 750,
+			clearScreen: false,
+			chokidar: false,
+			exclude: ['node_modules/**', 'build/**']
+		},
 	};
 });
 function bundleName(outputFile) {
@@ -146,30 +152,30 @@ function bundleName(outputFile) {
 	let doneInitial = false;
 	let duration = 0;
 	watcher.on('event', async event => {
-		// event.code can be one of:
-		//   START        — the watcher is (re)starting
-		//   BUNDLE_START — building an individual bundle
-		//   BUNDLE_END   — finished building a bundle
-		//   END          — finished building all bundles
-		//   ERROR        — encountered an error while bundling
-		if (event.code == 'BUNDLE_START') {
-			console.log(`~ Compiling ${bundleName(event.output[0])}`);
+		if (event.code == 'START') {
+			console.log(`Compiling`);
+			duration = 0;
+		} else if (event.code == 'BUNDLE_START') {
+			rimraf.sync(event.output[0]); // Delete previous file
+			if (options.mode == 'dev') rimraf.sync(`${event.output[0]}.map`);
+			process.stdout.write(`~ ${bundleName(event.output[0])}...`);
 		} else if (event.code == 'BUNDLE_END') {
-			console.log(`> Compiled ${bundleName(event.output[0])} in ${event.duration}ms`);
+			process.stdout.write(` done in ${event.duration}ms\n`);
 			duration += event.duration;
+		} else if (event.code == 'ERROR') {
+			console.log(`> Error compiling ${bundleName(event.output[0])}`);
 		} else if (event.code == 'END') {
-			console.log(`> Compiled all modules in ${duration}ms`);
-			console.log(`~ Building extension`);
+			console.log(`Compiled all modules in ${duration}ms`);
+			console.log(`Building extensions`);
 			// Build for each browsers
 			for (const browser of browsers) {
-				await buildExtension(browser);
+				await buildExtension(browser, doneInitial);
 			}
-			duration = 0;
 			console.log('Done');
 			if (!doneInitial) {
 				if (!options.watch) {
 					watcher.close();
-				} else console.log(`~ Watching folders (CTRL + C to exit)`);
+				} else console.log(`Watching folders (CTRL + C to exit)`);
 				doneInitial = true;
 			}
 		}
@@ -177,13 +183,10 @@ function bundleName(outputFile) {
 })();
 
 // Create manifest, move files and build web-ext for a single Browser
-async function buildExtension(browser) {
-	const p = `${browser.substring(0, 1).toLocaleUpperCase()} # `; // Browser Prefix
-	const log = (...message) => {
-		console.log(`${p}${message}`);
-	};
+async function buildExtension(browser, nonVerbose) {
+	const start = Date.now();
+	process.stdout.write(`~ ${browser}...`);
 	// Create temp folder for the bundle
-	log(`Creating tmp directory for ${browser}`);
 	let folderName = `build/${browser}`;
 	if (fs.existsSync(folderName)) {
 		rimraf.sync(folderName);
@@ -191,7 +194,6 @@ async function buildExtension(browser) {
 	fs.mkdirSync(folderName);
 
 	// Merge manifests
-	log(`Building Manifest version ${mainManifest.version}`);
 	let manifest = Object.assign({}, mainManifest, browser_manifests[browser]);
 	// Write in file
 	let bundleManifestStream = fs.createWriteStream(`${folderName}/manifest.json`, {
@@ -201,35 +203,36 @@ async function buildExtension(browser) {
 	bundleManifestStream.cork();
 	bundleManifestStream.end();
 
-	log(`Copying files...`);
 	const files = [
 		'dist:dist',
 		'icons:icons',
-		'src/SyncDex.css',
-		'background:background',
-		'build/SyncDex_background.js:background',
-		'build/SyncDex_background.js.map:background',
 		'options:options',
+		'background:background',
+		'src/SyncDex.css',
+		'build/SyncDex_background.js:background',
 		'build/SyncDex_options.js:options',
-		'build/SyncDex_options.js.map:options',
 		'build/SyncDex.js',
-		'build/SyncDex.js.map',
 		'build/SyncDex_Anilist.js:external',
-		'build/SyncDex_Anilist.js.map:external',
 	];
 	if (options.mode == 'dev') {
 		files.unshift('src:src');
+		files.push(
+			'build/SyncDex_background.js.map:background',
+			'build/SyncDex_options.js.map:options',
+			'build/SyncDex.js.map',
+			'build/SyncDex_Anilist.js.map:external'
+		);
 	}
 	deepFileCopy(files, folderName, ['chrome', 'firefox']);
 
 	// Make web-ext
 	if (options.webExt) {
-		log(`Building with web-ext`);
+		if (!nonVerbose) process.stdout.write(` web-ext...`);
+		console.log(`${p} Building ${browser} web-ext`);
 		const execResult = await execPromise(
 			exec(`web-ext build --source-dir ${folderName} --artifacts-dir web-ext-artifacts`)
 		)
 			.then(() => {
-				log(`> Moving zip archive`);
 				if (!fs.existsSync('build')) {
 					fs.mkdirSync('build');
 				}
@@ -245,11 +248,10 @@ async function buildExtension(browser) {
 				return false;
 			});
 		if (!execResult) {
-			log(`Exit with error`);
 			return;
 		}
 	}
-	log(`Done ${browser}`);
+	process.stdout.write(` done in ${Date.now() - start}ms\n`);
 }
 
 // Promisify exec -- see https://stackoverflow.com/a/30883005

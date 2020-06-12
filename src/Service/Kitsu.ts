@@ -2,6 +2,13 @@ import { Service, Status, ServiceName, LoginStatus, ServiceKey } from './Service
 import { Options } from '../Options';
 import { Runtime, JSONResponse } from '../Runtime';
 
+interface KitsuHeaders {
+	Accept: string;
+	'Content-Type': string;
+	Authorization: string;
+	[key: string]: string;
+}
+
 export const enum KitsuStatus {
 	READING = 'current',
 	COMPLETED = 'completed',
@@ -14,6 +21,14 @@ export const enum KitsuStatus {
 export class Kitsu extends Service {
 	key: ServiceKey = ServiceKey.Kitsu;
 	name: ServiceName = ServiceName.Kitsu;
+	static APIUrl = 'https://kitsu.io/api/edge/library-entries';
+	static LoggedHeaders = (): KitsuHeaders => {
+		return {
+			Accept: 'application/vnd.api+json',
+			'Content-Type': 'application/vnd.api+json',
+			Authorization: `Bearer ${Options.tokens.kitsuToken}`,
+		};
+	};
 
 	loggedIn = async (): Promise<LoginStatus> => {
 		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken) return LoginStatus.MISSING_TOKEN;

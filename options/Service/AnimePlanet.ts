@@ -10,70 +10,24 @@ interface AnimePlanetTitle {
 	id: string;
 	status: Status;
 	progress: Progress;
+	// TODO: Add score, start and end
 }
 
 class AnimePlanetActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	loginUrl: string = 'https://www.anime-planet.com/login';
-	parser: DOMParser = new DOMParser();
 	login = undefined;
 	logout = undefined;
-	username: string = '';
-
-	isLoggedIn = async (): Promise<LoginStatus> => {
-		const response = await Runtime.request<RawResponse>({
-			url: `https://www.anime-planet.com/contact`,
-			credentials: 'include',
-		});
-		if (response.status >= 400) {
-			// this.service.notification('danger', 'The request failed, maybe AnimePlanet is having problems, retry later.');
-			return LoginStatus.FAIL;
-		}
-		try {
-			const body = this.parser.parseFromString(response.body, 'text/html');
-			const profileLink = body.querySelector('.loggedIn a[href^="/users/"]');
-			if (profileLink === null) {
-				throw 'Could not find Profile link';
-			}
-			this.username = profileLink.getAttribute('title') ?? '';
-			return LoginStatus.SUCCESS;
-		} catch (error) {
-			// this.notification('danger', `Could not find your Username, are you sure you're logged in ?`);
-			return LoginStatus.FAIL;
-		}
-	};
 }
+
 class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 	parser: DOMParser = new DOMParser();
-
-	toStatus = (status: string): Status => {
-		if (status === '1') {
-			// Completed
-			return Status.COMPLETED;
-		} else if (status === '2') {
-			// Reading
-			return Status.READING;
-		} else if (status === '3') {
-			// Dropped
-			return Status.DROPPED;
-		} else if (status === '4') {
-			// Plan to read
-			return Status.PLAN_TO_READ;
-		} else if (status === '5') {
-			// On-hold
-			return Status.PAUSED;
-		} else if (status === '6') {
-			// Won't read
-			return Status.WONT_READ;
-		}
-		return Status.NONE;
-	};
 
 	/**
 	 * Adding `per_page=560` result in a 302, we can't use that
 	 */
 	handlePage = async (): Promise<AnimePlanetTitle[] | false> => {
-		const username = (this.manager.activeModule as AnimePlanetActive).username;
+		const username = (this.manager.service as AnimePlanetService).username;
 		const response = await Runtime.request<RawResponse>({
 			url: `https://www.anime-planet.com/users/${username}/manga?sort=title&page=${this.state.current}&mylist_view=list`,
 			credentials: 'include',
@@ -96,7 +50,7 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 			const volume = row.querySelector('select[name="volumes"]') as HTMLSelectElement;
 			apTitle.progress.volume = parseInt(volume.value as string);
 			const status = row.querySelector('select.changeStatus') as HTMLSelectElement;
-			apTitle.status = this.toStatus(status.value);
+			apTitle.status = this.manager.service.toStatus(status.value);
 			if (apTitle.status !== Status.NONE) {
 				titles.push(apTitle);
 			}

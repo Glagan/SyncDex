@@ -28,6 +28,9 @@ interface MyAnimeListTitle {
 	chapters: number;
 	volumes: number;
 	status: MyAnimeListStatus;
+	start: string;
+	end: string;
+	score: number;
 }
 
 class MyAnimeListActive extends ActivableModule {
@@ -128,6 +131,13 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 		);
 	};
 
+	// Convert a YYYY-MM-DD MyAnimeList date to a Date timestamp
+	dateToTime = (date: string): number | undefined => {
+		const d = new Date(date);
+		if (d.getFullYear() == 0) return undefined;
+		return d.getTime();
+	};
+
 	convertTitle = async (title: MyAnimeListTitle, titles: TitleCollection): Promise<boolean> => {
 		const connections = await Mochi.find(title.id, 'MyAnimeList');
 		if (connections !== undefined && connections['MangaDex'] !== undefined) {
@@ -139,6 +149,9 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 						volume: title.volumes,
 					},
 					status: this.manager.service.toStatus(title.status),
+					score: title.score > 0 ? title.score : undefined,
+					start: this.dateToTime(title.start),
+					end: this.dateToTime(title.end),
 					chapters: [],
 				})
 			);
@@ -151,11 +164,14 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 		let titles: MyAnimeListTitle[] = [];
 		const mangaList = save.querySelectorAll<HTMLElement>('manga');
 		for (const manga of mangaList) {
-			const title = {
+			const title: MyAnimeListTitle = {
 				id: parseInt(manga.querySelector('manga_mangadb_id')?.textContent || ''),
 				chapters: parseInt(manga.querySelector('my_read_chapters')?.textContent || ''),
 				volumes: parseInt(manga.querySelector('my_read_volumes')?.textContent || ''),
 				status: (manga.querySelector('my_status')?.textContent || 'Invalid') as MyAnimeListStatus,
+				score: parseInt(manga.querySelector('my_score')?.textContent || '0'),
+				start: manga.querySelector('my_start_date')?.textContent || '0000-00-00',
+				end: manga.querySelector('my_finish_date')?.textContent || '0000-00-00',
 			};
 			if (this.validMyAnimeListTitle(title)) {
 				titles.push(title);
@@ -172,12 +188,14 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
  * XMLHeader: <?xml version="1.0" encoding="UTF-8" ?>
  */
 class MyAnimeListExport extends BatchExportableModule<string> {
+	// Create an xml node of type <type> and a value of <value>
 	node = (document: Document, type: string, value?: string | number): HTMLElement => {
 		const node = document.createElement(type);
 		if (value !== undefined) node.textContent = typeof value === 'number' ? value.toString() : value;
 		return node;
 	};
 
+	// Convert to YYYY-MM-DD MyAnimeList use
 	timeToDate = (time: number): string => {
 		const d = new Date(time);
 		return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
@@ -202,12 +220,6 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 			node.appendChild(this.node(document, 'my_finish_date', this.timeToDate(title.end)));
 		}
 		return node;
-	};
-
-	selectTitles = async (): Promise<Title[]> => {
-		return (await TitleCollection.get()).collection.filter((title) => {
-			return title.services.mal !== undefined && title.services.mal > 0 && title.status !== Status.NONE;
-		});
 	};
 
 	generateBatch = async (titles: Title[]): Promise<string> => {
@@ -262,7 +274,7 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 }
 
 export class MyAnimeList extends ManageableService {
-	service = new MyAnimeListService();
+	service = new MyAnimeListService(); // TODO: MyAnimeListStatus is not the good one
 	activeModule: MyAnimeListActive = new MyAnimeListActive(this);
 	importModule: MyAnimeListImport = new MyAnimeListImport(this);
 	exportModule: MyAnimeListExport = new MyAnimeListExport(this);

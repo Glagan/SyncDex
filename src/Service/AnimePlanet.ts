@@ -14,10 +14,11 @@ export const enum AnimePlanetStatus {
 export class AnimePlanet extends Service {
 	key: ServiceKey = ServiceKey.AnimePlanet;
 	name: ServiceName = ServiceName.AnimePlanet;
+	username: string = '';
 
 	loggedIn = async (): Promise<LoginStatus> => {
 		const response = await Runtime.request<RawResponse>({
-			url: 'https://www.anime-planet.com/manga/recommendations/',
+			url: 'https://www.anime-planet.com/contact',
 			credentials: 'include',
 		});
 		if (response.status >= 500) {
@@ -25,7 +26,14 @@ export class AnimePlanet extends Service {
 		} else if (response.status >= 400 && response.status < 500) {
 			return LoginStatus.BAD_REQUEST;
 		}
-		if (response.body && response.body.indexOf(`"/login.php"`) < 0) return LoginStatus.SUCCESS;
+		// Find username
+		const parser = new DOMParser(); // TODO: Move as an attribute if used elsewhere
+		const body = parser.parseFromString(response.body, 'text/html');
+		const profileLink = body.querySelector('.loggedIn a[href^="/users/"]');
+		if (profileLink !== null) {
+			this.username = profileLink.getAttribute('title') ?? '';
+			return LoginStatus.SUCCESS;
+		}
 		return LoginStatus.FAIL;
 	};
 

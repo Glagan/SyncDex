@@ -12,7 +12,7 @@ import {
 	APIExportableModule,
 	LoginMethod,
 } from './Service';
-import { Anilist as AnilistService } from '../../src/Service/Anilist';
+import { Anilist as AnilistService, AnilistStatus } from '../../src/Service/Anilist';
 
 interface ViewerResponse {
 	data: {
@@ -20,15 +20,6 @@ interface ViewerResponse {
 			name: string;
 		};
 	};
-}
-
-enum AnilistStatus {
-	'CURRENT' = 'CURRENT',
-	'COMPLETED' = 'COMPLETED',
-	'PLANNING' = 'PLANNING',
-	'DROPPED' = 'DROPPED',
-	'PAUSED' = 'PAUSED',
-	'REPEATING' = 'REPEATING',
 }
 
 interface AnilistDate {
@@ -64,27 +55,6 @@ class AnilistActive extends ActivableModule {
 	loginUrl: string = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
 	form?: HTMLFormElement;
 	login = undefined;
-
-	isLoggedIn = async (): Promise<LoginStatus> => {
-		if (!Options.tokens.anilistToken === undefined) return LoginStatus.MISSING_TOKEN;
-		const response = await Runtime.request<JSONResponse>({
-			method: 'POST',
-			url: AnilistService.APIUrl,
-			isJson: true,
-			headers: {
-				Authorization: `Bearer ${Options.tokens.anilistToken}`,
-				'Content-Type': 'application/json',
-				Accept: 'application/json',
-			},
-			body: JSON.stringify({ query: `query { Viewer { id } }` }),
-		});
-		if (response.status >= 500) {
-			return LoginStatus.SERVER_ERROR;
-		} else if (response.status >= 400) {
-			return LoginStatus.BAD_REQUEST;
-		}
-		return LoginStatus.SUCCESS;
-	};
 
 	logout = async (): Promise<void> => {
 		delete Options.tokens.anilistToken;
@@ -197,23 +167,6 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 		return titles;
 	};
 
-	toStatus = (status: AnilistStatus): Status => {
-		if (status == 'CURRENT') {
-			return Status.READING;
-		} else if (status == 'COMPLETED') {
-			return Status.COMPLETED;
-		} else if (status == 'PLANNING') {
-			return Status.PLAN_TO_READ;
-		} else if (status == 'DROPPED') {
-			return Status.DROPPED;
-		} else if (status == 'PAUSED') {
-			return Status.PAUSED;
-		} else if (status == 'REPEATING') {
-			return Status.REREADING;
-		}
-		return Status.NONE;
-	};
-
 	dateToNumber = (date: AnilistDate): number | undefined => {
 		if (date.day !== null && date.month !== null && date.year !== null) {
 			return new Date(date.year, date.month, date.day).getTime();
@@ -231,7 +184,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 						chapter: title.progress,
 						volume: title.progressVolumes,
 					},
-					status: this.toStatus(title.status),
+					status: this.manager.service.toStatus(title.status),
 					chapters: [],
 					start: this.dateToNumber(title.startedAt),
 					end: this.dateToNumber(title.completedAt),
@@ -266,34 +219,10 @@ class AnilistExport extends APIExportableModule {
 			}
 		}`;
 
-	fromStatus = (status: Status): string => {
-		switch (status) {
-			case Status.READING:
-				return 'CURRENT';
-			case Status.COMPLETED:
-				return 'COMPLETED';
-			case Status.PLAN_TO_READ:
-				return 'PLANNING';
-			case Status.DROPPED:
-				return 'DROPPED';
-			case Status.PAUSED:
-				return 'PAUSED';
-			case Status.REREADING:
-				return 'REPEATING';
-		}
-		return 'INVALID';
-	};
-
-	selectTitles = async (): Promise<Title[]> => {
-		return (await TitleCollection.get()).collection.filter((title) => {
-			return title.services.al !== undefined && title.services.al > 0 && title.status !== Status.NONE;
-		});
-	};
-
 	createTitle = (title: Title): Partial<AnilistTitle & { score: number | null }> => {
 		let values: Partial<AnilistTitle & { score: number | null }> = {
 			mediaId: title.services.al as number,
-			status: this.fromStatus(title.status) as AnilistStatus,
+			status: this.manager.service.fromStatus(title.status),
 			progress: title.progress.chapter,
 			progressVolumes: title.progress.volume || 0,
 		};
@@ -310,7 +239,7 @@ class AnilistExport extends APIExportableModule {
 	};
 
 	exportTitle = async (title: Title): Promise<boolean> => {
-		if (this.fromStatus(title.status) !== 'INVALID') {
+		if (this.manager.service.fromStatus(title.status) !== AnilistStatus.NONE) {
 			const response = await Runtime.request<JSONResponse>({
 				url: AnilistService.APIUrl,
 				method: 'POST',

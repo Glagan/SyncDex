@@ -18,5 +18,5 @@ There will be one subfolder for each platforms (Firefox and Chrome).
 You can pass some options:
 
 * ``--web-ext``: Build the ``web-ext`` archives.
-* ``-mode dev|prod``: Currently only minify code in ``prod`` mode.
+* ``--mode=dev|prod``: Currently only minify code in ``prod`` mode.
 * ``--watch``: Watch all modules and re-compile on update.
