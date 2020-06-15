@@ -37,11 +37,11 @@ let mainManifest = {
 		'https://*.anime-planet.com/api/*',
 		'storage',
 	],
-	/*icons: {
-        48: "icons/48.png",
-        96: "icons/96.png",
-        128: "icons/128.png"
-    },*/
+	icons: {
+		48: "icons/sc.png",
+		96: "icons/sc.png",
+		128: "icons/sc.png"
+	},
 	background: {
 		page: 'background/index.html',
 	},
@@ -71,6 +71,18 @@ let mainManifest = {
 			css: ['dist/simpleNotification.min.css', 'SyncDex.css'],
 		},
 	],
+	browser_action: {
+		default_icon: {
+			48: 'icons/sc.png',
+			96: 'icons/sc.png',
+			128: 'icons/sc.png'
+		},
+		default_title: 'SyncDex'
+	},
+	options_ui: {
+		page: 'options/index.html',
+		open_in_tab: true
+	},
 };
 const browsers = ['firefox', 'chrome'];
 let browser_manifests = {
@@ -163,7 +175,11 @@ function bundleName(outputFile) {
 			process.stdout.write(` done in ${event.duration}ms\n`);
 			duration += event.duration;
 		} else if (event.code == 'ERROR') {
-			console.log(`> Error compiling ${bundleName(event.output[0])}`);
+			process.stdout.write(`\n# ${event.error} (${event.error.pluginCode})`);
+			process.stdout.write(`\n# File ${event.error.loc.file}:${event.error.loc.line} line ${event.error.loc.column}`);
+			process.stdout.write(`${event.error.frame}`);
+			duration = 0;
+			if (!options.watch) watcher.close();
 		} else if (event.code == 'END') {
 			console.log(`Compiled all modules in ${duration}ms`);
 			console.log(`Building extensions`);

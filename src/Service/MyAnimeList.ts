@@ -25,8 +25,9 @@ export class MyAnimeList extends Service {
 		} else if (response.status >= 400 && response.status < 500) {
 			return LoginStatus.BAD_REQUEST;
 		}
-		if (response.status >= 200 && response.status < 400 && response.body && response.url.indexOf('login.php') < 0)
+		if (response.ok && response.body && response.url.indexOf('login.php') < 0) {
 			return LoginStatus.SUCCESS;
+		}
 		return LoginStatus.FAIL;
 	};
 

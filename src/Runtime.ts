@@ -36,6 +36,7 @@ export type Message = RequestMessage | OpenOptionsMessage;
 
 export interface Response {
 	url: string;
+	ok: boolean;
 	status: number;
 	headers: Record<string, string>;
 	body: Record<string, string> | string;

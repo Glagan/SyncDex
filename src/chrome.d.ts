@@ -9,10 +9,7 @@ declare const chrome: {
 			version: string;
 		};
 		openOptionsPage: (resolve?: () => void) => Promise<any>;
-		sendMessage: (
-			message: FetchMessage | OpenOptionsMessage,
-			resolve?: (response?: any) => void
-		) => Promise<any>;
+		sendMessage: (message: FetchMessage | OpenOptionsMessage, resolve?: (response?: any) => void) => Promise<any>;
 		onMessage: {
 			addListener: (
 				fnct: (
@@ -25,13 +22,15 @@ declare const chrome: {
 	};
 	storage: {
 		local: {
-			get: <T>(
-				key: string[] | string | null,
-				resolve?: () => void
-			) => Promise<Record<string, T> | undefined>;
+			get: <T>(key: string[] | string | null, resolve?: () => void) => Promise<Record<string, T> | undefined>;
 			set: (data: Object, resolve?: () => void) => Promise<any>;
 			remove: (key: string, resolve?: () => void) => Promise<any>;
 			clear: (resolve?: () => void) => Promise<any>;
+		};
+	};
+	browserAction: {
+		onClicked: {
+			addListener: (callback: () => void) => void;
 		};
 	};
 };
@@ -42,19 +41,20 @@ declare const browser: {
 		openOptionsPage: () => Promise<any>;
 		sendMessage: (message: FetchMessage | OpenOptionsMessage) => Promise<any>;
 		onMessage: {
-			addListener: (
-				fnct: (message: FetchMessage | OpenOptionsMessage) => Promise<any>
-			) => void;
+			addListener: (fnct: (message: FetchMessage | OpenOptionsMessage) => Promise<any>) => void;
 		};
 	};
 	storage: {
 		local: {
-			get: <T>(
-				key: string[] | string | null
-			) => Promise<Record<string, any> | Record<string, T> | undefined>;
+			get: <T>(key: string[] | string | null) => Promise<Record<string, any> | Record<string, T> | undefined>;
 			set: (data: Object) => Promise<any>;
 			remove: (key: string) => Promise<any>;
 			clear: () => Promise<any>;
+		};
+	};
+	browserAction: {
+		onClicked: {
+			addListener: (callback: () => void) => void;
 		};
 	};
 };

@@ -50,8 +50,6 @@ type NumberKey = Pick<
 
 /**
  * Handle conversion between a SaveTitle in LocalStorage and a FullTitle.
- * Storing only short keys for each Title save about 80% space (from 86 to 17 bytes for keys)
- * Also using SaveProgress reduce Progress space from 12 to 2 bytes for keys.
  */
 export class Title implements FullTitle {
 	new: boolean;
@@ -133,7 +131,6 @@ export class Title implements FullTitle {
 
 	/**
 	 * Select highest values of both Titles and assign them to *this*
-	 * TODO: Select lower start and end Date
 	 */
 	merge = (other: Title): void => {
 		// Update *this* Status if it's NONE or/and if other is not NONE
@@ -143,11 +140,13 @@ export class Title implements FullTitle {
 		if (this.progress.chapter < other.progress.chapter) {
 			this.progress = other.progress;
 		}
-		Object.assign(this.services, other.services); // Merge Services - other erase *this*
-		// Update all 'number' properties (last...) to select the highest ones
-		for (const key of Title.numberKeys) {
-			if (this[key] && other[key]) {
-				this[key] = Math.max(this[key] as number, other[key] as number);
+		Object.assign(this.services, other.services); // Merge Services -- other erase *this*
+		// Update all 'number' properties to select the highest ones -- except for dates
+		for (let k in this) {
+			const key = k as keyof Title;
+			if (this[key] && other[key] && typeof this[key] === 'number' && typeof other[key] === 'number') {
+				const order = key == 'start' || key == 'end' ? Math.min : Math.max;
+				Object.assign(this, { [key]: order(this[key] as number, other[key] as number) });
 			}
 		}
 		// Merge chapters array

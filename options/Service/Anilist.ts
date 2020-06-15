@@ -249,7 +249,7 @@ class AnilistExport extends APIExportableModule {
 					variables: this.createTitle(title),
 				}),
 			});
-			return response.status >= 200 && response.status < 400;
+			return response.ok;
 		}
 		return false;
 	};

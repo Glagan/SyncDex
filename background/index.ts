@@ -56,56 +56,29 @@ browser.runtime.onMessage.addListener(
 			}
 			message.credentials = message.credentials || 'same-origin';
 			message.headers = message.headers || {};
-			// XMLHttpRequest or Fetch
-			if (message.with == 'XHR') {
-				let xhr = new XMLHttpRequest();
-				xhr.open(message.method, message.url, true);
-				const keys = Object.keys(message.headers);
-				for (const key of keys) {
-					xhr.setRequestHeader(name, message.headers[key]);
-				}
-				xhr.withCredentials = true;
-				xhr.send(body);
-				return new Promise((resolve) => {
-					xhr.addEventListener('readystatechange', () => {
-						if (xhr.readyState == 4) {
-							let body: {} | '';
-							try {
-								body = message.isJson ? JSON.parse(xhr.responseText) : xhr.responseText;
-							} catch (error) {
-								body = message.isJson ? {} : '';
-							}
-							return resolve({
-								url: xhr.responseURL,
-								status: xhr.status,
-								headers: xhr.getAllResponseHeaders(),
-								body: body,
-							});
-						}
-					});
-				});
-			} else {
-				try {
-					return fetch(message.url, {
-						...message,
-						body,
-					}).then(async (response) => {
-						return {
-							url: response.url,
-							status: response.status,
-							headers: response.headers,
-							body: message.isJson ? await response.json() : await response.text(),
-						};
-					});
-				} catch (error) {
-					console.error(error);
+			// Fetch
+			try {
+				return fetch(message.url, {
+					...message,
+					body,
+				}).then(async (response) => {
 					return {
-						url: message.url,
-						status: 400,
-						headers: {},
-						body: message.isJson ? {} : '',
+						url: response.url,
+						ok: response.status >= 200 && response.status < 400,
+						status: response.status,
+						headers: JSON.parse(JSON.stringify(response.headers)),
+						body: message.isJson ? await response.json() : await response.text(),
 					};
-				}
+				});
+			} catch (error) {
+				console.error(error);
+				return {
+					url: message.url,
+					ok: false,
+					status: 400,
+					headers: {},
+					body: message.isJson ? {} : '',
+				};
 			}
 		} else if (message.action == MessageAction.openOptions) {
 			return browser.runtime.openOptionsPage();
@@ -113,3 +86,7 @@ browser.runtime.onMessage.addListener(
 		return new Promise(() => false);
 	}
 );
+
+browser.browserAction.onClicked.addListener(() => {
+	browser.runtime.openOptionsPage();
+});

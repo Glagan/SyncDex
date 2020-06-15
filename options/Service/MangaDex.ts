@@ -71,11 +71,13 @@ class MangaDexImport extends APIImportableModule<Title> {
 		for (const row of rows) {
 			const id = parseInt(row.dataset.id || '');
 			if (!isNaN(id)) {
-				const status: Status = this.toStatus(row.querySelector<HTMLElement>('.dropdown-menu > .disabled'));
+				const status = row.querySelector<HTMLElement>('.dropdown-menu > .disabled');
 				const score = row.querySelector('.disabled.manga_rating_button');
 				titles.push(
 					new Title(id, {
-						status: status,
+						status: status
+							? this.manager.service.toStatus(parseInt(status.getAttribute('id') as string))
+							: Status.NONE,
 						score: score ? parseInt(score.getAttribute('id') as string) : undefined,
 					})
 				);
@@ -100,54 +102,15 @@ class MangaDexImport extends APIImportableModule<Title> {
 		titles.add(title);
 		return true;
 	};
-
-	toStatus = (statusNode: HTMLElement | null): Status => {
-		if (statusNode === null) return Status.NONE;
-		const id = statusNode.getAttribute('id');
-		if (id === '1') {
-			return Status.READING;
-		} else if (id === '2') {
-			return Status.COMPLETED;
-		} else if (id === '3') {
-			return Status.PAUSED;
-		} else if (id === '4') {
-			return Status.PLAN_TO_READ;
-		} else if (id === '5') {
-			return Status.DROPPED;
-		} else if (id === '6') {
-			return Status.REREADING;
-		}
-		return Status.NONE;
-	};
 }
 
 class MangaDexExport extends APIExportableModule {
-	fromStatus = (status: Status): number => {
-		switch (status) {
-			case Status.NONE:
-			case Status.WONT_READ:
-				return 0;
-			case Status.READING:
-				return 1;
-			case Status.COMPLETED:
-				return 2;
-			case Status.PAUSED:
-				return 3;
-			case Status.PLAN_TO_READ:
-				return 4;
-			case Status.DROPPED:
-				return 5;
-			case Status.REREADING:
-				return 6;
-		}
-	};
-
 	selectTitles = async (): Promise<Title[]> => {
 		return (await TitleCollection.get()).collection;
 	};
 
 	exportTitle = async (title: Title): Promise<boolean> => {
-		const status = this.fromStatus(title.status);
+		const status = this.manager.service.fromStatus(title.status);
 		if (status > 0) {
 			const response = await Runtime.request<RawResponse>({
 				url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_follow&id=${
@@ -158,7 +121,7 @@ class MangaDexExport extends APIExportableModule {
 					'X-Requested-With': 'XMLHttpRequest',
 				},
 			});
-			return response.status >= 200 && response.status < 400;
+			return response.ok;
 		}
 		return false;
 	};

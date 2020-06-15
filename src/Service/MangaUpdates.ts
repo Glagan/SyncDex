@@ -24,12 +24,7 @@ export class MangaUpdates extends Service {
 		} else if (response.status >= 400 && response.status < 500) {
 			return LoginStatus.BAD_REQUEST;
 		}
-		if (
-			response.status >= 200 &&
-			response.status < 400 &&
-			response.body &&
-			response.body.indexOf(`You are currently logged in as`) >= 0
-		)
+		if (response.ok && response.body && response.body.indexOf(`You are currently logged in as`) >= 0)
 			return LoginStatus.SUCCESS;
 		return LoginStatus.FAIL;
 	};
@@ -64,5 +59,41 @@ export class MangaUpdates extends Service {
 				return MangaUpdatesStatus.PLAN_TO_READ;
 		}
 		return MangaUpdatesStatus.NONE;
+	};
+
+	// Get a list of status to go through to be able to update to the wanted status
+	static pathToStatus = (from: Status | undefined, to: Status, existing: boolean): Status[] => {
+		let list: Status[] = [];
+		// PAUSED requirements
+		if (to == Status.PAUSED) {
+			if (existing) {
+				list.push(Status.READING);
+			}
+			if (from != Status.READING && from != Status.DROPPED) {
+				list.push(Status.READING);
+			}
+			// DROPPED requirements
+		} else if (to == Status.DROPPED) {
+			if (existing) {
+				list.push(Status.READING);
+			}
+			if (from != Status.PAUSED) {
+				if (from != Status.READING) {
+					list.push(Status.READING);
+				}
+				list.push(Status.PAUSED);
+			}
+			// PLAN TO READ requirements
+		} else if (to == Status.PLAN_TO_READ) {
+			if (!existing) {
+				list.push(Status.NONE);
+			}
+			// COMPLETED requirements
+		} else if (to == Status.COMPLETED) {
+			if (!existing && from != Status.READING) {
+				list.push(Status.READING);
+			}
+		}
+		return list;
 	};
 }

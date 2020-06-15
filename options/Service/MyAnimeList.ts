@@ -50,8 +50,9 @@ class MyAnimeListActive extends ActivableModule {
 		} else if (response.status >= 400 && response.status < 500) {
 			return LoginStatus.BAD_REQUEST;
 		}
-		if (response.status >= 200 && response.status < 400 && response.body && response.url.indexOf('login.php') < 0)
+		if (response.ok && response.body && response.url.indexOf('login.php') < 0) {
 			return LoginStatus.SUCCESS;
+		}
 		return LoginStatus.FAIL;
 	};
 }
@@ -83,7 +84,7 @@ class MyAnimeListActive extends ActivableModule {
  * 			 my_scanalation_group: string, CDATA
  * 			 my_score: number
  * 			 my_storage: TODO
- * 			 my_status: TODO
+ * 			 my_status: Completed, Plan to Read, Reading, On-Hold, Dropped
  * 			 my_comments: string, CDATA
  * 			 my_times_read: number
  * 			 my_tags: string, CDATA

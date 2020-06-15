@@ -80,7 +80,7 @@ class KitsuActive extends ActivableModule {
 			method: 'GET',
 			headers: KitsuService.LoggedHeaders(),
 		});
-		if (data.status >= 200 && data.status < 400) {
+		if (data.ok) {
 			Options.tokens.kitsuUser = data.body.data[0].id;
 			return LoginStatus.SUCCESS;
 		} else if (data.status >= 500) {
@@ -229,7 +229,7 @@ class KitsuExport extends APIExportableModule {
 		}
 		this.stopButton.remove();
 		notification.classList.remove('loading');
-		return true;
+		return true; // TODO: Also just *Import* at the same time to just have the latest values ?
 	};
 
 	createTitle = (title: Title): Partial<EntryAttributes> => {
@@ -260,7 +260,6 @@ class KitsuExport extends APIExportableModule {
 				method: method,
 				headers: KitsuService.LoggedHeaders(),
 				body: JSON.stringify({
-					// TODO: id: libraryEntryId ?
 					data: {
 						attributes: this.createTitle(title),
 					},
@@ -281,7 +280,7 @@ class KitsuExport extends APIExportableModule {
 					type: 'library-entries',
 				}),
 			});
-			return response.status >= 200 && response.status < 400;
+			return response.ok;
 		}
 		return false;
 	};
