@@ -4,14 +4,14 @@ import { Message, MessageAction, FormDataProxy, FormDataFile } from '../src/Runt
 console.log('SyncDex :: Background');
 
 setBrowser();
-const findDomain = (url: string): string => {
+function findDomain(url: string): string {
 	// Simple domain search - not the best but simple
 	const res = /https?:\/\/(?:.+\.)?([-\w\d]+\.(?:\w{2,5})|localhost)(?:$|\/)/i.exec(url);
 	if (res !== null) {
 		return res[1];
 	}
 	return '*';
-};
+}
 let nextRequest: Record<string, number> = {};
 // Defaults to 1000ms
 const cooldowns: Record<string, number> = {

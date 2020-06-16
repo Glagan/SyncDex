@@ -2,15 +2,16 @@ import { RawResponse, Runtime } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { Progress } from '../../src/interfaces';
-import { ManageableService, ActivableModule, ExportableModule, APIImportableModule, LoginMethod } from './Service';
-import { Status, LoginStatus } from '../../src/Service/Service';
+import { ManageableService, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
+import { Status } from '../../src/Service/Service';
 import { AnimePlanet as AnimePlanetService } from '../../src/Service/AnimePlanet';
+import { DOM } from '../../src/DOM';
 
 interface AnimePlanetTitle {
-	id: string;
+	id: number;
 	status: Status;
 	progress: Progress;
-	// TODO: Add score, start and end
+	score: number;
 }
 
 class AnimePlanetActive extends ActivableModule {
@@ -23,13 +24,31 @@ class AnimePlanetActive extends ActivableModule {
 class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 	parser: DOMParser = new DOMParser();
 
+	// Set the list type to 'list'
+	preMain = async (): Promise<boolean> => {
+		const notification = this.notification('info loading', [
+			DOM.text('Setting list type...'),
+			DOM.space(),
+			this.stopButton,
+		]);
+		const username = (this.manager.service as AnimePlanetService).username;
+		const response = await Runtime.request<RawResponse>({
+			url: `https://www.anime-planet.com/users/${username}/manga/reading?sort=title&mylist_view=list`,
+			credentials: 'include',
+		});
+		notification.classList.remove('loading');
+		this.stopButton.remove();
+		DOM.append(notification, DOM.text('done'));
+		return response.ok;
+	};
+
 	/**
 	 * Adding `per_page=560` result in a 302, we can't use that
 	 */
 	handlePage = async (): Promise<AnimePlanetTitle[] | false> => {
 		const username = (this.manager.service as AnimePlanetService).username;
 		const response = await Runtime.request<RawResponse>({
-			url: `https://www.anime-planet.com/users/${username}/manga?sort=title&page=${this.state.current}&mylist_view=list`,
+			url: `https://www.anime-planet.com/users/${username}/manga?sort=title&page=${this.state.current}`,
 			credentials: 'include',
 		});
 		if (response.status >= 400 || typeof response.body !== 'string') {
@@ -43,14 +62,14 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 			const apTitle = {
 				progress: {},
 			} as AnimePlanetTitle;
-			const title = row.querySelector('a[href^="/manga/"]') as HTMLElement;
-			apTitle.id = title.getAttribute('href')?.slice(7) as string;
+			const form = row.querySelector('form[data-id]') as HTMLSelectElement;
+			apTitle.id = parseInt(form.dataset.id as string);
 			const chapter = row.querySelector('select[name="chapters"]') as HTMLSelectElement;
 			apTitle.progress.chapter = parseInt(chapter.value as string);
 			const volume = row.querySelector('select[name="volumes"]') as HTMLSelectElement;
 			apTitle.progress.volume = parseInt(volume.value as string);
 			const status = row.querySelector('select.changeStatus') as HTMLSelectElement;
-			apTitle.status = this.manager.service.toStatus(status.value);
+			apTitle.status = this.manager.service.toStatus(parseInt(status.value));
 			if (apTitle.status !== Status.NONE) {
 				titles.push(apTitle);
 			}
@@ -82,16 +101,41 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 	};
 }
 
-class AnimePlanetExport extends ExportableModule {
-	export = async (): Promise<void> => {
-		// 1: Load all titles with AnimePlanet ID
-		// 2: Update entries one by one
+class AnimePlanetExport extends APIExportableModule {
+	exportTitle = async (title: Title): Promise<boolean> => {
+		const service = this.manager.service as AnimePlanetService;
+		const id = title.services.ap as number;
+		// Status
+		let response = await Runtime.request<RawResponse>({
+			url: `https://www.anime-planet.com/api/list/status/manga/${id}/${this.manager.service.fromStatus(
+				title.status
+			)}/${service.token}`,
+			credentials: 'include',
+		});
+		if (!response.ok) return false;
+		// Chapter progress
+		if (title.progress.chapter > 0) {
+			response = await Runtime.request<RawResponse>({
+				url: `https://www.anime-planet.com/api/list/update/manga/${id}/${title.progress.chapter}/0/${service.token}`,
+				credentials: 'include',
+			});
+			if (!response.ok) return false;
+		}
+		// Score
+		if (title.score > 0) {
+			response = await Runtime.request<RawResponse>({
+				url: `https://www.anime-planet.com/api/list/rate/manga/${id}/${title.progress.chapter}/${service.token}`,
+				credentials: 'include',
+			});
+			if (!response.ok) return false;
+		}
+		return true;
 	};
 }
 
 export class AnimePlanet extends ManageableService {
 	service: AnimePlanetService = new AnimePlanetService();
-	activeModule: ActivableModule = new AnimePlanetActive(this);
-	importModule: APIImportableModule<AnimePlanetTitle> = new AnimePlanetImport(this);
-	exportModule: ExportableModule = new AnimePlanetExport(this);
+	activeModule: AnimePlanetActive = new AnimePlanetActive(this);
+	importModule: AnimePlanetImport = new AnimePlanetImport(this);
+	exportModule: AnimePlanetExport = new AnimePlanetExport(this);
 }

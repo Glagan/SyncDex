@@ -15,6 +15,7 @@ export class AnimePlanet extends Service {
 	key: ServiceKey = ServiceKey.AnimePlanet;
 	name: ServiceName = ServiceName.AnimePlanet;
 	username: string = '';
+	token: string = '';
 
 	loggedIn = async (): Promise<LoginStatus> => {
 		const response = await Runtime.request<RawResponse>({
@@ -32,6 +33,8 @@ export class AnimePlanet extends Service {
 		const profileLink = body.querySelector('.loggedIn a[href^="/users/"]');
 		if (profileLink !== null) {
 			this.username = profileLink.getAttribute('title') ?? '';
+			const token = /TOKEN\s*=\s*'(.{40})';/.exec(response.body);
+			if (token !== null) this.token = token[1];
 			return LoginStatus.SUCCESS;
 		}
 		return LoginStatus.FAIL;

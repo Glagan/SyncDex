@@ -107,7 +107,9 @@ let browser_manifests = {
 };
 
 // Startup
-console.log(`SyncDex ${mainManifest.version} :: mode: ${options.mode} | web-ext: ${options.webExt} | watch: ${options.watch}`);
+// 91 red 92 green 93 orange 94 blue
+const optionColor = (option, content = undefined, theme = [92, 93]) => `${option ? `\u001b[${theme[0]}m` : `\u001b[${theme[1]}m`}${content ? content : option}\u001b[0m`;
+console.log(`\u001b[96mSyncDex ${mainManifest.version}\u001b[0m :: mode: ${optionColor(options.mode == 'prod', options.mode, [92, 94])} | web-ext: ${optionColor(options.webExt)} | watch: ${optionColor(options.watch)} `);
 
 // Compile and Build
 let bundleList = [{
@@ -180,6 +182,7 @@ function bundleName(outputFile) {
 			process.stdout.write(`${event.error.frame}`);
 			duration = 0;
 			if (!options.watch) watcher.close();
+			return false;
 		} else if (event.code == 'END') {
 			console.log(`Compiled all modules in ${duration}ms`);
 			console.log(`Building extensions`);

@@ -667,6 +667,7 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 	state: ImportState = { current: 0, max: 1 };
 	abstract handlePage(): Promise<T[] | false>;
 	abstract convertTitle(titles: TitleCollection, title: T): Promise<boolean>;
+	preMain?(): Promise<boolean>;
 
 	getNextPage = (): boolean => {
 		if (this.state.current < this.state.max || this.state.current == 0) {
@@ -712,7 +713,12 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 		DOM.append(progress, DOM.space(), DOM.text('logged in !'));
 		if (this.doStop) return this.cancel();
 		let titles: T[] = [];
-		let summary = new ImportSummary();
+		if (this.preMain) {
+			if (!(await this.preMain())) {
+				return this.cancel(true);
+			}
+		}
+		if (this.doStop) return this.cancel();
 		progress = this.notification('info loading', '');
 		// Fetch each pages to get a list of titles in the Service format
 		while (!this.doStop && this.getNextPage() !== false) {
@@ -729,6 +735,7 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 		this.stopButton.remove();
 		progress.classList.remove('loading');
 		if (this.doStop) return this.cancel();
+		let summary = new ImportSummary();
 		summary.total = titles.length;
 		if (summary.total == 0) {
 			this.notification('success', 'No titles found !');
@@ -914,6 +921,7 @@ export abstract class APIExportableModule extends ExportableModule {
 				return this.cancel(true);
 			}
 		}
+		if (this.doStop) return this.cancel();
 		// Export one by one...
 		notification = this.notification('info loading', '');
 		for (let i = 0; !this.doStop && i < summary.total; i++) {

@@ -122,12 +122,27 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 		return 'MyAnimeList export file (.xml)';
 	};
 
+	toStatus = (status: MyAnimeListStatus): Status => {
+		if (status == 'Completed') {
+			return Status.COMPLETED;
+		} else if (status == 'Plan to Read') {
+			return Status.PLAN_TO_READ;
+		} else if (status == 'Reading') {
+			return Status.READING;
+		} else if (status == 'On-Hold') {
+			return Status.PAUSED;
+		} else if (status == 'Dropped') {
+			return Status.DROPPED;
+		}
+		return Status.NONE;
+	};
+
 	validMyAnimeListTitle = (title: MyAnimeListTitle): boolean => {
 		return (
 			!isNaN(title.id) &&
 			!isNaN(title.chapters) &&
 			!isNaN(title.volumes) &&
-			this.manager.service.toStatus(title.status) !== Status.NONE &&
+			this.toStatus(title.status) !== Status.NONE &&
 			title.status !== MyAnimeListStatus.NONE
 		);
 	};
@@ -149,7 +164,7 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 						chapter: title.chapters,
 						volume: title.volumes,
 					},
-					status: this.manager.service.toStatus(title.status),
+					status: this.toStatus(title.status),
 					score: title.score > 0 ? title.score : undefined,
 					start: this.dateToTime(title.start),
 					end: this.dateToTime(title.end),
@@ -202,12 +217,27 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 		return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 	};
 
+	fromStatus = (status: Status): MyAnimeListStatus => {
+		if (status == Status.COMPLETED) {
+			return MyAnimeListStatus.COMPLETED;
+		} else if (status == Status.PLAN_TO_READ) {
+			return MyAnimeListStatus.PLAN_TO_READ;
+		} else if (status == Status.READING) {
+			return MyAnimeListStatus.READING;
+		} else if (status == Status.PAUSED) {
+			return MyAnimeListStatus.PAUSED;
+		} else if (status == Status.DROPPED) {
+			return MyAnimeListStatus.DROPPED;
+		}
+		return MyAnimeListStatus.NONE;
+	};
+
 	createTitle = (document: Document, title: Title): HTMLElement => {
 		const node = document.createElement('manga');
 		DOM.append(
 			node,
 			this.node(document, 'manga_mangadb_id', title.services.mal as number),
-			this.node(document, 'my_status', this.manager.service.fromStatus(title.status)),
+			this.node(document, 'my_status', this.fromStatus(title.status)),
 			this.node(document, 'my_read_chapters', title.progress.chapter),
 			this.node(document, 'update_on_import', 1)
 		);

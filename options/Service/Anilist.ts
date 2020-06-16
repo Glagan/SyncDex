@@ -35,6 +35,7 @@ interface AnilistTitle {
 	progressVolumes: number;
 	startedAt: AnilistDate;
 	completedAt: AnilistDate;
+	score: number | null;
 }
 
 interface AnilistList {
@@ -61,6 +62,7 @@ class AnilistActive extends ActivableModule {
 		return await Options.save();
 	};
 }
+
 class AnilistImport extends APIImportableModule<AnilistTitle> {
 	currentPage: number = 0;
 
@@ -78,6 +80,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 					entries {
 						mediaId
 						status
+						score
 						progress
 						progressVolumes
 						startedAt {
@@ -161,6 +164,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 					status: entry.status,
 					startedAt: entry.startedAt,
 					completedAt: entry.completedAt,
+					score: entry.score,
 				});
 			}
 		}
@@ -219,12 +223,13 @@ class AnilistExport extends APIExportableModule {
 			}
 		}`;
 
-	createTitle = (title: Title): Partial<AnilistTitle & { score: number | null }> => {
-		let values: Partial<AnilistTitle & { score: number | null }> = {
+	createTitle = (title: Title): Partial<AnilistTitle> => {
+		let values: Partial<AnilistTitle> = {
 			mediaId: title.services.al as number,
 			status: this.manager.service.fromStatus(title.status),
 			progress: title.progress.chapter,
 			progressVolumes: title.progress.volume || 0,
+			score: null,
 		};
 		if (title.score !== undefined && title.score > 0) values.score = title.score;
 		if (title.start !== undefined) {

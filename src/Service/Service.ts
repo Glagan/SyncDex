@@ -20,6 +20,17 @@ export enum ServiceKey {
 	SyncDex = 'sc',
 }
 
+export interface ServiceKeyMap {
+	[ServiceKey.MyAnimeList]: number;
+	[ServiceKey.MangaUpdates]: number;
+	[ServiceKey.Anilist]: number;
+	[ServiceKey.Kitsu]: number;
+	[ServiceKey.AnimePlanet]: number;
+	[ServiceKey.MangaDex]: number;
+	[ServiceKey.MyMangaDex]: number;
+	[ServiceKey.SyncDex]: number;
+}
+
 export const enum Status {
 	NONE,
 	READING,

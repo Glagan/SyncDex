@@ -1,5 +1,5 @@
 import { Progress, ExportedSave } from './interfaces';
-import { ServiceKey, Status } from './Service/Service';
+import { Status, ServiceKeyMap } from './Service/Service';
 import { LocalStorage } from './Storage';
 import { Options } from './Options';
 
@@ -8,8 +8,10 @@ interface SaveProgress {
 	v?: number;
 }
 
+export type ServiceList = { [key in keyof ServiceKeyMap]?: ServiceKeyMap[key] };
+
 export interface SaveTitle {
-	s: { [key in ServiceKey]?: number | string }; // services
+	s: ServiceList; // services
 	st: Status; // status
 	sc: number; // score
 	p: SaveProgress; // progress
@@ -27,7 +29,7 @@ export interface SaveTitle {
 }
 
 export interface FullTitle {
-	services: { [key in ServiceKey]?: number | string };
+	services: ServiceList;
 	status: Status;
 	score: number;
 	progress: Progress;
@@ -43,10 +45,6 @@ export interface FullTitle {
 	name?: string;
 	lastRead?: number;
 }
-type NumberKey = Pick<
-	FullTitle,
-	'score' | 'start' | 'end' | 'lastTitle' | 'lastCheck' | 'lastChapter' | 'highest' | 'lastRead'
->;
 
 /**
  * Handle conversion between a SaveTitle in LocalStorage and a FullTitle.
@@ -54,7 +52,7 @@ type NumberKey = Pick<
 export class Title implements FullTitle {
 	new: boolean;
 	id: number;
-	services: { [key in ServiceKey]?: number | string } = {};
+	services: ServiceList = {};
 	status: Status = Status.NONE;
 	score: number = -1;
 	progress: Progress = { chapter: -1, volume: 0 };
@@ -69,16 +67,6 @@ export class Title implements FullTitle {
 	highest?: number;
 	name?: string;
 	lastRead?: number;
-	static numberKeys: (keyof NumberKey)[] = [
-		'score',
-		'start',
-		'end',
-		'lastTitle',
-		'lastCheck',
-		'lastChapter',
-		'highest',
-		'lastRead',
-	];
 
 	constructor(id: number, title?: Partial<FullTitle>) {
 		this.new = title == undefined;
