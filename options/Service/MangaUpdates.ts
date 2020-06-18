@@ -1,5 +1,5 @@
 import { Progress } from '../../src/interfaces';
-import { Status } from '../../src/Service/Service';
+import { Status, ServiceName } from '../../src/Service/Service';
 import { Runtime, RawResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
@@ -19,6 +19,7 @@ interface MangaUpdatesTitle {
 	progress: Progress;
 	status: Status;
 	score?: number;
+	name: string;
 }
 
 class MangaUpdatesActive extends ActivableModule {
@@ -34,6 +35,7 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 	currentPage: string = '';
 	currentList: number = 0;
 	static lists: string[] = ['read', 'wish', 'complete', 'unfinished', 'hold'];
+	convertManyTitles = undefined;
 
 	progressFromNode = (node: HTMLElement | null): number => {
 		if (node !== null) {
@@ -90,6 +92,7 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 					score = parseInt(scoreLink.textContent as string);
 					if (isNaN(score)) score = undefined;
 				}
+				const name = row.querySelector(`a[title='Series Info']`) as HTMLElement;
 				titles.push({
 					id: parseInt(row.id.slice(1)),
 					progress: {
@@ -98,6 +101,7 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 					},
 					status: status,
 					score: score,
+					name: name.textContent as string,
 				});
 			}
 			return titles;
@@ -106,7 +110,7 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 	};
 
 	convertTitle = async (titles: TitleCollection, title: MangaUpdatesTitle): Promise<boolean> => {
-		const connections = await Mochi.find(title.id, 'MangaUpdates');
+		const connections = await Mochi.find(title.id, ServiceName.MangaUpdates);
 		if (connections !== undefined && connections['MangaDex'] !== undefined) {
 			titles.add(
 				new Title(connections['MangaDex'] as number, {
@@ -114,6 +118,8 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 					progress: title.progress,
 					status: title.status,
 					chapters: [],
+					score: title.score,
+					name: title.name,
 				})
 			);
 			return true;
@@ -122,10 +128,6 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 	};
 }
 
-// 1: Load all titles with MangaUpdates ID
-// 2: Update all titles *status*
-// 3: Update all titles *progress*
-// 4: Update all titles *score*
 class MangaUpdatesExport extends APIExportableModule {
 	actual: MangaUpdatesTitle[] = [];
 

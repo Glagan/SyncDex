@@ -1,5 +1,5 @@
 import { Options } from '../../src/Options';
-import { Status, LoginStatus } from '../../src/Service/Service';
+import { Status, LoginStatus, ServiceName } from '../../src/Service/Service';
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { Mochi } from '../../src/Mochi';
 import { TitleCollection, Title } from '../../src/Title';
@@ -18,7 +18,7 @@ interface EntryAttributes {
 	status: KitsuStatus;
 	progress: number;
 	volumesOwned: number;
-	ratingTwenty: number;
+	ratingTwenty: number | null;
 	startedAt: string | null;
 	finishedAt: string | null;
 }
@@ -27,6 +27,9 @@ interface KitsuManga {
 	id: string;
 	type: 'manga';
 	links: any;
+	attributes: {
+		canonicalTitle: string;
+	};
 }
 
 interface KitsuResponse {
@@ -67,6 +70,7 @@ interface KitsuTitle {
 	score: number;
 	start: string | null;
 	end: string | null;
+	name: string;
 }
 
 class KitsuActive extends ActivableModule {
@@ -122,6 +126,15 @@ class KitsuActive extends ActivableModule {
 }
 
 class KitsuImport extends APIImportableModule<KitsuTitle> {
+	convertManyTitles = undefined;
+
+	findManga = (included: KitsuManga[], id: string): KitsuManga => {
+		for (const manga of included) {
+			if (manga.id == id) return manga;
+		}
+		return included[0]; // never
+	};
+
 	handlePage = async (): Promise<KitsuTitle[] | false> => {
 		const response = await Runtime.request<JSONResponse>({
 			url: `https://kitsu.io/api/edge/library-entries?
@@ -129,7 +142,7 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 					filter[kind]=manga&
 					fields[libraryEntries]=status,progress,volumesOwned,ratingTwenty,startedAt,finishedAt,manga&
 					include=manga&
-					fields[manga]=id&
+					fields[manga]=canonicalTitle&
 					page[limit]=500&
 					page[offset]=${(this.state.current - 1) * 500}`,
 			isJson: true,
@@ -150,26 +163,28 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 		const body = response.body as KitsuResponse;
 		// Each row has a data-id field
 		for (const title of body.data) {
+			const manga = this.findManga(body.included, title.relationships.manga.data.id);
 			const kitsuTitle: KitsuTitle = {
 				id: parseInt(title.relationships.manga.data.id),
 				chapter: title.attributes.progress,
 				volume: title.attributes.volumesOwned,
 				status: this.manager.service.toStatus(title.attributes.status),
-				score: title.attributes.ratingTwenty,
+				score: title.attributes.ratingTwenty !== null ? title.attributes.ratingTwenty : 0,
 				start: title.attributes.startedAt,
 				end: title.attributes.finishedAt,
+				name: manga.attributes.canonicalTitle,
 			};
 			if (kitsuTitle.status !== Status.NONE) {
 				titles.push(kitsuTitle);
 			}
 		}
 		// We get 500 entries per page
-		this.state.max = Math.floor(body.meta.count / 500);
+		this.state.max = Math.ceil(body.meta.count / 500);
 		return titles;
 	};
 
 	convertTitle = async (titles: TitleCollection, title: KitsuTitle): Promise<boolean> => {
-		const connections = await Mochi.find(title.id, 'Kitsu');
+		const connections = await Mochi.find(title.id, ServiceName.Kitsu);
 		if (connections !== undefined && connections['MangaDex'] !== undefined) {
 			titles.add(
 				new Title(connections['MangaDex'] as number, {
@@ -183,6 +198,7 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 					score: title.score,
 					start: title.start ? new Date(title.start).getTime() : undefined,
 					end: title.end ? new Date(title.end).getTime() : undefined,
+					name: title.name,
 				})
 			);
 			return true;
@@ -288,7 +304,7 @@ class KitsuExport extends APIExportableModule {
 
 export class Kitsu extends ManageableService {
 	service: KitsuService = new KitsuService();
-	activeModule: ActivableModule = new KitsuActive(this);
-	importModule: APIImportableModule<KitsuTitle> = new KitsuImport(this);
-	exportModule: ExportableModule = new KitsuExport(this);
+	activeModule: KitsuActive = new KitsuActive(this);
+	importModule: KitsuImport = new KitsuImport(this);
+	exportModule: KitsuExport = new KitsuExport(this);
 }

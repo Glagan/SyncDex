@@ -91,8 +91,8 @@ class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTi
 				lastTitle: title.lastTitle,
 				lastCheck: title.lastMAL,
 				chapters: title.chapters,
-				// History
 				name: title.name,
+				// History
 				highest: title.highest,
 				lastChapter: title.chapterId,
 				history: title.progress,

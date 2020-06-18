@@ -1,7 +1,15 @@
 import { Runtime, JSONResponse } from './Runtime';
+import { ServiceName } from './Service/Service';
 
 interface MochiResult {
 	data: Record<MochiService, string | number>;
+	meta: {
+		time: Record<string, number>;
+	} & Record<string, any>;
+}
+
+interface MochiManyResult {
+	data: Record<MochiService, string | number>[];
 	meta: {
 		time: Record<string, number>;
 	} & Record<string, any>;
@@ -30,7 +38,7 @@ export class Mochi {
 	 */
 	static async find(
 		title: number | string,
-		service: string = 'MangaDex'
+		service: ServiceName = ServiceName.MangaDex
 	): Promise<Record<MochiService, string | number> | undefined> {
 		const response = await Runtime.request<JSONResponse>({
 			url: `${Mochi.server}/connections.php?id=${title}&service=${service}`,
@@ -40,5 +48,19 @@ export class Mochi {
 			return undefined;
 		}
 		return (response.body as MochiResult).data;
+	}
+
+	static async findMany(
+		title: number[] | string[],
+		service: ServiceName = ServiceName.MangaDex
+	): Promise<Record<MochiService, string | number>[] | undefined> {
+		const response = await Runtime.request<JSONResponse>({
+			url: `${Mochi.server}/batch.php?id=${title.join(',')}&service=${service}`,
+			isJson: true,
+		});
+		if (response.status >= 400) {
+			return undefined;
+		}
+		return (response.body as MochiManyResult).data;
 	}
 }

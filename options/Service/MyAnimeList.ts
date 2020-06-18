@@ -1,7 +1,7 @@
 import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
-import { Status, LoginStatus } from '../../src/Service/Service';
+import { Status, LoginStatus, ServiceName } from '../../src/Service/Service';
 import {
 	ManageableService,
 	FileImportableModule,
@@ -31,6 +31,7 @@ interface MyAnimeListTitle {
 	start: string;
 	end: string;
 	score: number;
+	name?: string;
 }
 
 class MyAnimeListActive extends ActivableModule {
@@ -155,7 +156,10 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 	};
 
 	convertTitle = async (title: MyAnimeListTitle, titles: TitleCollection): Promise<boolean> => {
-		const connections = await Mochi.find(title.id, 'MyAnimeList');
+		if (title.id <= 0 || title.chapters < 0 || title.status == MyAnimeListStatus.NONE) {
+			return false;
+		}
+		const connections = await Mochi.find(title.id, ServiceName.MyAnimeList);
 		if (connections !== undefined && connections['MangaDex'] !== undefined) {
 			titles.add(
 				new Title(connections['MangaDex'] as number, {
@@ -169,6 +173,7 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 					start: this.dateToTime(title.start),
 					end: this.dateToTime(title.end),
 					chapters: [],
+					name: title.name,
 				})
 			);
 			return true;
@@ -181,13 +186,14 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 		const mangaList = save.querySelectorAll<HTMLElement>('manga');
 		for (const manga of mangaList) {
 			const title: MyAnimeListTitle = {
-				id: parseInt(manga.querySelector('manga_mangadb_id')?.textContent || ''),
-				chapters: parseInt(manga.querySelector('my_read_chapters')?.textContent || ''),
-				volumes: parseInt(manga.querySelector('my_read_volumes')?.textContent || ''),
+				id: parseInt(manga.querySelector('manga_mangadb_id')?.textContent || '0'),
+				chapters: parseInt(manga.querySelector('my_read_chapters')?.textContent || '0'),
+				volumes: parseInt(manga.querySelector('my_read_volumes')?.textContent || '0'),
 				status: (manga.querySelector('my_status')?.textContent || 'Invalid') as MyAnimeListStatus,
 				score: parseInt(manga.querySelector('my_score')?.textContent || '0'),
 				start: manga.querySelector('my_start_date')?.textContent || '0000-00-00',
 				end: manga.querySelector('my_finish_date')?.textContent || '0000-00-00',
+				name: manga.querySelector('manga_title')?.textContent || undefined,
 			};
 			if (this.validMyAnimeListTitle(title)) {
 				titles.push(title);
@@ -305,7 +311,7 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 }
 
 export class MyAnimeList extends ManageableService {
-	service = new MyAnimeListService(); // TODO: MyAnimeListStatus is not the good one
+	service = new MyAnimeListService();
 	activeModule: MyAnimeListActive = new MyAnimeListActive(this);
 	importModule: MyAnimeListImport = new MyAnimeListImport(this);
 	exportModule: MyAnimeListExport = new MyAnimeListExport(this);

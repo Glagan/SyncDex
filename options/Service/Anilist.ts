@@ -1,6 +1,5 @@
 import { DOM } from '../../src/DOM';
 import { Options } from '../../src/Options';
-import { Status, LoginStatus } from '../../src/Service/Service';
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
@@ -11,8 +10,10 @@ import {
 	ImportStep,
 	APIExportableModule,
 	LoginMethod,
+	ImportSummary,
 } from './Service';
 import { Anilist as AnilistService, AnilistStatus } from '../../src/Service/Anilist';
+import { ServiceName } from '../../src/Service/Service';
 
 interface ViewerResponse {
 	data: {
@@ -36,6 +37,11 @@ interface AnilistTitle {
 	startedAt: AnilistDate;
 	completedAt: AnilistDate;
 	score: number | null;
+	media: {
+		title: {
+			userPreferred: string;
+		};
+	};
 }
 
 interface AnilistList {
@@ -65,6 +71,7 @@ class AnilistActive extends ActivableModule {
 
 class AnilistImport extends APIImportableModule<AnilistTitle> {
 	currentPage: number = 0;
+	convertTitle = undefined;
 
 	static viewerQuery = `
 		query {
@@ -93,6 +100,11 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 							month
 							day
 						}
+						media {
+							title {
+								userPreferred
+							}
+						}
 					}
 				}
 			}
@@ -107,7 +119,10 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 			return `Importing Titles.`;
 		}
 		// ImportStep.CONVERT_TITLES
-		return `Converting title ${++this.currentTitle} out of ${total}.`;
+		if (this.convertManyTitles !== undefined) {
+			this.currentTitle = Math.min(total as number, this.currentTitle + this.perConvert);
+		} else ++this.currentTitle;
+		return `Converting title ${this.currentTitle} out of ${total}.`;
 	};
 
 	handlePage = async (): Promise<AnilistTitle[] | false> => {
@@ -165,6 +180,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 					startedAt: entry.startedAt,
 					completedAt: entry.completedAt,
 					score: entry.score,
+					media: entry.media,
 				});
 			}
 		}
@@ -178,22 +194,40 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 		return undefined;
 	};
 
-	convertTitle = async (titles: TitleCollection, title: AnilistTitle): Promise<boolean> => {
-		const connections = await Mochi.find(title.mediaId, 'Anilist');
-		if (connections !== undefined && connections['MangaDex'] !== undefined) {
-			titles.add(
-				new Title(connections['MangaDex'] as number, {
-					services: { al: title.mediaId },
-					progress: {
-						chapter: title.progress,
-						volume: title.progressVolumes,
-					},
-					status: this.manager.service.toStatus(title.status),
-					chapters: [],
-					start: this.dateToNumber(title.startedAt),
-					end: this.dateToNumber(title.completedAt),
-				})
-			);
+	convertManyTitles = async (
+		titles: TitleCollection,
+		titleList: AnilistTitle[],
+		summary: ImportSummary
+	): Promise<boolean> => {
+		const connections = await Mochi.findMany(
+			titleList.map((t) => t.mediaId),
+			ServiceName.Anilist
+		);
+		if (connections !== undefined) {
+			for (const key in connections) {
+				if (connections.hasOwnProperty(key)) {
+					const connection = connections[key];
+					if (connection['MangaDex'] !== undefined) {
+						const id = parseInt(key);
+						const title = titleList.find((t) => t.mediaId == id) as AnilistTitle;
+						titles.add(
+							new Title(connection['MangaDex'] as number, {
+								services: { al: title.mediaId },
+								progress: {
+									chapter: title.progress,
+									volume: title.progressVolumes,
+								},
+								status: this.manager.service.toStatus(title.status),
+								chapters: [],
+								start: this.dateToNumber(title.startedAt),
+								end: this.dateToNumber(title.completedAt),
+								name: title.media.title.userPreferred,
+							})
+						);
+						summary.valid++;
+					}
+				}
+			}
 			return true;
 		}
 		return false;
@@ -262,9 +296,9 @@ class AnilistExport extends APIExportableModule {
 
 export class Anilist extends ManageableService {
 	service: AnilistService = new AnilistService();
-	activeModule: ActivableModule = new AnilistActive(this);
-	importModule: APIImportableModule<AnilistTitle> = new AnilistImport(this);
-	exportModule: APIExportableModule = new AnilistExport(this);
+	activeModule: AnilistActive = new AnilistActive(this);
+	importModule: AnilistImport = new AnilistImport(this);
+	exportModule: AnilistExport = new AnilistExport(this);
 
 	createTitle = (): HTMLElement => {
 		return DOM.create('span', {

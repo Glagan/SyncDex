@@ -13,18 +13,18 @@ export type ServiceList = { [key in keyof ServiceKeyMap]?: ServiceKeyMap[key] };
 export interface SaveTitle {
 	s: ServiceList; // services
 	st: Status; // status
-	sc: number; // score
+	sc?: number; // score
 	p: SaveProgress; // progress
 	c?: number[]; // chapters
 	sd?: number; // start
 	ed?: number; // end
 	lt?: number; // lastTitle
 	lc?: number; // lastCheck
+	n?: string; // name
 	// History
 	id?: number; // lastChapter
 	h?: SaveProgress; // history
 	hi?: number; // highest
-	n?: string; // name
 	lr?: number; // lastRead
 }
 
@@ -54,7 +54,7 @@ export class Title implements FullTitle {
 	id: number;
 	services: ServiceList = {};
 	status: Status = Status.NONE;
-	score: number = -1;
+	score: number = 0;
 	progress: Progress = { chapter: -1, volume: 0 };
 	chapters: number[] = [];
 	start?: number;
@@ -84,7 +84,7 @@ export class Title implements FullTitle {
 				volume: title.p.v,
 			},
 			status: title.st,
-			score: title.sc,
+			score: title.sc || 0,
 			chapters: title.c || [],
 			start: title.sd,
 			end: title.ed,
@@ -151,7 +151,7 @@ export class Title implements FullTitle {
 		const mapped: SaveTitle = {
 			s: this.services,
 			st: this.status,
-			sc: this.score,
+			sc: this.score > 0 ? this.score : undefined,
 			p: {
 				c: this.progress.chapter,
 				v: this.progress.volume,

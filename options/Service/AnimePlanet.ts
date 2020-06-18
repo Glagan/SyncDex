@@ -3,7 +3,7 @@ import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { Progress } from '../../src/interfaces';
 import { ManageableService, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
-import { Status } from '../../src/Service/Service';
+import { Status, ServiceName } from '../../src/Service/Service';
 import { AnimePlanet as AnimePlanetService } from '../../src/Service/AnimePlanet';
 import { DOM } from '../../src/DOM';
 
@@ -12,6 +12,7 @@ interface AnimePlanetTitle {
 	status: Status;
 	progress: Progress;
 	score: number;
+	name: string;
 }
 
 class AnimePlanetActive extends ActivableModule {
@@ -23,6 +24,7 @@ class AnimePlanetActive extends ActivableModule {
 
 class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 	parser: DOMParser = new DOMParser();
+	convertManyTitles = undefined;
 
 	// Set the list type to 'list'
 	preMain = async (): Promise<boolean> => {
@@ -59,17 +61,22 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 		const body = this.parser.parseFromString(response.body, 'text/html');
 		const rows = body.querySelectorAll('table.personalList tbody tr');
 		for (const row of rows) {
-			const apTitle = {
-				progress: {},
-			} as AnimePlanetTitle;
+			const name = row.querySelector('a.tooltip') as HTMLElement;
 			const form = row.querySelector('form[data-id]') as HTMLSelectElement;
-			apTitle.id = parseInt(form.dataset.id as string);
 			const chapter = row.querySelector('select[name="chapters"]') as HTMLSelectElement;
-			apTitle.progress.chapter = parseInt(chapter.value as string);
 			const volume = row.querySelector('select[name="volumes"]') as HTMLSelectElement;
-			apTitle.progress.volume = parseInt(volume.value as string);
 			const status = row.querySelector('select.changeStatus') as HTMLSelectElement;
-			apTitle.status = this.manager.service.toStatus(parseInt(status.value));
+			const score = row.querySelector('div.starrating > div[name]') as HTMLElement;
+			const apTitle = {
+				progress: {
+					chapter: parseInt(chapter.value as string),
+					volume: parseInt(volume.value as string),
+				},
+				id: parseInt(form.dataset.id as string),
+				status: this.manager.service.toStatus(parseInt(status.value)),
+				name: name.textContent as string,
+				score: parseInt(score.getAttribute('name') as string),
+			};
 			if (apTitle.status !== Status.NONE) {
 				titles.push(apTitle);
 			}
@@ -85,7 +92,7 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 	};
 
 	convertTitle = async (titles: TitleCollection, title: AnimePlanetTitle): Promise<boolean> => {
-		const connections = await Mochi.find(title.id, 'AnimePlanet');
+		const connections = await Mochi.find(title.id, ServiceName.AnimePlanet);
 		if (connections !== undefined && connections['MangaDex'] !== undefined) {
 			titles.add(
 				new Title(connections['MangaDex'] as number, {
@@ -93,6 +100,8 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 					progress: title.progress,
 					status: title.status,
 					chapters: [],
+					name: title.name,
+					score: title.score,
 				})
 			);
 			return true;

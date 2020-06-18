@@ -45,6 +45,7 @@ class MangaDexService extends Service {
 
 class MangaDexImport extends APIImportableModule<Title> {
 	parser: DOMParser = new DOMParser();
+	convertManyTitles = undefined;
 
 	handlePage = async (): Promise<Title[] | false> => {
 		const response = await Runtime.request<RawResponse>({
@@ -79,6 +80,7 @@ class MangaDexImport extends APIImportableModule<Title> {
 							? this.manager.service.toStatus(parseInt(status.getAttribute('id') as string))
 							: Status.NONE,
 						score: score ? parseInt(score.getAttribute('id') as string) : undefined,
+						name: (row.querySelector('.manga_title') as HTMLElement).textContent as string,
 					})
 				);
 			}
@@ -130,6 +132,6 @@ class MangaDexExport extends APIExportableModule {
 export class MangaDex extends ManageableService {
 	service: MangaDexService = new MangaDexService();
 	activeModule = undefined;
-	importModule: APIImportableModule<Title> = new MangaDexImport(this);
-	exportModule: APIExportableModule = new MangaDexExport(this);
+	importModule: MangaDexImport = new MangaDexImport(this);
+	exportModule: MangaDexExport = new MangaDexExport(this);
 }

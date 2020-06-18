@@ -666,7 +666,9 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 	currentTitle: number = 0;
 	state: ImportState = { current: 0, max: 1 };
 	abstract handlePage(): Promise<T[] | false>;
-	abstract convertTitle(titles: TitleCollection, title: T): Promise<boolean>;
+	abstract convertTitle?(titles: TitleCollection, title: T): Promise<boolean>;
+	abstract convertManyTitles?(titles: TitleCollection, titleList: T[], summary: ImportSummary): Promise<boolean>;
+	perConvert: number = 100;
 	preMain?(): Promise<boolean>;
 
 	getNextPage = (): boolean => {
@@ -682,7 +684,10 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 			return `Importing page ${this.state.current} out of ${this.state.max}.`;
 		}
 		// ImportStep.CONVERT_TITLES
-		return `Converting title ${++this.currentTitle} out of ${total}.`;
+		if (this.convertManyTitles !== undefined) {
+			this.currentTitle = Math.min(total as number, this.currentTitle + this.perConvert);
+		} else ++this.currentTitle;
+		return `Converting title ${this.currentTitle} out of ${total}.`;
 	};
 
 	import = async (): Promise<void> => {
@@ -743,19 +748,36 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 		}
 		this.notification('success', `Found a total of ${titles.length} Titles.`);
 		// Convert the list to a TitleCollection
-		progress = this.notification('info loading', []);
+		progress = this.notification('info loading', '');
 		let collection = new TitleCollection();
-		for (let i = 0, max = titles.length; !this.doStop && i < max; i++) {
-			const title = titles[i];
-			DOM.clear(progress);
-			DOM.append(
-				progress,
-				DOM.text(this.getProgress(ImportStep.CONVERT_TITLES, titles.length)),
-				DOM.space(),
-				this.stopButton
-			);
-			if (await this.convertTitle(collection, title)) {
-				summary.valid++;
+		if (this.convertManyTitles !== undefined && this.perConvert > 0) {
+			let offset = 0;
+			let max = titles.length / this.perConvert;
+			for (let i = 0; !this.doStop && i < max; i++) {
+				const titleList = titles.slice(offset, offset + this.perConvert);
+				offset += this.perConvert;
+				DOM.clear(progress);
+				DOM.append(
+					progress,
+					DOM.text(this.getProgress(ImportStep.CONVERT_TITLES, titles.length)),
+					DOM.space(),
+					this.stopButton
+				);
+				await this.convertManyTitles(collection, titleList, summary);
+			}
+		} else if (this.convertTitle) {
+			for (let i = 0, max = titles.length; !this.doStop && i < max; i++) {
+				const title = titles[i];
+				DOM.clear(progress);
+				DOM.append(
+					progress,
+					DOM.text(this.getProgress(ImportStep.CONVERT_TITLES, titles.length)),
+					DOM.space(),
+					this.stopButton
+				);
+				if (await this.convertTitle(collection, title)) {
+					summary.valid++;
+				}
 			}
 		}
 		this.stopButton.remove();
@@ -768,6 +790,7 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 		} else {
 			collection.merge(await TitleCollection.get(collection.ids));
 		}
+		await Options.save(); // Always save -- options are deleted in LocalStorage
 		await collection.save();
 		progress.remove();
 		this.displaySummary(summary);
@@ -844,6 +867,8 @@ export abstract class FileExportableModule extends ExportableModule {
 		let notification = this.notification('info loading', 'Creating file...');
 		let save = await this.fileContent();
 		DOM.append(notification, DOM.space(), DOM.text('done !'));
+		const blob = new Blob([save], { type: 'application/json;charset=utf-8' });
+		const href = URL.createObjectURL(blob);
 		notification.classList.remove('loading');
 		if (save === '') {
 			this.notification('danger', `There was an error while creating your file.`);
@@ -856,12 +881,13 @@ export abstract class FileExportableModule extends ExportableModule {
 			attributes: {
 				download: 'SyncDex.json',
 				target: '_blank',
-				href: `data:application/json;charset=utf-8,${encodeURIComponent(save)}`,
+				href: href,
 			},
 		});
 		document.body.appendChild(downloadLink);
 		downloadLink.click();
 		downloadLink.remove();
+		URL.revokeObjectURL(href);
 		this.notification('success', [DOM.text('Save exported !'), DOM.space(), this.resetButton()]);
 	};
 }
