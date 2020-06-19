@@ -78,27 +78,29 @@ class MyMangaDexService extends Service {
 class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTitle> {
 	fileType: FileImportFormat = 'JSON';
 
-	convertTitle = async (title: MyMangaDexTitle, titles: TitleCollection): Promise<boolean> => {
-		titles.add(
-			new Title(title.id, {
-				services: {
-					mal: title.mal,
-				},
-				status: Status.NONE,
-				progress: {
-					chapter: title.last,
-				},
-				lastTitle: title.lastTitle,
-				lastCheck: title.lastMAL,
-				chapters: title.chapters,
-				name: title.name,
-				// History
-				highest: title.highest,
-				lastChapter: title.chapterId,
-				history: title.progress,
-			})
-		);
-		return true;
+	convertTitles = async (titles: TitleCollection, titleList: MyMangaDexTitle[]): Promise<number> => {
+		for (const title of titleList) {
+			titles.add(
+				new Title(title.id, {
+					services: {
+						mal: title.mal,
+					},
+					status: Status.NONE,
+					progress: {
+						chapter: title.last,
+					},
+					lastTitle: title.lastTitle,
+					lastCheck: title.lastMAL,
+					chapters: title.chapters,
+					name: title.name,
+					// History
+					highest: title.highest,
+					lastChapter: title.chapterId,
+					history: title.progress,
+				})
+			);
+		}
+		return titleList.length;
 	};
 
 	isValidMyMangaDexTitle = (title: Record<string, any>): boolean => {

@@ -155,30 +155,42 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 		return d.getTime();
 	};
 
-	convertTitle = async (title: MyAnimeListTitle, titles: TitleCollection): Promise<boolean> => {
-		if (title.id <= 0 || title.chapters < 0 || title.status == MyAnimeListStatus.NONE) {
-			return false;
+	convertTitles = async (titles: TitleCollection, titleList: MyAnimeListTitle[]): Promise<number> => {
+		const ids = titleList
+			.filter((title) => {
+				return title.id > 0 && title.chapters >= 0 && title.status != MyAnimeListStatus.NONE;
+			})
+			.map((t) => t.id);
+		const connections = await Mochi.findMany(ids, this.manager.service.name);
+		let total = 0;
+		if (connections !== undefined) {
+			for (const key in connections) {
+				if (connections.hasOwnProperty(key)) {
+					const connection = connections[key];
+					if (connection['MangaDex'] !== undefined) {
+						const id = parseInt(key);
+						const title = titleList.find((t) => t.id == id) as MyAnimeListTitle;
+						titles.add(
+							new Title(connection['MangaDex'], {
+								services: { mal: title.id },
+								progress: {
+									chapter: title.chapters,
+									volume: title.volumes,
+								},
+								status: this.toStatus(title.status),
+								score: title.score > 0 ? title.score : undefined,
+								start: this.dateToTime(title.start),
+								end: this.dateToTime(title.end),
+								chapters: [],
+								name: title.name,
+							})
+						);
+						total++;
+					}
+				}
+			}
 		}
-		const connections = await Mochi.find(title.id, ServiceName.MyAnimeList);
-		if (connections !== undefined && connections['MangaDex'] !== undefined) {
-			titles.add(
-				new Title(connections['MangaDex'] as number, {
-					services: { mal: title.id },
-					progress: {
-						chapter: title.chapters,
-						volume: title.volumes,
-					},
-					status: this.toStatus(title.status),
-					score: title.score > 0 ? title.score : undefined,
-					start: this.dateToTime(title.start),
-					end: this.dateToTime(title.end),
-					chapters: [],
-					name: title.name,
-				})
-			);
-			return true;
-		}
-		return false;
+		return total;
 	};
 
 	handleTitles = async (save: Document): Promise<MyAnimeListTitle[]> => {

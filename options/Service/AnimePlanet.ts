@@ -91,22 +91,35 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 		return titles;
 	};
 
-	convertTitle = async (titles: TitleCollection, title: AnimePlanetTitle): Promise<boolean> => {
-		const connections = await Mochi.find(title.id, ServiceName.AnimePlanet);
-		if (connections !== undefined && connections['MangaDex'] !== undefined) {
-			titles.add(
-				new Title(connections['MangaDex'] as number, {
-					services: { ap: title.id },
-					progress: title.progress,
-					status: title.status,
-					chapters: [],
-					name: title.name,
-					score: title.score,
-				})
-			);
-			return true;
+	convertTitles = async (titles: TitleCollection, titleList: AnimePlanetTitle[]): Promise<number> => {
+		const connections = await Mochi.findMany(
+			titleList.map((t) => t.id),
+			this.manager.service.name
+		);
+		let total = 0;
+		if (connections !== undefined) {
+			for (const key in connections) {
+				if (connections.hasOwnProperty(key)) {
+					const connection = connections[key];
+					if (connection['MangaDex'] !== undefined) {
+						const id = parseInt(key);
+						const title = titleList.find((t) => t.id == id) as AnimePlanetTitle;
+						titles.add(
+							new Title(connection['MangaDex'], {
+								services: { ap: title.id },
+								progress: title.progress,
+								status: title.status,
+								chapters: [],
+								name: title.name,
+								score: title.score,
+							})
+						);
+						total++;
+					}
+				}
+			}
 		}
-		return false;
+		return total;
 	};
 }
 

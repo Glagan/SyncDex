@@ -60,9 +60,9 @@ class SyncDexImport extends FileImportableModule<ExportedSave, Title> {
 		return titles;
 	};
 
-	convertTitle = async (title: Title, titles: TitleCollection): Promise<boolean> => {
-		titles.add(title);
-		return true;
+	convertTitles = async (titles: TitleCollection, titleList: Title[]): Promise<number> => {
+		titles.add(...titleList);
+		return titleList.length;
 	};
 
 	handleOptions = (save: ExportedSave, summary: ImportSummary): void => {

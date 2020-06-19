@@ -100,9 +100,9 @@ class MangaDexImport extends APIImportableModule<Title> {
 		return titles;
 	};
 
-	convertTitle = async (titles: TitleCollection, title: Title): Promise<boolean> => {
-		titles.add(title);
-		return true;
+	convertTitles = async (titles: TitleCollection, titleList: Title[]): Promise<number> => {
+		titles.add(...titleList);
+		return titleList.length;
 	};
 }
 

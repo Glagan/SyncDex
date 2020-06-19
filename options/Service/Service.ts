@@ -539,9 +539,10 @@ export abstract class ImportableModule extends SaveModule {
 export abstract class FileImportableModule<T extends Object | Document, R extends Object> extends ImportableModule {
 	abstract fileType: FileImportFormat;
 	abstract handleTitles(save: T | Document): Promise<R[]>;
-	abstract convertTitle(title: R, titles: TitleCollection): Promise<boolean>;
+	abstract convertTitles(titles: TitleCollection, titleList: R[]): Promise<number>;
 	abstract handleOptions?(save: T | Document, summary: ImportSummary): void;
 	abstract handleHistory?(save: T | Document, titles: TitleCollection, summary: ImportSummary): number[];
+	perConvert: number = 100;
 
 	inputMessage = (): string => {
 		return `${this.manager.service.name} save file`;
@@ -615,19 +616,22 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		// Convert Service titles to Title
 		let collection = new TitleCollection();
 		progress = this.notification('info loading', []);
-		let index = 0;
-		for (const title of titles) {
+		let offset = 0;
+		let max = titles.length / this.perConvert;
+		let currentTitle = 0;
+		for (let i = 0; !this.doStop && i < max; i++) {
+			const titleList = titles.slice(offset, offset + this.perConvert);
+			offset += this.perConvert;
+			currentTitle = Math.min(summary.total, currentTitle + this.perConvert);
 			DOM.clear(progress);
 			DOM.append(
 				progress,
-				DOM.text(`Converting title ${++index} out of ${summary.total}.`),
+				DOM.text(`Converting title ${currentTitle} out of ${summary.total}.`),
 				DOM.space(),
 				this.stopButton
 			);
-			if (await this.convertTitle(title, collection)) {
-				summary.valid++;
-			}
-			if (this.doStop) break;
+			const converted = await this.convertTitles(collection, titleList);
+			summary.valid += converted;
 		}
 		this.stopButton.remove();
 		progress.classList.remove('loading');
@@ -666,8 +670,7 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 	currentTitle: number = 0;
 	state: ImportState = { current: 0, max: 1 };
 	abstract handlePage(): Promise<T[] | false>;
-	abstract convertTitle?(titles: TitleCollection, title: T): Promise<boolean>;
-	abstract convertManyTitles?(titles: TitleCollection, titleList: T[], summary: ImportSummary): Promise<boolean>;
+	abstract convertTitles(titles: TitleCollection, titleList: T[]): Promise<number>;
 	perConvert: number = 100;
 	preMain?(): Promise<boolean>;
 
@@ -684,9 +687,7 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 			return `Importing page ${this.state.current} out of ${this.state.max}.`;
 		}
 		// ImportStep.CONVERT_TITLES
-		if (this.convertManyTitles !== undefined) {
-			this.currentTitle = Math.min(total as number, this.currentTitle + this.perConvert);
-		} else ++this.currentTitle;
+		this.currentTitle = Math.min(total as number, this.currentTitle + this.perConvert);
 		return `Converting title ${this.currentTitle} out of ${total}.`;
 	};
 
@@ -750,35 +751,20 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 		// Convert the list to a TitleCollection
 		progress = this.notification('info loading', '');
 		let collection = new TitleCollection();
-		if (this.convertManyTitles !== undefined && this.perConvert > 0) {
-			let offset = 0;
-			let max = titles.length / this.perConvert;
-			for (let i = 0; !this.doStop && i < max; i++) {
-				const titleList = titles.slice(offset, offset + this.perConvert);
-				offset += this.perConvert;
-				DOM.clear(progress);
-				DOM.append(
-					progress,
-					DOM.text(this.getProgress(ImportStep.CONVERT_TITLES, titles.length)),
-					DOM.space(),
-					this.stopButton
-				);
-				await this.convertManyTitles(collection, titleList, summary);
-			}
-		} else if (this.convertTitle) {
-			for (let i = 0, max = titles.length; !this.doStop && i < max; i++) {
-				const title = titles[i];
-				DOM.clear(progress);
-				DOM.append(
-					progress,
-					DOM.text(this.getProgress(ImportStep.CONVERT_TITLES, titles.length)),
-					DOM.space(),
-					this.stopButton
-				);
-				if (await this.convertTitle(collection, title)) {
-					summary.valid++;
-				}
-			}
+		let offset = 0;
+		let max = titles.length / this.perConvert;
+		for (let i = 0; !this.doStop && i < max; i++) {
+			const titleList = titles.slice(offset, offset + this.perConvert);
+			offset += this.perConvert;
+			DOM.clear(progress);
+			DOM.append(
+				progress,
+				DOM.text(this.getProgress(ImportStep.CONVERT_TITLES, titles.length)),
+				DOM.space(),
+				this.stopButton
+			);
+			const converted = await this.convertTitles(collection, titleList);
+			summary.valid += converted;
 		}
 		this.stopButton.remove();
 		progress.classList.remove('loading');

@@ -121,14 +121,6 @@ export class Title implements FullTitle {
 	 * Select highest values of both Titles and assign them to *this*
 	 */
 	merge = (other: Title): void => {
-		// Update *this* Status if it's NONE or/and if other is not NONE
-		if (other.status != Status.NONE || this.status == Status.NONE) {
-			this.status = other.status;
-		}
-		if (this.progress.chapter < other.progress.chapter) {
-			this.progress = other.progress;
-		}
-		Object.assign(this.services, other.services); // Merge Services -- other erase *this*
 		// Update all 'number' properties to select the highest ones -- except for dates
 		for (let k in this) {
 			const key = k as keyof Title;
@@ -137,6 +129,14 @@ export class Title implements FullTitle {
 				Object.assign(this, { [key]: order(this[key] as number, other[key] as number) });
 			}
 		}
+		// Update *this* Status if it's NONE or/and if other is not NONE
+		if (other.status != Status.NONE || this.status == Status.NONE) {
+			this.status = other.status;
+		}
+		if (this.progress.chapter < other.progress.chapter) {
+			this.progress = other.progress;
+		}
+		Object.assign(this.services, other.services); // Merge Services -- other erase *this*
 		// Merge chapters array
 		this.chapters = this.chapters.concat(other.chapters);
 		// Sort and only keep the first (desc) *Options.chaptersSaved* chapters
@@ -144,6 +144,10 @@ export class Title implements FullTitle {
 		if (this.chapters.length > Options.chaptersSaved) {
 			const diff = Options.chaptersSaved - this.chapters.length;
 			this.chapters.splice(-diff, diff);
+		}
+		// Name
+		if (this.name === undefined) {
+			this.name = other.name;
 		}
 	};
 
@@ -192,8 +196,8 @@ export class TitleCollection {
 		this.collection = titles;
 	}
 
-	add = (title: Title): void => {
-		this.collection.push(title);
+	add = (...title: Title[]): void => {
+		this.collection.push(...title);
 	};
 
 	get ids(): number[] {

@@ -183,27 +183,40 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 		return titles;
 	};
 
-	convertTitle = async (titles: TitleCollection, title: KitsuTitle): Promise<boolean> => {
-		const connections = await Mochi.find(title.id, ServiceName.Kitsu);
-		if (connections !== undefined && connections['MangaDex'] !== undefined) {
-			titles.add(
-				new Title(connections['MangaDex'] as number, {
-					services: { ku: title.id },
-					progress: {
-						chapter: title.chapter,
-						volume: title.volume,
-					},
-					status: title.status,
-					chapters: [],
-					score: title.score,
-					start: title.start ? new Date(title.start).getTime() : undefined,
-					end: title.end ? new Date(title.end).getTime() : undefined,
-					name: title.name,
-				})
-			);
-			return true;
+	convertTitles = async (titles: TitleCollection, titleList: KitsuTitle[]): Promise<number> => {
+		const connections = await Mochi.findMany(
+			titleList.map((t) => t.id),
+			this.manager.service.name
+		);
+		let total = 0;
+		if (connections !== undefined) {
+			for (const key in connections) {
+				if (connections.hasOwnProperty(key)) {
+					const connection = connections[key];
+					if (connection['MangaDex'] !== undefined) {
+						const id = parseInt(key);
+						const title = titleList.find((t) => t.id == id) as KitsuTitle;
+						titles.add(
+							new Title(connection['MangaDex'], {
+								services: { ku: title.id },
+								progress: {
+									chapter: title.chapter,
+									volume: title.volume,
+								},
+								status: title.status,
+								chapters: [],
+								score: title.score,
+								start: title.start ? new Date(title.start).getTime() : undefined,
+								end: title.end ? new Date(title.end).getTime() : undefined,
+								name: title.name,
+							})
+						);
+						total++;
+					}
+				}
+			}
 		}
-		return false;
+		return total;
 	};
 }
 

@@ -71,7 +71,6 @@ class AnilistActive extends ActivableModule {
 
 class AnilistImport extends APIImportableModule<AnilistTitle> {
 	currentPage: number = 0;
-	convertTitle = undefined;
 
 	static viewerQuery = `
 		query {
@@ -119,9 +118,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 			return `Importing Titles.`;
 		}
 		// ImportStep.CONVERT_TITLES
-		if (this.convertManyTitles !== undefined) {
-			this.currentTitle = Math.min(total as number, this.currentTitle + this.perConvert);
-		} else ++this.currentTitle;
+		this.currentTitle = Math.min(total as number, this.currentTitle + this.perConvert);
 		return `Converting title ${this.currentTitle} out of ${total}.`;
 	};
 
@@ -194,15 +191,12 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 		return undefined;
 	};
 
-	convertManyTitles = async (
-		titles: TitleCollection,
-		titleList: AnilistTitle[],
-		summary: ImportSummary
-	): Promise<boolean> => {
+	convertTitles = async (titles: TitleCollection, titleList: AnilistTitle[]): Promise<number> => {
 		const connections = await Mochi.findMany(
 			titleList.map((t) => t.mediaId),
-			ServiceName.Anilist
+			this.manager.service.name
 		);
+		let total = 0;
 		if (connections !== undefined) {
 			for (const key in connections) {
 				if (connections.hasOwnProperty(key)) {
@@ -211,7 +205,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 						const id = parseInt(key);
 						const title = titleList.find((t) => t.mediaId == id) as AnilistTitle;
 						titles.add(
-							new Title(connection['MangaDex'] as number, {
+							new Title(connection['MangaDex'], {
 								services: { al: title.mediaId },
 								progress: {
 									chapter: title.progress,
@@ -224,13 +218,12 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 								name: title.media.title.userPreferred,
 							})
 						);
-						summary.valid++;
+						total++;
 					}
 				}
 			}
-			return true;
 		}
-		return false;
+		return total;
 	};
 }
 

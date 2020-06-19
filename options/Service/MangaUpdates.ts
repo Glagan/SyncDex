@@ -72,7 +72,8 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 			return `Importing list ${this.currentList} out of 5.`;
 		}
 		// ImportStep.CONVERT_TITLES
-		return `Converting title ${++this.currentTitle} out of ${total}.`;
+		this.currentTitle = Math.min(total as number, this.currentTitle + this.perConvert);
+		return `Converting title ${this.currentTitle} out of ${total}.`;
 	};
 
 	handlePage = async (): Promise<MangaUpdatesTitle[] | false> => {
@@ -109,22 +110,35 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 		return false;
 	};
 
-	convertTitle = async (titles: TitleCollection, title: MangaUpdatesTitle): Promise<boolean> => {
-		const connections = await Mochi.find(title.id, ServiceName.MangaUpdates);
-		if (connections !== undefined && connections['MangaDex'] !== undefined) {
-			titles.add(
-				new Title(connections['MangaDex'] as number, {
-					services: { mu: title.id },
-					progress: title.progress,
-					status: title.status,
-					chapters: [],
-					score: title.score,
-					name: title.name,
-				})
-			);
-			return true;
+	convertTitles = async (titles: TitleCollection, titleList: MangaUpdatesTitle[]): Promise<number> => {
+		const connections = await Mochi.findMany(
+			titleList.map((t) => t.id),
+			this.manager.service.name
+		);
+		let total = 0;
+		if (connections !== undefined) {
+			for (const key in connections) {
+				if (connections.hasOwnProperty(key)) {
+					const connection = connections[key];
+					if (connection['MangaDex'] !== undefined) {
+						const id = parseInt(key);
+						const title = titleList.find((t) => t.id == id) as MangaUpdatesTitle;
+						titles.add(
+							new Title(connection['MangaDex'] as number, {
+								services: { mu: title.id },
+								progress: title.progress,
+								status: title.status,
+								chapters: [],
+								score: title.score,
+								name: title.name,
+							})
+						);
+						total++;
+					}
+				}
+			}
 		}
-		return false;
+		return total;
 	};
 }
 
