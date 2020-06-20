@@ -1,27 +1,15 @@
 import { Runtime, JSONResponse } from './Runtime';
 import { ServiceName } from './Service/Service';
 
+type MochiConnections = {
+	[key in ServiceName]: number;
+};
+
 interface MochiResult {
-	data: Record<MochiService, number>;
+	data: MochiConnections[];
 	meta: {
 		time: Record<string, number>;
 	} & Record<string, any>;
-}
-
-interface MochiManyResult {
-	data: Record<MochiService, number>[];
-	meta: {
-		time: Record<string, number>;
-	} & Record<string, any>;
-}
-
-enum MochiService {
-	MangaDex = 'MangaDex',
-	MyAnimeList = 'MyAnimeList',
-	Anilist = 'Anilist',
-	Kitsu = 'Kitsu',
-	MangaUpdates = 'MangaUpdates',
-	AnimePlanet = 'AnimePlanet',
 }
 
 export class Mochi {
@@ -38,29 +26,33 @@ export class Mochi {
 	 */
 	static async find(
 		title: number | string,
-		service: ServiceName = ServiceName.MangaDex
-	): Promise<Record<MochiService, number> | undefined> {
+		source: ServiceName = ServiceName.MangaDex
+	): Promise<MochiConnections | undefined> {
 		const response = await Runtime.request<JSONResponse>({
-			url: `${Mochi.server}/connections.php?id=${title}&service=${service}`,
+			url: `${Mochi.server}/connections.php?id=${title}&source=${source}`,
+			isJson: true,
+		});
+		if (response.status >= 400) {
+			return undefined;
+		}
+		const body = response.body as MochiResult;
+		if (body.data === undefined) {
+			return undefined;
+		}
+		return body.data[+title];
+	}
+
+	static async findMany(
+		title: number[] | string[],
+		source: ServiceName = ServiceName.MangaDex
+	): Promise<MochiConnections[] | undefined> {
+		const response = await Runtime.request<JSONResponse>({
+			url: `${Mochi.server}/connections.php?id=${title.join(',')}&source=${source}`,
 			isJson: true,
 		});
 		if (response.status >= 400) {
 			return undefined;
 		}
 		return (response.body as MochiResult).data;
-	}
-
-	static async findMany(
-		title: number[] | string[],
-		service: ServiceName = ServiceName.MangaDex
-	): Promise<Record<MochiService, number>[] | undefined> {
-		const response = await Runtime.request<JSONResponse>({
-			url: `${Mochi.server}/batch.php?id=${title.join(',')}&service=${service}`,
-			isJson: true,
-		});
-		if (response.status >= 400) {
-			return undefined;
-		}
-		return (response.body as MochiManyResult).data;
 	}
 }

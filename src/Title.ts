@@ -158,7 +158,7 @@ export class Title implements FullTitle {
 			sc: this.score > 0 ? this.score : undefined,
 			p: {
 				c: this.progress.chapter,
-				v: this.progress.volume,
+				v: this.progress.volume && this.progress.volume > 0 ? this.progress.volume : undefined,
 			},
 			sd: this.start,
 			ed: this.end,

@@ -140,19 +140,51 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 
 	validMyAnimeListTitle = (title: MyAnimeListTitle): boolean => {
 		return (
-			!isNaN(title.id) &&
-			!isNaN(title.chapters) &&
-			!isNaN(title.volumes) &&
-			this.toStatus(title.status) !== Status.NONE &&
-			title.status !== MyAnimeListStatus.NONE
+			!isNaN(+title.id) &&
+			!isNaN(+title.chapters) &&
+			!isNaN(+title.volumes) &&
+			!isNaN(+title.score) &&
+			typeof title.start === 'string' &&
+			typeof title.end === 'string' &&
+			this.toStatus(title.status) !== Status.NONE
 		);
 	};
 
 	// Convert a YYYY-MM-DD MyAnimeList date to a Date timestamp
-	dateToTime = (date: string): number | undefined => {
+	dateToTime = (date?: string): number | undefined => {
+		if (date === undefined) return undefined;
 		const d = new Date(date);
-		if (d.getFullYear() == 0) return undefined;
+		if (isNaN(d.getFullYear()) || d.getFullYear() === 0) return undefined;
 		return d.getTime();
+	};
+
+	handleTitles = async (save: Document): Promise<MyAnimeListTitle[]> => {
+		let titles: MyAnimeListTitle[] = [];
+		const mangaList = save.querySelectorAll<HTMLElement>('manga');
+		for (const manga of mangaList) {
+			const title: MyAnimeListTitle = {
+				id: parseInt(manga.querySelector('manga_mangadb_id')?.textContent || '0'),
+				chapters: parseInt(manga.querySelector('my_read_chapters')?.textContent || '0'),
+				volumes: parseInt(manga.querySelector('my_read_volumes')?.textContent || '0'),
+				status: (manga.querySelector('my_status')?.textContent || 'Invalid') as MyAnimeListStatus,
+				score: parseInt(manga.querySelector('my_score')?.textContent || '0'),
+				start: '0000-00-00',
+				end: '0000-00-00',
+				name: manga.querySelector('manga_title')?.textContent || undefined,
+			};
+			const start = manga.querySelector('my_start_date');
+			if (start !== null && start.textContent !== null) {
+				title.start = start.textContent;
+			}
+			const end = manga.querySelector('my_finish_date');
+			if (end && end.textContent !== null) {
+				title.end = end.textContent;
+			}
+			if (this.validMyAnimeListTitle(title)) {
+				titles.push(title);
+			}
+		}
+		return titles;
 	};
 
 	convertTitles = async (titles: TitleCollection, titleList: MyAnimeListTitle[]): Promise<number> => {
@@ -191,27 +223,6 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 			}
 		}
 		return total;
-	};
-
-	handleTitles = async (save: Document): Promise<MyAnimeListTitle[]> => {
-		let titles: MyAnimeListTitle[] = [];
-		const mangaList = save.querySelectorAll<HTMLElement>('manga');
-		for (const manga of mangaList) {
-			const title: MyAnimeListTitle = {
-				id: parseInt(manga.querySelector('manga_mangadb_id')?.textContent || '0'),
-				chapters: parseInt(manga.querySelector('my_read_chapters')?.textContent || '0'),
-				volumes: parseInt(manga.querySelector('my_read_volumes')?.textContent || '0'),
-				status: (manga.querySelector('my_status')?.textContent || 'Invalid') as MyAnimeListStatus,
-				score: parseInt(manga.querySelector('my_score')?.textContent || '0'),
-				start: manga.querySelector('my_start_date')?.textContent || '0000-00-00',
-				end: manga.querySelector('my_finish_date')?.textContent || '0000-00-00',
-				name: manga.querySelector('manga_title')?.textContent || undefined,
-			};
-			if (this.validMyAnimeListTitle(title)) {
-				titles.push(title);
-			}
-		}
-		return titles;
 	};
 }
 
@@ -295,7 +306,7 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 		if (!csrfTokenArr) return false;
 		// Upload file and look at response
 		const response = await Runtime.request<RawResponse>({
-			url: `http://localhost/import.php`,
+			url: `http://localhost/import.php`, // https://myanimelist.net/import.php
 			method: 'POST',
 			credentials: 'include',
 			body: {

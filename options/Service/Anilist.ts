@@ -256,7 +256,6 @@ class AnilistExport extends APIExportableModule {
 			status: this.manager.service.fromStatus(title.status),
 			progress: title.progress.chapter,
 			progressVolumes: title.progress.volume || 0,
-			score: null,
 		};
 		if (title.score !== undefined && title.score > 0) values.score = title.score;
 		if (title.start !== undefined) {

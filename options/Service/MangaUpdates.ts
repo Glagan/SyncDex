@@ -143,11 +143,7 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 }
 
 class MangaUpdatesExport extends APIExportableModule {
-	actual: MangaUpdatesTitle[] = [];
-
-	findTitle = (id: number): MangaUpdatesTitle | undefined => {
-		return this.actual.find((title) => title.id == id);
-	};
+	actual: { [key: string]: MangaUpdatesTitle } = {};
 
 	// We need the status of each titles before to move them from lists to lists
 	// Use ImportModule and get a list of MangaUpdatesTitles
@@ -165,7 +161,9 @@ class MangaUpdatesExport extends APIExportableModule {
 				notification.classList.remove('loading');
 				return false;
 			}
-			this.actual.push(...tmp);
+			for (const title of tmp) {
+				this.actual[title.id] = title;
+			}
 		}
 		this.stopButton.remove();
 		notification.classList.remove('loading');
@@ -206,8 +204,8 @@ class MangaUpdatesExport extends APIExportableModule {
 	};
 
 	exportTitle = async (title: Title): Promise<boolean> => {
-		const muTitle = this.findTitle(title.id);
 		const id = title.services.mu as number;
+		const muTitle = this.actual[id];
 		// Update status
 		if (muTitle == undefined || muTitle.status != title.status) {
 			// Status requirements
@@ -219,6 +217,8 @@ class MangaUpdatesExport extends APIExportableModule {
 			}
 			// Real status
 			await this.updateStatus(id, title.status);
+			// Update muTitle if there are duplicates
+			muTitle.status = title.status;
 		}
 		// Update progress -- only if chapter or volume is different
 		if (
@@ -229,8 +229,12 @@ class MangaUpdatesExport extends APIExportableModule {
 						title.progress.volume > 0 &&
 						title.progress.volume != muTitle.progress.volume)))
 		) {
+			const volume =
+				title.progress.volume !== undefined && title.progress.volume > 0
+					? `&set_v=${title.progress.volume}`
+					: '';
 			await Runtime.request<RawResponse>({
-				url: `https://www.mangaupdates.com/ajax/chap_update.php?s=${id}&set_v=${title.progress.volume}&set_c=${title.progress.chapter}`,
+				url: `https://www.mangaupdates.com/ajax/chap_update.php?s=${id}${volume}&set_c=${title.progress.chapter}`,
 				credentials: 'include',
 			});
 		}

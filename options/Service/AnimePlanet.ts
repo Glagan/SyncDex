@@ -1,4 +1,4 @@
-import { RawResponse, Runtime } from '../../src/Runtime';
+import { RawResponse, Runtime, JSONResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { Progress } from '../../src/interfaces';
@@ -13,6 +13,13 @@ interface AnimePlanetTitle {
 	progress: Progress;
 	score: number;
 	name: string;
+}
+
+interface AnimePlanetResponse {
+	id: number;
+	type: 'manga';
+	success: boolean;
+	[key: string]: any;
 }
 
 class AnimePlanetActive extends ActivableModule {
@@ -128,25 +135,30 @@ class AnimePlanetExport extends APIExportableModule {
 		const service = this.manager.service as AnimePlanetService;
 		const id = title.services.ap as number;
 		// Status
-		let response = await Runtime.request<RawResponse>({
+		let response = await Runtime.request<JSONResponse>({
 			url: `https://www.anime-planet.com/api/list/status/manga/${id}/${this.manager.service.fromStatus(
 				title.status
 			)}/${service.token}`,
+			isJson: true,
 			credentials: 'include',
 		});
-		if (!response.ok) return false;
+		const body = response.body as AnimePlanetResponse;
+		if (!response.ok || !body.success) return false;
 		// Chapter progress
 		if (title.progress.chapter > 0) {
-			response = await Runtime.request<RawResponse>({
+			response = await Runtime.request<JSONResponse>({
 				url: `https://www.anime-planet.com/api/list/update/manga/${id}/${title.progress.chapter}/0/${service.token}`,
+				isJson: true,
 				credentials: 'include',
 			});
-			if (!response.ok) return false;
+			const body = response.body as AnimePlanetResponse;
+			if (!response.ok || !body.success) return false;
 		}
 		// Score
 		if (title.score > 0) {
-			response = await Runtime.request<RawResponse>({
+			response = await Runtime.request<JSONResponse>({
 				url: `https://www.anime-planet.com/api/list/rate/manga/${id}/${title.progress.chapter}/${service.token}`,
+				isJson: true,
 				credentials: 'include',
 			});
 			if (!response.ok) return false;

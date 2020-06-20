@@ -108,12 +108,12 @@ class MangaDexImport extends APIImportableModule<Title> {
 
 class MangaDexExport extends APIExportableModule {
 	selectTitles = async (): Promise<Title[]> => {
-		return (await TitleCollection.get()).collection;
+		return (await TitleCollection.get()).collection.filter((title) => title.status != Status.NONE);
 	};
 
 	exportTitle = async (title: Title): Promise<boolean> => {
-		const status = this.manager.service.fromStatus(title.status);
-		if (status > 0) {
+		if (title.status != Status.NONE) {
+			const status = this.manager.service.fromStatus(title.status);
 			const response = await Runtime.request<RawResponse>({
 				url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_follow&id=${
 					title.id

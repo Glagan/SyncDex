@@ -1,9 +1,10 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
-import { LoginStatus, Service, Status } from '../../src/Service/Service';
+import { LoginStatus, Service, Status, ServiceName, ServiceKey } from '../../src/Service/Service';
 import { TitleCollection, Title } from '../../src/Title';
 import { LocalStorage } from '../../src/Storage';
+import { Mochi } from '../../src/Mochi';
 
 export const enum LoginMethod {
 	EXTERNAL,
@@ -542,7 +543,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 	abstract convertTitles(titles: TitleCollection, titleList: R[]): Promise<number>;
 	abstract handleOptions?(save: T | Document, summary: ImportSummary): void;
 	abstract handleHistory?(save: T | Document, titles: TitleCollection, summary: ImportSummary): number[];
-	perConvert: number = 100;
+	perConvert: number = 250;
 
 	inputMessage = (): string => {
 		return `${this.manager.service.name} save file`;
@@ -671,7 +672,7 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 	state: ImportState = { current: 0, max: 1 };
 	abstract handlePage(): Promise<T[] | false>;
 	abstract convertTitles(titles: TitleCollection, titleList: T[]): Promise<number>;
-	perConvert: number = 100;
+	perConvert: number = 250;
 	preMain?(): Promise<boolean>;
 
 	getNextPage = (): boolean => {
@@ -752,7 +753,7 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 		progress = this.notification('info loading', '');
 		let collection = new TitleCollection();
 		let offset = 0;
-		let max = titles.length / this.perConvert;
+		let max = Math.ceil(titles.length / this.perConvert);
 		for (let i = 0; !this.doStop && i < max; i++) {
 			const titleList = titles.slice(offset, offset + this.perConvert);
 			offset += this.perConvert;
@@ -886,24 +887,28 @@ export abstract class APIExportableModule extends ExportableModule {
 		const block = DOM.create('div', {
 			class: 'block',
 		});
+		const checkbox = new Checkbox('checkServices', 'Check Services ID with Mochi', true);
 		const startButton = DOM.create('button', {
 			class: 'success mr-1',
 			textContent: 'Start',
 			events: {
 				click: async (event): Promise<void> => {
 					event.preventDefault();
-					this.handleExport();
+					this.handleExport(checkbox.input.checked);
 				},
 			},
 		});
 		if (this.preForm) this.preForm(block);
-		DOM.append(this.manager.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
+		DOM.append(
+			this.manager.manager.saveContainer,
+			DOM.append(block, checkbox.node, startButton, this.resetButton())
+		);
 	};
 
-	handleExport = async (): Promise<void> => {
+	handleExport = async (checkServices: boolean): Promise<void> => {
 		this.mainHeader();
 		// Check login status
-		let notification = this.notification('info loading', [
+		let notification: HTMLElement = this.notification('info loading', [
 			DOM.text('Checking login status...'),
 			DOM.space(),
 			this.stopButton,
@@ -918,6 +923,48 @@ export abstract class APIExportableModule extends ExportableModule {
 		notification.classList.remove('loading');
 		DOM.append(notification, DOM.text('logged in !'));
 		if (this.doStop) return this.cancel();
+		// Check Services
+		if (checkServices) {
+			const progress = DOM.create('span', {
+				textContent: 'Page 1 out of 1',
+			});
+			notification = this.notification('info loading', [
+				DOM.text('Checking Services with Mochi...'),
+				DOM.space(),
+				progress,
+				DOM.space(),
+				this.stopButton,
+			]);
+			const titles = await TitleCollection.get();
+			const collection = titles.collection;
+			let offset = 0;
+			let max = Math.ceil(titles.length / 250);
+			for (let i = 0; !this.doStop && i < max; i++) {
+				progress.textContent = `Page ${i + 1} out of ${max}`;
+				const titleList = collection.slice(offset, offset + 250);
+				offset += 250;
+				const connections = await Mochi.findMany(titleList.map((title) => title.id));
+				if (connections !== undefined) {
+					for (const titleId in connections) {
+						const id = parseInt(titleId);
+						const title = titleList.find((t) => t.id == id);
+						if (title && connections.hasOwnProperty(titleId)) {
+							const connection = connections[titleId];
+							for (const s in connection) {
+								if (connection.hasOwnProperty(s)) {
+									const service = s as ServiceName;
+									title.services[ServiceKey[service] as ServiceKey] = connection[service];
+								}
+							}
+						}
+					}
+				}
+			}
+			this.stopButton.remove();
+			await titles.save();
+			notification.classList.remove('loading');
+			if (this.doStop) return this.cancel();
+		}
 		// Select local titles
 		notification = this.notification('info loading', 'Loading Titles...');
 		let titles = await this.selectTitles();
@@ -965,21 +1012,25 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 		const block = DOM.create('div', {
 			class: 'block',
 		});
+		const checkbox = new Checkbox('checkServices', 'Check Services ID with Mochi', true);
 		const startButton = DOM.create('button', {
 			class: 'success mr-1',
 			textContent: 'Start',
 			events: {
 				click: async (event): Promise<void> => {
 					event.preventDefault();
-					this.handleExport();
+					this.handleExport(checkbox.input.checked);
 				},
 			},
 		});
 		if (this.preForm) this.preForm(block);
-		DOM.append(this.manager.manager.saveContainer, DOM.append(block, startButton, this.resetButton()));
+		DOM.append(
+			this.manager.manager.saveContainer,
+			DOM.append(block, checkbox.node, startButton, this.resetButton())
+		);
 	};
 
-	handleExport = async (): Promise<void> => {
+	handleExport = async (checkServices: boolean): Promise<void> => {
 		this.mainHeader();
 		// Check login status
 		let notification: HTMLElement = this.notification('info loading', [
@@ -997,6 +1048,48 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 		notification.classList.remove('loading');
 		DOM.append(notification, DOM.text('logged in !'));
 		if (this.doStop) return this.cancel();
+		// Check Services
+		if (checkServices) {
+			const progress = DOM.create('span', {
+				textContent: 'Page 1 out of 1',
+			});
+			notification = this.notification('info loading', [
+				DOM.text('Checking Services with Mochi...'),
+				DOM.space(),
+				progress,
+				DOM.space(),
+				this.stopButton,
+			]);
+			const titles = await TitleCollection.get();
+			const collection = titles.collection;
+			let offset = 0;
+			let max = Math.ceil(titles.length / 250);
+			for (let i = 0; !this.doStop && i < max; i++) {
+				progress.textContent = `Page ${i + 1} out of ${max}`;
+				const titleList = collection.slice(offset, offset + 250);
+				offset += 250;
+				const connections = await Mochi.findMany(titleList.map((title) => title.id));
+				if (connections !== undefined) {
+					for (const titleId in connections) {
+						const id = parseInt(titleId);
+						const title = titleList.find((t) => t.id == id);
+						if (title && connections.hasOwnProperty(titleId)) {
+							const connection = connections[titleId];
+							for (const s in connection) {
+								if (connection.hasOwnProperty(s)) {
+									const service = s as ServiceName;
+									title.services[ServiceKey[service] as ServiceKey] = connection[service];
+								}
+							}
+						}
+					}
+				}
+			}
+			this.stopButton.remove();
+			await titles.save();
+			notification.classList.remove('loading');
+			if (this.doStop) return this.cancel();
+		}
 		// Select local titles
 		notification = this.notification('info loading', 'Loading Titles...');
 		let titles = await this.selectTitles();

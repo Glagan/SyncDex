@@ -3,14 +3,7 @@ import { Status, LoginStatus, ServiceName } from '../../src/Service/Service';
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { Mochi } from '../../src/Mochi';
 import { TitleCollection, Title } from '../../src/Title';
-import {
-	ManageableService,
-	ActivableModule,
-	ExportableModule,
-	APIImportableModule,
-	LoginMethod,
-	APIExportableModule,
-} from './Service';
+import { ManageableService, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
 import { Kitsu as KitsuService, KitsuStatus } from '../../src/Service/Kitsu';
 import { DOM } from '../../src/DOM';
 
@@ -240,8 +233,7 @@ class KitsuExport extends APIExportableModule {
 					&fields[libraryEntries]=id,manga
 					&include=manga
 					&fields[manga]=id
-					&page[limit]=500
-					&page[offset]=${(current - 1) * 500}`,
+					&page[limit]=500`,
 				isJson: true,
 				headers: KitsuService.LoggedHeaders(),
 			});
@@ -265,10 +257,9 @@ class KitsuExport extends APIExportableModule {
 		let values: Partial<EntryAttributes> = {
 			status: this.manager.service.fromStatus(title.status),
 			progress: title.progress.chapter,
-			volumesOwned: title.progress.volume || 0,
-			startedAt: null,
-			finishedAt: null,
+			volumesOwned: title.progress.volume || undefined,
 		};
+		console.log('converting title', title);
 		if (title.score !== undefined && title.score > 0) values.ratingTwenty = title.score; // TODO: convert ratingTwenty
 		if (title.start !== undefined) {
 			values.startedAt = new Date(title.start).toISOString();
@@ -290,23 +281,24 @@ class KitsuExport extends APIExportableModule {
 				headers: KitsuService.LoggedHeaders(),
 				body: JSON.stringify({
 					data: {
+						id: libraryEntryId,
 						attributes: this.createTitle(title),
-					},
-					relationships: {
-						manga: {
-							data: {
-								type: 'manga',
-								id: title.services.ku,
+						relationships: {
+							manga: {
+								data: {
+									type: 'manga',
+									id: title.services.ku,
+								},
+							},
+							user: {
+								data: {
+									type: 'users',
+									id: Options.tokens.kitsuUser,
+								},
 							},
 						},
-						user: {
-							data: {
-								type: 'users',
-								id: Options.tokens.kitsuUser,
-							},
-						},
+						type: 'library-entries',
 					},
-					type: 'library-entries',
 				}),
 			});
 			return response.ok;
