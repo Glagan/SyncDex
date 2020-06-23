@@ -76,6 +76,7 @@ export class ServiceManager {
 			this.mainService = manager;
 			this.activeContainer.insertBefore(manager.activeModule.activeCard, this.activeContainer.firstElementChild);
 			manager.activeModule.activeCard.classList.add('active');
+			this.addActiveService(manager.service.name);
 		} else if (index >= 0) {
 			// Insert as the *index* child to follow the Options order
 			const activeCards = this.activeContainer.querySelectorAll('.card.active');
@@ -94,6 +95,7 @@ export class ServiceManager {
 				this.activeContainer.insertBefore(manager.activeModule.activeCard, activeCards[index]);
 			}
 			manager.activeModule.activeCard.classList.add('active');
+			this.addActiveService(manager.service.name);
 		} else {
 			this.activeContainer.appendChild(manager.activeModule.activeCard);
 		}
@@ -129,12 +131,27 @@ export class ServiceManager {
 	/**
 	 * Update active Services list and remove warning notifications if necessary
 	 */
+	addActiveService = (name: ServiceName): void => {
+		this.activeServices.push(name);
+		this.noServices.classList.add('hidden');
+	};
+
+	/**
+	 * Update active and inactive Services list and remove warning notifications if necessary
+	 */
 	removeActiveService = (name: ServiceName): void => {
-		const index = this.inactiveServices.indexOf(name);
+		let index = this.inactiveServices.indexOf(name);
 		if (index > -1) {
 			this.inactiveServices.splice(index, 1);
 			if (this.inactiveServices.length == 0) {
 				this.inactiveWarning.classList.add('hidden');
+			}
+		}
+		index = this.activeServices.indexOf(name);
+		if (index > -1) {
+			this.activeServices.splice(index, 1);
+			if (this.activeServices.length == 0) {
+				this.noServices.classList.remove('hidden');
 			}
 		}
 	};
@@ -148,12 +165,16 @@ export class ServiceManager {
 		DOM.clear(this.activeContainer);
 		this.activeServices = [];
 		this.inactiveServices = [];
+		this.noServices.classList.add('hidden');
+		this.inactiveWarning.classList.add('hidden');
 		// Insert all Services card
 		for (const manager of this.managers) {
 			this.reloadManager(manager);
 		}
-		if (Options.services.length == 0) {
+		if (this.activeServices.length == 0) {
 			this.noServices.classList.remove('hidden');
+		} else {
+			this.noServices.classList.add('hidden');
 		}
 	};
 

@@ -303,7 +303,6 @@ export abstract class ActivableModule {
 		this.mainButton.addEventListener('click', () => {
 			// Make service the first in the list
 			const index = Options.services.indexOf(this.manager.service.name);
-			this.manager.manager.managers.splice(0, 0, this.manager.manager.managers.splice(index, 1)[0]);
 			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
 			Options.mainService = this.manager.service.name;
 			Options.save();
@@ -350,7 +349,6 @@ export abstract class ActivableModule {
 			// Remove service from Service list and assign new main if possible
 			const index = Options.services.indexOf(this.manager.service.name);
 			if (index > -1) {
-				this.manager.manager.managers.splice(index, 1);
 				Options.services.splice(index, 1);
 				if (Options.mainService == this.manager.service.name) {
 					Options.mainService = Options.services.length > 0 ? Options.services[0] : undefined;
@@ -362,9 +360,10 @@ export abstract class ActivableModule {
 			}
 			// Save
 			Options.save();
-			// Remove service block
+			// Disable card
 			this.manager.manager.removeActiveService(this.manager.service.name);
 			this.desactivate();
+			// Move service card after the active cards
 			while (
 				this.activeCard.nextElementSibling &&
 				this.activeCard.nextElementSibling.classList.contains('active')
