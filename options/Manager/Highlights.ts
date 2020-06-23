@@ -25,7 +25,7 @@ class Highlights {
 		});
 		this.remove = DOM.create('button', {
 			class: 'danger',
-			childs: [DOM.icon('cross-circle')],
+			childs: [DOM.icon('delete')],
 		});
 		DOM.append(this.node, this.remove, this.input, this.display);
 	}
@@ -82,7 +82,7 @@ export class HighlightsManager {
 					color.input.focus();
 				},
 			},
-			childs: [DOM.icon('circle-plus'), DOM.space(), DOM.text('Add color')],
+			childs: [DOM.icon('new'), DOM.space(), DOM.text('Add Color')],
 		});
 		this.node.appendChild(addButton);
 		this.updateAll();

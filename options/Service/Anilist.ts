@@ -10,10 +10,8 @@ import {
 	ImportStep,
 	APIExportableModule,
 	LoginMethod,
-	ImportSummary,
 } from './Service';
 import { Anilist as AnilistService, AnilistStatus } from '../../src/Service/Anilist';
-import { ServiceName } from '../../src/Service/Service';
 
 interface ViewerResponse {
 	data: {
@@ -294,7 +292,7 @@ export class Anilist extends ManageableService {
 
 	createTitle = (): HTMLElement => {
 		return DOM.create('span', {
-			class: this.service.name.toLowerCase(),
+			class: 'ani',
 			textContent: 'Ani',
 			childs: [
 				DOM.create('span', {

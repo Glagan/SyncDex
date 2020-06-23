@@ -1,7 +1,7 @@
 import { Options } from '../../src/Options';
 import { DOM, AppendableElement } from '../../src/DOM';
 import { LoginStatus } from '../../src/Service/Service';
-import { ManageableService } from '../Service/Service';
+import { ManageableService, ActivableModule } from '../Service/Service';
 import { MyMangaDex } from '../Service/MyMangaDex';
 import { SyncDex } from '../Service/SyncDex';
 import { MangaDex } from '../Service/MangaDex';
@@ -40,8 +40,6 @@ export class ServiceManager {
 	];
 	// Active
 	activeContainer: HTMLElement;
-	addForm: HTMLElement;
-	selector: HTMLSelectElement;
 	mainService?: ManageableService;
 	noServices: HTMLElement;
 	activeServices: ServiceName[] = [];
@@ -53,116 +51,61 @@ export class ServiceManager {
 	constructor(active: HTMLElement, saveContainer: HTMLElement) {
 		this.activeContainer = active;
 		this.saveContainer = saveContainer;
-		// Active
-		this.addForm = DOM.create('div', {
-			class: 'service add',
-		});
-		this.selector = DOM.create('select', {
-			childs: [DOM.create('option', { textContent: 'Select Service' })],
-		});
+		// Warnings
 		this.noServices = document.getElementById('no-service') as HTMLElement;
 		this.inactiveWarning = document.getElementById('inactive-service') as HTMLElement;
-		this.createAddForm();
+		// Bind
+		for (const manager of this.managers) {
+			if (manager.activeModule) {
+				manager.activeModule.bind();
+			}
+		}
 		// Default State
 		this.refreshActive();
 		this.resetSaveContainer();
 	}
 
-	// Active
-
 	/**
-	 * Activate a service, display it's card and remove it from the "Add" form list.
+	 * Activate or desactivate all buttons in a Service card.
 	 * Check if the user is logged in on the Service and calls updateStatus to display warnings.
 	 */
-	activateService = async (serviceName: ServiceName): Promise<void> => {
-		let manager = this.managers.find((manager) => manager.service.name == serviceName);
-		if (!manager || !manager.activeModule) return;
-		if (Options.mainService == serviceName) {
+	reloadManager = async (manager: ManageableService): Promise<void> => {
+		if (!manager.activeModule) return;
+		const index = Options.services.indexOf(manager.service.name);
+		if (Options.mainService == manager.service.name) {
 			this.mainService = manager;
-			manager.activeModule.activeCard.classList.add('main');
-			manager.activeModule.mainButton.classList.add('hidden');
-		}
-		this.managers.push(manager);
-		// Main Service is always first -- if a Service is upgraded to Main it's moved to the first position
-		this.activeContainer.insertBefore(manager.activeModule.activeCard, this.activeContainer.lastElementChild);
-		this.removeSelectorRow(manager.service.name);
-		// Set logged in state
-		const loggedIn = await manager.service.loggedIn();
-		manager.activeModule.updateStatus(loggedIn);
-	};
-
-	/**
-	 * Remove an element from the "Add" form.
-	 * Also hide the form is there is no other non actived services.
-	 */
-	removeSelectorRow = (service: ServiceName): void => {
-		const option = this.selector.querySelector(`[value="${service}"]`);
-		if (option) {
-			option.remove();
-		}
-		if (this.selector.childElementCount == 1) {
-			this.addForm.classList.add('hidden');
-		}
-		this.noServices.classList.add('hidden');
-	};
-
-	/**
-	 * Add an element to the list of Services that can be added in the "Add" form
-	 */
-	addSelectorRow = (service: ServiceName): void => {
-		this.addForm.classList.remove('hidden');
-		DOM.append(
-			this.selector,
-			DOM.create('option', {
-				textContent: service,
-				attributes: {
-					value: service,
-				},
-			})
-		);
-		if (Options.services.length == 0) {
-			this.noServices.classList.remove('hidden');
-		}
-		const index = this.inactiveServices.indexOf(service);
-		if (index > -1) {
-			this.inactiveServices.splice(index, 1);
-			if (this.inactiveServices.length == 0) {
-				this.inactiveWarning.classList.add('hidden');
+			this.activeContainer.insertBefore(manager.activeModule.activeCard, this.activeContainer.firstElementChild);
+			manager.activeModule.activeCard.classList.add('active');
+		} else if (index >= 0) {
+			// Insert as the *index* child to follow the Options order
+			const activeCards = this.activeContainer.querySelectorAll('.card.active');
+			const length = activeCards.length;
+			if (length == 0) {
+				this.activeContainer.insertBefore(
+					manager.activeModule.activeCard,
+					this.activeContainer.firstElementChild
+				);
+			} else if (index >= length) {
+				this.activeContainer.insertBefore(
+					manager.activeModule.activeCard,
+					activeCards[length - 1].nextElementSibling
+				);
+			} else if (index < length) {
+				this.activeContainer.insertBefore(manager.activeModule.activeCard, activeCards[index]);
 			}
+			manager.activeModule.activeCard.classList.add('active');
+		} else {
+			this.activeContainer.appendChild(manager.activeModule.activeCard);
 		}
-	};
-
-	/**
-	 * Create and append the "Add" button in the active (services) container
-	 */
-	createAddForm = (): HTMLElement => {
-		// Add all options to the selector
-		for (const manager of this.managers) {
-			if (manager.activeModule) {
-				manager.activeModule.bind();
-				this.addSelectorRow(manager.service.name);
-			}
+		// Update displayed state (buttons)
+		if (index >= 0) {
+			manager.activeModule.loading();
+			manager.service.loggedIn().then((status) => {
+				(manager.activeModule as ActivableModule).updateStatus(status);
+			});
+		} else {
+			manager.activeModule.desactivate();
 		}
-		// Button to add the service to the active list
-		const button = DOM.create('button', {
-			class: 'success',
-			childs: [DOM.icon('circle-plus'), DOM.space(), DOM.text('Add')],
-			events: {
-				click: async (): Promise<any> => {
-					if (this.selector.value != 'Select Service') {
-						const name = this.selector.value as ServiceName;
-						if (Options.services.length == 0) {
-							Options.mainService = name as any;
-						}
-						Options.services.push(name as any);
-						await Options.save();
-						this.activateService(name);
-					}
-				},
-			},
-		});
-		this.activeContainer.appendChild(DOM.append(this.addForm, this.selector, button));
-		return this.selector;
 	};
 
 	/**
@@ -184,21 +127,30 @@ export class ServiceManager {
 	};
 
 	/**
+	 * Update active Services list and remove warning notifications if necessary
+	 */
+	removeActiveService = (name: ServiceName): void => {
+		const index = this.inactiveServices.indexOf(name);
+		if (index > -1) {
+			this.inactiveServices.splice(index, 1);
+			if (this.inactiveServices.length == 0) {
+				this.inactiveWarning.classList.add('hidden');
+			}
+		}
+	};
+
+	/**
 	 * Remove all visible activable services and insert them in order.
 	 * Also check the status with activateService
 	 */
 	refreshActive = (): void => {
 		// Remove previous
-		for (const service of this.managers) {
-			if (service.activeModule) {
-				service.activeModule.activeCard.remove();
-			}
-		}
+		DOM.clear(this.activeContainer);
 		this.activeServices = [];
 		this.inactiveServices = [];
-		// Insert current Services
-		for (const serviceName of Options.services) {
-			this.activateService(serviceName);
+		// Insert all Services card
+		for (const manager of this.managers) {
+			this.reloadManager(manager);
 		}
 		if (Options.services.length == 0) {
 			this.noServices.classList.remove('hidden');

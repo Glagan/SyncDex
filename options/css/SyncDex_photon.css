@@ -124,8 +124,55 @@
 	--animeplanet-bg: rgb(48, 48, 48);
 }
 
+@keyframes pulse {
+	0% {
+		box-shadow: 0px 0px 4px 3px #78c5d5;
+		/* background-color: #78c5d5; */
+	}
+	25% {
+		box-shadow: 0px 0px 4px 3px #79c268;
+		/* background-color: #79c268; */
+	}
+	50% {
+		box-shadow: 0px 0px 4px 3px #f5d63d;
+		/* background-color: #f5d63d; */
+	}
+	75% {
+		box-shadow: 0px 0px 4px 3px #e868a1;
+		/* background-color: #e868a1; */
+	}
+	100% {
+		box-shadow: 0px 0px 4px 3px #bf63a6;
+		/* background-color: #bf63a6; */
+	}
+}
+
+.loading {
+	animation-name: pulse;
+	animation-duration: 2s;
+	animation-timing-function: ease-in-out;
+	animation-direction: alternate;
+	animation-iteration-count: infinite;
+}
+
 *:disabled {
 	opacity: 0.4;
+}
+
+/* Links */
+*[href] {
+	color: var(--blue-60);
+	text-decoration: none;
+}
+*[href]:hover {
+	text-decoration: underline;
+}
+*[href]:active {
+	color: var(--blue-70);
+	text-decoration: underline;
+}
+*[href]:focus {
+	box-shadow: var(--focus);
 }
 
 /* Buttons */
@@ -136,6 +183,11 @@ button,
 	transition: all 250ms var(--animation);
 	font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
 		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+	text-align: center;
+}
+button.hidden,
+.button.hidden {
+	display: none;
 }
 button,
 .button,
@@ -204,6 +256,18 @@ button.ghost:focus,
 .button.ghost:focus {
 	box-shadow: var(--focus);
 }
+a.button {
+	line-height: 32px;
+}
+a.button:hover {
+	text-decoration: none;
+}
+a.button:active {
+	text-decoration: none;
+}
+a.button:focus {
+	text-decoration: none;
+}
 
 /*	Sizes */
 button.micro,
@@ -214,6 +278,9 @@ button.micro,
 	font-size: 11px;
 	font-weight: 400;
 }
+a.button.micro {
+	line-height: 24px;
+}
 button.puffy,
 .button.puffy {
 	border-radius: 4px;
@@ -222,6 +289,9 @@ button.puffy,
 	font-size: 15px;
 	font-weight: 400;
 	width: auto;
+}
+a.button.puffy {
+	line-height: 48px;
 }
 
 /* Inputs */
@@ -284,22 +354,6 @@ input[type='checkbox']:checked:focus {
 	box-shadow: var(--focus);
 }
 
-/* Links */
-*[href] {
-	color: var(--blue-60);
-	text-decoration: none;
-}
-*[href]:hover {
-	text-decoration: underline;
-}
-*[href]:active {
-	color: var(--blue-70);
-	text-decoration: underline;
-}
-*[href]:focus {
-	box-shadow: var(--focus);
-}
-
 /* Messages */
 .message {
 	border-radius: 4px;
@@ -312,6 +366,13 @@ input[type='checkbox']:checked:focus {
 	color: var(--grey-90);
 	background: url('../icons/info.svg') 4px 8px / 16px no-repeat, var(--grey-20);
 	margin-bottom: 8px;
+	transition: all var(--animation);
+}
+.message.hidden {
+	min-height: 0px;
+	max-height: 0px;
+	overflow: hidden;
+	margin-bottom: 0;
 }
 .message.large {
 	width: 100%;
@@ -432,23 +493,24 @@ h2 {
 .ani .list {
 	color: var(--anilist);
 }
-#service-list .card {
-	cursor: pointer;
-}
 #service-list .card .content {
 	display: flex;
 	flex-flow: column wrap;
 }
-#service-list .card .content .message {
-	cursor: default;
-}
-#service-list .card .content button {
+#service-list .card .content button,
+#service-list .card .content .button {
 	margin-bottom: 8px;
 }
-#service-list .card .content button img {
+#service-list .card .content button img,
+#service-list .card .content .button img {
 	float: left;
 }
-#service-list .card .content button:last-child {
+#service-list .card .content a.button img {
+	padding-top: 8px;
+}
+#service-list .card .content button:last-child,
+#service-list .card .content .button:last-child,
+#service-list .card .content .message:last-child {
 	margin-bottom: 0;
 }
 .card .header.anilist {

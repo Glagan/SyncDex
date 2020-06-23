@@ -161,28 +161,22 @@ export abstract class ManageableService {
 		this.manager = manager;
 	}
 
-	createBlock(): HTMLElement {
-		let node = DOM.create('div', {
-			class: `service ${this.service.name.toLowerCase()}`,
+	createCard(): HTMLElement {
+		const card = DOM.create('div', {
+			class: 'card',
 		});
-		const title = DOM.create('span', {
-			class: 'title',
-			childs: [
-				DOM.create('img', {
-					attributes: { src: `/icons/${this.service.key}.png` },
-				}),
-				DOM.space(),
-				this.createTitle(),
-			],
+		const header = DOM.create('div', {
+			class: `header ${this.service.name.toLowerCase()}`,
+			childs: [this.createTitle()],
 		});
-		return DOM.append(node, title);
+		const content = DOM.create('div', {
+			class: 'content',
+		});
+		return DOM.append(card, header, content);
 	}
 
-	createTitle(): HTMLElement {
-		return DOM.create('span', {
-			class: this.service.name.toLowerCase(),
-			textContent: this.service.name,
-		});
+	createTitle(): AppendableElement {
+		return DOM.text(this.service.name);
 	}
 }
 
@@ -192,6 +186,11 @@ export abstract class ActivableModule {
 	loginMethod?: LoginMethod;
 	loginUrl?: string;
 	activeCard: HTMLElement;
+	activeCardContent: HTMLElement;
+	loadingMessage: HTMLElement;
+	statusMessage: HTMLElement;
+	activateButton: HTMLButtonElement;
+	mainMessage: HTMLElement;
 	mainButton: HTMLButtonElement;
 	checkStatusButton: HTMLElement;
 	loginButton: HTMLAnchorElement;
@@ -200,46 +199,107 @@ export abstract class ActivableModule {
 	abstract login?(username: string, password: string): Promise<LoginStatus>;
 	abstract logout?(): Promise<void>;
 
+	message = (type: 'default' | 'warning' | 'success', content: string, append: boolean = true): HTMLElement => {
+		const message = DOM.create('div', {
+			class: `message ${type}`,
+			textContent: content,
+		});
+		if (append) {
+			DOM.append(this.activeCardContent, message);
+		}
+		return message;
+	};
+
 	constructor(service: ManageableService) {
 		this.manager = service;
 		// Create
-		this.activeCard = this.manager.createBlock();
-		this.activeCard.classList.add('loading');
-		const buttons = DOM.create('div', { class: 'button-group' });
+		this.activeCard = this.manager.createCard();
+		this.activeCardContent = this.activeCard.lastElementChild as HTMLElement;
+		// Messages
+		this.loadingMessage = this.message('default', 'Loading...');
+		this.loadingMessage.classList.add('loading');
+		this.mainMessage = this.message('default', 'Main Service', false);
+		this.statusMessage = this.message('default', 'Loading...', false);
+		// Buttons
+		this.activateButton = DOM.create('button', {
+			class: 'primary',
+			attributes: { title: 'Activate' },
+			childs: [DOM.icon('new-light'), DOM.text('Activate')],
+		});
 		this.mainButton = DOM.create('button', {
-			class: 'default',
-			attributes: { title: 'Set as main' },
-			childs: [DOM.icon('angle-double-left')],
+			class: 'primary',
+			attributes: { title: 'Set as Main' },
+			childs: [DOM.icon('underflow-light'), DOM.text('Set as Main')],
 		});
 		this.checkStatusButton = DOM.create('button', {
-			class: 'action',
-			attributes: { title: 'Check login status' },
-			childs: [DOM.icon('reload')],
+			attributes: { title: 'Refresh' },
+			childs: [DOM.icon('sync'), DOM.text('Refresh')],
 		});
 		this.loginButton = DOM.create('a', {
-			class: 'button success hidden',
+			class: 'button primary',
 			attributes: {
 				title: 'Login',
 				rel: 'noreferrer noopener',
 				target: '_blank',
 			},
-			childs: [DOM.icon('link'), DOM.space(), DOM.text('Login')],
+			childs: [DOM.icon('external-light'), DOM.text('Login')],
 		});
 		this.removeButton = DOM.create('button', {
-			class: 'danger grow',
-			childs: [DOM.icon('cross-circle'), DOM.space(), DOM.text('Remove')],
+			childs: [DOM.icon('delete'), DOM.text('Remove')],
 		});
-		DOM.append(
-			this.activeCard,
-			DOM.append(buttons, this.mainButton, this.loginButton, this.checkStatusButton, this.removeButton)
-		);
 	}
+
+	loading = (): void => {
+		DOM.clear(this.activeCardContent);
+		DOM.append(this.activeCardContent, this.loadingMessage);
+	};
+
+	activate = (main: boolean): void => {
+		this.activeCard.classList.add('active');
+		DOM.clear(this.activeCardContent);
+		if (main) {
+			DOM.append(this.activeCardContent, this.mainMessage);
+		} else {
+			DOM.append(this.activeCardContent, this.mainButton);
+		}
+		DOM.append(
+			this.activeCardContent,
+			this.statusMessage,
+			this.loginButton,
+			this.checkStatusButton,
+			this.removeButton
+		);
+	};
+
+	desactivate = (): void => {
+		this.activeCard.classList.remove('active');
+		DOM.clear(this.activeCardContent);
+		DOM.append(this.activeCardContent, this.activateButton);
+	};
 
 	bind = (): void => {
 		if (this.loginUrl !== undefined) {
 			this.loginButton.href = this.loginUrl;
 		}
 		// Bind
+		this.activateButton.addEventListener('click', async () => {
+			Options.services.push(this.manager.service.name);
+			if (Options.services.length == 1) {
+				Options.mainService = this.manager.service.name;
+				const containerFirstChild = this.manager.manager.activeContainer.firstElementChild;
+				if (this.activeCard != containerFirstChild) {
+					this.manager.manager.activeContainer.insertBefore(this.activeCard, containerFirstChild);
+				}
+			} else {
+				let activeCards = this.manager.manager.activeContainer.querySelectorAll('.card.active');
+				this.manager.manager.activeContainer.insertBefore(
+					this.activeCard,
+					activeCards[activeCards.length - 1].nextElementSibling
+				);
+			}
+			Options.save();
+			this.manager.manager.reloadManager(this.manager);
+		});
 		this.mainButton.addEventListener('click', () => {
 			// Make service the first in the list
 			const index = Options.services.indexOf(this.manager.service.name);
@@ -248,26 +308,30 @@ export abstract class ActivableModule {
 			Options.mainService = this.manager.service.name;
 			Options.save();
 			// Remove main button and add the main button to the previous main
-			if (this.manager.manager.mainService) {
-				this.manager.manager.mainService.activeModule?.activeCard.classList.remove('main');
-				this.manager.manager.mainService.activeModule?.mainButton.classList.remove('hidden');
+			if (this.manager.manager.mainService && this.manager.manager.mainService.activeModule) {
+				const oldMainContent = this.manager.manager.mainService.activeModule.activeCardContent;
+				oldMainContent.insertBefore(
+					this.manager.manager.mainService.activeModule.mainButton,
+					oldMainContent.firstElementChild
+				);
+				this.manager.manager.mainService.activeModule.mainMessage.remove();
 			}
 			this.manager.manager.mainService = this.manager;
-			this.mainButton.classList.add('hidden');
-			this.activeCard.classList.add('main');
+			this.mainButton.remove();
+			this.activeCardContent.insertBefore(this.mainMessage, this.activeCardContent.firstElementChild);
 			// Move the card to the first position
-			this.activeCard.parentElement?.insertBefore(
+			this.manager.manager.activeContainer.insertBefore(
 				this.activeCard,
-				this.activeCard.parentElement.firstElementChild
+				this.manager.manager.activeContainer.firstElementChild
 			);
 		});
 		let busy = false;
 		this.checkStatusButton.addEventListener('click', async () => {
 			if (!busy) {
 				busy = true;
-				this.loginButton.classList.add('hidden');
-				this.activeCard.classList.remove('active', 'inactive');
-				this.activeCard.classList.add('loading');
+				this.loginButton.remove();
+				this.activeCardContent.insertBefore(this.loadingMessage, this.statusMessage);
+				this.statusMessage.remove();
 				if (this.loginForm) {
 					this.loginForm.remove();
 					this.loginForm = undefined;
@@ -278,6 +342,7 @@ export abstract class ActivableModule {
 				}
 				const status = await this.manager.service.loggedIn();
 				this.updateStatus(status);
+				this.loadingMessage.remove();
 				busy = false;
 			}
 		});
@@ -297,17 +362,25 @@ export abstract class ActivableModule {
 			}
 			// Save
 			Options.save();
-			// Remove service block and add the option back to the selector
-			this.activeCard.remove();
-			this.manager.manager.addSelectorRow(this.manager.service.name);
+			// Remove service block
+			this.manager.manager.removeActiveService(this.manager.service.name);
+			this.desactivate();
+			while (
+				this.activeCard.nextElementSibling &&
+				this.activeCard.nextElementSibling.classList.contains('active')
+			) {
+				this.manager.manager.activeContainer.insertBefore(
+					this.activeCard,
+					this.activeCard.nextElementSibling.nextElementSibling
+				);
+			}
 			// Set the new main
 			if (Options.mainService) {
 				const mainService = this.manager.manager.managers.find(
 					(manager: ManageableService) => manager.service.name == Options.mainService
 				);
-				if (mainService) {
-					mainService.activeModule?.activeCard.classList.add('main');
-					mainService.activeModule?.mainButton.classList.add('hidden');
+				if (mainService && mainService.activeModule) {
+					mainService.activeModule.mainButton.classList.add('hidden');
 					this.manager.manager.mainService = mainService;
 				}
 			} else {
@@ -372,18 +445,21 @@ export abstract class ActivableModule {
 						busy = false;
 					}
 				});
-				this.activeCard.appendChild(this.loginForm);
-			} // else LoginMethod.EXTERNAL and it just opens a link
+				this.activeCardContent.appendChild(this.loginForm);
+			} // else LoginMethod.EXTERNAL that just open a link
 		});
 	};
 
 	updateStatus = (status: LoginStatus): void => {
-		this.activeCard.classList.remove('loading');
+		this.activate(Options.mainService == this.manager.service.name);
 		if (status == LoginStatus.SUCCESS) {
-			this.activeCard.classList.add('active');
+			this.statusMessage.className = 'message success';
+			this.statusMessage.textContent = 'Active';
+			this.loginButton.remove();
 		} else {
-			this.activeCard.classList.add('inactive');
-			this.loginButton.classList.remove('hidden');
+			this.statusMessage.className = 'message warning';
+			this.statusMessage.textContent = 'Inactive';
+			this.activeCardContent.insertBefore(this.loginButton, this.checkStatusButton);
 		}
 		this.manager.manager.updateServiceStatus(this.manager.service.name, status);
 	};
@@ -485,7 +561,7 @@ export abstract class ImportableModule extends SaveModule {
 
 	constructor(service: ManageableService) {
 		super(service);
-		this.importCard = this.manager.createBlock();
+		this.importCard = this.manager.createCard();
 		this.importCard.addEventListener('click', () => {
 			this.mainHeader();
 			this.import();
@@ -791,7 +867,7 @@ export abstract class ExportableModule extends SaveModule {
 
 	constructor(service: ManageableService) {
 		super(service);
-		this.exportCard = this.manager.createBlock();
+		this.exportCard = this.manager.createCard();
 		this.exportCard.addEventListener('click', () => {
 			this.mainHeader();
 			this.export();
