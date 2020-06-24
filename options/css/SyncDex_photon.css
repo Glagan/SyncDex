@@ -330,7 +330,7 @@ label,
 .label {
 	cursor: pointer;
 }
-input[type='text'] {
+input[type] {
 	border-radius: 2px;
 	padding: 0 8px;
 	width: auto;
@@ -338,13 +338,13 @@ input[type='text'] {
 	color: var(--grey-90);
 	border: 2px solid var(--grey-90-a20);
 }
-input[type='text']::placeholder {
+input[type]::placeholder {
 	color: var(--grey-50);
 }
-input[type='text']:hover {
+input[type]:hover {
 	border-color: var(--grey-90-a30);
 }
-input[type='text']:focus {
+input[type]:focus {
 	border-color: var(--blue-50);
 	box-shadow: var(--focus);
 }
@@ -443,6 +443,7 @@ input[type='text']:focus {
 }
 .card .content {
 	padding: 8px;
+	background-color: var(--white-100);
 }
 .card.large .content {
 	padding: 20px;
@@ -474,6 +475,8 @@ body {
 	grid-template-columns: 20% 80%;
 	background-color: var(--grey-10);
 }
+
+/*	Navigation */
 nav {
 	padding: 16px;
 }
@@ -528,6 +531,10 @@ h2 {
 .paragraph {
 	margin-bottom: 4px;
 }
+.center {
+	text-align: center;
+	align-self: center;
+}
 
 /*	Services */
 #service-list {
@@ -577,6 +584,8 @@ h2 {
 	background: url('/icons/ap.png') 8px center / 16px no-repeat, var(--animeplanet-bg);
 	color: var(--animeplanet);
 }
+
+/*	Parameters */
 .parameter {
 	display: grid;
 	grid-template-columns: 20px auto;
@@ -586,9 +595,6 @@ h2 {
 }
 .dependency {
 	margin-left: 32px;
-}
-.center {
-	text-align: center;
 }
 .color {
 	display: inline-block;
@@ -611,4 +617,51 @@ h2 {
 }
 .color-input button:first-child {
 	margin-right: 4px;
+}
+
+/* Modal */
+.modal {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	background-color: var(--grey-90-a60);
+	transition: all var(--animation);
+	display: flex;
+	flex-flow: column nowrap;
+	justify-content: center;
+	align-content: center;
+	cursor: pointer;
+}
+.modal > .content {
+	margin-left: 20%;
+	margin-right: 20%;
+	min-width: 20rem;
+	overflow: hidden;
+	cursor: initial;
+	max-height: 75vh;
+	display: flex;
+	flex-flow: column nowrap;
+}
+.modal.small > .content {
+	margin-left: 40%;
+	margin-right: 40%;
+}
+.modal > .content > .header {
+	border-radius: 2px;
+	flex-shrink: 0;
+	font-size: var(--title-40);
+	font-weight: var(--light);
+	padding: 16px 0;
+}
+.modal > .content > .body {
+	display: flex;
+	flex-flow: column wrap;
+}
+.modal > .content > .body > * {
+	margin-bottom: 4px;
+}
+.modal > .content > .body > :last-child {
+	margin-bottom: 0;
 }

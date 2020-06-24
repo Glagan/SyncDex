@@ -194,7 +194,6 @@ export abstract class ActivableModule {
 	mainButton: HTMLButtonElement;
 	checkStatusButton: HTMLElement;
 	loginButton: HTMLAnchorElement;
-	loginForm?: HTMLFormElement;
 	removeButton: HTMLElement;
 	abstract login?(username: string, password: string): Promise<LoginStatus>;
 	abstract logout?(): Promise<void>;
@@ -247,6 +246,7 @@ export abstract class ActivableModule {
 		this.removeButton = DOM.create('button', {
 			childs: [DOM.icon('delete'), DOM.text('Remove')],
 		});
+		this.bind();
 	}
 
 	loading = (): void => {
@@ -331,10 +331,6 @@ export abstract class ActivableModule {
 				this.loginButton.remove();
 				this.activeCardContent.insertBefore(this.loadingMessage, this.statusMessage);
 				this.statusMessage.remove();
-				if (this.loginForm) {
-					this.loginForm.remove();
-					this.loginForm = undefined;
-				}
 				// If it's an external login, we don't have the tokens saved outside of this page
 				if (this.loginMethod == LoginMethod.EXTERNAL) {
 					await Options.reloadTokens();
@@ -389,13 +385,28 @@ export abstract class ActivableModule {
 		this.loginButton.addEventListener('click', (event) => {
 			if (this.loginMethod == LoginMethod.FORM) {
 				event.preventDefault();
-				if (!this || this?.loginForm) return;
-				this.loginForm = DOM.create('form', {
-					class: 'service-login',
+				if (!this) return;
+				// Create modal
+				const modal = DOM.create('div', {
+					class: 'modal small',
+				});
+				const modalContent = DOM.create('div', {
+					class: 'card content',
 					childs: [
-						DOM.create('input', {
-							attributes: { type: 'text', name: 'username', placeholder: 'Email', required: 'true' },
+						DOM.create('div', {
+							class: `header ${this.manager.service.name.toLocaleLowerCase()}`,
+							childs: [this.manager.createTitle()],
 						}),
+					],
+				});
+				const form = DOM.create('form', {
+					class: 'body content',
+					childs: [
+						DOM.create('label', { textContent: 'Email' }),
+						DOM.create('input', {
+							attributes: { type: 'text', name: 'email', placeholder: 'Email', required: 'true' },
+						}),
+						DOM.create('label', { textContent: 'Password' }),
 						DOM.create('input', {
 							attributes: {
 								type: 'password',
@@ -405,46 +416,48 @@ export abstract class ActivableModule {
 							},
 						}),
 						DOM.create('button', {
-							class: 'success',
-							attributes: { type: 'submit' },
-							textContent: 'Login',
+							class: 'primary puffy',
+							attributes: {
+								type: 'submit',
+							},
+							childs: [DOM.icon('login-light'), DOM.text('Login')],
 						}),
 					],
 				});
+				const cancelButton = DOM.create('button', {
+					class: 'default center',
+					childs: [DOM.icon('cancel'), DOM.text('Cancel')],
+				});
+				DOM.append(modal, DOM.append(modalContent, DOM.append(form, cancelButton)));
+				// Bind
+				modal.addEventListener('click', (event) => {
+					if (event.target == modal) {
+						event.preventDefault();
+						modal.remove();
+					}
+				});
 				let busy = false;
-				this.loginForm.addEventListener('submit', async (event) => {
+				form.addEventListener('submit', async (event) => {
 					event.preventDefault();
-					if (!this || this.loginForm === undefined) return;
-					if (!busy) {
+					if (!this) return;
+					if (!busy && this.login) {
 						busy = true;
-						this.activeCard.classList.add('loading');
-						this.loginForm.classList.add('hidden');
-						if (this.login) {
-							// Login call Options.save itself
-							const res = await this.login(
-								this.loginForm.username.value.trim(),
-								this.loginForm.password.value
-							);
-							if (res == LoginStatus.SUCCESS) {
-								this.loginForm.remove();
-								this.loginForm = undefined;
-								this.activeCard.classList.remove('inactive', 'loading');
-								this.activeCard.classList.add('active');
-								this.loginButton.classList.add('hidden');
-								this.updateStatus(res);
-								return;
-							}
+						// Login call Options.save itself
+						const res = await this.login(form.email.value.trim(), form.password.value);
+						if (res == LoginStatus.SUCCESS) {
+							this.loginButton.remove();
+							this.updateStatus(res);
+							modal.remove();
+							return;
 						}
-						// If there was an error -- show the form again
-						// SimpleNotification.error({
-						// 	title: 'Error',
-						// 	text: 'Invalid credentials.',
-						// });
-						this.loginForm.classList.remove('hidden');
 						busy = false;
 					}
 				});
-				this.activeCardContent.appendChild(this.loginForm);
+				cancelButton.addEventListener('click', (event) => {
+					event.preventDefault();
+					modal.remove();
+				});
+				document.body.appendChild(modal);
 			} // else LoginMethod.EXTERNAL that just open a link
 		});
 	};

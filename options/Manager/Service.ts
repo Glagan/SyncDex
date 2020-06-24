@@ -43,12 +43,6 @@ export class ServiceManager {
 		// Warnings
 		this.noServices = document.getElementById('no-service') as HTMLElement;
 		this.inactiveWarning = document.getElementById('inactive-service') as HTMLElement;
-		// Bind
-		for (const manager of this.managers) {
-			if (manager.activeModule) {
-				manager.activeModule.bind();
-			}
-		}
 		// Default State
 		this.refreshActive();
 		this.resetSaveContainer();

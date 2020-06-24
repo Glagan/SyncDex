@@ -26,6 +26,7 @@ type PhotonIcon =
 	| 'import-export'
 	| 'info'
 	| 'library'
+	| 'login-light'
 	| 'new-light'
 	| 'new'
 	| 'preferences'
