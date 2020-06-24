@@ -245,6 +245,27 @@ button.default:focus,
 .button.default:focus {
 	box-shadow: var(--focus);
 }
+button.ghost,
+.button.ghost {
+	color: var(--grey-90-a30);
+	background: transparent;
+	height: 32px;
+	min-width: 32px;
+	width: 32px;
+	padding: 8px;
+}
+button.ghost:hover,
+.button.ghost:hover {
+	background-color: var(--grey-90-a10);
+}
+button.ghost:active,
+.button.ghost:active {
+	background-color: var(--grey-90-a20);
+}
+button.ghost:focus,
+.button.ghost:focus {
+	box-shadow: var(--focus);
+}
 button.danger,
 .button.danger {
 	color: var(--white-100);
@@ -260,26 +281,6 @@ button.danger:active,
 }
 button.danger:focus,
 .button.danger:focus {
-	box-shadow: var(--focus);
-}
-button.ghost,
-.button.ghost {
-	color: var(--grey-90-a30);
-	background: transparent;
-	height: 32px;
-	width: 32px;
-	padding: 8px;
-}
-button.ghost:hover,
-.button.ghost:hover {
-	background-color: var(--grey-90-a10);
-}
-button.ghost:active,
-.button.ghost:active {
-	background-color: var(--grey-90-a20);
-}
-button.ghost:focus,
-.button.ghost:focus {
 	box-shadow: var(--focus);
 }
 a.button {
@@ -471,6 +472,7 @@ body {
 	min-height: 100vh;
 	display: grid;
 	grid-template-columns: 20% 80%;
+	background-color: var(--grey-10);
 }
 nav {
 	padding: 16px;
@@ -483,11 +485,15 @@ nav ul li:first-child {
 	font-weight: var(--extralight);
 	cursor: default;
 }
+nav ul li:first-child:hover {
+	font-weight: var(--extralight);
+}
 nav ul li {
 	padding: 8px 0;
 	cursor: pointer;
 	transition: all 150ms var(--animation);
 	font-weight: var(--light);
+	display: table;
 }
 nav ul li:hover {
 	font-weight: var(--bold);
@@ -518,6 +524,9 @@ h2 {
 }
 .block {
 	margin-bottom: 32px;
+}
+.paragraph {
+	margin-bottom: 4px;
 }
 
 /*	Services */
@@ -575,15 +584,31 @@ h2 {
 	margin-bottom: 32px;
 	gap: 4px;
 }
-/* .parameter > label {
-	display: inline-block;
-}
-.parameter > :nth-child(2n) {
-	max-width: 90%;
-} */
 .dependency {
 	margin-left: 32px;
 }
 .center {
 	text-align: center;
+}
+.color {
+	display: inline-block;
+	width: 32px;
+	height: 32px;
+	border: 2px solid var(--grey-90-a20);
+	border-top-right-radius: 2px;
+	border-bottom-right-radius: 2px;
+}
+.color-input {
+	display: flex;
+	flex-flow: row nowrap;
+	align-items: center;
+	margin-bottom: 8px;
+}
+.color-input input {
+	border-right: 0;
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+.color-input button:first-child {
+	margin-right: 4px;
 }

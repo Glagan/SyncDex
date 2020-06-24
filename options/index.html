@@ -56,42 +56,44 @@
 			</div>
 			<h2>Next Chapter</h2>
 			<div class="block">
-				<p>Color of the next chapter of a title.</p>
+				<label for="c-nextChapter" class="paragraph">Color of the next chapter of a title.</label>
 				<div class="color-input" data-color="nextChapter">
-					<input type="text" name="nextChapter" placeholder="Next chapter color" /><span class="color"></span>
+					<input type="text" id="c-nextChapter" name="nextChapter" placeholder="Next chapter color" /><span
+						class="color"></span>
 				</div>
 			</div>
 			<h2>Higher Chapters</h2>
 			<div class="block">
-				<p>Color of all <b>higher</b> chapters than your last read chapter.</p>
+				<label for="c-higherChapter" class="paragraph">Color of all <b>higher</b> chapters than your last read
+					chapter.</label>
 				<div class="color-input" data-color="higherChapter">
-					<input type="text" name="higherChapter" placeholder="Higher chapters color" /><span
-						class="color"></span>
+					<input type="text" id="c-higherChapter" name="higherChapter"
+						placeholder="Higher chapters color" /><span class="color"></span>
 				</div>
 			</div>
 			<h2>Lower Chapters</h2>
 			<div class="block">
-				<p>Color of all <b>lower</b> chapters than your last read chapter.</p>
+				<label for="c-lowerChapter" class="paragraph">Color of all <b>lower</b> chapters than your last read
+					chapter.</label>
 				<div class="color-input" data-color="lowerChapter">
-					<input type="text" name="lowerChapter" placeholder="Lower chapter color" /><span
+					<input type="text" id="c-lowerChapter" name="lowerChapter" placeholder="Lower chapter color" /><span
 						class="color"></span>
 				</div>
 			</div>
 			<h2>Current Chapters</h2>
 			<div class="block">
-				<p>
-					Colors for all <b>current</b> chapters.<br />
-					<b>SyncDex</b> will cycle through them if you add multiple of them.
-				</p>
+				<p class="paragraph">Colors for all <b>current</b> chapters.</p>
+				<div class="paragraph message"><b>SyncDex</b> will cycle through them if you add multiple of them.</div>
 				<div id="highlights" class="highlights"></div>
 			</div>
-			<div class="block message default">The following option is only applied on a <b>title</b> page.</div>
 			<h2>Opened Chapters</h2>
 			<div class="block">
-				<p>Colors for chapters that you opened if the "<b>Save opened chapters</b>" option is enabled.</p>
+				<label for="c-openedChapter" class="paragraph">Colors for chapters that you opened if the "<b>Save
+						opened chapters</b>" option is enabled.<br />
+					Only applied in a <b>title</b> page.</label>
 				<div class="color-input" data-color="openedChapter">
-					<input type="text" name="openedChapter" placeholder="Opened chapters color" /><span
-						class="color"></span>
+					<input type="text" id="c-openedChapter" name="openedChapter"
+						placeholder="Opened chapters color" /><span class="color"></span>
 				</div>
 			</div>
 		</div>
@@ -171,7 +173,7 @@
 			<div class="parameter">
 				<div class="checkbox" data-checkbox="updateServicesInList"></div>
 				<label>Check titles status in <b>Chapter lists</b>.<br />
-					<div class="helper">Usefull if you are reading using an external application (like <b>Tachiyomi</b>)
+					<div class="helper">Useful if you are reading using an external application (like <b>Tachiyomi</b>)
 						that update your Services, and make <b>SyncDex</b> out of sync.</div>
 				</label>
 			</div>
@@ -184,7 +186,7 @@
 			<h2>Link to services</h2>
 			<div class="parameter">
 				<div class="checkbox" data-checkbox="linkToServices"></div>
-				<label>Add links to all Services that are available and valid.</label>
+				<label>Add links to all Services that are valid and available.</label>
 			</div>
 			<h2>Overview</h2>
 			<div class="parameter">

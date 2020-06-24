@@ -24,8 +24,8 @@ class Highlights {
 			},
 		});
 		this.remove = DOM.create('button', {
-			class: 'danger',
-			childs: [DOM.icon('delete')],
+			class: 'ghost danger',
+			childs: [DOM.icon('delete-light')],
 		});
 		DOM.append(this.node, this.remove, this.input, this.display);
 	}
@@ -71,7 +71,7 @@ export class HighlightsManager {
 	constructor() {
 		this.node = document.getElementById('highlights') as HTMLElement;
 		const addButton = DOM.create('button', {
-			class: 'success',
+			class: 'primary',
 			events: {
 				click: () => {
 					const color = new Highlights(Options.colors.highlights.length);
@@ -82,7 +82,7 @@ export class HighlightsManager {
 					color.input.focus();
 				},
 			},
-			childs: [DOM.icon('new'), DOM.space(), DOM.text('Add Color')],
+			childs: [DOM.icon('new-light'), DOM.space(), DOM.text('Add Color')],
 		});
 		this.node.appendChild(addButton);
 		this.updateAll();
