@@ -18,6 +18,7 @@ type PhotonIcon =
 	| 'brush'
 	| 'cancel'
 	| 'check'
+	| 'delete-light'
 	| 'delete'
 	| 'download'
 	| 'globe'
@@ -33,8 +34,8 @@ type PhotonIcon =
 	| 'underflow-light'
 	| 'underflow'
 	| 'upload'
-	| 'external'
 	| 'external-light'
+	| 'external'
 	| 'warning';
 
 export class DOM {

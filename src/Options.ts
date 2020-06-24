@@ -26,7 +26,6 @@ export interface AvailableOptions {
 	overviewMainOnly: boolean;
 	// History
 	biggerHistory: boolean;
-	historySize: number;
 	chapterStatus: boolean;
 	// Notifications
 	notifications: boolean;
@@ -79,7 +78,6 @@ export const DefaultOptions: AvailableOptions = {
 	overviewMainOnly: true,
 	// History
 	biggerHistory: true,
-	historySize: 200,
 	chapterStatus: false,
 	// Notifications
 	notifications: true,

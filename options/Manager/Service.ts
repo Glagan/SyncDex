@@ -1,6 +1,6 @@
 import { Options } from '../../src/Options';
 import { DOM, AppendableElement } from '../../src/DOM';
-import { LoginStatus } from '../../src/Service/Service';
+import { LoginStatus, ServiceName } from '../../src/Service/Service';
 import { ManageableService, ActivableModule } from '../Service/Service';
 import { MyMangaDex } from '../Service/MyMangaDex';
 import { SyncDex } from '../Service/SyncDex';
@@ -10,17 +10,6 @@ import { Anilist } from '../Service/Anilist';
 import { Kitsu } from '../Service/Kitsu';
 import { AnimePlanet } from '../Service/AnimePlanet';
 import { MangaUpdates } from '../Service/MangaUpdates';
-
-export enum ServiceName {
-	MyMangaDex = 'MyMangaDex',
-	SyncDex = 'SyncDex',
-	MangaDex = 'MangaDex',
-	MyAnimeList = 'MyAnimeList',
-	MangaUpdates = 'MangaUpdates',
-	Anilist = 'Anilist',
-	Kitsu = 'Kitsu',
-	AnimePlanet = 'AnimePlanet',
-}
 
 export const enum SaveMethod {
 	IMPORT = 'IMPORT',

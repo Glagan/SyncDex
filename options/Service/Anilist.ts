@@ -1,4 +1,4 @@
-import { DOM } from '../../src/DOM';
+import { DOM, AppendableElement } from '../../src/DOM';
 import { Options } from '../../src/Options';
 import { Runtime, JSONResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
@@ -285,12 +285,7 @@ class AnilistExport extends APIExportableModule {
 }
 
 export class Anilist extends ManageableService {
-	service: AnilistService = new AnilistService();
-	activeModule: AnilistActive = new AnilistActive(this);
-	importModule: AnilistImport = new AnilistImport(this);
-	exportModule: AnilistExport = new AnilistExport(this);
-
-	createTitle = (): HTMLElement => {
+	createTitle = (): AppendableElement => {
 		return DOM.create('span', {
 			class: 'ani',
 			textContent: 'Ani',
@@ -302,4 +297,9 @@ export class Anilist extends ManageableService {
 			],
 		});
 	};
+
+	service: AnilistService = new AnilistService();
+	activeModule: AnilistActive = new AnilistActive(this);
+	importModule: AnilistImport = new AnilistImport(this);
+	exportModule: AnilistExport = new AnilistExport(this);
 }

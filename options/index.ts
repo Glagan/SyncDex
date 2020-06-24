@@ -17,7 +17,6 @@ class OptionsManager {
 	serviceManager?: ServiceManager;
 
 	execute = async (): Promise<void> => {
-		// await LocalStorage.clear();
 		await Options.load();
 		this.highlightsManager = new HighlightsManager();
 		this.colorManager = new ColorManager();
@@ -28,7 +27,7 @@ class OptionsManager {
 			document.getElementById('service-list') as HTMLElement,
 			document.getElementById('save-container') as HTMLElement
 		);
-		// Delete save
+		// Delete save event
 		const deleteSave = document.getElementById('delete-save');
 		if (deleteSave) {
 			let clearClickCount = 0;
@@ -43,16 +42,16 @@ class OptionsManager {
 					this.reload();
 					clickCount = 0;
 					deleteSave.classList.remove('loading');
-					deleteSave.style.fontSize = '1rem';
+					deleteSave.style.fontSize = 'var(--body-20)';
 				} else {
-					deleteSave.style.fontSize = '2rem';
+					deleteSave.style.fontSize = 'var(--title-30)';
 					++clickCount;
 					// Clear clickCount after 2s, just in case
 					window.clearTimeout(clearClickCount);
 					clearClickCount = window.setTimeout(() => {
 						clickCount = 0;
-						deleteSave.style.fontSize = '1rem';
-					}, 2000);
+						deleteSave.style.fontSize = 'var(--body-20)';
+					}, 4000);
 				}
 			});
 		}

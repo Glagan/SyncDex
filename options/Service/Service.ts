@@ -161,7 +161,7 @@ export abstract class ManageableService {
 		this.manager = manager;
 	}
 
-	createCard(): HTMLElement {
+	createCard = (): HTMLElement => {
 		const card = DOM.create('div', {
 			class: 'card',
 		});
@@ -173,11 +173,11 @@ export abstract class ManageableService {
 			class: 'content',
 		});
 		return DOM.append(card, header, content);
-	}
+	};
 
-	createTitle(): AppendableElement {
+	createTitle = (): AppendableElement => {
 		return DOM.text(this.service.name);
-	}
+	};
 }
 
 export abstract class ActivableModule {
