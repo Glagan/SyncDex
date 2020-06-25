@@ -430,24 +430,35 @@ export abstract class ActivableModule {
 				});
 				DOM.append(modal, DOM.append(modalContent, DOM.append(form, cancelButton)));
 				// Bind
-				modal.addEventListener('click', (event) => {
-					if (event.target == modal) {
-						event.preventDefault();
+				let busy = false;
+				modal.addEventListener('animationend', (event) => {
+					// Remove the modal when the fade-out animation ends
+					if (event.animationName === 'fade-out') {
 						modal.remove();
 					}
 				});
-				let busy = false;
+				modal.addEventListener('click', (event) => {
+					if (!busy && event.target == modal) {
+						event.preventDefault();
+						modal.classList.add('closed');
+					}
+				});
 				form.addEventListener('submit', async (event) => {
 					event.preventDefault();
-					if (!this) return;
+					if (!this) {
+						modal.classList.add('closed');
+						return;
+					}
 					if (!busy && this.login) {
 						busy = true;
+						modalContent.classList.add('loading');
 						// Login call Options.save itself
 						const res = await this.login(form.email.value.trim(), form.password.value);
+						modalContent.classList.remove('loading');
 						if (res == LoginStatus.SUCCESS) {
 							this.loginButton.remove();
 							this.updateStatus(res);
-							modal.remove();
+							modal.classList.add('closed');
 							return;
 						}
 						busy = false;
@@ -455,10 +466,12 @@ export abstract class ActivableModule {
 				});
 				cancelButton.addEventListener('click', (event) => {
 					event.preventDefault();
-					modal.remove();
+					if (!busy) {
+						modal.classList.add('closed');
+					}
 				});
 				document.body.appendChild(modal);
-			} // else LoginMethod.EXTERNAL that just open a link
+			} // else LoginMethod.EXTERNAL just open a link
 		});
 	};
 

@@ -147,6 +147,24 @@
 	}
 }
 
+@keyframes fade-in {
+	0% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+
+@keyframes fade-out {
+	0% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
 .loading {
 	animation-name: pulse;
 	animation-duration: 2s;
@@ -633,6 +651,11 @@ h2 {
 	justify-content: center;
 	align-content: center;
 	cursor: pointer;
+	animation: fade-in 200ms 1 forwards;
+}
+.modal.closed {
+	user-select: none;
+	animation: fade-out 150ms 1 forwards;
 }
 .modal > .content {
 	margin-left: 20%;
