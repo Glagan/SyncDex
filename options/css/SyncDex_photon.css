@@ -112,6 +112,10 @@
 
 	--mymangadex: rgba(47, 82, 162);
 	--mymangadex-bg: white;
+	--syncdex: #0c0c0d;
+	--syncdex-bg: #d7d7db;
+	--mangadex: rgba(247, 148, 33);
+	--mangadex-bg: #2a2f34;
 	--myanimelist: rgba(47, 82, 162);
 	--myanimelist-bg: white;
 	--anilist: rgb(2, 169, 255);
@@ -555,39 +559,60 @@ h2 {
 }
 
 /*	Services */
-#service-list {
+.services {
 	display: flex;
 	flex-flow: row wrap;
 	align-items: flex-start;
+}
+.services.selectable .card {
+	cursor: pointer;
+}
+.services .card .content {
+	display: flex;
+	flex-flow: column wrap;
+}
+.services .card .content button,
+.services .card .content .button {
+	margin-bottom: 8px;
+}
+.services .card .content a.button img {
+	padding-top: 8px;
+}
+.services .card .content button:last-child,
+.services .card .content .button:last-child,
+.services .card .content .message:last-child {
+	margin-bottom: 0;
+}
+.card .header.mymangadex {
+	background: url('/icons/mmd.png') 8px center / 16px no-repeat, var(--myanimelist-bg);
+	color: var(--myanimelist);
+}
+.card .header.syncdex {
+	background: url('/icons/sc.png') 8px center / 16px no-repeat, var(--syncdex-bg);
+	color: var(--syncdex);
+}
+.card .header.mangadex {
+	background: url('/icons/md.png') 8px center / 16px no-repeat, var(--mangadex-bg);
+	color: var(--mangadex);
+}
+.manga {
+	color: white;
+}
+.manga .dex {
+	color: var(--mangadex);
 }
 .card .header.myanimelist {
 	background: url('/icons/mal.png') 8px center / 16px no-repeat, var(--myanimelist-bg);
 	color: var(--myanimelist);
 }
+.card .header.anilist {
+	background: url('/icons/al.png') 8px center / 16px no-repeat, var(--anilist-bg);
+	color: var(--anilist);
+}
 .ani {
 	color: white;
 }
 .ani .list {
-	color: var(--anilist);
-}
-#service-list .card .content {
-	display: flex;
-	flex-flow: column wrap;
-}
-#service-list .card .content button,
-#service-list .card .content .button {
-	margin-bottom: 8px;
-}
-#service-list .card .content a.button img {
-	padding-top: 8px;
-}
-#service-list .card .content button:last-child,
-#service-list .card .content .button:last-child,
-#service-list .card .content .message:last-child {
-	margin-bottom: 0;
-}
-.card .header.anilist {
-	background: url('/icons/al.png') 8px center / 16px no-repeat, var(--anilist-bg);
 	color: var(--anilist);
 }
 .card .header.kitsu {
@@ -610,6 +635,10 @@ h2 {
 	grid-template-rows: auto;
 	margin-bottom: 32px;
 	gap: 4px;
+	/*background-color: var(--white-100);
+	padding: 4px;
+	border: 1px solid var(--grey-20);
+	border-radius: 2px;*/
 }
 .dependency {
 	margin-left: 32px;

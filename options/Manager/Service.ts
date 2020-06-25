@@ -224,7 +224,7 @@ export class ServiceManager {
 			DOM.create('div', {
 				childs: [
 					DOM.create('div', {
-						class: 'block notification info',
+						class: 'block message default',
 						childs: [
 							DOM.create('b', { textContent: 'Importing' }),
 							DOM.text(' will only update your '),
@@ -248,7 +248,7 @@ export class ServiceManager {
 			DOM.create('div', {
 				childs: [
 					DOM.create('div', {
-						class: 'block notification info',
+						class: 'block message default',
 						childs: [
 							DOM.create('b', { textContent: 'Exporting' }),
 							DOM.text(' will update your '),

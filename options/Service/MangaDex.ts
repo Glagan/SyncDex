@@ -2,6 +2,7 @@ import { TitleCollection, Title } from '../../src/Title';
 import { Runtime, RawResponse } from '../../src/Runtime';
 import { Status, Service, ServiceKey, LoginStatus, ServiceName } from '../../src/Service/Service';
 import { ManageableService, APIImportableModule, APIExportableModule } from './Service';
+import { AppendableElement, DOM } from '../../src/DOM';
 
 class MangaDexService extends Service {
 	key: ServiceKey = ServiceKey.MangaDex;
@@ -130,6 +131,19 @@ class MangaDexExport extends APIExportableModule {
 }
 
 export class MangaDex extends ManageableService {
+	createTitle = (): AppendableElement => {
+		return DOM.create('span', {
+			class: 'manga',
+			textContent: 'Manga',
+			childs: [
+				DOM.create('span', {
+					class: 'dex',
+					textContent: 'Dex',
+				}),
+			],
+		});
+	};
+
 	service: MangaDexService = new MangaDexService();
 	activeModule = undefined;
 	importModule: MangaDexImport = new MangaDexImport(this);

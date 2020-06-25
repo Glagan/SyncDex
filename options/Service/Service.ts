@@ -161,7 +161,7 @@ export abstract class ManageableService {
 		this.manager = manager;
 	}
 
-	createCard = (): HTMLElement => {
+	createCard = (withContent: boolean): HTMLElement => {
 		const card = DOM.create('div', {
 			class: 'card',
 		});
@@ -169,10 +169,14 @@ export abstract class ManageableService {
 			class: `header ${this.service.name.toLowerCase()}`,
 			childs: [this.createTitle()],
 		});
-		const content = DOM.create('div', {
-			class: 'content',
-		});
-		return DOM.append(card, header, content);
+		DOM.append(card, header);
+		if (withContent) {
+			const content = DOM.create('div', {
+				class: 'content',
+			});
+			DOM.append(card, content);
+		}
+		return card;
 	};
 
 	createTitle = (): AppendableElement => {
@@ -212,7 +216,7 @@ export abstract class ActivableModule {
 	constructor(service: ManageableService) {
 		this.manager = service;
 		// Create
-		this.activeCard = this.manager.createCard();
+		this.activeCard = this.manager.createCard(true);
 		this.activeCardContent = this.activeCard.lastElementChild as HTMLElement;
 		// Messages
 		this.loadingMessage = this.message('default', 'Loading...');
@@ -586,7 +590,7 @@ export abstract class ImportableModule extends SaveModule {
 
 	constructor(service: ManageableService) {
 		super(service);
-		this.importCard = this.manager.createCard();
+		this.importCard = this.manager.createCard(false);
 		this.importCard.addEventListener('click', () => {
 			this.mainHeader();
 			this.import();
@@ -892,7 +896,7 @@ export abstract class ExportableModule extends SaveModule {
 
 	constructor(service: ManageableService) {
 		super(service);
-		this.exportCard = this.manager.createCard();
+		this.exportCard = this.manager.createCard(false);
 		this.exportCard.addEventListener('click', () => {
 			this.mainHeader();
 			this.export();
