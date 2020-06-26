@@ -35,17 +35,20 @@ export class ServiceManager {
 	inactiveServices: ServiceName[] = [];
 	inactiveWarning: HTMLElement;
 	// Import/Export
-	saveContainer: HTMLElement;
+	importContainer: HTMLElement;
+	exportContainer: HTMLElement;
 
 	constructor(active: HTMLElement, saveContainer: HTMLElement) {
 		this.activeContainer = active;
-		this.saveContainer = saveContainer;
 		// Warnings
 		this.noServices = document.getElementById('no-service') as HTMLElement;
 		this.inactiveWarning = document.getElementById('inactive-service') as HTMLElement;
+		// Import/Export
+		this.importContainer = document.getElementById('import-container') as HTMLElement;
+		this.exportContainer = document.getElementById('export-container') as HTMLElement;
 		// Default State
 		this.refreshActive();
-		this.resetSaveContainer();
+		this.fillSaveContainers();
 	}
 
 	/**
@@ -163,111 +166,15 @@ export class ServiceManager {
 
 	// Import/Export
 
-	/**
-	 * Proxy to the header function with an h1 header
-	 */
-	fullHeader = (value: string | AppendableElement[]): HTMLElement => {
-		return this.header(value, 'h1');
-	};
-
-	/**
-	 * Append an header in the save container
-	 */
-	header = (value: string | AppendableElement[], headerType: 'h1' | 'h2' = 'h2'): HTMLElement => {
-		const isArray = Array.isArray(value);
-		return this.saveContainer.appendChild(
-			DOM.create(headerType, {
-				class: 'full',
-				textContent: isArray ? '' : (value as string),
-				childs: isArray ? (value as AppendableElement[]) : [],
-			})
-		);
-	};
-
-	/**
-	 * Remove everything from the save container
-	 */
-	clearSaveContainer = (): void => {
-		DOM.clear(this.saveContainer);
-	};
-
-	/**
-	 * Remove the save container and the Import/Export categories with buttons for each services
-	 */
-	resetSaveContainer = (): void => {
-		this.clearSaveContainer();
-		// Import/Export containers
-		const importContainer = DOM.create('div', {
-			class: 'services selectable',
-			childs: [],
-		});
-		const exportContainer = DOM.create('div', {
-			class: 'services selectable',
-			childs: [],
-		});
-		// Insert Service cards
+	fillSaveContainers = (): void => {
 		for (const service of this.managers) {
 			if (service.importModule) {
-				DOM.append(importContainer, service.importModule.importCard);
+				DOM.append(this.importContainer, service.importModule.card);
 			}
 			if (service.exportModule) {
-				DOM.append(exportContainer, service.exportModule.exportCard);
+				DOM.append(this.exportContainer, service.exportModule.card);
 			}
 		}
-		// Append to container
-		DOM.append(
-			this.saveContainer,
-			DOM.create('h1', {
-				attributes: { id: 'import' },
-				childs: [DOM.icon('download'), DOM.space(), DOM.text('Import')],
-			}),
-			DOM.create('div', {
-				childs: [
-					DOM.create('div', {
-						class: 'block message default',
-						childs: [
-							DOM.create('b', { textContent: 'Importing' }),
-							DOM.text(' will only update your '),
-							DOM.create('b', { textContent: 'SyncDex' }),
-							DOM.text(' save and is used to initialize '),
-							DOM.create('b', { textContent: 'SyncDex' }),
-							DOM.create('br'),
-							DOM.text('If you wish to update any external Service, see '),
-							DOM.create('b', {
-								childs: [DOM.create('a', { attributes: { href: '#Export' }, textContent: 'Export' })],
-							}),
-						],
-					}),
-					importContainer,
-				],
-			}),
-			DOM.create('h1', {
-				attributes: { id: 'export' },
-				childs: [DOM.icon('upload'), DOM.space(), DOM.text('Export')],
-			}),
-			DOM.create('div', {
-				childs: [
-					DOM.create('div', {
-						class: 'block message default',
-						childs: [
-							DOM.create('b', { textContent: 'Exporting' }),
-							DOM.text(' will update your '),
-							DOM.create('b', { textContent: 'Online' }),
-							DOM.text(' save on the Service you choose using your '),
-							DOM.create('b', { textContent: 'SyncDex' }),
-							DOM.text(' save.'),
-							DOM.create('br'),
-							DOM.text('You should '),
-							DOM.create('b', {
-								childs: [DOM.create('a', { attributes: { href: '#Import' }, textContent: 'Import' })],
-							}),
-							DOM.text(' from somewhere before exporting to somewhere else !'),
-						],
-					}),
-					exportContainer,
-				],
-			})
-		);
 	};
 
 	reloadOptions = (): void => {};

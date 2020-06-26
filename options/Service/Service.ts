@@ -33,121 +33,73 @@ export class ImportSummary extends Summary {
 
 export type FileImportFormat = 'JSON' | 'XML';
 
-export class Row {
-	node: HTMLElement;
-
-	constructor(childs: AppendableElement[] = []) {
-		this.node = DOM.create('div', { class: 'row' });
-		if (childs.length > 0) {
-			DOM.append(this.node, ...childs);
-		}
+export class Checkbox {
+	static make(name: string, labelContent: string): HTMLElement {
+		const checkbox = DOM.create('div', {
+			class: 'checkbox checked',
+			attributes: { name: name },
+			childs: [DOM.create('img', { attributes: { src: 'icons/check-light.svg' } })],
+		});
+		const label = DOM.create('label', { textContent: labelContent });
+		checkbox.addEventListener('click', (event) => {
+			event.preventDefault();
+			checkbox.classList.toggle('checked');
+		});
+		label.addEventListener('click', (event) => {
+			event.preventDefault();
+			checkbox.classList.toggle('checked');
+		});
+		return DOM.create('div', {
+			class: 'parameter',
+			childs: [checkbox, label],
+		});
 	}
 }
 
-export class Checkbox extends Row {
-	label: HTMLElement;
-	input: HTMLInputElement;
+export class Modal {
+	modal: HTMLElement;
+	content: HTMLElement;
+	header: HTMLElement;
+	body: HTMLElement;
 
-	constructor(fieldName: string, label: string, checked: boolean = false) {
-		super();
-		this.label = DOM.create('label', {
-			textContent: label,
+	constructor(size?: 'small') {
+		this.modal = DOM.create('div', {
+			class: 'modal',
 		});
-		this.input = DOM.create('input', {
-			class: 'hidden',
-			attributes: {
-				name: fieldName,
-				type: 'checkbox',
-			},
+		if (size) this.modal.classList.add(size);
+		this.content = DOM.create('div', {
+			class: 'card content',
 		});
-		let state = 'disabled';
-		if (checked) {
-			this.input.checked = true;
-			state = 'enabled';
-		}
-		const checkbox = DOM.create('div', { class: `checkbox ${state}` });
-		const enable = DOM.create('button', { class: 'on', textContent: 'Enable' });
-		const disable = DOM.create('button', { class: 'off', textContent: 'Disable' });
-		this.label.addEventListener('click', () => {
-			if (this.input.checked) {
-				checkbox.classList.remove('enabled');
-				checkbox.classList.add('disabled');
-				this.input.checked = false;
-			} else {
-				checkbox.classList.remove('disabled');
-				checkbox.classList.add('enabled');
-				this.input.checked = true;
+		this.header = DOM.create('div', {
+			class: `header`,
+		});
+		this.body = DOM.create('div', {
+			class: 'body content',
+		});
+		DOM.append(this.modal, DOM.append(this.content, this.header, this.body));
+		// Bind
+		this.modal.addEventListener('animationend', (event) => {
+			// Remove the modal when the fade-out animation ends
+			if (event.animationName === 'fade-out') {
+				this.modal.remove();
+				this.modal.classList.remove('closed');
 			}
 		});
-		enable.addEventListener('click', (event) => {
-			event.preventDefault();
-			checkbox.classList.remove('disabled');
-			checkbox.classList.add('enabled');
-			this.input.checked = true;
+		this.modal.addEventListener('click', (event) => {
+			if (event.target == this.modal) {
+				event.preventDefault();
+				this.modal.classList.add('closed');
+			}
 		});
-		disable.addEventListener('click', (event) => {
-			event.preventDefault();
-			checkbox.classList.remove('enabled');
-			checkbox.classList.add('disabled');
-			this.input.checked = false;
-		});
-		DOM.append(checkbox, enable, disable);
-		DOM.append(this.node, this.label, this.input, checkbox);
 	}
-}
 
-export class Input extends Row {
-	label: HTMLElement;
-	input: HTMLInputElement;
+	show = (): void => {
+		document.body.appendChild(this.modal);
+	};
 
-	constructor(fieldName: string, label: string, type: 'text' | 'number' = 'text') {
-		super();
-		this.label = DOM.create('label', {
-			textContent: label,
-			attributes: {
-				for: `input_${type}_${fieldName}`,
-			},
-		});
-		this.input = DOM.create('input', {
-			attributes: {
-				id: `input_${type}_${fieldName}`,
-				name: fieldName,
-				type: type,
-			},
-		});
-		DOM.append(this.node, this.label, this.input);
-	}
-}
-
-export class FileInput extends Row {
-	label?: HTMLElement;
-	input: HTMLInputElement;
-
-	constructor(fieldName: string, label?: string, accept?: string) {
-		super();
-		if (label !== 'undefined') {
-			this.label = DOM.create('label', {
-				textContent: label,
-				attributes: {
-					for: `input_file_${fieldName}`,
-				},
-			});
-			this.node.appendChild(this.label);
-		}
-		this.input = DOM.create('input', {
-			class: 'button action',
-			attributes: {
-				name: fieldName,
-				type: 'file',
-				accept: accept ? accept : '*',
-			},
-		});
-		DOM.append(this.node, this.input);
-	}
-}
-
-interface Module {
-	manager: ManageableService;
+	remove = (): void => {
+		this.modal.classList.add('closed');
+	};
 }
 
 export abstract class ManageableService {
@@ -391,36 +343,32 @@ export abstract class ActivableModule {
 				event.preventDefault();
 				if (!this) return;
 				// Create modal
-				const modal = DOM.create('div', {
-					class: 'modal small',
-				});
-				const modalContent = DOM.create('div', {
-					class: 'card content',
+				const modal = new Modal('small');
+				modal.header.classList.add(this.manager.service.name.toLocaleLowerCase());
+				modal.header.appendChild(this.manager.createTitle());
+				const form = DOM.create('form', {
+					class: 'body',
 					childs: [
 						DOM.create('div', {
-							class: `header ${this.manager.service.name.toLocaleLowerCase()}`,
-							childs: [this.manager.createTitle()],
-						}),
-					],
-				});
-				const form = DOM.create('form', {
-					class: 'body content',
-					childs: [
-						DOM.create('label', { textContent: 'Email' }),
-						DOM.create('input', {
-							attributes: { type: 'text', name: 'email', placeholder: 'Email', required: 'true' },
-						}),
-						DOM.create('label', { textContent: 'Password' }),
-						DOM.create('input', {
-							attributes: {
-								type: 'password',
-								name: 'password',
-								placeholder: 'Password',
-								required: 'true',
-							},
+							class: 'row-parameter',
+							childs: [
+								DOM.create('label', { textContent: 'Email' }),
+								DOM.create('input', {
+									attributes: { type: 'text', name: 'email', placeholder: 'Email', required: 'true' },
+								}),
+								DOM.create('label', { textContent: 'Password' }),
+								DOM.create('input', {
+									attributes: {
+										type: 'password',
+										name: 'password',
+										placeholder: 'Password',
+										required: 'true',
+									},
+								}),
+							],
 						}),
 						DOM.create('button', {
-							class: 'primary puffy',
+							class: 'primary puffy fill',
 							attributes: {
 								type: 'submit',
 							},
@@ -432,37 +380,25 @@ export abstract class ActivableModule {
 					class: 'default center',
 					childs: [DOM.icon('cancel'), DOM.text('Cancel')],
 				});
-				DOM.append(modal, DOM.append(modalContent, DOM.append(form, cancelButton)));
+				DOM.append(modal.body, DOM.append(form, cancelButton));
 				// Bind
 				let busy = false;
-				modal.addEventListener('animationend', (event) => {
-					// Remove the modal when the fade-out animation ends
-					if (event.animationName === 'fade-out') {
-						modal.remove();
-					}
-				});
-				modal.addEventListener('click', (event) => {
-					if (!busy && event.target == modal) {
-						event.preventDefault();
-						modal.classList.add('closed');
-					}
-				});
 				form.addEventListener('submit', async (event) => {
 					event.preventDefault();
 					if (!this) {
-						modal.classList.add('closed');
+						modal.remove();
 						return;
 					}
 					if (!busy && this.login) {
 						busy = true;
-						modalContent.classList.add('loading');
+						modal.content.classList.add('loading');
 						// Login call Options.save itself
 						const res = await this.login(form.email.value.trim(), form.password.value);
-						modalContent.classList.remove('loading');
+						modal.content.classList.remove('loading');
 						if (res == LoginStatus.SUCCESS) {
 							this.loginButton.remove();
 							this.updateStatus(res);
-							modal.classList.add('closed');
+							modal.remove();
 							return;
 						}
 						busy = false;
@@ -471,10 +407,10 @@ export abstract class ActivableModule {
 				cancelButton.addEventListener('click', (event) => {
 					event.preventDefault();
 					if (!busy) {
-						modal.classList.add('closed');
+						modal.remove();
 					}
 				});
-				document.body.appendChild(modal);
+				modal.show();
 			} // else LoginMethod.EXTERNAL just open a link
 		});
 	};
@@ -494,27 +430,35 @@ export abstract class ActivableModule {
 	};
 }
 
-export abstract class SaveModule implements Module {
-	doStop: boolean = false;
+export abstract class SaveModule {
+	card: HTMLElement;
+	modal: Modal;
 	manager: ManageableService;
-	abstract saveModuleHeader(): void;
-	stopButton: HTMLElement;
-	abstract mainHeader(): void;
+	abstract createForm(): HTMLFormElement;
+	abstract handle(form: HTMLFormElement): Promise<void>;
 	abstract cancel(): void;
 	// Display summary and button to go back to Service selection
 	abstract displaySummary(summary: Summary): void;
+	doStop: boolean = false;
+	stopButton: HTMLButtonElement;
 
 	constructor(service: ManageableService) {
 		this.manager = service;
+		this.modal = this.createModal();
 		this.stopButton = DOM.create('button', {
 			class: 'danger',
 			textContent: 'Cancel',
 			events: {
 				click: () => {
 					this.doStop = true;
-					this.stopButton.remove();
+					this.stopButton.disabled = true;
 				},
 			},
+		});
+		this.card = this.manager.createCard(false);
+		this.card.addEventListener('click', () => {
+			this.resetModal();
+			this.modal.show(); // TODO: Avoid modal in FileExport
 		});
 	}
 
@@ -522,17 +466,50 @@ export abstract class SaveModule implements Module {
 		return (await this.manager.service.loggedIn()) === LoginStatus.SUCCESS;
 	};
 
-	notification = (type: string, content: string | AppendableElement[]): HTMLElement => {
+	notification = (type: 'default' | 'warning' | 'success', content: string | AppendableElement[]): HTMLElement => {
 		let notification = DOM.create('div', {
-			class: `block notification ${type}`,
+			class: `block message ${type}`,
 		});
 		if (typeof content === 'string') {
 			notification.textContent = content;
 		} else {
 			DOM.append(notification, ...content);
 		}
-		this.manager.manager.saveContainer.appendChild(notification);
+		this.modal.body.appendChild(notification);
 		return notification;
+	};
+
+	createModal = (): Modal => {
+		const modal = new Modal();
+		modal.modal.classList.add('ieport');
+		modal.header.classList.add(this.manager.service.name.toLocaleLowerCase());
+		modal.header.appendChild(this.manager.createTitle());
+		return modal;
+	};
+
+	resetModal = (): void => {
+		DOM.clear(this.modal.body);
+		const form = this.createForm();
+		form.addEventListener('submit', (event) => {
+			event.preventDefault();
+			this.handle(form);
+		});
+		const startButton = DOM.create('button', {
+			class: 'primary puffy',
+			textContent: 'Start',
+		});
+		const cancelButton = DOM.create('button', {
+			class: 'default',
+			childs: [DOM.icon('delete'), DOM.text('Cancel')],
+			events: {
+				click: (event: Event): void => {
+					event.preventDefault();
+					this.modal.remove();
+				},
+			},
+		});
+		form.appendChild(DOM.create('div', { childs: [startButton, DOM.space(), cancelButton] }));
+		this.modal.body.appendChild(form);
 	};
 
 	resetButton = (content: string = 'Go back', type: string = 'action'): HTMLButtonElement => {
@@ -540,31 +517,9 @@ export abstract class SaveModule implements Module {
 			class: type,
 			textContent: content,
 			events: {
-				click: () => this.manager.manager.resetSaveContainer(),
+				// TODO: click: () => this.manager.manager.resetSaveContainer(),
 			},
 		});
-	};
-
-	createForm = (elements: (Row | AppendableElement)[], callback: (event: Event) => void): HTMLFormElement => {
-		const form = DOM.create('form', { class: 'block' });
-		for (const element of elements) {
-			if (typeof element === 'object' && element instanceof Row) {
-				form.appendChild(element.node);
-			} else {
-				form.appendChild(element);
-			}
-		}
-		DOM.append(
-			form,
-			DOM.create('button', {
-				class: 'success mr-1',
-				textContent: 'Send',
-				attributes: { type: 'submit' },
-			}),
-			this.resetButton('Cancel', 'danger')
-		);
-		form.addEventListener('submit', callback);
-		return form;
 	};
 
 	/**
@@ -584,50 +539,19 @@ export abstract class SaveModule implements Module {
 }
 
 export abstract class ImportableModule extends SaveModule {
-	importCard: HTMLElement;
-	abstract import(): Promise<void>;
-	preForm?(): void;
-
-	constructor(service: ManageableService) {
-		super(service);
-		this.importCard = this.manager.createCard(false);
-		this.importCard.addEventListener('click', () => {
-			this.mainHeader();
-			this.import();
-		});
-	}
-
-	saveModuleHeader = (): void => {
-		this.manager.manager.fullHeader([DOM.icon('download'), DOM.text(' Import')]);
-	};
-
-	mainHeader = (): void => {
-		this.manager.manager.clearSaveContainer();
-		this.saveModuleHeader();
-		this.manager.manager.header([
-			DOM.create('img', { attributes: { src: `/icons/${this.manager.service.key}.png` } }),
-			DOM.space(),
-			DOM.text('Importing from '),
-			this.manager.createTitle(),
-		]);
-	};
-
 	cancel = (forced = false): void => {
-		this.notification('warning', [
-			DOM.text(
-				forced ? 'The import was cancelled, nothing was saved' : 'You cancelled the import, nothing was saved.'
-			),
-			DOM.space(),
-			this.resetButton(),
-		]);
+		this.notification(
+			'warning',
+			forced ? 'The import was cancelled, nothing was saved' : 'You cancelled the import, nothing was saved.'
+		);
 	};
 
 	displaySummary = (summary: ImportSummary): void => {
 		// this.notification('success', `Done Importing ${this.service.name} !`);
 		if (summary.total != summary.valid) {
-			this.manager.manager.saveContainer.appendChild(
+			this.modal.body.appendChild(
 				DOM.create('div', {
-					class: 'block notification warning',
+					class: 'block message warning',
 					textContent: `${
 						summary.total - summary.valid
 					} titles were not imported since they had invalid or missing properties.`,
@@ -638,7 +562,7 @@ export abstract class ImportableModule extends SaveModule {
 		if (summary.options > 0) report += `${summary.history ? ', ' : ' and '} ${summary.options} Options`;
 		if (summary.history) report += ` and History`;
 		report += ` !`;
-		this.notification('success', [DOM.text(report), DOM.space(), this.resetButton()]);
+		this.notification('success', report);
 	};
 }
 
@@ -650,68 +574,80 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 	abstract handleHistory?(save: T | Document, titles: TitleCollection, summary: ImportSummary): number[];
 	perConvert: number = 250;
 
-	inputMessage = (): string => {
-		return `${this.manager.service.name} save file`;
+	acceptedFileType = (): string => {
+		return 'application/json';
 	};
 
-	import = async (): Promise<void> => {
-		this.notification('success', `Select your ${this.manager.service.name} save file.`);
-		let notification: HTMLElement | undefined = undefined;
-		const form = this.createForm(
-			[
-				new Checkbox('merge', 'Merge with current save', true),
-				new FileInput(
-					'file',
-					this.inputMessage(),
-					this.fileType == 'JSON' ? 'application/json' : 'application/xml'
-				),
-			],
-			(event) => {
-				event.preventDefault();
-				if (notification) notification.remove();
-				if (form.file.files.length < 1) {
-					notification = this.notification('danger', 'No file !');
-				}
-				notification = this.notification('info loading', 'Loading file...');
-				var reader = new FileReader();
-				reader.onload = async (): Promise<void> => {
-					if (typeof reader.result !== 'string') {
-						if (notification) notification.remove();
-						notification = this.notification('danger', 'Unknown error, wrong file type.');
-						return;
-					}
-					let data: T | Document;
-					try {
-						if (this.fileType == 'JSON') {
-							data = JSON.parse(reader.result) as T;
-						} else {
-							const parser: DOMParser = new DOMParser();
-							data = parser.parseFromString(reader.result, 'application/xml');
-						}
-					} catch (error) {
-						console.error(error);
-						if (notification) notification.remove();
-						notification = this.notification('danger', 'Invalid file !');
-						return;
-					}
-					this.handleImport(data, form.merge.checked);
-				};
-				reader.readAsText(form.file.files[0]);
-			}
+	createForm = (): HTMLFormElement => {
+		const form = DOM.create('form', { class: 'body' });
+		const inputId = `file_${this.manager.service.name}`;
+		form.appendChild(DOM.create('h2', { textContent: 'Options' }));
+		form.appendChild(Checkbox.make('merge', 'Merge with current save'));
+		form.appendChild(
+			DOM.create('h2', {
+				childs: [DOM.create('label', { class: '', textContent: 'Save File', attributes: { for: inputId } })],
+			})
 		);
-		if (this.preForm) this.preForm();
-		DOM.append(this.manager.manager.saveContainer, form);
+		DOM.append(
+			form,
+			DOM.create('div', {
+				class: 'row-parameter',
+				childs: [
+					DOM.create('input', {
+						attributes: {
+							name: 'save',
+							id: inputId,
+							type: 'file',
+							required: 'true',
+							accept: this.acceptedFileType(),
+						},
+					}),
+				],
+			})
+		);
+		return form;
 	};
 
-	handleImport = async (data: T | Document, merge: boolean): Promise<void> => {
-		this.manager.manager.clearSaveContainer();
-		this.mainHeader();
+	handle = async (form: HTMLFormElement): Promise<void> => {
+		let notification: HTMLElement;
+		if (!form.save || form.save.files.length < 1) {
+			notification = this.notification('warning', 'No file !');
+			return;
+		}
+		notification = this.notification('default', 'Loading file...');
+		var reader = new FileReader();
+		reader.onload = async (): Promise<void> => {
+			if (typeof reader.result !== 'string') {
+				if (notification) notification.remove();
+				notification = this.notification('warning', 'Unknown error, wrong file type.');
+				return;
+			}
+			let data: T | Document;
+			try {
+				if (this.fileType == 'JSON') {
+					data = JSON.parse(reader.result) as T;
+				} else {
+					const parser: DOMParser = new DOMParser();
+					data = parser.parseFromString(reader.result, 'application/xml');
+				}
+			} catch (error) {
+				console.error(error);
+				if (notification) notification.remove();
+				notification = this.notification('warning', 'Invalid file !');
+				return;
+			}
+			this.import(data, form.merge.checked);
+		};
+		reader.readAsText(form.save.files[0]);
+	};
+
+	import = async (data: T | Document, merge: boolean): Promise<void> => {
+		// TODO: this.manager.manager.clearSaveContainer();
 		let summary = new ImportSummary();
 		// Import everything first
-		let progress = this.notification('info loading', [DOM.text('Importing Titles'), DOM.space(), this.stopButton]);
+		let notification = this.notification('default', 'Importing Titles');
 		const titles: R[] = await this.handleTitles(data);
-		this.stopButton.remove();
-		progress.classList.remove('loading');
+		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		// Abort if there is nothing
 		summary.total = titles.length;
@@ -721,7 +657,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		}
 		// Convert Service titles to Title
 		let collection = new TitleCollection();
-		progress = this.notification('info loading', []);
+		notification = this.notification('default', []);
 		let offset = 0;
 		let max = titles.length / this.perConvert;
 		let currentTitle = 0;
@@ -729,31 +665,24 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 			const titleList = titles.slice(offset, offset + this.perConvert);
 			offset += this.perConvert;
 			currentTitle = Math.min(summary.total, currentTitle + this.perConvert);
-			DOM.clear(progress);
-			DOM.append(
-				progress,
-				DOM.text(`Converting title ${currentTitle} out of ${summary.total}.`),
-				DOM.space(),
-				this.stopButton
-			);
+			notification.textContent = `Converting title ${currentTitle} out of ${summary.total}.`;
 			const converted = await this.convertTitles(collection, titleList);
 			summary.valid += converted;
 		}
-		this.stopButton.remove();
-		progress.classList.remove('loading');
+		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		// Handle options and history
 		if (this.handleOptions) {
-			progress = this.notification('info', 'Importing Options');
+			notification = this.notification('default', 'Importing Options');
 			this.handleOptions(data, summary);
 		}
 		let history: number[] = [];
 		if (this.handleHistory) {
-			progress = this.notification('info', 'Importing History');
+			notification = this.notification('default', 'Importing History');
 			history = this.handleHistory(data, collection, summary);
 		}
 		// We're double checking and saving only at the end in case of abort
-		progress = this.notification('info loading', 'Saving...');
+		notification = this.notification('default', 'Saving...');
 		if (!merge) {
 			await LocalStorage.clear();
 		} else {
@@ -767,8 +696,8 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		if (this.handleOptions) {
 			this.manager.manager.reloadOptions(); // TODO: Reload
 		}
-		progress.remove();
-		this.displaySummary(summary);
+		notification.remove();
+		this.displaySummary(summary); // TODO: Over
 	};
 }
 
@@ -797,30 +726,22 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 		return `Converting title ${this.currentTitle} out of ${total}.`;
 	};
 
-	import = async (): Promise<void> => {
-		const form = this.createForm([new Checkbox('merge', 'Merge with current save', true)], (event) => {
-			event.preventDefault();
-			this.handleImport(form.merge.checked);
-		});
-		if (this.preForm) this.preForm();
-		DOM.append(this.manager.manager.saveContainer, form);
+	createForm = (): HTMLFormElement => {
+		const form = DOM.create('form', { class: 'body' });
+		form.appendChild(DOM.create('h2', { textContent: 'Options' }));
+		form.appendChild(Checkbox.make('merge', 'Merge with current save'));
+		return form;
 	};
 
-	handleImport = async (merge: boolean): Promise<void> => {
-		this.mainHeader();
-		let progress: HTMLElement = this.notification('info loading', [
-			DOM.text('Checking login status...'),
-			DOM.space(),
-			this.stopButton,
-		]);
+	handle = async (form: HTMLFormElement): Promise<void> => {
+		const merge = form.querySelector(`.checkbox[name='merge'].checked`) !== null;
+		let progress: HTMLElement = this.notification('default', [DOM.text('Checking login status...')]);
 		// Check login status
 		if (!(await this.checkLogin())) {
-			this.stopButton.remove();
 			progress.classList.remove('loading');
-			this.notification('danger', 'You are not logged in !');
+			this.notification('warning', 'You are not logged in !');
 			return this.cancel(true);
 		}
-		this.stopButton.remove();
 		progress.classList.remove('loading');
 		DOM.append(progress, DOM.space(), DOM.text('logged in !'));
 		if (this.doStop) return this.cancel();
@@ -831,20 +752,18 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 			}
 		}
 		if (this.doStop) return this.cancel();
-		progress = this.notification('info loading', '');
+		progress = this.notification('default', '');
 		// Fetch each pages to get a list of titles in the Service format
 		while (!this.doStop && this.getNextPage() !== false) {
 			DOM.clear(progress);
 			DOM.append(progress, DOM.text(this.getProgress(ImportStep.FETCH_PAGES)), DOM.space(), this.stopButton);
 			let tmp: T[] | false = await this.handlePage();
 			if (tmp === false) {
-				this.stopButton.remove();
 				progress.classList.remove('loading');
 				return this.cancel(true);
 			}
 			titles.push(...tmp);
 		}
-		this.stopButton.remove();
 		progress.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		let summary = new ImportSummary();
@@ -855,7 +774,7 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 		}
 		this.notification('success', `Found a total of ${titles.length} Titles.`);
 		// Convert the list to a TitleCollection
-		progress = this.notification('info loading', '');
+		progress = this.notification('default', '');
 		let collection = new TitleCollection();
 		let offset = 0;
 		let max = Math.ceil(titles.length / this.perConvert);
@@ -872,11 +791,10 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 			const converted = await this.convertTitles(collection, titleList);
 			summary.valid += converted;
 		}
-		this.stopButton.remove();
 		progress.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		// Done !
-		progress = this.notification('info loading', 'Saving...');
+		progress = this.notification('default', 'Saving...');
 		if (!merge) {
 			await LocalStorage.clear();
 		} else {
@@ -885,40 +803,12 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 		await Options.save(); // Always save -- options are deleted in LocalStorage
 		await collection.save();
 		progress.remove();
-		this.displaySummary(summary);
+		this.displaySummary(summary); // TODO: Over
 	};
 }
 
 export abstract class ExportableModule extends SaveModule {
-	exportCard: HTMLElement;
-	abstract export(): Promise<void>;
-	preForm?(parent: HTMLElement): void;
-
-	constructor(service: ManageableService) {
-		super(service);
-		this.exportCard = this.manager.createCard(false);
-		this.exportCard.addEventListener('click', () => {
-			this.mainHeader();
-			this.export();
-		});
-	}
-
-	saveModuleHeader = (): void => {
-		this.manager.manager.fullHeader([DOM.icon('upload'), DOM.text(' Export')]);
-	};
-
-	mainHeader = (): void => {
-		this.manager.manager.clearSaveContainer();
-		this.saveModuleHeader();
-		this.manager.manager.header([
-			DOM.create('img', { attributes: { src: `/icons/${this.manager.service.key}.png` } }),
-			DOM.space(),
-			DOM.text('Exporting to '),
-			this.manager.createTitle(),
-		]);
-	};
-
-	// Default select all titles with a Service key for the current service and a status
+	// By default, select all titles with a Service key for the current service and a status
 	selectTitles = async (): Promise<Title[]> => {
 		return (await TitleCollection.get()).collection.filter((title) => {
 			const id = title.services[this.manager.service.key];
@@ -927,19 +817,15 @@ export abstract class ExportableModule extends SaveModule {
 	};
 
 	cancel = (forced = false): void => {
-		this.notification('warning', [
-			DOM.text(forced ? 'The export was cancelled' : 'You cancelled the export.'),
-			DOM.space(),
-			this.resetButton(),
-		]);
+		this.notification('warning', forced ? 'The export was cancelled' : 'You cancelled the export.');
 	};
 
 	displaySummary = (summary: Summary): void => {
 		// this.notification('success', `Done Importing ${this.service.name} !`);
 		if (summary.total != summary.valid) {
-			this.manager.manager.saveContainer.appendChild(
+			this.modal.body.appendChild(
 				DOM.create('div', {
-					class: 'block notification warning',
+					class: 'block message warning',
 					textContent: `${
 						summary.total - summary.valid
 					} titles were not exported since they had invalid or missing properties.`,
@@ -948,22 +834,26 @@ export abstract class ExportableModule extends SaveModule {
 		}
 		let report = `Successfully exported ${summary.valid} titles`;
 		report += ` !`;
-		this.notification('success', [DOM.text(report), DOM.space(), this.resetButton()]);
+		this.notification('success', report);
 	};
 }
 
 export abstract class FileExportableModule extends ExportableModule {
 	abstract fileContent(): Promise<string>;
 
-	export = async (): Promise<void> => {
-		let notification = this.notification('info loading', 'Creating file...');
+	createForm = (): HTMLFormElement => {
+		return DOM.create('form', { class: 'body' });
+	};
+
+	handle = async (_form: HTMLFormElement): Promise<void> => {
+		let notification = this.notification('default', 'Creating file...');
 		let save = await this.fileContent();
 		DOM.append(notification, DOM.space(), DOM.text('done !'));
 		const blob = new Blob([save], { type: 'application/json;charset=utf-8' });
 		const href = URL.createObjectURL(blob);
 		notification.classList.remove('loading');
 		if (save === '') {
-			this.notification('danger', `There was an error while creating your file.`);
+			this.notification('warning', `There was an error while creating your file.`);
 			return this.cancel(true);
 		}
 		let downloadLink = DOM.create('a', {
@@ -980,7 +870,7 @@ export abstract class FileExportableModule extends ExportableModule {
 		downloadLink.click();
 		downloadLink.remove();
 		URL.revokeObjectURL(href);
-		this.notification('success', [DOM.text('Save exported !'), DOM.space(), this.resetButton()]);
+		this.notification('success', 'Save exported !');
 	};
 }
 
@@ -988,43 +878,22 @@ export abstract class APIExportableModule extends ExportableModule {
 	abstract exportTitle(title: Title): Promise<boolean>;
 	preMain?(titles: Title[]): Promise<boolean>;
 
-	export = async (): Promise<void> => {
-		const block = DOM.create('div', {
-			class: 'block',
-		});
-		const checkbox = new Checkbox('checkServices', 'Check Services ID with Mochi', true);
-		const startButton = DOM.create('button', {
-			class: 'success mr-1',
-			textContent: 'Start',
-			events: {
-				click: async (event): Promise<void> => {
-					event.preventDefault();
-					this.handleExport(checkbox.input.checked);
-				},
-			},
-		});
-		if (this.preForm) this.preForm(block);
-		DOM.append(
-			this.manager.manager.saveContainer,
-			DOM.append(block, checkbox.node, startButton, this.resetButton())
-		);
+	createForm = (): HTMLFormElement => {
+		const form = DOM.create('form', { class: 'body' });
+		form.appendChild(DOM.create('h2', { textContent: 'Options' }));
+		form.appendChild(Checkbox.make('checkServices', 'Check Services ID with Mochi'));
+		return form;
 	};
 
-	handleExport = async (checkServices: boolean): Promise<void> => {
-		this.mainHeader();
+	handle = async (form: HTMLFormElement): Promise<void> => {
+		const checkServices = form.querySelector(`.checkbox[name='checkServices'].checked`) !== null;
 		// Check login status
-		let notification: HTMLElement = this.notification('info loading', [
-			DOM.text('Checking login status...'),
-			DOM.space(),
-			this.stopButton,
-		]);
+		let notification: HTMLElement = this.notification('default', 'Checking login status...');
 		if (!(await this.checkLogin())) {
-			this.stopButton.remove();
 			notification.classList.remove('loading');
-			this.notification('danger', 'You are not logged in !');
+			this.notification('warning', 'You are not logged in !');
 			return this.cancel(true);
 		}
-		this.stopButton.remove();
 		notification.classList.remove('loading');
 		DOM.append(notification, DOM.text('logged in !'));
 		if (this.doStop) return this.cancel();
@@ -1033,12 +902,10 @@ export abstract class APIExportableModule extends ExportableModule {
 			const progress = DOM.create('span', {
 				textContent: 'Page 1 out of 1',
 			});
-			notification = this.notification('info loading', [
+			notification = this.notification('default', [
 				DOM.text('Checking Services with Mochi...'),
 				DOM.space(),
 				progress,
-				DOM.space(),
-				this.stopButton,
 			]);
 			const titles = await TitleCollection.get();
 			const collection = titles.collection;
@@ -1065,17 +932,16 @@ export abstract class APIExportableModule extends ExportableModule {
 					}
 				}
 			}
-			this.stopButton.remove();
 			await titles.save();
 			notification.classList.remove('loading');
 			if (this.doStop) return this.cancel();
 		}
 		// Select local titles
-		notification = this.notification('info loading', 'Loading Titles...');
+		notification = this.notification('default', 'Loading Titles...');
 		let titles = await this.selectTitles();
 		notification.classList.remove('loading');
 		if (titles.length == 0) {
-			this.notification('info', `You don't have any Titles in your list that can be exported.`);
+			this.notification('default', `You don't have any Titles in your list that can be exported.`);
 			return this.cancel(true);
 		}
 		let summary = new Summary();
@@ -1087,7 +953,7 @@ export abstract class APIExportableModule extends ExportableModule {
 		}
 		if (this.doStop) return this.cancel();
 		// Export one by one...
-		notification = this.notification('info loading', '');
+		notification = this.notification('default', '');
 		for (let i = 0; !this.doStop && i < summary.total; i++) {
 			DOM.clear(notification);
 			DOM.append(
@@ -1101,7 +967,6 @@ export abstract class APIExportableModule extends ExportableModule {
 				summary.valid++;
 			}
 		}
-		this.stopButton.remove();
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		// Done
@@ -1113,43 +978,26 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 	abstract generateBatch(titles: Title[]): Promise<T>;
 	abstract sendBatch(batch: T, summary: Summary): Promise<boolean>;
 
-	export = async (): Promise<void> => {
-		const block = DOM.create('div', {
-			class: 'block',
-		});
-		const checkbox = new Checkbox('checkServices', 'Check Services ID with Mochi', true);
-		const startButton = DOM.create('button', {
-			class: 'success mr-1',
-			textContent: 'Start',
-			events: {
-				click: async (event): Promise<void> => {
-					event.preventDefault();
-					this.handleExport(checkbox.input.checked);
-				},
-			},
-		});
-		if (this.preForm) this.preForm(block);
-		DOM.append(
-			this.manager.manager.saveContainer,
-			DOM.append(block, checkbox.node, startButton, this.resetButton())
-		);
+	createForm = (): HTMLFormElement => {
+		const form = DOM.create('form', { class: 'body' });
+		form.appendChild(DOM.create('h2', { textContent: 'Options' }));
+		form.appendChild(Checkbox.make('checkServices', 'Check Services ID with Mochi'));
+		return form;
 	};
 
-	handleExport = async (checkServices: boolean): Promise<void> => {
-		this.mainHeader();
+	handle = async (form: HTMLFormElement): Promise<void> => {
+		const checkServices = form.querySelector(`.checkbox[name='checkServices'].checked`) !== null;
 		// Check login status
-		let notification: HTMLElement = this.notification('info loading', [
+		let notification: HTMLElement = this.notification('default', [
 			DOM.text('Checking login status...'),
 			DOM.space(),
 			this.stopButton,
 		]);
 		if (!(await this.checkLogin())) {
-			this.stopButton.remove();
 			notification.classList.remove('loading');
-			this.notification('danger', 'You are not logged in !');
+			this.notification('warning', 'You are not logged in !');
 			return this.cancel(true);
 		}
-		this.stopButton.remove();
 		notification.classList.remove('loading');
 		DOM.append(notification, DOM.text('logged in !'));
 		if (this.doStop) return this.cancel();
@@ -1158,7 +1006,7 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 			const progress = DOM.create('span', {
 				textContent: 'Page 1 out of 1',
 			});
-			notification = this.notification('info loading', [
+			notification = this.notification('default', [
 				DOM.text('Checking Services with Mochi...'),
 				DOM.space(),
 				progress,
@@ -1190,34 +1038,32 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 					}
 				}
 			}
-			this.stopButton.remove();
 			await titles.save();
 			notification.classList.remove('loading');
 			if (this.doStop) return this.cancel();
 		}
 		// Select local titles
-		notification = this.notification('info loading', 'Loading Titles...');
+		notification = this.notification('default', 'Loading Titles...');
 		let titles = await this.selectTitles();
 		notification.classList.remove('loading');
 		if (titles.length == 0) {
-			this.notification('info', `You don't have any Titles in your list that can be exported.`);
+			this.notification('default', `You don't have any Titles in your list that can be exported.`);
 			return this.cancel(true);
 		}
 		// Generate batch
 		let summary = new Summary();
 		summary.total = titles.length;
-		notification = this.notification('info loading', 'Generating batch');
+		notification = this.notification('default', 'Generating batch');
 		const batch = await this.generateBatch(titles);
-		this.stopButton.remove();
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		// Export batch
-		notification = this.notification('info loading', 'Sending batch');
+		notification = this.notification('default', 'Sending batch');
 		const batchResult = await this.sendBatch(batch, summary);
 		notification.classList.remove('loading');
 		// Done
 		if (batchResult === false) {
-			this.notification('danger', 'There was an error while exporting the batch, maybe retry later');
+			this.notification('warning', 'There was an error while exporting the batch, maybe retry later');
 			return this.cancel(true);
 		}
 		this.displaySummary(summary);

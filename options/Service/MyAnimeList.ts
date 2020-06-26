@@ -100,7 +100,7 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 	handleOptions = undefined;
 
 	preForm = (): void => {
-		this.notification('info', [
+		this.notification('default', [
 			DOM.text('You can download your Manga list'),
 			DOM.space(),
 			DOM.create('a', {

@@ -133,7 +133,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 		});
 		if (response.status >= 400) {
 			this.notification(
-				'danger',
+				'warning',
 				`The request failed, maybe Anilist is having problems or your token expired, retry later.`
 			);
 			return false;
@@ -156,10 +156,10 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 			}),
 		});
 		if (response.status >= 500) {
-			this.notification('danger', 'The request failed, maybe Anilist is having problems, retry later.');
+			this.notification('warning', 'The request failed, maybe Anilist is having problems, retry later.');
 			return false;
 		} else if (response.status >= 400) {
-			this.notification('danger', 'Bad Request, check if your token is valid.');
+			this.notification('warning', 'Bad Request, check if your token is valid.');
 			return false;
 		}
 		// Transform to array

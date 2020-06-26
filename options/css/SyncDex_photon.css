@@ -342,15 +342,22 @@ button.puffy,
 a.button.puffy {
 	line-height: 48px;
 }
+button.fill,
+.button.fill {
+	display: block;
+	width: 100%;
+}
 
 /* Inputs */
 input {
 	font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
 		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+	display: block;
 }
 label,
 .label {
 	cursor: pointer;
+	display: block;
 }
 input[type] {
 	border-radius: 2px;
@@ -381,9 +388,11 @@ input[type]:focus {
 	background-color: var(--grey-90-a10);
 	border: 1px solid var(--grey-90-a30);
 	cursor: pointer;
+	transition: all 150ms var(--animation);
 }
 .checkbox img {
 	opacity: 0;
+	transition: all 150ms var(--animation);
 }
 .checkbox:hover {
 	background-color: var(--grey-90-a20);
@@ -465,7 +474,7 @@ input[type]:focus {
 }
 .card .content {
 	padding: 8px;
-	background-color: var(--white-100);
+	background-color: var(--grey-10);
 }
 .card.large .content {
 	padding: 20px;
@@ -556,6 +565,11 @@ h2 {
 .center {
 	text-align: center;
 	align-self: center;
+	display: block;
+	margin: auto;
+}
+.right {
+	text-align: right;
 }
 
 /*	Services */
@@ -640,6 +654,20 @@ h2 {
 	border: 1px solid var(--grey-20);
 	border-radius: 2px;*/
 }
+.row-parameter {
+	display: grid;
+	grid-template-columns: auto;
+	grid-template-rows: auto;
+	margin-bottom: 8px;
+	gap: 4px;
+	/*background-color: var(--white-100);
+	padding: 4px;
+	border: 1px solid var(--grey-20);
+	border-radius: 2px;*/
+}
+.row-parameter > :nth-child(2n) {
+	margin-bottom: 8px;
+}
 .dependency {
 	margin-left: 32px;
 }
@@ -707,13 +735,13 @@ h2 {
 	font-weight: var(--light);
 	padding: 16px 0;
 }
-.modal > .content > .body {
-	display: flex;
-	flex-flow: column wrap;
+.modal.small > .content form .primary {
+	margin-bottom: 8px;
 }
-.modal > .content > .body > * {
-	margin-bottom: 4px;
+.modal > .content form .primary {
+	margin-right: 8px;
 }
-.modal > .content > .body > :last-child {
-	margin-bottom: 0;
+.ieport form .parameter,
+.ieport form .row-parameter {
+	margin-bottom: 32px;
 }

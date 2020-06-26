@@ -35,7 +35,7 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 
 	// Set the list type to 'list'
 	preMain = async (): Promise<boolean> => {
-		const notification = this.notification('info loading', [
+		const notification = this.notification('default', [
 			DOM.text('Setting list type...'),
 			DOM.space(),
 			this.stopButton,
@@ -61,7 +61,7 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 			credentials: 'include',
 		});
 		if (response.status >= 400 || typeof response.body !== 'string') {
-			this.notification('danger', 'The request failed, maybe AnimePlanet is having problems, retry later.');
+			this.notification('warning', 'The request failed, maybe AnimePlanet is having problems, retry later.');
 			return false;
 		}
 		let titles: AnimePlanetTitle[] = [];

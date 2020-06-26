@@ -142,12 +142,12 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 			headers: KitsuService.LoggedHeaders(),
 		});
 		if (response.status >= 400) {
-			this.notification('danger', 'The request failed, maybe Kitsu is having problems, retry later.');
+			this.notification('warning', 'The request failed, maybe Kitsu is having problems, retry later.');
 			return false;
 		}
 		if (response.body.errors !== undefined) {
 			this.notification(
-				'danger',
+				'warning',
 				'The Request failed, check if you are logged in and your token is valid or retry later.'
 			);
 			return false;
@@ -218,7 +218,7 @@ class KitsuExport extends APIExportableModule {
 
 	// Fetch all Kitsu titles to check if they already are in user list
 	preMain = async (titles: Title[]): Promise<boolean> => {
-		let notification = this.notification('info loading', [
+		let notification = this.notification('default', [
 			DOM.text('Checking current status of each titles'),
 			DOM.space(),
 			this.stopButton,
@@ -240,7 +240,7 @@ class KitsuExport extends APIExportableModule {
 			if (response.status >= 400) {
 				this.stopButton.remove();
 				notification.classList.remove('loading');
-				this.notification('danger', 'The request failed, maybe Kitsu is having problems, retry later.');
+				this.notification('warning', 'The request failed, maybe Kitsu is having problems, retry later.');
 				return false;
 			}
 			const body = response.body as KitsuResponse;

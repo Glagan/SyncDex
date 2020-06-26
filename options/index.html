@@ -21,7 +21,8 @@
 			<li data-link="general"><img src="icons/preferences.svg" /> General</li>
 			<li data-link="notifications"><img src="icons/reminders.svg" /> Notifications</li>
 			<li data-link="history"><img src="icons/history.svg" /> History</li>
-			<li data-link="import-export"><img src="icons/import-export.svg" /> Import/Export</li>
+			<li data-link="import"><img src="icons/download.svg" /> Import</li>
+			<li data-link="export"><img src="icons/upload.svg" /> Export</li>
 			<li data-link="other"><img src="icons/preferences.svg" /> Other</li>
 			<li data-link="delete"><img src="icons/delete.svg" /> Delete</li>
 		</ul>
@@ -40,26 +41,19 @@
 		<h1 id="colors"><img src="icons/brush.svg" /> Colors</h1>
 		<div class="section">
 			<div class="block message default">
-				Colors that exist in
-				<a href="http://www.color-hex.com/color-names.html" target="_blank">HTML <img
-						src="icons/external.svg" /></a> are accepted but you can
-				also use values like <b>#RRGGBB</b>, <b>rgb(red, green, blue)</b> or with alpha channel
-				<b>rgba(red, green, blue, alpha)</b>.<br /> If you want to disable one of the highlights you can turn it
-				off globally or set a color to
-				<b>transparent</b>.
+				Colors that exist in <a href="http://www.color-hex.com/color-names.html" target="_blank">HTML <img src="icons/external.svg" /></a> are accepted but you can also use values like <b>#RRGGBB</b>, <b>rgb(red, green, blue)</b> or with alpha channel <b>rgba(red, green, blue, alpha)</b>.<br />
+				If you want to disable one of the highlights you can turn it off globally or set a color to <b>transparent</b>.
 			</div>
 			<h2>Highlight</h2>
 			<div class="parameter">
 				<div class="checkbox" data-checkbox="highlight"></div>
-				<label>Paint rows in chapters lists to quickly identify which chapters you can read next or that you
-					already read.</label>
+				<label>Paint rows in chapters lists to quickly identify which chapters you can read next or that you already read.</label>
 			</div>
 			<h2>Next Chapter</h2>
 			<div class="block">
 				<label for="c-nextChapter" class="paragraph">Color of the next chapter of a title.</label>
 				<div class="color-input" data-color="nextChapter">
-					<input type="text" id="c-nextChapter" name="nextChapter" placeholder="Next chapter color" /><span
-						class="color"></span>
+					<input type="text" id="c-nextChapter" name="nextChapter" placeholder="Next chapter color" /><span class="color"></span>
 				</div>
 			</div>
 			<h2>Higher Chapters</h2>
@@ -67,8 +61,7 @@
 				<label for="c-higherChapter" class="paragraph">Color of all <b>higher</b> chapters than your last read
 					chapter.</label>
 				<div class="color-input" data-color="higherChapter">
-					<input type="text" id="c-higherChapter" name="higherChapter"
-						placeholder="Higher chapters color" /><span class="color"></span>
+					<input type="text" id="c-higherChapter" name="higherChapter" placeholder="Higher chapters color" /><span class="color"></span>
 				</div>
 			</div>
 			<h2>Lower Chapters</h2>
@@ -76,8 +69,7 @@
 				<label for="c-lowerChapter" class="paragraph">Color of all <b>lower</b> chapters than your last read
 					chapter.</label>
 				<div class="color-input" data-color="lowerChapter">
-					<input type="text" id="c-lowerChapter" name="lowerChapter" placeholder="Lower chapter color" /><span
-						class="color"></span>
+					<input type="text" id="c-lowerChapter" name="lowerChapter" placeholder="Lower chapter color" /><span class="color"></span>
 				</div>
 			</div>
 			<h2>Current Chapters</h2>
@@ -88,12 +80,12 @@
 			</div>
 			<h2>Opened Chapters</h2>
 			<div class="block">
-				<label for="c-openedChapter" class="paragraph">Colors for chapters that you opened if the "<b>Save
-						opened chapters</b>" option is enabled.<br />
-					Only applied in a <b>title</b> page.</label>
+				<label for="c-openedChapter" class="paragraph">
+					Colors for chapters that you opened if the "<b>Save opened chapters</b>" option is enabled.<br />
+					Only applied in a <b>title</b> page.
+				</label>
 				<div class="color-input" data-color="openedChapter">
-					<input type="text" id="c-openedChapter" name="openedChapter"
-						placeholder="Opened chapters color" /><span class="color"></span>
+					<input type="text" id="c-openedChapter" name="openedChapter" placeholder="Opened chapters color" /><span class="color"></span>
 				</div>
 			</div>
 		</div>
@@ -112,8 +104,7 @@
 				<div class="checkbox" data-checkbox="saveOnlyNext"></div>
 				<label>Save the chapter you are reading only if it's the next one.
 					<p class="helper">
-						If "<b>Confirm Chapter save</b>" is enabled it will asks you if you still want to update it,
-						or else it will do nothing.
+						If "<b>Confirm Chapter save</b>" is enabled it will asks you if you still want to update it, or else it will do nothing.
 					</p>
 				</label>
 			</div>
@@ -122,8 +113,7 @@
 				<div class="checkbox" data-checkbox="saveOnlyHigher"></div>
 				<label>Save the chapter you are reading only if it's <b>higher</b>.
 					<p class="helper">
-						If "<b>Confirm Chapter save</b>" is enabled it will asks you if you still want to update it,
-						or else it will do nothing.
+						If "<b>Confirm Chapter save</b>" is enabled it will asks you if you still want to update it, or else it will do nothing.
 					</p>
 				</label>
 			</div>
@@ -135,8 +125,7 @@
 			<h2>Update only if in list</h2>
 			<div class="parameter">
 				<div class="checkbox" data-checkbox="updateOnlyInList"></div>
-				<label>Update your list(s) only if the title you are reading is <b>already</b> in your
-					<b>MangaDex</b> list.</label>
+				<label>Update your list(s) only if the title you are reading is <b>already</b> in your <b>MangaDex</b> list.</label>
 			</div>
 		</div>
 		<h1 id="lists"><img src="icons/library.svg" /> Lists</h1>
@@ -165,16 +154,14 @@
 			<div class="parameter">
 				<div class="checkbox" data-checkbox="originalThumbnail"></div>
 				<label>Display the full size original cover of the title instead of a thumbnail.
-					<p class="helper">Do not enable this if you don't have a somehow good connection, some images
-						can be big.</p>
+					<p class="helper">Do not enable this if you don't have a somehow good connection, some images can be big.</p>
 				</label>
 			</div>
 			<h2>Check Service status</h2>
 			<div class="parameter">
 				<div class="checkbox" data-checkbox="updateServicesInList"></div>
 				<label>Check titles status in <b>Chapter lists</b>.<br />
-					<div class="helper">Useful if you are reading using an external application (like <b>Tachiyomi</b>)
-						that update your Services, and make <b>SyncDex</b> out of sync.</div>
+					<div class="helper">Useful if you are reading using an external application (like <b>Tachiyomi</b>) that update your Services, and make <b>SyncDex</b> out of sync.</div>
 				</label>
 			</div>
 		</div>
@@ -201,8 +188,7 @@
 			<div class="parameter">
 				<div class="checkbox" data-checkbox="notifications"></div>
 				<label>Show Notifications.
-					<p class="helper">Error notifications will still be displayed unless you also toggle them off
-						below.<br />
+					<p class="helper">Error notifications will still be displayed unless you also toggle them off below.<br />
 						Confirmation notifications are always displayed.</p>
 				</label>
 				<div class="checkbox" data-checkbox="errorNotifications"></div>
@@ -212,32 +198,37 @@
 		<h1 id="history"><img src="icons/history.svg" /> History</h1>
 		<div class="section">
 			<div class="block message default">
-				The following options update the <b>History</b> page of <b>MangaDex</b> (<a
-					href="https://mangadex.org/history" rel="noreferrer noopener"
-					target="_blank">https://mangadex.org/history <img src="icons/external.svg" /></a>)
+				The following options update the <b>History</b> page of <b>MangaDex</b> (<a href="https://mangadex.org/history" rel="noreferrer noopener" target="_blank">https://mangadex.org/history <img src="icons/external.svg" /></a>)
 			</div>
 			<div class="parameter">
 				<div class="checkbox" data-checkbox="biggerHistory"></div>
-				<label>Save each titles you read and display a bigger history than the original 20 that
-					<b>MangaDex</b> save.</label>
+				<label>Save each titles you read and display a bigger history than the original 20 that <b>MangaDex</b> save.</label>
 				<div class="checkbox" data-checkbox="chapterStatus" data-dependency="biggerHistory"></div>
 				<label>Highlight Covers to quickly see if you read the last chapter for a title.</label>
 			</div>
 		</div>
-		<div id="import-export"></div>
-		<div id="save-container"></div>
+		<h1 id="import"><img src="icons/download.svg" /> Import</h1>
+		<div class="block message default">
+			<b>Importing</b> will only update your <b>SyncDex</b> save and is used to initialize <b>SyncDex</b>.<br />
+			If you wish to update any external Service, see <b><a href="#Export">Export</a></b>
+		</div>
+		<div class="section services selectable" id="import-container"></div>
+		<h1 id="export"><img src="icons/upload.svg" /> Export</h1>
+		<div class="block message default">
+			<b>Exporting</b> will update your <b>Online</b> save on the Service you choose using your <b>SyncDex</b> save.<br />
+			You should <b><a href="#Import">Import</a></b> from somewhere before exporting to somewhere else !
+		</div>
+		<div class="section services selectable" id="export-container"></div>
 		<h1 id="other"><img src="icons/preferences.svg" /> Other</h1>
 		<div class="section">
 			<h2 class="bold">Mochi</h2>
 			<div class="parameter">
 				<div class="checkbox" data-checkbox="useMochi"></div>
-				<label>Use <a href="https://mochi.nikurasu.org/" rel="noreferrer noopener">Mochi</a> to get Services
-					links.</label>
+				<label>Use <a href="https://mochi.nikurasu.org/" rel="noreferrer noopener">Mochi</a> to get Services links.</label>
 				<div class="checkbox" data-checkbox="acceptLowScore" data-dependency="useMochi"></div>
 				<label>
 					Allow low score results from <b>Mochi</b>.
-					<p class="helper">It is not recommended since it could add and update
-						totally unrelated titles to your list.</p>
+					<p class="helper">It is not recommended since it could add and update unrelated titles to your list.</p>
 				</label>
 			</div>
 			<h2>Update MangaDex list</h2>
@@ -248,10 +239,8 @@
 		</div>
 		<h1 id="delete"><img src="icons/delete.svg" /> Delete</h1>
 		<div class="section">
-			<div class="message default">Click the <b>Delete</b> button twice to <b>permanently erase</b> your
-				save.</div>
-			<div class="message warning">It can't be restored,
-				<b><a href="#Export">Export</a></b> first if you want to keep a copy.</div>
+			<div class="message default">Click the <b>Delete</b> button twice to <b>permanently erase</b> your save.</div>
+			<div class="message warning">It can't be restored, <b><a href="#Export">Export</a></b> first if you want to keep a copy.</div>
 			<div class="block center">
 				<button id="delete-save" class="puffy danger"><img src="icons/delete-light.svg" /> Delete</button>
 			</div>

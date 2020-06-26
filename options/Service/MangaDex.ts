@@ -56,12 +56,12 @@ class MangaDexImport extends APIImportableModule<Title> {
 			credentials: 'include',
 		});
 		if (response.status >= 400 || typeof response.body !== 'string') {
-			this.notification('danger', 'The request failed, maybe MangaDex is having problems, retry later.');
+			this.notification('warning', 'The request failed, maybe MangaDex is having problems, retry later.');
 			return false;
 		}
 		if (response.body.indexOf(`You do not have permission to view this user's list.`) >= 0) {
 			this.notification(
-				'danger',
+				'warning',
 				'You do not have the required Permissions to view this list, check if you are logged in.'
 			);
 			return false;

@@ -46,10 +46,12 @@ export class DOM {
 	): HTMLElementTagNameMap[K] {
 		const elt = document.createElement(tagName);
 		if (properties) {
-			Object.assign(elt, {
-				textContent: properties.textContent || '',
-				className: properties.class || '',
-			});
+			if (properties.textContent) {
+				elt.textContent = properties.textContent;
+			}
+			if (properties.class) {
+				elt.className = properties.class;
+			}
 			if (properties.classList) {
 				for (const className of properties.classList) {
 					elt.classList.add(className);
