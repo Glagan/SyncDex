@@ -16,8 +16,10 @@ interface DOMProperties {
 type PhotonIcon =
 	| 'arrow-right'
 	| 'brush'
+	| 'cancel-light'
 	| 'cancel'
 	| 'check'
+	| 'close'
 	| 'delete-light'
 	| 'delete'
 	| 'download'

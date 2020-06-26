@@ -169,6 +169,34 @@
 	}
 }
 
+@keyframes expand {
+	0% {
+		transform: scaleY(0);
+	}
+	100% {
+		transform: scaleY(1);
+	}
+}
+
+@keyframes shrink {
+	0% {
+		transform: scaleY(1);
+	}
+	100% {
+		transform: scaleY(0);
+		display: none;
+	}
+}
+
+@keyframes insert-left {
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(0);
+	}
+}
+
 .loading {
 	animation-name: pulse;
 	animation-duration: 2s;
@@ -206,11 +234,11 @@ button,
 .button {
 	border: 0;
 	cursor: pointer;
-	transition: all 250ms var(--animation);
 	font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
 		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 	text-align: center;
 	line-height: 16px;
+	transition: all 250ms var(--animation);
 }
 button.hidden,
 .button.hidden {
@@ -376,6 +404,9 @@ input[type]:hover {
 input[type]:focus {
 	border-color: var(--blue-50);
 	box-shadow: var(--focus);
+}
+input[type='file'] {
+	cursor: pointer;
 }
 
 /*	Checkbox */
@@ -744,4 +775,13 @@ h2 {
 .ieport form .parameter,
 .ieport form .row-parameter {
 	margin-bottom: 32px;
+}
+.ieport form.closed {
+	user-select: none;
+	transform-origin: top center;
+	animation: shrink 200ms 1 forwards;
+}
+.ieport .message:not(.in-place) {
+	font-size: var(--body-20);
+	animation: insert-left 250ms 1 forwards;
 }

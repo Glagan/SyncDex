@@ -99,28 +99,41 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 	handleHistory = undefined;
 	handleOptions = undefined;
 
-	preForm = (): void => {
-		this.notification('default', [
-			DOM.text('You can download your Manga list'),
-			DOM.space(),
-			DOM.create('a', {
-				textContent: 'here',
-				attributes: {
-					href: 'https://myanimelist.net/panel.php?go=export',
-					rel: 'noreferrer noopener',
-					target: '_blank',
-				},
-			}),
-			DOM.text('.'),
-		]);
-		this.notification(
-			'warning',
-			'You need to extract the downloaded file before uploading, the extension need to be xml and not gz.'
-		);
+	acceptedFileType = () => {
+		return 'application/xml';
 	};
 
-	inputMessage = (): string => {
-		return 'MyAnimeList export file (.xml)';
+	postForm = (form: HTMLFormElement): void => {
+		const fileInput = form.querySelector(`input[type='file']`);
+		if (fileInput && fileInput.parentElement) {
+			// Link to the export panel on MyAnimeList
+			let notification = this.notification('default', [
+				DOM.text('You can download your Manga list'),
+				DOM.space(),
+				DOM.create('a', {
+					textContent: 'here',
+					attributes: {
+						href: 'https://myanimelist.net/panel.php?go=export',
+						rel: 'noreferrer noopener',
+						target: '_blank',
+					},
+					childs: [DOM.space(), DOM.icon('external')],
+				}),
+				DOM.text('.'),
+			]);
+			notification.classList.add('in-place');
+			fileInput.parentElement.insertBefore(notification, fileInput);
+			// Compression notification
+			notification = this.notification('warning', [
+				DOM.text('You need to extract the downloaded file. The extension need to be '),
+				DOM.create('b', { textContent: '.xml' }),
+				DOM.text(' and not '),
+				DOM.create('b', { textContent: '.xml.gz' }),
+				DOM.text('.'),
+			]);
+			notification.classList.add('in-place');
+			fileInput.parentElement.insertBefore(notification, fileInput);
+		}
 	};
 
 	toStatus = (status: MyAnimeListStatus): Status => {
