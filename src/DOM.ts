@@ -19,6 +19,7 @@ type PhotonIcon =
 	| 'cancel-light'
 	| 'cancel'
 	| 'check'
+	| 'close-light'
 	| 'close'
 	| 'delete-light'
 	| 'delete'

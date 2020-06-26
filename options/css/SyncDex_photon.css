@@ -188,21 +188,17 @@
 	}
 }
 
-@keyframes insert-left {
+@keyframes flash {
 	0% {
-		transform: translateX(-100%);
+		filter: contrast(0%);
 	}
 	100% {
-		transform: translateX(0);
+		filter: contrast(100%);
 	}
 }
 
 .loading {
-	animation-name: pulse;
-	animation-duration: 2s;
-	animation-timing-function: ease-in-out;
-	animation-direction: alternate;
-	animation-iteration-count: infinite;
+	animation: pulse 2s ease-in-out alternate infinite;
 }
 
 *:disabled,
@@ -783,5 +779,9 @@ h2 {
 }
 .ieport .message:not(.in-place) {
 	font-size: var(--body-20);
-	animation: insert-left 250ms 1 forwards;
+	animation: flash 250ms 1 forwards;
+}
+.ieport .message:not(.in-place).loading {
+	font-size: var(--body-20);
+	animation: flash 250ms 1 forwards, pulse 2s ease-in-out alternate infinite;
 }

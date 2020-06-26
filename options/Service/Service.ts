@@ -34,7 +34,7 @@ export class ImportSummary extends Summary {
 export type FileImportFormat = 'JSON' | 'XML';
 
 export class Checkbox {
-	static make(name: string, labelContent: string): HTMLElement {
+	static make(name: string, labelContent: string, parent?: HTMLElement): HTMLElement {
 		const checkbox = DOM.create('div', {
 			class: 'checkbox checked',
 			attributes: { name: name },
@@ -49,6 +49,9 @@ export class Checkbox {
 			event.preventDefault();
 			checkbox.classList.toggle('checked');
 		});
+		if (parent) {
+			return DOM.append(parent, checkbox, label);
+		}
 		return DOM.create('div', {
 			class: 'parameter',
 			childs: [checkbox, label],
@@ -470,13 +473,14 @@ export abstract class SaveModule {
 			childs: [DOM.icon('cancel-light')],
 		});
 		this.closeButton = DOM.create('button', {
+			class: 'primary',
 			textContent: 'Close',
 			events: {
 				click: () => {
 					this.modal.remove();
 				},
 			},
-			childs: [DOM.icon('close')],
+			childs: [DOM.icon('close-light')],
 		});
 		this.card = this.manager.createCard(false);
 		this.card.addEventListener('click', () => {
@@ -592,6 +596,42 @@ export abstract class ImportableModule extends SaveModule {
 		this.complete();
 	};
 
+	mochiCheck = async (collection: TitleCollection): Promise<void> => {
+		const progress = DOM.create('span', {
+			textContent: 'Page 1 out of 1',
+		});
+		let notification = this.notification('loading', [
+			DOM.text('Checking Services with Mochi...'),
+			DOM.space(),
+			progress,
+		]);
+		let offset = 0;
+		let max = Math.ceil(collection.length / 250);
+		for (let i = 0; !this.doStop && i < max; i++) {
+			progress.textContent = `Page ${i + 1} out of ${max}`;
+			const titleList = collection.collection.slice(offset, offset + 250);
+			offset += 250;
+			const connections = await Mochi.findMany(titleList.map((title) => title.id));
+			if (connections !== undefined) {
+				for (const titleId in connections) {
+					const id = parseInt(titleId);
+					const title = titleList.find((t) => t.id == id);
+					if (title && connections.hasOwnProperty(titleId)) {
+						const connection = connections[titleId];
+						for (const s in connection) {
+							if (connection.hasOwnProperty(s)) {
+								const service = s as ServiceName;
+								title.services[ServiceKey[service] as ServiceKey] = connection[service];
+							}
+						}
+					}
+				}
+			}
+		}
+		notification.classList.remove('loading');
+		if (this.doStop) return this.cancel();
+	};
+
 	displaySummary = (summary: ImportSummary): void => {
 		// this.notification('success', `Done Importing ${this.service.name} !`);
 		if (summary.total != summary.valid) {
@@ -626,7 +666,9 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		const form = DOM.create('form', { class: 'body' });
 		const inputId = `file_${this.manager.service.name}`;
 		form.appendChild(DOM.create('h2', { textContent: 'Options' }));
-		form.appendChild(Checkbox.make('merge', 'Merge with current save'));
+		const options = Checkbox.make('merge', 'Merge with current save');
+		Checkbox.make('checkServices', 'Check Services ID with Mochi after Import', options);
+		form.appendChild(options);
 		form.appendChild(
 			DOM.create('h2', {
 				childs: [DOM.create('label', { class: '', textContent: 'Save File', attributes: { for: inputId } })],
@@ -652,6 +694,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		return form;
 	};
 
+	// TODO: Notifications are after the body
 	handle = async (form: HTMLFormElement): Promise<void> => {
 		let notification: HTMLElement;
 		if (!form.save || form.save.files.length < 1) {
@@ -682,12 +725,13 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 			}
 			if (notification) notification.classList.remove('loading');
 			const merge = form.querySelector(`.checkbox[name='merge'].checked`) !== null;
-			this.import(data, merge);
+			const checkServices = form.querySelector(`.checkbox[name='checkServices'].checked`) !== null;
+			this.import(data, merge, checkServices);
 		};
 		reader.readAsText(form.save.files[0]);
 	};
 
-	import = async (data: T | Document, merge: boolean): Promise<void> => {
+	import = async (data: T | Document, merge: boolean, checkServices: boolean): Promise<void> => {
 		this.displayActive();
 		let summary = new ImportSummary();
 		// Import everything first
@@ -727,13 +771,19 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 			notification = this.notification('default', 'Importing History');
 			history = this.handleHistory(data, collection, summary);
 		}
-		// We're double checking and saving only at the end in case of abort
-		notification = this.notification('loading', 'Saving...');
+		// Merge
 		if (!merge) {
 			await LocalStorage.clear();
 		} else {
 			collection.merge(await TitleCollection.get(collection.ids));
 		}
+		// Mochi
+		if (checkServices) {
+			await this.mochiCheck(collection);
+			if (this.doStop) return;
+		}
+		// We're double checking and saving only at the end in case of abort
+		notification = this.notification('loading', 'Saving...');
 		collection.save();
 		if (this.handleHistory && history.length > 0) {
 			await LocalStorage.set('history', history);
@@ -776,22 +826,25 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 	createForm = (): HTMLFormElement => {
 		const form = DOM.create('form', { class: 'body' });
 		form.appendChild(DOM.create('h2', { textContent: 'Options' }));
-		form.appendChild(Checkbox.make('merge', 'Merge with current save'));
+		const options = Checkbox.make('merge', 'Merge with current save');
+		Checkbox.make('checkServices', 'Check Services ID with Mochi after Import', options);
+		form.appendChild(options);
 		return form;
 	};
 
 	handle = async (form: HTMLFormElement): Promise<void> => {
-		this.displayActive();
 		const merge = form.querySelector(`.checkbox[name='merge'].checked`) !== null;
-		let progress: HTMLElement = this.notification('loading', 'Checking login status...');
+		const checkServices = form.querySelector(`.checkbox[name='checkServices'].checked`) !== null;
+		this.displayActive();
+		let notification: HTMLElement = this.notification('loading', 'Checking login status...');
 		// Check login status
 		if (!(await this.checkLogin())) {
-			progress.classList.remove('loading');
+			notification.classList.remove('loading');
 			this.notification('warning', 'You are not logged in !');
 			return this.cancel(true);
 		}
-		progress.classList.remove('loading');
-		DOM.append(progress, DOM.space(), DOM.text('logged in !'));
+		notification.classList.remove('loading');
+		DOM.append(notification, DOM.space(), DOM.text('logged in !'));
 		if (this.doStop) return this.cancel();
 		let titles: T[] = [];
 		if (this.preMain) {
@@ -800,18 +853,18 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 			}
 		}
 		if (this.doStop) return this.cancel();
-		progress = this.notification('loading', '');
+		notification = this.notification('loading', '');
 		// Fetch each pages to get a list of titles in the Service format
 		while (!this.doStop && this.getNextPage() !== false) {
-			progress.textContent = this.getProgress(ImportStep.FETCH_PAGES);
+			notification.textContent = this.getProgress(ImportStep.FETCH_PAGES);
 			let tmp: T[] | false = await this.handlePage();
 			if (tmp === false) {
-				progress.classList.remove('loading');
+				notification.classList.remove('loading');
 				return this.cancel(true);
 			}
 			titles.push(...tmp);
 		}
-		progress.classList.remove('loading');
+		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		let summary = new ImportSummary();
 		summary.total = titles.length;
@@ -821,29 +874,35 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 		}
 		this.notification('success', `Found a total of ${titles.length} Titles.`);
 		// Convert the list to a TitleCollection
-		progress = this.notification('loading', '');
+		notification = this.notification('loading', '');
 		let collection = new TitleCollection();
 		let offset = 0;
 		let max = Math.ceil(titles.length / this.perConvert);
 		for (let i = 0; !this.doStop && i < max; i++) {
 			const titleList = titles.slice(offset, offset + this.perConvert);
 			offset += this.perConvert;
-			progress.textContent = this.getProgress(ImportStep.CONVERT_TITLES, titles.length);
+			notification.textContent = this.getProgress(ImportStep.CONVERT_TITLES, titles.length);
 			const converted = await this.convertTitles(collection, titleList);
 			summary.valid += converted;
 		}
-		progress.classList.remove('loading');
+		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
-		// Done !
-		progress = this.notification('loading', 'Saving...');
+		// Merge
 		if (!merge) {
 			await LocalStorage.clear();
 		} else {
 			collection.merge(await TitleCollection.get(collection.ids));
 		}
+		// Mochi
+		if (checkServices) {
+			await this.mochiCheck(collection);
+			if (this.doStop) return;
+		}
+		// Done !
+		notification = this.notification('loading', 'Saving...');
 		await Options.save(); // Always save -- options are deleted in LocalStorage
 		await collection.save();
-		progress.remove();
+		notification.remove();
 		this.displaySummary(summary);
 		this.complete();
 	};
@@ -924,13 +983,13 @@ export abstract class APIExportableModule extends ExportableModule {
 	createForm = (): HTMLFormElement => {
 		const form = DOM.create('form', { class: 'body' });
 		form.appendChild(DOM.create('h2', { textContent: 'Options' }));
-		form.appendChild(Checkbox.make('checkServices', 'Check Services ID with Mochi'));
+		form.appendChild(Checkbox.make('checkServices', 'Check Services ID with Mochi before Export'));
 		return form;
 	};
 
 	handle = async (form: HTMLFormElement): Promise<void> => {
-		this.displayActive();
 		const checkServices = form.querySelector(`.checkbox[name='checkServices'].checked`) !== null;
+		this.displayActive();
 		// Check login status
 		let notification: HTMLElement = this.notification('loading', 'Checking login status...');
 		if (!(await this.checkLogin())) {
@@ -1020,13 +1079,13 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 	createForm = (): HTMLFormElement => {
 		const form = DOM.create('form', { class: 'body' });
 		form.appendChild(DOM.create('h2', { textContent: 'Options' }));
-		form.appendChild(Checkbox.make('checkServices', 'Check Services ID with Mochi'));
+		form.appendChild(Checkbox.make('checkServices', 'Check Services ID with Mochi before Export'));
 		return form;
 	};
 
 	handle = async (form: HTMLFormElement): Promise<void> => {
-		this.displayActive();
 		const checkServices = form.querySelector(`.checkbox[name='checkServices'].checked`) !== null;
+		this.displayActive();
 		// Check login status
 		let notification: HTMLElement = this.notification('loading', 'Checking login status...');
 		if (!(await this.checkLogin())) {
