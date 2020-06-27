@@ -56,14 +56,20 @@ class OptionsManager {
 			});
 		}
 		// Change theme button
-		const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+		const prefersColorScheme = window.matchMedia('(prefers-color-scheme: dark)');
 		const themeRow = document.getElementById('switch-theme') as HTMLElement;
 		const themeButton = themeRow.querySelector('i') as HTMLElement;
-		if (isDark) {
+		if (prefersColorScheme.matches) {
 			document.body.classList.add('dark');
 			themeButton.className = 'fas fa-sun';
 		}
 		themeRow.addEventListener('click', (event) => {
+			themeButton.classList.toggle('fa-sun');
+			themeButton.classList.toggle('fa-moon');
+			document.body.classList.toggle('dark');
+			document.body.classList.toggle('light');
+		});
+		prefersColorScheme.addEventListener('change', () => {
 			themeButton.classList.toggle('fa-sun');
 			themeButton.classList.toggle('fa-moon');
 			document.body.classList.toggle('dark');
