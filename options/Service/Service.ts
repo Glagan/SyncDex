@@ -446,6 +446,7 @@ export abstract class SaveModule {
 	modal: Modal;
 	manager: ManageableService;
 	preForm?(): void;
+	reset?(): void;
 	postForm?(form: HTMLFormElement): void;
 	abstract createForm(): HTMLFormElement;
 	activeContainer?: HTMLElement;
@@ -528,6 +529,8 @@ export abstract class SaveModule {
 		this.stopButton.disabled = false;
 		if (this.preForm) this.preForm();
 		this.activeContainer = undefined;
+		this.doStop = false;
+		if (this.reset) this.reset();
 		const form = this.createForm();
 		form.addEventListener('animationend', (event) => {
 			if (event.target == form && event.animationName == 'shrink') {
@@ -588,6 +591,12 @@ export abstract class SaveModule {
 }
 
 export abstract class ImportableModule extends SaveModule {
+	summary: ImportSummary = new ImportSummary();
+
+	reset = (): void => {
+		this.summary = new ImportSummary();
+	};
+
 	cancel = (forced = false): void => {
 		this.notification(
 			'warning',
@@ -632,19 +641,20 @@ export abstract class ImportableModule extends SaveModule {
 		if (this.doStop) return this.cancel();
 	};
 
-	displaySummary = (summary: ImportSummary): void => {
+	displaySummary = (): void => {
 		// this.notification('success', `Done Importing ${this.service.name} !`);
-		if (summary.total != summary.valid) {
+		if (this.summary.total != this.summary.valid) {
 			this.notification(
 				'warning',
 				`${
-					summary.total - summary.valid
+					this.summary.total - this.summary.valid
 				} titles were not imported since they had invalid or missing properties.`
 			);
 		}
-		let report = `Successfully imported ${summary.valid} titles`;
-		if (summary.options > 0) report += `${summary.history ? ', ' : ' and '} ${summary.options} Options`;
-		if (summary.history) report += ` and History`;
+		let report = `Successfully imported ${this.summary.valid} titles`;
+		if (this.summary.options > 0)
+			report += `${this.summary.history ? ', ' : ' and '} ${this.summary.options} Options`;
+		if (this.summary.history) report += ` and History`;
 		report += ` !`;
 		this.notification('success', report);
 	};
@@ -733,15 +743,14 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 
 	import = async (data: T | Document, merge: boolean, checkServices: boolean): Promise<void> => {
 		this.displayActive();
-		let summary = new ImportSummary();
 		// Import everything first
 		let notification = this.notification('loading', 'Importing Titles');
 		const titles: R[] = await this.handleTitles(data);
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		// Abort if there is nothing
-		summary.total = titles.length;
-		if (summary.total == 0) {
+		this.summary.total = titles.length;
+		if (this.summary.total == 0) {
 			this.notification('success', 'No titles found !');
 			return this.cancel(true);
 		}
@@ -754,22 +763,22 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		for (let i = 0; !this.doStop && i < max; i++) {
 			const titleList = titles.slice(offset, offset + this.perConvert);
 			offset += this.perConvert;
-			currentTitle = Math.min(summary.total, currentTitle + this.perConvert);
-			notification.textContent = `Converting title ${currentTitle} out of ${summary.total}.`;
+			currentTitle = Math.min(this.summary.total, currentTitle + this.perConvert);
+			notification.textContent = `Converting title ${currentTitle} out of ${this.summary.total}.`;
 			const converted = await this.convertTitles(collection, titleList);
-			summary.valid += converted;
+			this.summary.valid += converted;
 		}
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		// Handle options and history
 		if (this.handleOptions) {
 			notification = this.notification('default', 'Importing Options');
-			this.handleOptions(data, summary);
+			this.handleOptions(data, this.summary);
 		}
 		let history: number[] = [];
 		if (this.handleHistory) {
 			notification = this.notification('default', 'Importing History');
-			history = this.handleHistory(data, collection, summary);
+			history = this.handleHistory(data, collection, this.summary);
 		}
 		// Merge
 		if (!merge) {
@@ -793,7 +802,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 			this.manager.manager.reloadOptions(); // TODO: Reload
 		}
 		notification.remove();
-		this.displaySummary(summary);
+		this.displaySummary();
 		this.complete();
 	};
 }
@@ -805,6 +814,12 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 	abstract convertTitles(titles: TitleCollection, titleList: T[]): Promise<number>;
 	perConvert: number = 250;
 	preMain?(): Promise<boolean>;
+
+	reset = (): void => {
+		this.currentTitle = 0;
+		this.state = { current: 0, max: 1 };
+		this.summary = new ImportSummary();
+	};
 
 	getNextPage = (): boolean => {
 		if (this.state.current < this.state.max || this.state.current == 0) {
@@ -866,9 +881,8 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 		}
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
-		let summary = new ImportSummary();
-		summary.total = titles.length;
-		if (summary.total == 0) {
+		this.summary.total = titles.length;
+		if (this.summary.total == 0) {
 			this.notification('success', 'No titles found !');
 			return this.cancel(true);
 		}
@@ -883,7 +897,7 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 			offset += this.perConvert;
 			notification.textContent = this.getProgress(ImportStep.CONVERT_TITLES, titles.length);
 			const converted = await this.convertTitles(collection, titleList);
-			summary.valid += converted;
+			this.summary.valid += converted;
 		}
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
@@ -903,12 +917,18 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 		await Options.save(); // Always save -- options are deleted in LocalStorage
 		await collection.save();
 		notification.remove();
-		this.displaySummary(summary);
+		this.displaySummary();
 		this.complete();
 	};
 }
 
 export abstract class ExportableModule extends SaveModule {
+	summary: Summary = new Summary();
+
+	reset = (): void => {
+		this.summary = new Summary();
+	};
+
 	// By default, select all titles with a Service key for the current service and a status
 	selectTitles = async (): Promise<Title[]> => {
 		return (await TitleCollection.get()).collection.filter((title) => {
@@ -922,17 +942,17 @@ export abstract class ExportableModule extends SaveModule {
 		this.complete();
 	};
 
-	displaySummary = (summary: Summary): void => {
+	displaySummary = (): void => {
 		// this.notification('success', `Done Importing ${this.service.name} !`);
-		if (summary.total != summary.valid) {
+		if (this.summary.total != this.summary.valid) {
 			this.notification(
 				'warning',
 				`${
-					summary.total - summary.valid
+					this.summary.total - this.summary.valid
 				} titles were not exported since they had invalid or missing properties.`
 			);
 		}
-		let report = `Successfully exported ${summary.valid} titles`;
+		let report = `Successfully exported ${this.summary.valid} titles`;
 		report += ` !`;
 		this.notification('success', report);
 	};
@@ -1047,8 +1067,7 @@ export abstract class APIExportableModule extends ExportableModule {
 			this.notification('default', `You don't have any Titles in your list that can be exported.`);
 			return this.cancel(true);
 		}
-		let summary = new Summary();
-		summary.total = titles.length;
+		this.summary.total = titles.length;
 		if (this.preMain) {
 			if (!(await this.preMain(titles))) {
 				return this.cancel(true);
@@ -1057,17 +1076,17 @@ export abstract class APIExportableModule extends ExportableModule {
 		if (this.doStop) return this.cancel();
 		// Export one by one...
 		notification = this.notification('loading', '');
-		for (let i = 0; !this.doStop && i < summary.total; i++) {
-			notification.textContent = `Exporting title ${i + 1} out of ${summary.total}.`;
+		for (let i = 0; !this.doStop && i < this.summary.total; i++) {
+			notification.textContent = `Exporting title ${i + 1} out of ${this.summary.total}.`;
 			const title = titles[i];
 			if (await this.exportTitle(title)) {
-				summary.valid++;
+				this.summary.valid++;
 			}
 		}
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		// Done
-		this.displaySummary(summary);
+		this.displaySummary();
 		this.complete();
 	};
 }
@@ -1144,22 +1163,21 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 			return this.cancel(true);
 		}
 		// Generate batch
-		let summary = new Summary();
-		summary.total = titles.length;
+		this.summary.total = titles.length;
 		notification = this.notification('loading', 'Generating batch');
 		const batch = await this.generateBatch(titles);
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		// Export batch
 		notification = this.notification('loading', 'Sending batch');
-		const batchResult = await this.sendBatch(batch, summary);
+		const batchResult = await this.sendBatch(batch, this.summary);
 		notification.classList.remove('loading');
 		// Done
 		if (batchResult === false) {
 			this.notification('warning', 'There was an error while exporting the batch, maybe retry later');
 			return this.cancel(true);
 		}
-		this.displaySummary(summary);
+		this.displaySummary();
 		this.complete();
 	};
 }
