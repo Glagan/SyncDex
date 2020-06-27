@@ -214,7 +214,6 @@ export abstract class ActivableModule {
 		this.removeButton = DOM.create('button', {
 			childs: [DOM.icon('trash'), DOM.text('Remove')],
 		});
-		this.bind();
 	}
 
 	loading = (): void => {

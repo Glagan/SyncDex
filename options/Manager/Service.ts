@@ -46,6 +46,12 @@ export class ServiceManager {
 		// Import/Export
 		this.importContainer = document.getElementById('import-container') as HTMLElement;
 		this.exportContainer = document.getElementById('export-container') as HTMLElement;
+		// Bind
+		for (const manager of this.managers) {
+			if (manager.activeModule) {
+				manager.activeModule.bind();
+			}
+		}
 		// Default State
 		this.refreshActive();
 		this.fillSaveContainers();
