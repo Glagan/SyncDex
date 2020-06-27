@@ -13,35 +13,6 @@ interface DOMProperties {
 	dataset?: Record<string, string>;
 }
 
-type PhotonIcon =
-	| 'arrow-right'
-	| 'brush'
-	| 'cancel-light'
-	| 'cancel'
-	| 'check'
-	| 'close-light'
-	| 'close'
-	| 'delete-light'
-	| 'delete'
-	| 'download'
-	| 'globe'
-	| 'history'
-	| 'import-export'
-	| 'info'
-	| 'library'
-	| 'login-light'
-	| 'new-light'
-	| 'new'
-	| 'preferences'
-	| 'reminders'
-	| 'sync'
-	| 'underflow-light'
-	| 'underflow'
-	| 'upload'
-	| 'external-light'
-	| 'external'
-	| 'warning';
-
 export class DOM {
 	static create<K extends keyof HTMLElementTagNameMap>(
 		tagName: K,
@@ -109,11 +80,9 @@ export class DOM {
 		return this.text('\xA0');
 	}
 
-	static icon(icon: PhotonIcon): HTMLElement {
-		return DOM.create('img', {
-			attributes: {
-				src: `icons/${icon}.svg`,
-			},
+	static icon(icon: string): HTMLElement {
+		return DOM.create('i', {
+			class: `fas fa-${icon}`,
 		});
 	}
 

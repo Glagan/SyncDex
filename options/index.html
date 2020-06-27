@@ -7,6 +7,8 @@
 	<meta http-equiv="X-UA-Compatible" content="ie=edge" />
 	<title>SyncDex :: Options</title>
 	<link rel="stylesheet" href="https://code.cdn.mozilla.net/fonts/fira.css" />
+	<link rel="stylesheet" type="text/css" media="all" href="css/fontawesome.min.css" />
+	<link rel="stylesheet" type="text/css" media="all" href="css/solid.min.css" />
 	<link rel="stylesheet" type="text/css" media="all" href="css/SyncDex_photon.css" />
 </head>
 
@@ -14,21 +16,22 @@
 	<nav>
 		<ul>
 			<li>SyncDex</li>
-			<li class="active" data-link="services"><img src="icons/globe.svg" /> Services</li>
-			<li data-link="colors"><img src="icons/brush.svg" /> Colors</li>
-			<li data-link="updates"><img src="icons/sync.svg" /> Updates</li>
-			<li data-link="lists"><img src="icons/library.svg" /> Lists</li>
-			<li data-link="general"><img src="icons/preferences.svg" /> General</li>
-			<li data-link="notifications"><img src="icons/reminders.svg" /> Notifications</li>
-			<li data-link="history"><img src="icons/history.svg" /> History</li>
-			<li data-link="import"><img src="icons/download.svg" /> Import</li>
-			<li data-link="export"><img src="icons/upload.svg" /> Export</li>
-			<li data-link="other"><img src="icons/preferences.svg" /> Other</li>
-			<li data-link="delete"><img src="icons/delete.svg" /> Delete</li>
+			<li id="switch-theme"><i class="fas fa-moon"></i> Change Theme</li>
+			<li class="active" data-link="services"><i class="fas fa-globe"></i> Services</li>
+			<li data-link="colors"><i class="fas fa-paint-brush"></i> Colors</li>
+			<li data-link="updates"><i class="fas fa-sync"></i> Updates</li>
+			<li data-link="lists"><i class="fas fa-list"></i> Lists</li>
+			<li data-link="general"><i class="fas fa-cog"></i> General</li>
+			<li data-link="notifications"><i class="fas fa-bell"></i> Notifications</li>
+			<li data-link="history"><i class="fas fa-history"></i> History</li>
+			<li data-link="import"><i class="fas fa-download"></i> Import</li>
+			<li data-link="export"><i class="fas fa-upload"></i> Export</li>
+			<li data-link="other"><i class="fas fa-ellipsis-h"></i> Other</li>
+			<li data-link="delete"><i class="fas fa-trash"></i> Delete</li>
 		</ul>
 	</nav>
 	<main id="content">
-		<h1 id="services"><img src="icons/globe.svg" /> Services</h1>
+		<h1 id="services"><i class="fas fa-globe"></i> Services</h1>
 		<div class="section">
 			<div id="no-service" class="message warning hidden">
 				You have no active Services. <b>SyncDex</b> won't do anything until you add one.
@@ -38,10 +41,10 @@
 			</div>
 			<div id="service-list" class="services"></div>
 		</div>
-		<h1 id="colors"><img src="icons/brush.svg" /> Colors</h1>
+		<h1 id="colors"><i class="fas fa-paint-brush"></i> Colors</h1>
 		<div class="section">
 			<div class="block message default">
-				Colors that exist in <a href="http://www.color-hex.com/color-names.html" target="_blank">HTML <img src="icons/external.svg" /></a> are accepted but you can also use values like <b>#RRGGBB</b>, <b>rgb(red, green, blue)</b> or with alpha channel <b>rgba(red, green, blue, alpha)</b>.<br />
+				Colors that exist in <a href="http://www.color-hex.com/color-names.html" target="_blank">HTML <i class="fas fa-external-link-alt"></i></a> are accepted but you can also use values like <b>#RRGGBB</b>, <b>rgb(red, green, blue)</b> or with alpha channel <b>rgba(red, green, blue, alpha)</b>.<br />
 				If you want to disable one of the highlights you can turn it off globally or set a color to <b>transparent</b>.
 			</div>
 			<h2>Highlight</h2>
@@ -89,7 +92,7 @@
 				</div>
 			</div>
 		</div>
-		<h1 id="updates"><img src="icons/sync.svg" /> Updates</h1>
+		<h1 id="updates"><i class="fas fa-sync"></i> Updates</h1>
 		<div class="section">
 			<div class="block message default">
 				The following options change the behavior while you are reading.
@@ -128,7 +131,7 @@
 				<label>Update your list(s) only if the title you are reading is <b>already</b> in your <b>MangaDex</b> list.</label>
 			</div>
 		</div>
-		<h1 id="lists"><img src="icons/library.svg" /> Lists</h1>
+		<h1 id="lists"><i class="fas fa-list"></i> Lists</h1>
 		<div class="section">
 			<h2>Hide Higher chapters</h2>
 			<div class="parameter">
@@ -165,7 +168,7 @@
 				</label>
 			</div>
 		</div>
-		<h1 id="general"><img src="icons/preferences.svg" /> General</h1>
+		<h1 id="general"><i class="fas fa-cog"></i> General</h1>
 		<div class="section">
 			<div class="block message default">
 				The following options change what is displayed on <b>title</b>s page.
@@ -183,7 +186,7 @@
 				<label>Display the <b>overview</b> only for your main Service.</label>
 			</div>
 		</div>
-		<h1 id="notifications"><img src="icons/reminders.svg" /> Notifications</h1>
+		<h1 id="notifications"><i class="fas fa-bell"></i> Notifications</h1>
 		<div class="section">
 			<div class="parameter">
 				<div class="checkbox" data-checkbox="notifications"></div>
@@ -195,10 +198,10 @@
 				<label>Show Error Notifications.</label>
 			</div>
 		</div>
-		<h1 id="history"><img src="icons/history.svg" /> History</h1>
+		<h1 id="history"><i class="fas fa-history"></i> History</h1>
 		<div class="section">
 			<div class="block message default">
-				The following options update the <b>History</b> page of <b>MangaDex</b> (<a href="https://mangadex.org/history" rel="noreferrer noopener" target="_blank">https://mangadex.org/history <img src="icons/external.svg" /></a>)
+				The following options update the <b>History</b> page of <b>MangaDex</b> (<a href="https://mangadex.org/history" rel="noreferrer noopener" target="_blank">https://mangadex.org/history <i class="fas fa-external-link-alt"></i></a>)
 			</div>
 			<div class="parameter">
 				<div class="checkbox" data-checkbox="biggerHistory"></div>
@@ -207,19 +210,19 @@
 				<label>Highlight Covers to quickly see if you read the last chapter for a title.</label>
 			</div>
 		</div>
-		<h1 id="import"><img src="icons/download.svg" /> Import</h1>
+		<h1 id="import"><i class="fas fa-download"></i> Import</h1>
 		<div class="block message default">
 			<b>Importing</b> will only update your <b>SyncDex</b> save and is used to initialize <b>SyncDex</b>.<br />
 			If you wish to update any external Service, see <b><a href="#Export">Export</a></b>
 		</div>
 		<div class="section services selectable" id="import-container"></div>
-		<h1 id="export"><img src="icons/upload.svg" /> Export</h1>
+		<h1 id="export"><i class="fas fa-upload"></i> Export</h1>
 		<div class="block message default">
 			<b>Exporting</b> will update your <b>Online</b> save on the Service you choose using your <b>SyncDex</b> save.<br />
 			You should <b><a href="#Import">Import</a></b> from somewhere before exporting to somewhere else !
 		</div>
 		<div class="section services selectable" id="export-container"></div>
-		<h1 id="other"><img src="icons/preferences.svg" /> Other</h1>
+		<h1 id="other"><i class="fas fa-ellipsis-h"></i> Other</h1>
 		<div class="section">
 			<h2 class="bold">Mochi</h2>
 			<div class="parameter">
@@ -237,7 +240,7 @@
 				<label>Update the <b>status</b> of the titles in your <b>MangaDex</b> list when needed.</label>
 			</div>
 		</div>
-		<h1 id="delete"><img src="icons/delete.svg" /> Delete</h1>
+		<h1 id="delete"><i class="fas fa-trash"></i> Delete</h1>
 		<div class="section">
 			<div class="message default">Click the <b>Delete</b> button twice to <b>permanently erase</b> your save.</div>
 			<div class="message warning">It can't be restored, <b><a href="#Export">Export</a></b> first if you want to keep a copy.</div>

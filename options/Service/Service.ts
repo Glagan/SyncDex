@@ -38,7 +38,7 @@ export class Checkbox {
 		const checkbox = DOM.create('div', {
 			class: 'checkbox checked',
 			attributes: { name: name },
-			childs: [DOM.create('img', { attributes: { src: 'icons/check-light.svg' } })],
+			childs: [DOM.icon('check')],
 		});
 		const label = DOM.create('label', { textContent: labelContent });
 		checkbox.addEventListener('click', (event) => {
@@ -191,12 +191,12 @@ export abstract class ActivableModule {
 		this.activateButton = DOM.create('button', {
 			class: 'primary',
 			attributes: { title: 'Activate' },
-			childs: [DOM.icon('new-light'), DOM.text('Activate')],
+			childs: [DOM.icon('plus'), DOM.text('Activate')],
 		});
 		this.mainButton = DOM.create('button', {
 			class: 'primary',
 			attributes: { title: 'Set as Main' },
-			childs: [DOM.icon('underflow-light'), DOM.text('Set as Main')],
+			childs: [DOM.icon('angle-double-left'), DOM.text('Set as Main')],
 		});
 		this.checkStatusButton = DOM.create('button', {
 			attributes: { title: 'Refresh' },
@@ -209,10 +209,10 @@ export abstract class ActivableModule {
 				rel: 'noreferrer noopener',
 				target: '_blank',
 			},
-			childs: [DOM.icon('external-light'), DOM.text('Login')],
+			childs: [DOM.icon('external-link-alt'), DOM.text('Login')],
 		});
 		this.removeButton = DOM.create('button', {
-			childs: [DOM.icon('delete'), DOM.text('Remove')],
+			childs: [DOM.icon('trash'), DOM.text('Remove')],
 		});
 		this.bind();
 	}
@@ -384,13 +384,13 @@ export abstract class ActivableModule {
 							attributes: {
 								type: 'submit',
 							},
-							childs: [DOM.icon('login-light'), DOM.text('Login')],
+							childs: [DOM.icon('sign-in-alt'), DOM.text('Login')],
 						}),
 					],
 				});
 				const cancelButton = DOM.create('button', {
 					class: 'default center',
-					childs: [DOM.icon('cancel'), DOM.text('Cancel')],
+					childs: [DOM.icon('times-circle'), DOM.text('Cancel')],
 				});
 				DOM.append(modal.body, DOM.append(form, cancelButton));
 				// Bind
@@ -470,7 +470,7 @@ export abstract class SaveModule {
 					this.stopButton.disabled = true;
 				},
 			},
-			childs: [DOM.icon('cancel-light')],
+			childs: [DOM.icon('times-circle')],
 		});
 		this.closeButton = DOM.create('button', {
 			class: 'primary',
@@ -480,7 +480,7 @@ export abstract class SaveModule {
 					this.modal.remove();
 				},
 			},
-			childs: [DOM.icon('close-light')],
+			childs: [DOM.icon('times-circle')],
 		});
 		this.card = this.manager.createCard(false);
 		this.card.addEventListener('click', () => {
@@ -544,10 +544,11 @@ export abstract class SaveModule {
 		const startButton = DOM.create('button', {
 			class: 'primary puffy',
 			textContent: 'Start',
+			childs: [DOM.icon('play')],
 		});
 		const cancelButton = DOM.create('button', {
 			class: 'default',
-			childs: [DOM.icon('cancel'), DOM.text('Cancel')],
+			childs: [DOM.icon('times-circle'), DOM.text('Cancel')],
 			events: {
 				click: (event: Event): void => {
 					event.preventDefault();

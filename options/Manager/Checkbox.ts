@@ -19,7 +19,7 @@ export class Checkbox {
 
 	constructor(node: HTMLElement) {
 		this.node = node;
-		this.node.appendChild(DOM.create('img', { attributes: { src: 'icons/check-light.svg' } }));
+		this.node.appendChild(DOM.icon('check'));
 		this.label = this.node.nextElementSibling as HTMLLabelElement;
 		if (this.label == null) {
 			console.log('checkbox', this.node);

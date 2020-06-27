@@ -211,7 +211,8 @@
 	color: var(--blue-60);
 	text-decoration: none;
 }
-*[href] img {
+*[href] img,
+*[href] i {
 	vertical-align: middle;
 }
 *[href]:hover {
@@ -253,8 +254,12 @@ button.default,
 	width: auto;
 }
 button img,
-.button img {
+.button img,
+button i,
+.button i {
 	float: left;
+	font-size: 16px;
+	line-height: 32px;
 }
 /*	Styles */
 button.primary,
@@ -382,6 +387,7 @@ label,
 .label {
 	cursor: pointer;
 	display: block;
+	line-height: 20px;
 }
 input[type] {
 	border-radius: 2px;
@@ -407,17 +413,22 @@ input[type='file'] {
 
 /*	Checkbox */
 .checkbox {
-	display: inline-block;
 	border-radius: 2px;
 	height: 16px;
 	width: 16px;
-	color: var(--grey-90);
+	color: var(--white-100);
+	font-size: 16px;
 	background-color: var(--grey-90-a10);
-	border: 1px solid var(--grey-90-a30);
+	border: 1px solid var(--grey-60);
 	cursor: pointer;
 	transition: all 150ms var(--animation);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 2px;
 }
-.checkbox img {
+.checkbox img,
+.checkbox i {
 	opacity: 0;
 	transition: all 150ms var(--animation);
 }
@@ -434,7 +445,8 @@ input[type='file'] {
 	background-color: var(--blue-60);
 	border-color: transparent;
 }
-.checkbox.checked img {
+.checkbox.checked img,
+.checkbox.checked i {
 	opacity: 1;
 }
 .checkbox.checked:hover {
@@ -532,6 +544,8 @@ body {
 	display: grid;
 	grid-template-columns: 20% 80%;
 	background-color: var(--grey-10);
+	color: var(--grey-90);
+	transition: all 250ms var(--animation);
 }
 
 /*	Navigation */
@@ -675,7 +689,7 @@ h2 {
 	grid-template-columns: 20px auto;
 	grid-template-rows: auto;
 	margin-bottom: 32px;
-	gap: 4px;
+	gap: 8px;
 	/*background-color: var(--white-100);
 	padding: 4px;
 	border: 1px solid var(--grey-20);
@@ -784,4 +798,23 @@ h2 {
 .ieport .message:not(.in-place).loading {
 	font-size: var(--body-20);
 	animation: flash 250ms 1 forwards, pulse 2s ease-in-out alternate infinite;
+}
+
+/* Dark Theme */
+@media (prefers-color-scheme: dark) {
+	body:not(.light) {
+		background-color: var(--grey-70);
+		color: var(--white-100);
+	}
+	:not(.light) .modal .card .content {
+		color: var(--grey-90);
+	}
+}
+
+body.dark {
+	background-color: var(--grey-70);
+	color: var(--white-100);
+}
+body.dark .modal .card .content {
+	color: var(--grey-90);
 }

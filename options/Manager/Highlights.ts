@@ -25,7 +25,7 @@ class Highlights {
 		});
 		this.remove = DOM.create('button', {
 			class: 'ghost danger',
-			childs: [DOM.icon('delete-light')],
+			childs: [DOM.icon('trash')],
 		});
 		DOM.append(this.node, this.remove, this.input, this.display);
 	}
@@ -82,7 +82,7 @@ export class HighlightsManager {
 					color.input.focus();
 				},
 			},
-			childs: [DOM.icon('new-light'), DOM.space(), DOM.text('Add Color')],
+			childs: [DOM.icon('plus'), DOM.text('Add Color')],
 		});
 		this.node.appendChild(addButton);
 		this.updateAll();

@@ -117,7 +117,7 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 						rel: 'noreferrer noopener',
 						target: '_blank',
 					},
-					childs: [DOM.space(), DOM.icon('external')],
+					childs: [DOM.space(), DOM.icon('external-link-alt')],
 				}),
 				DOM.text('.'),
 			]);
