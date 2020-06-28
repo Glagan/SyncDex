@@ -1,6 +1,6 @@
 import { Options } from '../../src/Options';
-import { DOM, AppendableElement } from '../../src/DOM';
-import { LoginStatus, ServiceName } from '../../src/Service/Service';
+import { DOM } from '../../src/DOM';
+import { ServiceName } from '../../src/Service/Service';
 import { ManageableService, ActivableModule } from '../Service/Service';
 import { MyMangaDex } from '../Service/MyMangaDex';
 import { SyncDex } from '../Service/SyncDex';
@@ -10,6 +10,7 @@ import { Anilist } from '../Service/Anilist';
 import { Kitsu } from '../Service/Kitsu';
 import { AnimePlanet } from '../Service/AnimePlanet';
 import { MangaUpdates } from '../Service/MangaUpdates';
+import { RequestStatus } from '../../src/Runtime';
 
 export const enum SaveMethod {
 	IMPORT = 'IMPORT',
@@ -105,16 +106,16 @@ export class ServiceManager {
 	/**
 	 * Update the inactiveServices list and display warnings if the status isn't SUCCESS
 	 */
-	updateServiceStatus = (name: ServiceName, status: LoginStatus): void => {
+	updateServiceStatus = (name: ServiceName, status: RequestStatus): void => {
 		const index = this.inactiveServices.indexOf(name);
 		if (index > -1) {
-			if (status == LoginStatus.SUCCESS) {
+			if (status == RequestStatus.SUCCESS) {
 				this.inactiveServices.splice(index, 1);
 				if (this.inactiveServices.length == 0) {
 					this.inactiveWarning.classList.add('hidden');
 				}
 			}
-		} else if (status != LoginStatus.SUCCESS) {
+		} else if (status != RequestStatus.SUCCESS) {
 			this.inactiveServices.push(name);
 			this.inactiveWarning.classList.remove('hidden');
 		}

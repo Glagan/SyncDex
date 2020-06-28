@@ -1,10 +1,11 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
-import { LoginStatus, Service, Status, ServiceName, ServiceKey } from '../../src/Service/Service';
+import { Service, Status, ServiceName, ServiceKey } from '../../src/Service/Service';
 import { TitleCollection, Title } from '../../src/Title';
 import { LocalStorage } from '../../src/Storage';
 import { Mochi } from '../../src/Mochi';
+import { RequestStatus } from '../../src/Runtime';
 
 export const enum LoginMethod {
 	EXTERNAL,
@@ -163,7 +164,7 @@ export abstract class ActivableModule {
 	checkStatusButton: HTMLElement;
 	loginButton: HTMLAnchorElement;
 	removeButton: HTMLElement;
-	abstract login?(username: string, password: string): Promise<LoginStatus>;
+	abstract login?(username: string, password: string): Promise<RequestStatus>;
 	abstract logout?(): Promise<void>;
 
 	message = (type: 'default' | 'warning' | 'success', content: string, append: boolean = true): HTMLElement => {
@@ -406,7 +407,7 @@ export abstract class ActivableModule {
 						// Login call Options.save itself
 						const res = await this.login(form.email.value.trim(), form.password.value);
 						modal.content.classList.remove('loading');
-						if (res == LoginStatus.SUCCESS) {
+						if (res == RequestStatus.SUCCESS) {
 							this.loginButton.remove();
 							this.updateStatus(res);
 							modal.remove();
@@ -426,9 +427,9 @@ export abstract class ActivableModule {
 		});
 	};
 
-	updateStatus = (status: LoginStatus): void => {
+	updateStatus = (status: RequestStatus): void => {
 		this.activate(Options.mainService == this.manager.service.name);
-		if (status == LoginStatus.SUCCESS) {
+		if (status == RequestStatus.SUCCESS) {
 			this.statusMessage.className = 'message success';
 			this.statusMessage.textContent = 'Active';
 			this.loginButton.remove();
@@ -490,7 +491,7 @@ export abstract class SaveModule {
 	}
 
 	checkLogin = async (): Promise<boolean> => {
-		return (await this.manager.service.loggedIn()) === LoginStatus.SUCCESS;
+		return (await this.manager.service.loggedIn()) === RequestStatus.SUCCESS;
 	};
 
 	notification = (

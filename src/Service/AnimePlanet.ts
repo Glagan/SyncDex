@@ -1,5 +1,5 @@
-import { Service, Status, ServiceName, LoginStatus, ServiceKey } from './Service';
-import { Runtime, RawResponse } from '../Runtime';
+import { Service, Status, ServiceName, ServiceKey } from './Service';
+import { Runtime, RawResponse, RequestStatus } from '../Runtime';
 
 export const enum AnimePlanetStatus {
 	COMPLETED = 1,
@@ -17,15 +17,15 @@ export class AnimePlanet extends Service {
 	username: string = '';
 	token: string = '';
 
-	loggedIn = async (): Promise<LoginStatus> => {
+	loggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: 'https://www.anime-planet.com/contact',
 			credentials: 'include',
 		});
 		if (response.status >= 500) {
-			return LoginStatus.SERVER_ERROR;
+			return RequestStatus.SERVER_ERROR;
 		} else if (response.status >= 400 && response.status < 500) {
-			return LoginStatus.BAD_REQUEST;
+			return RequestStatus.BAD_REQUEST;
 		}
 		// Find username
 		const parser = new DOMParser(); // TODO: Move as an attribute if used elsewhere
@@ -35,9 +35,9 @@ export class AnimePlanet extends Service {
 			this.username = profileLink.getAttribute('title') ?? '';
 			const token = /TOKEN\s*=\s*'(.{40})';/.exec(response.body);
 			if (token !== null) this.token = token[1];
-			return LoginStatus.SUCCESS;
+			return RequestStatus.SUCCESS;
 		}
-		return LoginStatus.FAIL;
+		return RequestStatus.FAIL;
 	};
 
 	toStatus = (status: AnimePlanetStatus): Status => {

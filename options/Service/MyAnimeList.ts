@@ -1,7 +1,7 @@
 import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
-import { Status, LoginStatus, ServiceName } from '../../src/Service/Service';
+import { Status, ServiceName } from '../../src/Service/Service';
 import {
 	ManageableService,
 	FileImportableModule,
@@ -11,7 +11,7 @@ import {
 	LoginMethod,
 	ActivableModule,
 } from './Service';
-import { RawResponse, Runtime } from '../../src/Runtime';
+import { RawResponse, Runtime, RequestStatus } from '../../src/Runtime';
 import { MyAnimeList as MyAnimeListService } from '../../src/Service/MyAnimeList';
 
 enum MyAnimeListStatus {
@@ -40,21 +40,21 @@ class MyAnimeListActive extends ActivableModule {
 	login = undefined;
 	logout = undefined;
 
-	isLoggedIn = async (): Promise<LoginStatus> => {
+	isLoggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: this.loginUrl,
 			method: 'GET',
 			credentials: 'include',
 		});
 		if (response.status >= 500) {
-			return LoginStatus.SERVER_ERROR;
+			return RequestStatus.SERVER_ERROR;
 		} else if (response.status >= 400 && response.status < 500) {
-			return LoginStatus.BAD_REQUEST;
+			return RequestStatus.BAD_REQUEST;
 		}
 		if (response.ok && response.body && response.url.indexOf('login.php') < 0) {
-			return LoginStatus.SUCCESS;
+			return RequestStatus.SUCCESS;
 		}
-		return LoginStatus.FAIL;
+		return RequestStatus.FAIL;
 	};
 }
 

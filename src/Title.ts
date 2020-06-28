@@ -2,6 +2,7 @@ import { Progress, ExportedSave } from './interfaces';
 import { Status, ServiceKeyMap } from './Service/Service';
 import { LocalStorage } from './Storage';
 import { Options } from './Options';
+import { RequestStatus } from './Runtime';
 
 interface SaveProgress {
 	c: number;
@@ -264,4 +265,8 @@ export class TitleCollection {
 		}
 		return LocalStorage.raw(mapped);
 	};
+}
+
+export abstract class ServiceTitle {
+	abstract get(id: string | number): Promise<RequestStatus>;
 }

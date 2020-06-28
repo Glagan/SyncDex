@@ -9,14 +9,15 @@ import {
 	FileImportFormat,
 	FileExportableModule,
 } from './Service';
-import { Service, ServiceKey, ServiceName, LoginStatus, Status } from '../../src/Service/Service';
+import { Service, ServiceKey, ServiceName, Status } from '../../src/Service/Service';
+import { RequestStatus } from '../../src/Runtime';
 
 class SyncDexService extends Service {
 	key: ServiceKey = ServiceKey.SyncDex;
 	name: ServiceName = ServiceName.SyncDex;
 
-	loggedIn = async (): Promise<LoginStatus> => {
-		return LoginStatus.SUCCESS;
+	loggedIn = async (): Promise<RequestStatus> => {
+		return RequestStatus.SUCCESS;
 	};
 	toStatus = (status: Status): Status => {
 		return status;

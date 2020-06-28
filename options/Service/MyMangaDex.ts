@@ -1,7 +1,8 @@
 import { Options } from '../../src/Options';
 import { Title, TitleCollection } from '../../src/Title';
-import { Status, Service, ServiceKey, LoginStatus, ServiceName } from '../../src/Service/Service';
+import { Status, Service, ServiceKey, ServiceName } from '../../src/Service/Service';
 import { ImportSummary, ManageableService, FileImportFormat, FileImportableModule } from './Service';
+import { RequestStatus } from '../../src/Runtime';
 
 interface MyMangaDexTitle {
 	id: number;
@@ -63,8 +64,8 @@ class MyMangaDexService extends Service {
 	key: ServiceKey = ServiceKey.MyMangaDex;
 	name: ServiceName = ServiceName.MyMangaDex;
 
-	loggedIn = async (): Promise<LoginStatus> => {
-		return LoginStatus.SUCCESS;
+	loggedIn = async (): Promise<RequestStatus> => {
+		return RequestStatus.SUCCESS;
 	};
 	toStatus = (status: Status): Status => {
 		return status;

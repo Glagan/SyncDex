@@ -1,3 +1,11 @@
+export const enum RequestStatus {
+	MISSING_TOKEN,
+	SUCCESS,
+	FAIL,
+	SERVER_ERROR,
+	BAD_REQUEST,
+}
+
 export enum MessageAction {
 	request = 'request',
 	openOptions = 'openOptions',

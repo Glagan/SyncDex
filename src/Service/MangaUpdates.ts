@@ -1,5 +1,5 @@
-import { Service, Status, ServiceName, LoginStatus, ServiceKey } from './Service';
-import { Runtime, RawResponse } from '../Runtime';
+import { Service, Status, ServiceName, ServiceKey } from './Service';
+import { Runtime, RawResponse, RequestStatus } from '../Runtime';
 
 export const enum MangaUpdatesStatus {
 	READING = 0,
@@ -14,19 +14,19 @@ export class MangaUpdates extends Service {
 	key: ServiceKey = ServiceKey.MangaUpdates;
 	name: ServiceName = ServiceName.MangaUpdates;
 
-	loggedIn = async (): Promise<LoginStatus> => {
+	loggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: 'https://www.mangaupdates.com/aboutus.html',
 			credentials: 'include',
 		});
 		if (response.status >= 500) {
-			return LoginStatus.SERVER_ERROR;
+			return RequestStatus.SERVER_ERROR;
 		} else if (response.status >= 400 && response.status < 500) {
-			return LoginStatus.BAD_REQUEST;
+			return RequestStatus.BAD_REQUEST;
 		}
 		if (response.ok && response.body && response.body.indexOf(`You are currently logged in as`) >= 0)
-			return LoginStatus.SUCCESS;
-		return LoginStatus.FAIL;
+			return RequestStatus.SUCCESS;
+		return RequestStatus.FAIL;
 	};
 
 	toStatus = (status: MangaUpdatesStatus): Status => {

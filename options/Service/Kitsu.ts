@@ -1,6 +1,6 @@
 import { Options } from '../../src/Options';
-import { Status, LoginStatus, ServiceName } from '../../src/Service/Service';
-import { Runtime, JSONResponse } from '../../src/Runtime';
+import { Status, ServiceName } from '../../src/Service/Service';
+import { Runtime, JSONResponse, RequestStatus } from '../../src/Runtime';
 import { Mochi } from '../../src/Mochi';
 import { TitleCollection, Title } from '../../src/Title';
 import { ManageableService, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
@@ -69,8 +69,8 @@ interface KitsuTitle {
 class KitsuActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.FORM;
 
-	getUserId = async (): Promise<LoginStatus> => {
-		if (Options.tokens.kitsuToken === undefined) return LoginStatus.MISSING_TOKEN;
+	getUserId = async (): Promise<RequestStatus> => {
+		if (Options.tokens.kitsuToken === undefined) return RequestStatus.MISSING_TOKEN;
 		let data = await Runtime.request<JSONResponse>({
 			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
 			isJson: true,
@@ -79,14 +79,14 @@ class KitsuActive extends ActivableModule {
 		});
 		if (data.ok) {
 			Options.tokens.kitsuUser = data.body.data[0].id;
-			return LoginStatus.SUCCESS;
+			return RequestStatus.SUCCESS;
 		} else if (data.status >= 500) {
-			return LoginStatus.SERVER_ERROR;
+			return RequestStatus.SERVER_ERROR;
 		}
-		return LoginStatus.BAD_REQUEST;
+		return RequestStatus.BAD_REQUEST;
 	};
 
-	login = async (username: string, password: string): Promise<LoginStatus> => {
+	login = async (username: string, password: string): Promise<RequestStatus> => {
 		let data = await Runtime.request<JSONResponse>({
 			url: 'https://kitsu.io/api/oauth/token',
 			isJson: true,
@@ -103,12 +103,12 @@ class KitsuActive extends ActivableModule {
 			Options.tokens.kitsuToken = data.body.access_token;
 			const userIdResp = await this.getUserId();
 			await Options.save();
-			if (userIdResp !== LoginStatus.SUCCESS) return userIdResp;
-			return LoginStatus.SUCCESS;
+			if (userIdResp !== RequestStatus.SUCCESS) return userIdResp;
+			return RequestStatus.SUCCESS;
 		} else if (data.status >= 500) {
-			return LoginStatus.SERVER_ERROR;
+			return RequestStatus.SERVER_ERROR;
 		}
-		return LoginStatus.BAD_REQUEST;
+		return RequestStatus.BAD_REQUEST;
 	};
 
 	logout = async (): Promise<void> => {

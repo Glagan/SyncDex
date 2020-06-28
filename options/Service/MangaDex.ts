@@ -1,6 +1,6 @@
 import { TitleCollection, Title } from '../../src/Title';
-import { Runtime, RawResponse } from '../../src/Runtime';
-import { Status, Service, ServiceKey, LoginStatus, ServiceName } from '../../src/Service/Service';
+import { Runtime, RawResponse, RequestStatus } from '../../src/Runtime';
+import { Status, Service, ServiceKey, ServiceName } from '../../src/Service/Service';
 import { ManageableService, APIImportableModule, APIExportableModule } from './Service';
 import { AppendableElement, DOM } from '../../src/DOM';
 
@@ -10,13 +10,13 @@ class MangaDexService extends Service {
 	parser: DOMParser = new DOMParser();
 	user: number = 0;
 
-	loggedIn = async (): Promise<LoginStatus> => {
+	loggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: `https://mangadex.org/about`,
 			credentials: 'include',
 		});
 		if (response.status >= 400) {
-			return LoginStatus.FAIL;
+			return RequestStatus.FAIL;
 		}
 		try {
 			const body = this.parser.parseFromString(response.body, 'text/html');
@@ -29,9 +29,9 @@ class MangaDexService extends Service {
 				throw 'Could not find User ID';
 			}
 			this.user = parseInt(res[1]);
-			return LoginStatus.SUCCESS;
+			return RequestStatus.SUCCESS;
 		} catch (error) {
-			return LoginStatus.FAIL;
+			return RequestStatus.FAIL;
 		}
 	};
 

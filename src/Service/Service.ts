@@ -1,3 +1,5 @@
+import { RequestStatus } from '../Runtime';
+
 export enum ServiceName {
 	MyAnimeList = 'MyAnimeList',
 	MangaUpdates = 'MangaUpdates',
@@ -42,18 +44,10 @@ export const enum Status {
 	WONT_READ,
 }
 
-export const enum LoginStatus {
-	MISSING_TOKEN,
-	SUCCESS,
-	FAIL,
-	SERVER_ERROR,
-	BAD_REQUEST,
-}
-
 export abstract class Service<T = any> {
 	abstract key: ServiceKey;
 	abstract name: ServiceName;
-	abstract loggedIn(): Promise<LoginStatus>;
+	abstract loggedIn(): Promise<RequestStatus>;
 	abstract toStatus(status: T): Status;
 	abstract fromStatus(status: Status): T;
 }

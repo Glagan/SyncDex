@@ -1,6 +1,6 @@
-import { Service, Status, ServiceName, LoginStatus, ServiceKey } from './Service';
+import { Service, Status, ServiceName, ServiceKey } from './Service';
 import { Options } from '../Options';
-import { Runtime, JSONResponse } from '../Runtime';
+import { Runtime, JSONResponse, RequestStatus } from '../Runtime';
 
 interface AnilistHeaders {
 	Authorization: string;
@@ -32,8 +32,8 @@ export class Anilist extends Service {
 		};
 	};
 
-	loggedIn = async (): Promise<LoginStatus> => {
-		if (!Options.tokens.anilistToken === undefined) return LoginStatus.MISSING_TOKEN;
+	loggedIn = async (): Promise<RequestStatus> => {
+		if (!Options.tokens.anilistToken === undefined) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.request<JSONResponse>({
 			method: 'POST',
 			url: Anilist.APIUrl,
@@ -42,11 +42,11 @@ export class Anilist extends Service {
 			body: JSON.stringify({ query: Anilist.LoginQuery }),
 		});
 		if (response.status >= 500) {
-			return LoginStatus.SERVER_ERROR;
+			return RequestStatus.SERVER_ERROR;
 		} else if (response.status >= 400 && response.status < 500) {
-			return LoginStatus.BAD_REQUEST;
+			return RequestStatus.BAD_REQUEST;
 		}
-		return LoginStatus.SUCCESS;
+		return RequestStatus.SUCCESS;
 	};
 
 	toStatus = (status: AnilistStatus): Status => {

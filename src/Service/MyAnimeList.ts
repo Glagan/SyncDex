@@ -1,5 +1,5 @@
-import { Service, Status, ServiceName, LoginStatus, ServiceKey } from './Service';
-import { Runtime, RawResponse } from '../Runtime';
+import { Service, Status, ServiceName, ServiceKey } from './Service';
+import { Runtime, RawResponse, RequestStatus } from '../Runtime';
 
 export enum MyAnimeListStatus {
 	READING = 1,
@@ -14,21 +14,21 @@ export class MyAnimeList extends Service {
 	key: ServiceKey = ServiceKey.MyAnimeList;
 	name: ServiceName = ServiceName.MyAnimeList;
 
-	loggedIn = async (): Promise<LoginStatus> => {
+	loggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: 'https://myanimelist.net/login.php',
 			method: 'GET',
 			credentials: 'include',
 		});
 		if (response.status >= 500) {
-			return LoginStatus.SERVER_ERROR;
+			return RequestStatus.SERVER_ERROR;
 		} else if (response.status >= 400 && response.status < 500) {
-			return LoginStatus.BAD_REQUEST;
+			return RequestStatus.BAD_REQUEST;
 		}
 		if (response.ok && response.body && response.url.indexOf('login.php') < 0) {
-			return LoginStatus.SUCCESS;
+			return RequestStatus.SUCCESS;
 		}
-		return LoginStatus.FAIL;
+		return RequestStatus.FAIL;
 	};
 
 	toStatus = (status: MyAnimeListStatus): Status => {
