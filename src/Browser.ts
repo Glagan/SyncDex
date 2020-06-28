@@ -4,6 +4,7 @@ console.log('SyncDex :: Browser');
 
 export const isChrome = window.chrome && window.browser === undefined;
 // Promisify Chrome
+// TODO: Remove <any> ?
 export const setBrowser = ((): (() => void) => {
 	if (isChrome) {
 		window.browser = window.chrome;
@@ -26,15 +27,11 @@ export const setBrowser = ((): (() => void) => {
 			return new Promise((resolve) => chromeClear(resolve));
 		};
 		const chromeOnMessage = chrome.runtime.onMessage.addListener.bind(chrome.runtime.onMessage);
-		browser.runtime.onMessage.addListener = (
-			fnct: (message: Message) => Promise<any>
-		): void => {
-			chromeOnMessage(
-				(message: Message, _sender: any, sendResponse: (response?: any) => void): true => {
-					fnct(message).then((response) => sendResponse(response));
-					return true;
-				}
-			);
+		browser.runtime.onMessage.addListener = (fnct: (message: Message) => Promise<any>): void => {
+			chromeOnMessage((message: Message, _sender: any, sendResponse: (response?: any) => void): true => {
+				fnct(message).then((response) => sendResponse(response));
+				return true;
+			});
 		};
 		const chromeSendMessage = chrome.runtime.sendMessage;
 		browser.runtime.sendMessage = (message: Object): Promise<any> => {

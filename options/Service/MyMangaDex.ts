@@ -156,9 +156,9 @@ class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTi
 			summary.options = total;
 		}
 		// Add MyAnimeList and save options
-		if (Options.services.indexOf(ServiceName.MyAnimeList as any) < 0) {
-			Options.services.unshift(ServiceName.MyAnimeList as any);
-			Options.mainService = ServiceName.MyAnimeList as any;
+		if (Options.services.indexOf(ServiceName.MyAnimeList) < 0) {
+			Options.services.unshift(ServiceName.MyAnimeList);
+			Options.mainService = ServiceName.MyAnimeList;
 		}
 	};
 

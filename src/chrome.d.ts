@@ -3,6 +3,7 @@ interface Window {
 	browser?: typeof browser;
 }
 
+// TODO: Remove <any> ?
 declare const chrome: {
 	runtime: {
 		getManifest: () => {

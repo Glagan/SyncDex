@@ -8,7 +8,7 @@ interface SaveProgress {
 	v?: number;
 }
 
-export type ServiceList = { [key in keyof ServiceKeyMap]?: ServiceKeyMap[key] };
+export type ServiceList = Partial<{ [key in keyof ServiceKeyMap]: ServiceKeyMap[key] }>;
 
 export interface SaveTitle {
 	s: ServiceList; // services

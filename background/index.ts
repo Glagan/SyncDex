@@ -19,6 +19,7 @@ const cooldowns: Record<string, number> = {
 	localhost: 250,
 };
 browser.runtime.onMessage.addListener(
+	// TODO: Remove <any>
 	async (message: Message): Promise<any> => {
 		if (message.action == MessageAction.request) {
 			// Cooldown
