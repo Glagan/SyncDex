@@ -1,6 +1,6 @@
 import { TitleCollection, Title } from '../../src/Title';
 import { Runtime, RawResponse, RequestStatus } from '../../src/Runtime';
-import { Status, Service, ServiceKey, ServiceName } from '../../src/Service/Service';
+import { Status, Service, ServiceKey, ServiceName } from '../../src/Service';
 import { ManageableService, APIImportableModule, APIExportableModule } from './Service';
 import { AppendableElement, DOM } from '../../src/DOM';
 

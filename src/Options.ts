@@ -1,5 +1,5 @@
 import { LocalStorage } from './Storage';
-import { ServiceName } from './Service/Service';
+import { ServiceName } from './Service';
 
 console.log('SyncDex :: Options');
 

@@ -1,4 +1,4 @@
-import { ServiceKey } from './Service/Service';
+import { ServiceKey } from './Service';
 import { AvailableOptions } from './Options';
 
 interface Progress {

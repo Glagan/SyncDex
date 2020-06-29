@@ -1,4 +1,4 @@
-import { RequestStatus } from '../Runtime';
+import { RequestStatus } from './Runtime';
 
 export enum ServiceName {
 	MyAnimeList = 'MyAnimeList',
@@ -44,10 +44,8 @@ export const enum Status {
 	WONT_READ,
 }
 
-export abstract class Service<T = any> {
+export abstract class Service {
 	abstract key: ServiceKey;
 	abstract name: ServiceName;
 	abstract loggedIn(): Promise<RequestStatus>;
-	abstract toStatus(status: T): Status;
-	abstract fromStatus(status: Status): T;
 }

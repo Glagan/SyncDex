@@ -1,5 +1,5 @@
 import { Progress, ExportedSave } from './interfaces';
-import { Status, ServiceKeyMap } from './Service/Service';
+import { Status, ServiceKeyMap, Service } from './Service';
 import { LocalStorage } from './Storage';
 import { Options } from './Options';
 import { RequestStatus } from './Runtime';
@@ -268,5 +268,15 @@ export class TitleCollection {
 }
 
 export abstract class ServiceTitle {
-	abstract get(id: string | number): Promise<RequestStatus>;
+	abstract id: number;
+	mangaDex?: number;
+
+	// abstract static get(id): RequestStatus
+	static get = async (id: number): Promise<RequestStatus> => {
+		return RequestStatus.FAIL;
+	};
+	abstract persist(): Promise<RequestStatus>;
+	abstract delete(): Promise<RequestStatus>;
+	abstract toTitle(): Title | undefined;
+	abstract fromTitle(title: Title): void;
 }

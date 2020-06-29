@@ -1,5 +1,5 @@
 import { Runtime, JSONResponse } from './Runtime';
-import { ServiceName } from './Service/Service';
+import { ServiceName } from './Service';
 
 type MochiConnections = {
 	[key in ServiceName]: number;

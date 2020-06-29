@@ -1,6 +1,6 @@
 import { Options } from '../../src/Options';
 import { DOM } from '../../src/DOM';
-import { ServiceName } from '../../src/Service/Service';
+import { ServiceName } from '../../src/Service';
 import { ManageableService, ActivableModule } from '../Service/Service';
 import { MyMangaDex } from '../Service/MyMangaDex';
 import { SyncDex } from '../Service/SyncDex';

@@ -1,4 +1,4 @@
-import { Status } from './Service/Service';
+import { Status } from './Service';
 import { DOM } from './DOM';
 import { Options } from './Options';
 import { Progress } from './interfaces';

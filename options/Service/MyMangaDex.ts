@@ -1,6 +1,6 @@
 import { Options } from '../../src/Options';
 import { Title, TitleCollection } from '../../src/Title';
-import { Status, Service, ServiceKey, ServiceName } from '../../src/Service/Service';
+import { Status, Service, ServiceKey, ServiceName } from '../../src/Service';
 import { ImportSummary, ManageableService, FileImportFormat, FileImportableModule } from './Service';
 import { RequestStatus } from '../../src/Runtime';
 

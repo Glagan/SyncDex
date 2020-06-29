@@ -1,6 +1,6 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { Options } from '../../src/Options';
-import { Runtime, JSONResponse } from '../../src/Runtime';
+import { Runtime, JSONResponse, RequestStatus } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import {
@@ -11,9 +11,9 @@ import {
 	APIExportableModule,
 	LoginMethod,
 } from './Service';
-import { Anilist as AnilistService, AnilistStatus } from '../../src/Service/Anilist';
+import { Anilist as AnilistService, AnilistStatus, AnilistTitle, AnilistDate } from '../../src/Service/Anilist';
 
-interface ViewerResponse {
+interface AnilistViewerResponse {
 	data: {
 		Viewer: {
 			name: string;
@@ -21,13 +21,7 @@ interface ViewerResponse {
 	};
 }
 
-interface AnilistDate {
-	day: number | null;
-	month: number | null;
-	year: number | null;
-}
-
-interface AnilistTitle {
+interface AnilistListTitle {
 	mediaId: number;
 	status: AnilistStatus;
 	progress: number;
@@ -42,15 +36,13 @@ interface AnilistTitle {
 	};
 }
 
-interface AnilistList {
-	name: string;
-	entries: AnilistTitle[];
-}
-
-interface AnilistResponse {
+interface AnilistListResponse {
 	data: {
 		MediaListCollection: {
-			lists: AnilistList[];
+			lists: {
+				name: string;
+				entries: AnilistListTitle[];
+			}[];
 		};
 	};
 }
@@ -138,7 +130,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 			);
 			return false;
 		}
-		const username = (response.body as ViewerResponse).data.Viewer.name;
+		const username = (response.body as AnilistViewerResponse).data.Viewer.name;
 		// Get list of *all* titles
 		response = await Runtime.request<JSONResponse>({
 			url: AnilistService.APIUrl,
@@ -164,121 +156,34 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 		}
 		// Transform to array
 		let titles: AnilistTitle[] = [];
-		const body = response.body as AnilistResponse;
+		const body = response.body as AnilistListResponse;
 		for (const list of body.data.MediaListCollection.lists) {
 			for (const entry of list.entries) {
-				titles.push({
-					mediaId: entry.mediaId,
-					progress: entry.progress,
-					progressVolumes: entry.progressVolumes,
-					status: entry.status,
-					startedAt: entry.startedAt,
-					completedAt: entry.completedAt,
-					score: entry.score,
-					media: entry.media,
-				});
+				titles.push(
+					new AnilistTitle(entry.mediaId, {
+						id: entry.mediaId,
+						progress: {
+							chapter: entry.progress,
+							volume: entry.progressVolumes,
+						},
+						status: entry.status,
+						start: AnilistTitle.dateFromAnilist(entry.startedAt),
+						end: AnilistTitle.dateFromAnilist(entry.completedAt),
+						score: entry.score ? entry.score : 0,
+					})
+				);
 			}
 		}
 		return titles;
 	};
-
-	dateToNumber = (date: AnilistDate): number | undefined => {
-		if (date.day !== null && date.month !== null && date.year !== null) {
-			return new Date(date.year, date.month, date.day).getTime();
-		}
-		return undefined;
-	};
-
-	convertTitles = async (titles: TitleCollection, titleList: AnilistTitle[]): Promise<number> => {
-		const connections = await Mochi.findMany(
-			titleList.map((t) => t.mediaId),
-			this.manager.service.name
-		);
-		let total = 0;
-		if (connections !== undefined) {
-			for (const key in connections) {
-				if (connections.hasOwnProperty(key)) {
-					const connection = connections[key];
-					if (connection['MangaDex'] !== undefined) {
-						const id = parseInt(key);
-						const title = titleList.find((t) => t.mediaId == id) as AnilistTitle;
-						titles.add(
-							new Title(connection['MangaDex'], {
-								services: { al: title.mediaId },
-								progress: {
-									chapter: title.progress,
-									volume: title.progressVolumes,
-								},
-								status: this.manager.service.toStatus(title.status),
-								chapters: [],
-								start: this.dateToNumber(title.startedAt),
-								end: this.dateToNumber(title.completedAt),
-								name: title.media.title.userPreferred,
-							})
-						);
-						total++;
-					}
-				}
-			}
-		}
-		return total;
-	};
 }
 
 class AnilistExport extends APIExportableModule {
-	// Fields can have missing values and will be ignored
-	static singleUpdateQuery = `
-		mutation ($mediaId: Int, $status: MediaListStatus, $score: Float, $progress: Int, $progressVolumes: Int, $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput) {
-			SaveMediaListEntry (mediaId: $mediaId, status: $status, score: $score, progress: $progress, progressVolumes: $progressVolumes, startedAt: $startedAt, completedAt: $completedAt) {
-				mediaId
-				status
-				score
-				progress
-				progressVolumes
-				startedAt {
-					year
-					month
-					day
-				}
-				completedAt {
-					year
-					month
-					day
-				}
-			}
-		}`;
-
-	createTitle = (title: Title): Partial<AnilistTitle> => {
-		let values: Partial<AnilistTitle> = {
-			mediaId: title.services.al as number,
-			status: this.manager.service.fromStatus(title.status),
-			progress: title.progress.chapter,
-			progressVolumes: title.progress.volume || 0,
-		};
-		if (title.score !== undefined && title.score > 0) values.score = title.score;
-		if (title.start !== undefined) {
-			const date = new Date(title.start);
-			values.startedAt = { day: date.getDate(), month: date.getMonth() + 1, year: date.getUTCFullYear() };
-		}
-		if (title.end !== undefined) {
-			const date = new Date(title.end);
-			values.completedAt = { day: date.getDate(), month: date.getMonth() + 1, year: date.getUTCFullYear() };
-		}
-		return values;
-	};
-
 	exportTitle = async (title: Title): Promise<boolean> => {
-		if (this.manager.service.fromStatus(title.status) !== AnilistStatus.NONE) {
-			const response = await Runtime.request<JSONResponse>({
-				url: AnilistService.APIUrl,
-				method: 'POST',
-				headers: AnilistService.LoggedHeaders(),
-				body: JSON.stringify({
-					query: AnilistExport.singleUpdateQuery,
-					variables: this.createTitle(title),
-				}),
-			});
-			return response.ok;
+		const exportTitle = new AnilistTitle(title.services.al as number).fromTitle(title);
+		if (exportTitle.status !== AnilistStatus.NONE) {
+			const responseStatus = await exportTitle.persist();
+			return responseStatus == RequestStatus.SUCCESS;
 		}
 		return false;
 	};

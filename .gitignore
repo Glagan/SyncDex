@@ -5,7 +5,9 @@
 .jshintrc
 
 # Build
-build
+build/chrome
+build/firefox
+build/scripts
 tmp
 web-ext-artifacts
 node_modules

@@ -1,5 +1,5 @@
 import { Options } from '../../src/Options';
-import { Status, ServiceName } from '../../src/Service/Service';
+import { Status, ServiceName } from '../../src/Service';
 import { Runtime, JSONResponse, RequestStatus } from '../../src/Runtime';
 import { Mochi } from '../../src/Mochi';
 import { TitleCollection, Title } from '../../src/Title';

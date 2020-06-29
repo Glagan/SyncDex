@@ -1,8 +1,8 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
-import { Service, Status, ServiceName, ServiceKey } from '../../src/Service/Service';
-import { TitleCollection, Title } from '../../src/Title';
+import { Service, Status, ServiceName, ServiceKey } from '../../src/Service';
+import { TitleCollection, Title, ServiceTitle } from '../../src/Title';
 import { LocalStorage } from '../../src/Storage';
 import { Mochi } from '../../src/Mochi';
 import { RequestStatus } from '../../src/Runtime';
@@ -808,11 +808,10 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 	};
 }
 
-export abstract class APIImportableModule<T> extends ImportableModule {
+export abstract class APIImportableModule<T extends ServiceTitle> extends ImportableModule {
 	currentTitle: number = 0;
 	state: ImportState = { current: 0, max: 1 };
 	abstract handlePage(): Promise<T[] | false>;
-	abstract convertTitles(titles: TitleCollection, titleList: T[]): Promise<number>;
 	perConvert: number = 250;
 	preMain?(): Promise<boolean>;
 
@@ -888,7 +887,7 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 			return this.cancel(true);
 		}
 		this.notification('success', `Found a total of ${titles.length} Titles.`);
-		// Convert the list to a TitleCollection
+		// Find MangaDex IDs from ServiceTitle
 		notification = this.notification('loading', '');
 		let collection = new TitleCollection();
 		let offset = 0;
@@ -897,8 +896,27 @@ export abstract class APIImportableModule<T> extends ImportableModule {
 			const titleList = titles.slice(offset, offset + this.perConvert);
 			offset += this.perConvert;
 			notification.textContent = this.getProgress(ImportStep.CONVERT_TITLES, titles.length);
-			const converted = await this.convertTitles(collection, titleList);
-			this.summary.valid += converted;
+			const connections = await Mochi.findMany(
+				titleList.map((t) => t.id),
+				this.manager.service.name
+			);
+			if (connections !== undefined) {
+				for (const key in connections) {
+					if (connections.hasOwnProperty(key)) {
+						const connection = connections[key];
+						if (connection['MangaDex'] !== undefined) {
+							const id = parseInt(key);
+							const title = titleList.find((t) => t.id == id) as T;
+							title.mangaDex = connection['MangaDex'];
+							const convertedTitle = title.toTitle();
+							if (convertedTitle) {
+								collection.add(convertedTitle);
+								this.summary.valid++;
+							}
+						}
+					}
+				}
+			}
 		}
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();

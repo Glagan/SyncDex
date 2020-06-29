@@ -1,4 +1,4 @@
-import { Service, Status, ServiceName, ServiceKey } from './Service';
+import { Service, Status, ServiceName, ServiceKey } from '../Service';
 import { Runtime, RawResponse, RequestStatus } from '../Runtime';
 
 export const enum MangaUpdatesStatus {
@@ -27,38 +27,6 @@ export class MangaUpdates extends Service {
 		if (response.ok && response.body && response.body.indexOf(`You are currently logged in as`) >= 0)
 			return RequestStatus.SUCCESS;
 		return RequestStatus.FAIL;
-	};
-
-	toStatus = (status: MangaUpdatesStatus): Status => {
-		switch (status) {
-			case MangaUpdatesStatus.READING:
-				return Status.READING;
-			case MangaUpdatesStatus.COMPLETED:
-				return Status.COMPLETED;
-			case MangaUpdatesStatus.PAUSED:
-				return Status.PAUSED;
-			case MangaUpdatesStatus.DROPPED:
-				return Status.DROPPED;
-			case MangaUpdatesStatus.PLAN_TO_READ:
-				return Status.PLAN_TO_READ;
-		}
-		return Status.NONE;
-	};
-
-	fromStatus = (status: Status): MangaUpdatesStatus => {
-		switch (status) {
-			case Status.READING:
-				return MangaUpdatesStatus.READING;
-			case Status.COMPLETED:
-				return MangaUpdatesStatus.COMPLETED;
-			case Status.PAUSED:
-				return MangaUpdatesStatus.PAUSED;
-			case Status.DROPPED:
-				return MangaUpdatesStatus.DROPPED;
-			case Status.PLAN_TO_READ:
-				return MangaUpdatesStatus.PLAN_TO_READ;
-		}
-		return MangaUpdatesStatus.NONE;
 	};
 
 	// Get a list of status to go through to be able to update to the wanted status

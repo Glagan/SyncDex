@@ -1,7 +1,7 @@
 import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
-import { Status, ServiceName } from '../../src/Service/Service';
+import { Status, ServiceName } from '../../src/Service';
 import {
 	ManageableService,
 	FileImportableModule,

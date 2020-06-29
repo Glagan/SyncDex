@@ -1,5 +1,5 @@
 import { Progress } from '../../src/interfaces';
-import { Status, ServiceName } from '../../src/Service/Service';
+import { Status, ServiceName } from '../../src/Service';
 import { Runtime, RawResponse } from '../../src/Runtime';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';

@@ -1,13 +1,15 @@
-import { Service, Status, ServiceName, ServiceKey } from './Service';
+import { Service, Status, ServiceName, ServiceKey } from '../Service';
 import { Runtime, RawResponse, RequestStatus } from '../Runtime';
+import { ServiceTitle, Title } from '../Title';
+import { Progress } from '../interfaces';
 
 export enum MyAnimeListStatus {
+	NONE = 0,
 	READING = 1,
 	COMPLETED = 2,
 	PAUSED = 3,
 	DROPPED = 4,
 	PLAN_TO_READ = 6,
-	NONE = -1,
 }
 
 export class MyAnimeList extends Service {
@@ -30,9 +32,45 @@ export class MyAnimeList extends Service {
 		}
 		return RequestStatus.FAIL;
 	};
+}
 
-	toStatus = (status: MyAnimeListStatus): Status => {
-		switch (status) {
+export class MyAnimeListTitle extends ServiceTitle {
+	id: number;
+	mangaDex?: number;
+
+	progress: Progress = {
+		chapter: 0,
+	};
+	status: MyAnimeListStatus = MyAnimeListStatus.NONE;
+	start?: string;
+	end?: string;
+	score?: number;
+	name?: string;
+
+	constructor(id: number, title?: Partial<MyAnimeListTitle>) {
+		super();
+		this.id = id;
+		if (title !== undefined) {
+			Object.assign(this, title);
+		}
+	}
+
+	static get = async (id: string | number): Promise<RequestStatus> => {
+		return RequestStatus.SUCCESS;
+	};
+
+	persist = async (): Promise<RequestStatus> => {
+		return RequestStatus.SUCCESS;
+	};
+
+	delete = async (): Promise<RequestStatus> => {
+		return RequestStatus.SUCCESS;
+	};
+
+	toStatus = (): Status => {
+		switch (this.status) {
+			case MyAnimeListStatus.NONE:
+				return Status.NONE;
 			case MyAnimeListStatus.READING:
 				return Status.READING;
 			case MyAnimeListStatus.COMPLETED:
@@ -44,22 +82,27 @@ export class MyAnimeList extends Service {
 			case MyAnimeListStatus.PLAN_TO_READ:
 				return Status.PLAN_TO_READ;
 		}
-		return Status.NONE;
 	};
 
-	fromStatus = (status: Status): MyAnimeListStatus => {
-		switch (status) {
-			case Status.READING:
-				return MyAnimeListStatus.READING;
-			case Status.COMPLETED:
-				return MyAnimeListStatus.COMPLETED;
-			case Status.PAUSED:
-				return MyAnimeListStatus.PAUSED;
-			case Status.DROPPED:
-				return MyAnimeListStatus.DROPPED;
-			case Status.PLAN_TO_READ:
-				return MyAnimeListStatus.PLAN_TO_READ;
-		}
-		return MyAnimeListStatus.NONE;
+	// Convert a YYYY-MM-DD MyAnimeList date to a Date timestamp
+	dateToTime = (date?: string): number | undefined => {
+		if (date === undefined) return undefined;
+		const d = new Date(date);
+		if (isNaN(d.getFullYear()) || d.getFullYear() === 0) return undefined;
+		return d.getTime();
+	};
+
+	title = (): Title | undefined => {
+		if (!this.mangaDex) return undefined;
+		return new Title(this.mangaDex, {
+			services: { mal: this.id },
+			progress: this.progress,
+			status: this.toStatus(),
+			// TODO: Score conversion
+			score: this.score && this.score > 0 ? this.score : undefined,
+			start: this.dateToTime(this.start),
+			end: this.dateToTime(this.end),
+			name: this.name,
+		});
 	};
 }

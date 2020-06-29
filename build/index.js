@@ -11,7 +11,7 @@ const options = require('minimist')(process.argv.slice(2), {
 	default: {
 		'web-ext': false,
 		mode: 'dev',
-		watch: false
+		watch: false,
 	},
 });
 options.webExt = options['web-ext'];
@@ -38,9 +38,9 @@ let mainManifest = {
 		'storage',
 	],
 	icons: {
-		48: "icons/sc.png",
-		96: "icons/sc.png",
-		128: "icons/sc.png"
+		48: 'icons/sc.png',
+		96: 'icons/sc.png',
+		128: 'icons/sc.png',
 	},
 	background: {
 		page: 'background/index.html',
@@ -75,13 +75,13 @@ let mainManifest = {
 		default_icon: {
 			48: 'icons/sc.png',
 			96: 'icons/sc.png',
-			128: 'icons/sc.png'
+			128: 'icons/sc.png',
 		},
-		default_title: 'SyncDex'
+		default_title: 'SyncDex',
 	},
 	options_ui: {
 		page: 'options/index.html',
-		open_in_tab: true
+		open_in_tab: true,
 	},
 };
 const browsers = ['firefox', 'chrome'];
@@ -108,28 +108,39 @@ let browser_manifests = {
 
 // Startup
 // 91 red 92 green 93 orange 94 blue
-const optionColor = (option, content = undefined, theme = [92, 93]) => `${option ? `\u001b[${theme[0]}m` : `\u001b[${theme[1]}m`}${content ? content : option}\u001b[0m`;
-console.log(`\u001b[96mSyncDex ${mainManifest.version}\u001b[0m :: mode: ${optionColor(options.mode == 'prod', options.mode, [92, 94])} | web-ext: ${optionColor(options.webExt)} | watch: ${optionColor(options.watch)} `);
+const optionColor = (option, content = undefined, theme = [92, 93]) =>
+	`${option ? `\u001b[${theme[0]}m` : `\u001b[${theme[1]}m`}${content ? content : option}\u001b[0m`;
+console.log(
+	`\u001b[96mSyncDex ${mainManifest.version}\u001b[0m :: mode: ${optionColor(options.mode == 'prod', options.mode, [
+		92,
+		94,
+	])} | web-ext: ${optionColor(options.webExt)} | watch: ${optionColor(options.watch)} `
+);
 
 // Compile and Build
-let bundleList = [{
-	name: 'Core',
-	input: 'src/index.ts',
-	output: 'build/SyncDex.js'
-}, {
-	name: 'Background',
-	input: 'background/index.ts',
-	output: 'build/SyncDex_background.js'
-}, {
-	name: 'Options',
-	input: 'options/index.ts',
-	output: 'build/SyncDex_options.js'
-}, {
-	name: 'External',
-	input: 'external/Anilist.ts',
-	output: 'build/SyncDex_Anilist.js'
-}];
-const bundles = bundleList.map(bundle => {
+let bundleList = [
+	{
+		name: 'Core',
+		input: 'src/index.ts',
+		output: 'build/SyncDex.js',
+	},
+	{
+		name: 'Background',
+		input: 'background/index.ts',
+		output: 'build/SyncDex_background.js',
+	},
+	{
+		name: 'Options',
+		input: 'options/index.ts',
+		output: 'build/SyncDex_options.js',
+	},
+	{
+		name: 'External',
+		input: 'external/Anilist.ts',
+		output: 'build/SyncDex_Anilist.js',
+	},
+];
+const bundles = bundleList.map((bundle) => {
 	return {
 		input: bundle.input,
 		plugins: (() => {
@@ -142,19 +153,19 @@ const bundles = bundleList.map(bundle => {
 		output: {
 			file: bundle.output,
 			format: 'es',
-			sourcemap: (options.mode == 'dev'),
+			sourcemap: options.mode == 'dev',
 		},
 		watch: {
 			buildDelay: 750,
 			clearScreen: false,
 			chokidar: false,
-			exclude: ['node_modules/**', 'build/**']
+			exclude: ['node_modules/**', 'build/**'],
 		},
 	};
 });
 function bundleName(outputFile) {
 	const file = /.+\\(.+)$/.exec(outputFile)[1];
-	return bundleList.find(bundle => {
+	return bundleList.find((bundle) => {
 		return bundle.output.indexOf(file) >= 0;
 	}).name;
 }
@@ -165,7 +176,7 @@ function bundleName(outputFile) {
 	const watcher = rollup.watch(bundles);
 	let doneInitial = false;
 	let duration = 0;
-	watcher.on('event', async event => {
+	watcher.on('event', async (event) => {
 		if (event.code == 'START') {
 			console.log(`Compiling`);
 			duration = 0;
@@ -178,7 +189,9 @@ function bundleName(outputFile) {
 			duration += event.duration;
 		} else if (event.code == 'ERROR') {
 			process.stdout.write(`\n# ${event.error} (${event.error.pluginCode})`);
-			process.stdout.write(`\n# File ${event.error.loc.file}:${event.error.loc.line} line ${event.error.loc.column}`);
+			process.stdout.write(
+				`\n# File ${event.error.loc.file}:${event.error.loc.line} line ${event.error.loc.column}`
+			);
 			process.stdout.write(`${event.error.frame}`);
 			duration = 0;
 			if (!options.watch) watcher.close();
@@ -228,18 +241,18 @@ async function buildExtension(browser, nonVerbose) {
 		'options:options',
 		'background:background',
 		'src/SyncDex.css',
-		'build/SyncDex_background.js:background',
-		'build/SyncDex_options.js:options',
-		'build/SyncDex.js',
-		'build/SyncDex_Anilist.js:external',
+		'build/scripts/SyncDex_background.js:background',
+		'build/scripts/SyncDex_options.js:options',
+		'build/scripts/SyncDex.js',
+		'build/scripts/SyncDex_Anilist.js:external',
 	];
 	if (options.mode == 'dev') {
 		files.unshift('src:src');
 		files.push(
-			'build/SyncDex_background.js.map:background',
-			'build/SyncDex_options.js.map:options',
-			'build/SyncDex.js.map',
-			'build/SyncDex_Anilist.js.map:external'
+			'build/scripts/SyncDex_background.js.map:background',
+			'build/scripts/SyncDex_options.js.map:options',
+			'build/scripts/SyncDex.js.map',
+			'build/scripts/SyncDex_Anilist.js.map:external'
 		);
 	}
 	deepFileCopy(files, folderName, ['chrome', 'firefox']);

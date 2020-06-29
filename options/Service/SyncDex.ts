@@ -9,7 +9,7 @@ import {
 	FileImportFormat,
 	FileExportableModule,
 } from './Service';
-import { Service, ServiceKey, ServiceName, Status } from '../../src/Service/Service';
+import { Service, ServiceKey, ServiceName, Status } from '../../src/Service';
 import { RequestStatus } from '../../src/Runtime';
 
 class SyncDexService extends Service {

@@ -3,7 +3,7 @@ import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { Progress } from '../../src/interfaces';
 import { ManageableService, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
-import { Status, ServiceName } from '../../src/Service/Service';
+import { Status, ServiceName } from '../../src/Service';
 import { AnimePlanet as AnimePlanetService } from '../../src/Service/AnimePlanet';
 import { DOM } from '../../src/DOM';
 

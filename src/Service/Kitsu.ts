@@ -1,4 +1,4 @@
-import { Service, Status, ServiceName, ServiceKey } from './Service';
+import { Service, ServiceName, ServiceKey } from '../Service';
 import { Options } from '../Options';
 import { Runtime, JSONResponse, RequestStatus } from '../Runtime';
 
@@ -21,6 +21,7 @@ export const enum KitsuStatus {
 export class Kitsu extends Service {
 	key: ServiceKey = ServiceKey.Kitsu;
 	name: ServiceName = ServiceName.Kitsu;
+
 	static APIUrl = 'https://kitsu.io/api/edge/library-entries';
 	static LoggedHeaders = (): KitsuHeaders => {
 		return {
@@ -46,37 +47,5 @@ export class Kitsu extends Service {
 			return RequestStatus.BAD_REQUEST;
 		}
 		return RequestStatus.SUCCESS;
-	};
-
-	toStatus = (status: KitsuStatus): Status => {
-		switch (status) {
-			case KitsuStatus.READING:
-				return Status.READING;
-			case KitsuStatus.COMPLETED:
-				return Status.COMPLETED;
-			case KitsuStatus.PAUSED:
-				return Status.PAUSED;
-			case KitsuStatus.DROPPED:
-				return Status.DROPPED;
-			case KitsuStatus.PLAN_TO_READ:
-				return Status.PLAN_TO_READ;
-		}
-		return Status.NONE;
-	};
-
-	fromStatus = (status: Status): KitsuStatus => {
-		switch (status) {
-			case Status.READING:
-				return KitsuStatus.READING;
-			case Status.COMPLETED:
-				return KitsuStatus.COMPLETED;
-			case Status.PAUSED:
-				return KitsuStatus.PAUSED;
-			case Status.DROPPED:
-				return KitsuStatus.DROPPED;
-			case Status.PLAN_TO_READ:
-				return KitsuStatus.PLAN_TO_READ;
-		}
-		return KitsuStatus.NONE;
 	};
 }
