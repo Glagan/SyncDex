@@ -1,3 +1,133 @@
+:root {
+	/* Photon Colors CSS Variables v3.2.0 */
+
+	--magenta-50: #ff1ad9;
+	--magenta-60: #ed00b5;
+	--magenta-70: #b5007f;
+	--magenta-80: #7d004f;
+	--magenta-90: #440027;
+
+	--purple-30: #c069ff;
+	--purple-40: #ad3bff;
+	--purple-50: #9400ff;
+	--purple-60: #8000d7;
+	--purple-70: #6200a4;
+	--purple-80: #440071;
+	--purple-90: #25003e;
+
+	--blue-40: #45a1ff;
+	--blue-50: #0a84ff;
+	--blue-50-a30: rgba(10, 132, 255, 0.3);
+	--blue-60: #0060df;
+	--blue-70: #003eaa;
+	--blue-80: #002275;
+	--blue-90: #000f40;
+
+	--teal-50: #00feff;
+	--teal-60: #00c8d7;
+	--teal-70: #008ea4;
+	--teal-80: #005a71;
+	--teal-90: #002d3e;
+
+	--green-50: #30e60b;
+	--green-60: #12bc00;
+	--green-70: #058b00;
+	--green-80: #006504;
+	--green-90: #003706;
+
+	--yellow-50: #ffe900;
+	--yellow-60: #d7b600;
+	--yellow-70: #a47f00;
+	--yellow-80: #715100;
+	--yellow-90: #3e2800;
+
+	--red-50: #ff0039;
+	--red-60: #d70022;
+	--red-70: #a4000f;
+	--red-80: #5a0002;
+	--red-90: #3e0200;
+
+	--orange-50: #ff9400;
+	--orange-60: #d76e00;
+	--orange-70: #a44900;
+	--orange-80: #712b00;
+	--orange-90: #3e1300;
+
+	--grey-10: #f9f9fa;
+	--grey-10-a10: rgba(249, 249, 250, 0.1);
+	--grey-10-a20: rgba(249, 249, 250, 0.2);
+	--grey-10-a40: rgba(249, 249, 250, 0.4);
+	--grey-10-a60: rgba(249, 249, 250, 0.6);
+	--grey-10-a80: rgba(249, 249, 250, 0.8);
+	--grey-20: #ededf0;
+	--grey-30: #d7d7db;
+	--grey-40: #b1b1b3;
+	--grey-50: #737373;
+	--grey-60: #4a4a4f;
+	--grey-70: #38383d;
+	--grey-80: #2a2a2e;
+	--grey-90: #0c0c0d;
+	--grey-90-a05: rgba(12, 12, 13, 0.05);
+	--grey-90-a10: rgba(12, 12, 13, 0.1);
+	--grey-90-a20: rgba(12, 12, 13, 0.2);
+	--grey-90-a30: rgba(12, 12, 13, 0.3);
+	--grey-90-a40: rgba(12, 12, 13, 0.4);
+	--grey-90-a50: rgba(12, 12, 13, 0.5);
+	--grey-90-a60: rgba(12, 12, 13, 0.6);
+	--grey-90-a70: rgba(12, 12, 13, 0.7);
+	--grey-90-a80: rgba(12, 12, 13, 0.8);
+	--grey-90-a90: rgba(12, 12, 13, 0.9);
+
+	--ink-70: #363959;
+	--ink-80: #202340;
+	--ink-90: #0f1126;
+
+	--white-100: #ffffff;
+
+	--shadow-10: 0 1px 4px rgba(12, 12, 13, 0.1);
+	--shadow-20: 0 2px 8px rgba(12, 12, 13, 0.1);
+	--shadow-30: 0 4px 16px rgba(12, 12, 13, 0.1);
+
+	--focus: 0 0 0 1px var(--blue-50) inset, 0 0 0 1px var(--blue-50), 0 0 0 4px var(--blue-50-a30);
+
+	--caption-10: 11px; /* regular */
+	--caption-20: 13px;
+	--caption-30: 15px;
+	--body-10: 13px;
+	--body-20: 15px;
+	--body-30: 17px;
+	--title-10: 13px; /* medium */
+	--title-20: 17px;
+	--title-30: 22px; /* light */
+	--title-40: 28px;
+	--display-20: 36px; /* extralight */
+
+	--extralight: 300;
+	--light: 300;
+	--regular: 400;
+	--medium: 500;
+	--bold: 700;
+
+	--animation: cubic-bezier(0.07, 0.95, 0, 1);
+
+	--mymangadex: rgba(47, 82, 162);
+	--mymangadex-bg: white;
+	--syncdex: #0c0c0d;
+	--syncdex-bg: #d7d7db;
+	--mangadex: rgba(247, 148, 33);
+	--mangadex-bg: #2a2f34;
+	--myanimelist: rgba(47, 82, 162);
+	--myanimelist-bg: white;
+	--anilist: rgb(2, 169, 255);
+	--anilist-bg: rgb(31, 38, 49);
+	--kitsu: #ffffff;
+	--kitsu-bg: rgb(64, 47, 63);
+	--mangaupdates: rgb(82, 102, 124);
+	--mangaupdates-bg: rgb(240, 243, 247);
+	--animeplanet: rgb(252, 83, 66);
+	--animeplanet-bg: rgb(48, 48, 48);
+}
+
 @keyframes pulse {
 	0% {
 		box-shadow: 0px 0px 4px 3px #78c5d5;
@@ -21,598 +151,670 @@
 	}
 }
 
+@keyframes fade-in {
+	0% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+
+@keyframes fade-out {
+	0% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+@keyframes expand {
+	0% {
+		transform: scaleY(0);
+	}
+	100% {
+		transform: scaleY(1);
+	}
+}
+
+@keyframes shrink {
+	0% {
+		transform: scaleY(1);
+	}
+	100% {
+		transform: scaleY(0);
+		display: none;
+	}
+}
+
+@keyframes flash {
+	0% {
+		filter: contrast(0%);
+	}
+	100% {
+		filter: contrast(100%);
+	}
+}
+
+.loading {
+	animation: pulse 2s ease-in-out alternate infinite;
+}
+
+*:disabled,
+*.disabled {
+	opacity: 0.4;
+}
+
+/* Links */
+*[href] {
+	color: var(--blue-60);
+	text-decoration: none;
+}
+*[href] img,
+*[href] i {
+	vertical-align: middle;
+}
+*[href]:hover {
+	text-decoration: underline;
+}
+*[href]:active {
+	color: var(--blue-70);
+	text-decoration: underline;
+}
+*[href]:focus {
+	box-shadow: var(--focus);
+}
+
+/* Buttons */
+button,
+.button {
+	border: 0;
+	cursor: pointer;
+	font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
+		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+	text-align: center;
+	line-height: 16px;
+	transition: all 250ms var(--animation);
+}
+button.hidden,
+.button.hidden {
+	display: none;
+}
+button,
+.button,
+button.default,
+.button.default {
+	border-radius: 2px;
+	height: 32px;
+	padding: 0 8px;
+	font-size: 13px;
+	font-weight: 400;
+	min-width: 132px;
+	width: auto;
+}
+button img,
+.button img,
+button i,
+.button i {
+	float: left;
+	font-size: 16px;
+	line-height: 32px;
+}
+/*	Styles */
+button.primary,
+.button.primary {
+	color: var(--white-100);
+	background-color: var(--blue-60);
+}
+button.primary:hover,
+.button.primary:hover {
+	background-color: var(--blue-70);
+}
+button.primary:active,
+.button.primary:active {
+	background-color: var(--blue-80);
+}
+button.primary:focus,
+.button.primary:focus {
+	box-shadow: var(--focus);
+}
+button.default,
+.button.default {
+	color: var(--grey-90);
+	background-color: var(--grey-90-a10);
+}
+button.default:hover,
+.button.default:hover {
+	background-color: var(--grey-90-a20);
+}
+button.default:active,
+.button.default:active {
+	background-color: var(--grey-90-a30);
+}
+button.default:focus,
+.button.default:focus {
+	box-shadow: var(--focus);
+}
+button.ghost,
+.button.ghost {
+	color: var(--grey-90-a30);
+	background: transparent;
+	height: 32px;
+	min-width: 32px;
+	width: 32px;
+	padding: 8px;
+}
+button.ghost:hover,
+.button.ghost:hover {
+	background-color: var(--grey-90-a10);
+}
+button.ghost:active,
+.button.ghost:active {
+	background-color: var(--grey-90-a20);
+}
+button.ghost:focus,
+.button.ghost:focus {
+	box-shadow: var(--focus);
+}
+button.danger,
+.button.danger {
+	color: var(--white-100);
+	background-color: var(--red-60);
+}
+button.danger:hover,
+.button.danger:hover {
+	background-color: var(--red-70);
+}
+button.danger:active,
+.button.danger:active {
+	background-color: var(--red-80);
+}
+button.danger:focus,
+.button.danger:focus {
+	box-shadow: var(--focus);
+}
+a.button {
+	line-height: 32px;
+}
+a.button:hover {
+	text-decoration: none;
+}
+a.button:active {
+	text-decoration: none;
+}
+a.button:focus {
+	text-decoration: none;
+}
+
+/*	Sizes */
+button.micro,
+.button.micro {
+	border-radius: 2px;
+	height: 24px;
+	padding: 0 8px;
+	font-size: 11px;
+	font-weight: 400;
+}
+a.button.micro {
+	line-height: 24px;
+}
+button.puffy,
+.button.puffy {
+	border-radius: 4px;
+	height: 48px;
+	padding: 0 16px;
+	font-size: 15px;
+	font-weight: 400;
+	width: auto;
+}
+a.button.puffy {
+	line-height: 48px;
+}
+button.fill,
+.button.fill {
+	display: block;
+	width: 100%;
+}
+
+/* Inputs */
+input {
+	font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
+		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+	display: block;
+}
+label,
+.label {
+	cursor: pointer;
+	display: block;
+	line-height: 20px;
+}
+input[type] {
+	border-radius: 2px;
+	padding: 0 8px;
+	width: auto;
+	height: 32px;
+	color: var(--grey-90);
+	border: 2px solid var(--grey-90-a20);
+}
+input[type]::placeholder {
+	color: var(--grey-50);
+}
+input[type]:hover {
+	border-color: var(--grey-90-a30);
+}
+input[type]:focus {
+	border-color: var(--blue-50);
+	box-shadow: var(--focus);
+}
+input[type='file'] {
+	cursor: pointer;
+}
+
+/*	Checkbox */
+.checkbox {
+	border-radius: 2px;
+	height: 16px;
+	width: 16px;
+	color: var(--white-100);
+	font-size: 16px;
+	background-color: var(--grey-90-a10);
+	border: 1px solid var(--grey-60);
+	cursor: pointer;
+	transition: all 150ms var(--animation);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 2px;
+}
+.checkbox img,
+.checkbox i {
+	opacity: 0;
+	transition: all 150ms var(--animation);
+}
+.checkbox:hover {
+	background-color: var(--grey-90-a20);
+}
+.checkbox:active {
+	background-color: var(--grey-90-a30);
+}
+.checkbox:focus {
+	box-shadow: var(--focus);
+}
+.checkbox.checked {
+	background-color: var(--blue-60);
+	border-color: transparent;
+}
+.checkbox.checked img,
+.checkbox.checked i {
+	opacity: 1;
+}
+.checkbox.checked:hover {
+	background-color: var(--blue-70);
+}
+.checkbox.checked:active {
+	background-color: var(--blue-80);
+}
+.checkbox.checked:focus {
+	box-shadow: var(--focus);
+}
+
+/* Messages */
+.message {
+	border-radius: 4px;
+	min-height: 32px;
+	width: auto;
+	line-height: 32px;
+	padding-left: 24px;
+	font-size: var(--body-10);
+	font-weight: var(--regular);
+	color: var(--grey-90);
+	background: url('../icons/info.svg') 4px 8px / 16px no-repeat, var(--grey-20);
+	margin-bottom: 8px;
+	transition: all var(--animation);
+}
+.message.hidden {
+	min-height: 0px;
+	max-height: 0px;
+	overflow: hidden;
+	margin-bottom: 0;
+}
+.message.large {
+	width: 100%;
+}
+.message.warning {
+	color: var(--yellow-90);
+	background: url('../icons/warning.svg') 4px 8px / 16px no-repeat, var(--yellow-50);
+}
+.message.success {
+	color: var(--green-90);
+	background: url('../icons/check.svg') 4px 8px / 16px no-repeat, var(--green-50);
+}
+.message.error {
+	color: var(--white-100);
+	background: url('../icons/warning.svg') 4px 8px / 16px no-repeat, var(--red-60);
+}
+
+/* Cards */
+.card {
+	border-radius: 4px;
+	box-shadow: var(--shadow-10);
+	min-width: 15%;
+	overflow: hidden;
+	margin: 32px;
+}
+.card:hover {
+	box-shadow: var(--shadow-20);
+}
+.card .header {
+	font-size: var(--title-30);
+	text-align: center;
+	padding: 32px;
+}
+.card .content {
+	padding: 8px;
+	background-color: var(--grey-10);
+}
+.card.large .content {
+	padding: 20px;
+}
+
+/* Reset */
 * {
 	margin: 0;
 	padding: 0;
 }
 
+/* Utility */
+.helper {
+	font-size: var(--caption-30);
+	font-weight: var(--regular);
+	color: var(--grey-50);
+}
+
+/* SyncDex */
+html {
+	font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
+		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+	font-size: var(--body-20);
+	font-weight: var(--regular);
+}
 body {
 	min-height: 100vh;
-	display: flex;
-	flex-flow: row nowrap;
-	justify-content: stretch;
-	background-color: #111523;
-	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
-		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-	font-size: 1rem;
+	display: grid;
+	grid-template-columns: 20% 80%;
+	background-color: var(--grey-10);
+	color: var(--grey-90);
+	transition: all 250ms var(--animation);
 }
 
-#menu {
-	width: 20%;
-	flex-shrink: 0;
-	display: flex;
-	justify-content: right;
-	align-items: center;
-	background-color: #2f3845;
-	box-shadow: 0 0 4px 2px #2f3845;
-	z-index: 2;
+/*	Navigation */
+nav {
+	padding: 16px;
 }
-
-#menu ul {
+nav ul {
 	list-style-type: none;
 }
-
-#menu ul li {
-	font-size: 1.5rem;
-	margin: 0.5rem;
-	color: #d3d3d3;
-	margin-right: 0;
-	overflow: hidden;
-	transition: 0.1s ease-in-out;
+nav ul li:first-child {
+	font-size: var(--display-20);
+	font-weight: var(--extralight);
+	cursor: default;
+}
+nav ul li:first-child:hover {
+	font-weight: var(--extralight);
+}
+nav ul li {
+	padding: 8px 0;
 	cursor: pointer;
-	padding: 0.75rem;
+	transition: all 150ms var(--animation);
+	font-weight: var(--light);
+	display: table;
 }
-
-#menu ul li:hover,
-#menu ul li.active {
-	background-color: #d3d3d3;
-	box-shadow: 0 0 4px 2px #d3d3d3;
-	color: #2f3845;
+nav ul li:hover {
+	font-weight: var(--bold);
 }
-
-#menu ul li:hover {
-	background-color: #b6b6b6;
+nav ul li img {
+	vertical-align: middle;
 }
-
-#content {
-	flex: 1;
-	color: #d6d6d6;
-	z-index: 1;
+nav ul li.active {
+	font-weight: var(--bold);
+}
+main {
 	max-height: 100vh;
-	overflow: auto;
+	overflow-y: auto;
+	overflow-x: auto;
+}
+h1 {
+	font-size: var(--title-40);
+	font-weight: var(--medium);
+	margin: 16px 0;
+}
+h2 {
+	font-size: var(--title-20);
+	font-weight: var(--medium);
+	margin-bottom: 4px;
+}
+.section {
+	margin-bottom: 64px;
+}
+.block {
+	margin-bottom: 32px;
+}
+.paragraph {
+	margin-bottom: 4px;
+}
+.center {
+	text-align: center;
+	align-self: center;
+	display: block;
+	margin: auto;
+}
+.right {
+	text-align: right;
 }
 
-#content h1,
-h1.full {
-	background-color: #5f5d60;
-	border-top: 1px solid #d6d6d6;
-	border-bottom: 1px solid #d6d6d6;
-	color: #f0f0f0;
-	text-shadow: 1px 1px 1px #19201a;
-	padding: 1rem;
-	user-select: none;
-	transition: 0.1s cubic-bezier(0.6, 0.04, 0.98, 0.335);
-	opacity: 0.4;
-	margin: 1rem 0;
-}
-
-#content > h2,
-h2.full {
-	background-color: #5f5d60;
-	border-top: 1px solid #d6d6d6;
-	border-bottom: 1px solid #d6d6d6;
-	color: #f0f0f0;
-	text-shadow: 1px 1px 1px #19201a;
-	margin: 1rem 0;
-	padding: 1rem;
-	user-select: none;
-}
-
-#content > div {
-	transition: 0.1s cubic-bezier(0.6, 0.04, 0.98, 0.335);
-	opacity: 0.4;
-}
-
-#content > .active,
-#content > .active h1 {
-	/* background-color: #b6b6b6; */
-	opacity: 1;
-}
-
+/*	Services */
 .services {
 	display: flex;
 	flex-flow: row wrap;
-	padding: 1rem;
-	padding-bottom: 0;
-	align-items: center;
+	align-items: flex-start;
 }
-
-.service {
-	background-color: #f7f7f7;
-	margin-right: 1rem;
-	margin-bottom: 1rem;
-	border-radius: 3px;
-	padding: 1rem;
-	display: flex;
-	flex-flow: column nowrap;
-	justify-content: center;
-	user-select: none;
-	color: #131313;
-	font-size: 1rem;
-	border-bottom: 4px solid transparent;
-}
-
-.service.main {
-	font-size: 1.5rem;
-}
-
-.service.active {
-	border-color: #28a745;
-	box-shadow: 0 0 4px 2px #28a745;
-}
-
-.service.inactive {
-	border-color: #dfc327;
-	box-shadow: 0 0 4px 2px #dfc327;
-}
-
-.service.add {
-	padding: 0;
-	background-color: transparent;
-}
-
-.service.add select {
-	border: 0;
-	padding: 0.75rem;
-	border-top-left-radius: 3px;
-	border-top-right-radius: 3px;
-}
-
-.service.add button {
-	border-radius: 3px;
-	border-top-left-radius: 0;
-	border-top-right-radius: 0;
-	background-color: #28a745;
-	color: white;
-	padding: 0.75rem;
-	border: 0;
+.services.selectable .card {
 	cursor: pointer;
-	font-size: 1rem;
 }
-
-.services.selectable .service {
-	cursor: pointer;
-	transition: 0.1s ease-in-out;
-}
-
-.services.selectable .service:hover {
-	box-shadow: 0 0 4px 2px white;
-}
-
-.service .title {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	font-weight: bold;
-	margin-bottom: 0.25rem;
-}
-
-.service .title:last-child {
-	margin-bottom: 0;
-}
-
-.service-login {
+.services .card .content {
 	display: flex;
 	flex-flow: column wrap;
-	margin-top: 0.25rem;
 }
-
-.service-login input {
-	margin-bottom: 0.25rem;
+.services .card .content button,
+.services .card .content .button {
+	margin-bottom: 8px;
 }
-
-.loading {
-	animation-name: pulse;
-	animation-duration: 2s;
-	animation-timing-function: ease-in-out;
-	animation-direction: alternate;
-	animation-iteration-count: infinite;
+.services .card .content a.button img {
+	padding-top: 8px;
 }
-
-.service img {
-	vertical-align: middle;
-}
-
-/* Dex */
-.mymangadex {
-	color: rgba(47, 82, 162);
-}
-
-.mymangadex .mangadex {
-	color: black;
-}
-
-/* MangaDex */
-.service.mangadex {
-	background: rgb(39, 43, 48);
-	background: linear-gradient(180deg, rgba(39, 43, 48, 1) 0%, rgba(45, 51, 56, 1) 100%);
-}
-
-.mangadex {
-	color: white;
-}
-
-/* MyAnimeList */
-.myanimelist {
-	color: rgba(47, 82, 162);
-}
-
-/* Anilist */
-.service.anilist {
-	background-color: rgb(31, 38, 49);
-	box-shadow: rgb(31, 38, 49);
-}
-
-.anilist {
-	color: white;
-}
-
-.anilist .list {
-	color: rgb(2, 169, 255);
-}
-
-/* Kitsu */
-.service.kitsu {
-	background-color: rgb(64, 47, 63);
-}
-
-.kitsu {
-	color: white;
-}
-
-/* Mangaupdates */
-.service.mangaupdates {
-	background-color: rgb(240, 243, 247);
-}
-
-.mangaupdates {
-	color: rgb(82, 102, 124);
-}
-
-/* AnimePlanet */
-.service.animeplanet {
-	background-color: rgb(48, 48, 48);
-}
-
-.animeplanet {
-	color: rgb(252, 83, 66);
-}
-
-.block {
-	padding: 0.5rem;
-	border-radius: 3px;
-	background-color: #e0dfe0;
-	border: 1px solid #d0d0d1;
-	color: #131313;
-	margin: 1rem;
-	margin-top: 0;
-}
-
-.block:last-child {
+.services .card .content button:last-child,
+.services .card .content .button:last-child,
+.services .card .content .message:last-child {
 	margin-bottom: 0;
 }
-
-.notification.info {
-	border: 0;
-	border-left: 4px solid #1974c6;
+.card .header.mymangadex {
+	background: url('/icons/mmd.png') 8px center / 16px no-repeat, var(--myanimelist-bg);
+	color: var(--myanimelist);
+}
+.card .header.syncdex {
+	background: url('/icons/sc.png') 8px center / 16px no-repeat, var(--syncdex-bg);
+	color: var(--syncdex);
+}
+.card .header.mangadex {
+	background: url('/icons/md.png') 8px center / 16px no-repeat, var(--mangadex-bg);
+	color: var(--mangadex);
+}
+.manga {
 	color: white;
-	background-color: #65acec;
-	box-shadow: 0 0 2px 1px #1974c6;
 }
-
-.notification.warning {
-	border: 0;
-	border-left: 4px solid #fff384;
-	color: #1a1609;
-	background-color: #ffdd57;
-	box-shadow: 0 0 2px 1px #fff384;
+.manga .dex {
+	color: var(--mangadex);
 }
-
-.notification.danger {
-	border: 0;
+.card .header.myanimelist {
+	background: url('/icons/mal.png') 8px center / 16px no-repeat, var(--myanimelist-bg);
+	color: var(--myanimelist);
+}
+.card .header.anilist {
+	background: url('/icons/al.png') 8px center / 16px no-repeat, var(--anilist-bg);
+	color: var(--anilist);
+}
+.ani {
 	color: white;
-	background-color: firebrick;
-	border-left: 4px solid rgb(150, 26, 26);
-	box-shadow: 0 0 2px 1px firebrick;
+}
+.ani .list {
+	color: var(--anilist);
+}
+.card .header.kitsu {
+	background: url('/icons/ku.png') 8px center / 16px no-repeat, var(--kitsu-bg);
+	color: var(--kitsu);
+}
+.card .header.mangaupdates {
+	background: url('/icons/mu.png') 8px center / 16px no-repeat, var(--mangaupdates-bg);
+	color: var(--mangaupdates);
+}
+.card .header.animeplanet {
+	background: url('/icons/ap.png') 8px center / 16px no-repeat, var(--animeplanet-bg);
+	color: var(--animeplanet);
 }
 
-.notification.success {
-	border: 0;
-	color: white;
-	background-color: #28a745;
-	border-left: 4px solid #228b3a;
-	box-shadow: 0 0 2px 1px #28a745;
+/*	Parameters */
+.parameter {
+	display: grid;
+	grid-template-columns: 20px auto;
+	grid-template-rows: auto;
+	margin-bottom: 32px;
+	gap: 8px;
+	/*background-color: var(--white-100);
+	padding: 4px;
+	border: 1px solid var(--grey-20);
+	border-radius: 2px;*/
 }
-
-.block p {
-	margin: 0.25rem 0;
+.row-parameter {
+	display: grid;
+	grid-template-columns: auto;
+	grid-template-rows: auto;
+	margin-bottom: 8px;
+	gap: 4px;
+	/*background-color: var(--white-100);
+	padding: 4px;
+	border: 1px solid var(--grey-20);
+	border-radius: 2px;*/
 }
-
+.row-parameter > :nth-child(2n) {
+	margin-bottom: 8px;
+}
+.dependency {
+	margin-left: 32px;
+}
+.color {
+	display: inline-block;
+	width: 32px;
+	height: 32px;
+	border: 2px solid var(--grey-90-a20);
+	border-top-right-radius: 2px;
+	border-bottom-right-radius: 2px;
+}
 .color-input {
 	display: flex;
 	flex-flow: row nowrap;
-	align-items: stretch;
-	margin-bottom: 0.5rem;
-}
-
-.color-input:last-of-type {
-	margin-bottom: 0;
-}
-
-#highlights .color-input button:first-child {
-	border-top-right-radius: 0;
-	border-bottom-right-radius: 0;
-	border-right: 0;
-}
-
-#highlights button.success {
-	margin-top: 0.5rem;
-}
-
-input,
-button {
-	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
-		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-}
-
-a.button {
-	text-decoration: none;
-}
-
-button,
-.button {
-	border-radius: 3px;
-	cursor: pointer;
-	border: 0;
-	transition: 0.1s ease-in-out;
-	font-size: 1rem;
-	padding: 0.5rem;
-}
-
-button.success,
-.button.success {
-	color: white;
-	background-color: #28a745;
-}
-
-button.success:hover,
-.button.success:hover {
-	background-color: #228b3a;
-}
-
-button.danger,
-.button.danger {
-	color: white;
-	background-color: firebrick;
-}
-
-button.danger:hover,
-.button.danger:hover {
-	background-color: rgb(150, 26, 26);
-}
-
-button.action,
-.button.action {
-	color: white;
-	background-color: #2b2b2b;
-}
-
-button.action:hover,
-.button.action:hover {
-	background-color: #464646;
-}
-
-button.default,
-.button.default {
-	color: white;
-	background-color: #1261bb;
-}
-
-button.default:hover,
-.button.default:hover {
-	background-color: #1055a3;
-}
-
-.button-group {
-	display: flex;
-	flex-flow: row nowrap;
-}
-
-.button-group button,
-.button-group .button {
-	border-radius: 0;
-}
-
-.button-group .grow {
-	flex-grow: 1;
-}
-
-.button-group button:first-child,
-.button-group .button:first-child {
-	border-top-left-radius: 3px;
-	border-bottom-left-radius: 3px;
-	border-top-right-radius: 0;
-	border-bottom-right-radius: 0;
-}
-
-.button-group button:last-child,
-.button-group .button:last-child {
-	border-top-left-radius: 0;
-	border-bottom-left-radius: 0;
-	border-top-right-radius: 3px;
-	border-bottom-right-radius: 3px;
-}
-
-input {
-	padding: 0.25rem;
-	font-size: 1rem;
-}
-
-.color {
-	display: inline-block;
-	padding: 0.75rem;
-	border: 1px solid gray;
-	border-left: 0;
-	border-top-right-radius: 3px;
-	border-bottom-right-radius: 3px;
-}
-
-.checkbox {
-	display: inline-flex;
-	flex-flow: row nowrap;
-}
-
-.checkbox .on,
-.checkbox .off {
-	background-color: #5a6268;
-	padding: 0.5rem;
-	color: white;
-	border: 0;
-	cursor: pointer;
-	transition: 0.1s ease-in-out;
-	font-size: 1rem;
-}
-
-.checkbox .on:hover,
-.checkbox .off:hover {
-	background-color: rgb(84, 91, 98);
-}
-
-.checkbox .on {
-	border-top-right-radius: 0;
-	border-bottom-right-radius: 0;
-}
-
-.checkbox .off {
-	border-top-left-radius: 0;
-	border-bottom-left-radius: 0;
-}
-
-.checkbox.enabled .on {
-	background-color: #28a745;
-}
-
-.checkbox.disabled .off {
-	background-color: firebrick;
-}
-
-.checkbox .dependency {
-	margin-left: 1rem;
-	display: flex;
-	justify-content: center;
 	align-items: center;
+	margin-bottom: 8px;
+}
+.color-input input {
+	border-right: 0;
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+.color-input button:first-child {
+	margin-right: 4px;
 }
 
-.checkbox.disabled .dependency {
-	display: none;
-}
-
-input.invalid {
-	box-shadow: 0 0 4px 1px firebrick;
-}
-
-.hidden {
-	display: none;
-}
-
-.row {
-	margin-bottom: 0.5rem;
-}
-
-.row input[type='checkbox'] {
-	vertical-align: middle;
-}
-
-label {
-	margin-right: 1rem;
-	cursor: pointer;
-}
-
-input[type='file'] {
-	margin-right: 1rem;
-}
-
-.ml-1 {
-	margin-left: 1rem;
-}
-
-.mr-1 {
-	margin-right: 1rem;
-}
-
-.center {
-	text-align: center;
-	justify-content: center;
-}
-
-/* SimpleModal */
-
+/* Modal */
 .modal {
-	position: fixed;
+	position: absolute;
 	top: 0;
 	right: 0;
 	bottom: 0;
 	left: 0;
-	background-color: rgba(0, 0, 0, 0.6);
-	opacity: 0;
-	visibility: hidden;
-	transform: scale(1.1);
-	transition: visibility 0s linear 0.25s, opacity 0.25s 0s, transform 0.25s;
+	background-color: var(--grey-90-a60);
+	transition: all var(--animation);
 	display: flex;
 	flex-flow: column nowrap;
 	justify-content: center;
 	align-content: center;
 	cursor: pointer;
-	z-index: 2;
+	animation: fade-in 200ms var(--animation) 1 forwards;
 }
-
-.visible {
-	opacity: 1;
-	visibility: visible;
-	transform: scale(1);
-	transition: visibility 0s linear 0s, opacity 0.25s 0s, transform 0.25s;
+.modal.closed {
+	user-select: none;
+	animation: fade-out 150ms var(--animation) 1 forwards;
 }
-
-.modal .content {
-	background-color: var(--bg-light);
+.modal > .content {
 	margin-left: 20%;
 	margin-right: 20%;
+	min-width: 20rem;
 	overflow: hidden;
-	border-radius: 4px;
 	cursor: initial;
 	max-height: 75vh;
 	display: flex;
 	flex-flow: column nowrap;
 }
-
-.modal .header {
+.modal.small > .content {
+	margin-left: 40%;
+	margin-right: 40%;
+}
+.modal > .content > .header {
+	border-radius: 2px;
 	flex-shrink: 0;
+	font-size: var(--title-40);
+	font-weight: var(--light);
+	padding: 16px 0;
+}
+.modal.small > .content form .primary {
+	margin-bottom: 8px;
+}
+.modal > .content form .primary {
+	margin-right: 8px;
+}
+.ieport form .parameter,
+.ieport form .row-parameter {
+	margin-bottom: 32px;
+}
+.ieport form.closed {
+	user-select: none;
+	transform-origin: top center;
+	animation: shrink 200ms 1 forwards;
+}
+.ieport .message:not(.in-place) {
+	font-size: var(--body-20);
+	animation: flash 250ms 1 forwards;
+}
+.ieport .message:not(.in-place).loading {
+	font-size: var(--body-20);
+	animation: flash 250ms 1 forwards, pulse 2s ease-in-out alternate infinite;
 }
 
-.modal .body {
-	overflow: auto;
+/* Dark Theme */
+@media (prefers-color-scheme: dark) {
+	body:not(.light) {
+		background-color: var(--grey-70);
+		color: var(--white-100);
+	}
+	:not(.light) .modal .card .content {
+		color: var(--grey-90);
+	}
 }
 
-.modal .close-button {
-	float: right;
-	width: 1.5rem;
-	line-height: 1.5rem;
-	text-align: center;
-	cursor: pointer;
-	border-radius: 0.25rem;
-	background-color: lightgray;
+body.dark {
+	background-color: var(--grey-70);
+	color: var(--white-100);
 }
-
-.modal .close-button:hover {
-	background-color: darkgray;
+body.dark .modal .card .content {
+	color: var(--grey-90);
 }
