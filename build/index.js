@@ -122,22 +122,22 @@ let bundleList = [
 	{
 		name: 'Core',
 		input: 'src/index.ts',
-		output: 'build/SyncDex.js',
+		output: 'build/scripts/SyncDex.js',
 	},
 	{
 		name: 'Background',
 		input: 'background/index.ts',
-		output: 'build/SyncDex_background.js',
+		output: 'build/scripts/SyncDex_background.js',
 	},
 	{
 		name: 'Options',
 		input: 'options/index.ts',
-		output: 'build/SyncDex_options.js',
+		output: 'build/scripts/SyncDex_options.js',
 	},
 	{
 		name: 'External',
 		input: 'external/Anilist.ts',
-		output: 'build/SyncDex_Anilist.js',
+		output: 'build/scripts/SyncDex_Anilist.js',
 	},
 ];
 const bundles = bundleList.map((bundle) => {
@@ -188,11 +188,14 @@ function bundleName(outputFile) {
 			process.stdout.write(` done in ${event.duration}ms\n`);
 			duration += event.duration;
 		} else if (event.code == 'ERROR') {
-			process.stdout.write(`\n# ${event.error} (${event.error.pluginCode})`);
-			process.stdout.write(
-				`\n# File ${event.error.loc.file}:${event.error.loc.line} line ${event.error.loc.column}`
-			);
-			process.stdout.write(`${event.error.frame}`);
+			process.stdout.write(`\n# ${event.error}`);
+			if (event.error.pluginCode) process.stdout.write(` (${event.error.pluginCode})`);
+			if (event.error.loc) {
+				process.stdout.write(
+					`\n# File ${event.error.loc.file}:${event.error.loc.line} line ${event.error.loc.column}`
+				);
+			}
+			if (event.error.frame) process.stdout.write(`${event.error.frame}`);
 			duration = 0;
 			if (!options.watch) watcher.close();
 			return false;

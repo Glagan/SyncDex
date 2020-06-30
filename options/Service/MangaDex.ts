@@ -1,12 +1,13 @@
-import { TitleCollection, Title } from '../../src/Title';
+import { TitleCollection, Title, ServiceTitle } from '../../src/Title';
 import { Runtime, RawResponse, RequestStatus } from '../../src/Runtime';
-import { Status, Service, ServiceKey, ServiceName } from '../../src/Service';
-import { ManageableService, APIImportableModule, APIExportableModule } from './Service';
+import { Service, APIImportableModule, APIExportableModule, ActivableModule, LoginMethod } from './Service';
 import { AppendableElement, DOM } from '../../src/DOM';
+import { ServiceKey, ServiceName, Status } from '../../src/core';
 
-class MangaDexService extends Service {
-	key: ServiceKey = ServiceKey.MangaDex;
-	name: ServiceName = ServiceName.MangaDex;
+class MangaDexActive extends ActivableModule {
+	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
+	loginUrl: string = 'https://mangadex.org/login';
+
 	parser: DOMParser = new DOMParser();
 	user: number = 0;
 
@@ -35,24 +36,78 @@ class MangaDexService extends Service {
 		}
 	};
 
-	toStatus = (status: Status): Status => {
-		return status;
+	login = undefined;
+	logout = undefined;
+}
+
+class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
+	readonly serviceKey: ServiceKey = ServiceKey.MangaDex;
+	readonly serviceName: ServiceName = ServiceName.MangaDex;
+
+	status: Status = Status.NONE;
+
+	static get = async <T extends ServiceTitle<T> = MangaDexTitle>(
+		id: number | string
+	): Promise<MangaDexTitle | RequestStatus> => {
+		const response = await Runtime.request<RawResponse>({
+			url: `https://mangadex.org/title/${id}`,
+			method: 'GET',
+			credentials: 'include',
+		});
+		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
+		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		// Convert Response to MangaDexTitle
+		// TODO
+		return new MangaDexTitle(id);
 	};
 
-	fromStatus = (status: Status): Status => {
-		return status;
+	persist = async (): Promise<RequestStatus> => {
+		const response = await Runtime.request<RawResponse>({
+			url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_follow&id=${this.id}&type=${
+				this.status
+			}&_=${Date.now()}`,
+			credentials: 'include',
+			headers: {
+				'X-Requested-With': 'XMLHttpRequest',
+			},
+		});
+		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
+		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		return RequestStatus.SUCCESS;
+	};
+
+	delete = async (): Promise<RequestStatus> => {
+		// TODO
+		return RequestStatus.SUCCESS;
+	};
+
+	toTitle = (): Title | undefined => {
+		return new Title(this.id as number, {
+			progress: this.progress,
+			status: this.status,
+			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
+			name: this.name,
+		});
+	};
+
+	static fromTitle = <T extends ServiceTitle<T> = MangaDexTitle>(title: Title): MangaDexTitle | undefined => {
+		if (!title.services.al) return undefined;
+		return new MangaDexTitle(title.services.al, {
+			progress: title.progress,
+			status: title.status,
+			score: title.score ? title.score : undefined,
+			name: title.name,
+		});
 	};
 }
 
-class MangaDexImport extends APIImportableModule<Title> {
+class MangaDexImport extends APIImportableModule<MangaDexTitle> {
 	parser: DOMParser = new DOMParser();
 	convertManyTitles = undefined;
 
-	handlePage = async (): Promise<Title[] | false> => {
+	handlePage = async (): Promise<MangaDexTitle[] | false> => {
 		const response = await Runtime.request<RawResponse>({
-			url: `https://mangadex.org/list/${(this.manager.service as MangaDexService).user}/0/2/${
-				this.state.current
-			}`,
+			url: `https://mangadex.org/list/${(this.service as MangaDex).activeModule.user}/0/2/${this.state.current}`,
 			credentials: 'include',
 		});
 		if (response.status >= 400 || typeof response.body !== 'string') {
@@ -68,7 +123,7 @@ class MangaDexImport extends APIImportableModule<Title> {
 		}
 		const body = this.parser.parseFromString(response.body, 'text/html');
 		// Each row has a data-id field
-		let titles: Title[] = [];
+		let titles: MangaDexTitle[] = [];
 		const rows = body.querySelectorAll<HTMLElement>('.manga-entry');
 		for (const row of rows) {
 			const id = parseInt(row.dataset.id || '');
@@ -76,10 +131,8 @@ class MangaDexImport extends APIImportableModule<Title> {
 				const status = row.querySelector<HTMLElement>('.dropdown-menu > .disabled');
 				const score = row.querySelector('.disabled.manga_rating_button');
 				titles.push(
-					new Title(id, {
-						status: status
-							? this.manager.service.toStatus(parseInt(status.getAttribute('id') as string))
-							: Status.NONE,
+					new MangaDexTitle(id, {
+						status: status ? parseInt(status.getAttribute('id') as string) : Status.NONE,
 						score: score ? parseInt(score.getAttribute('id') as string) : undefined,
 						name: (row.querySelector('.manga_title') as HTMLElement).textContent as string,
 					})
@@ -113,24 +166,19 @@ class MangaDexExport extends APIExportableModule {
 	};
 
 	exportTitle = async (title: Title): Promise<boolean> => {
-		if (title.status != Status.NONE) {
-			const status = this.manager.service.fromStatus(title.status);
-			const response = await Runtime.request<RawResponse>({
-				url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_follow&id=${
-					title.id
-				}&type=${status}&_=${Date.now()}`,
-				credentials: 'include',
-				headers: {
-					'X-Requested-With': 'XMLHttpRequest',
-				},
-			});
-			return response.ok;
+		const exportTitle = MangaDexTitle.fromTitle(title);
+		if (exportTitle && exportTitle.status !== Status.NONE) {
+			const responseStatus = await exportTitle.persist();
+			return responseStatus == RequestStatus.SUCCESS;
 		}
 		return false;
 	};
 }
 
-export class MangaDex extends ManageableService {
+export class MangaDex extends Service {
+	key: ServiceKey = ServiceKey.MangaDex;
+	name: ServiceName = ServiceName.MangaDex;
+
 	createTitle = (): AppendableElement => {
 		return DOM.create('span', {
 			class: 'manga',
@@ -144,8 +192,7 @@ export class MangaDex extends ManageableService {
 		});
 	};
 
-	service: MangaDexService = new MangaDexService();
-	activeModule = undefined;
+	activeModule: MangaDexActive = new MangaDexActive(this);
 	importModule: MangaDexImport = new MangaDexImport(this);
 	exportModule: MangaDexExport = new MangaDexExport(this);
 }

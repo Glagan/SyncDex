@@ -1,7 +1,6 @@
 import { Options } from '../../src/Options';
 import { DOM } from '../../src/DOM';
-import { ServiceName } from '../../src/Service';
-import { ManageableService, ActivableModule } from '../Service/Service';
+import { Service, ActivableModule } from '../Service/Service';
 import { MyMangaDex } from '../Service/MyMangaDex';
 import { SyncDex } from '../Service/SyncDex';
 import { MangaDex } from '../Service/MangaDex';
@@ -11,6 +10,7 @@ import { Kitsu } from '../Service/Kitsu';
 import { AnimePlanet } from '../Service/AnimePlanet';
 import { MangaUpdates } from '../Service/MangaUpdates';
 import { RequestStatus } from '../../src/Runtime';
+import { ServiceName } from '../../src/core';
 
 export const enum SaveMethod {
 	IMPORT = 'IMPORT',
@@ -18,7 +18,7 @@ export const enum SaveMethod {
 }
 
 export class ServiceManager {
-	managers: ManageableService[] = [
+	services: Service[] = [
 		new MyMangaDex(this),
 		new SyncDex(this),
 		new MangaDex(this),
@@ -30,7 +30,7 @@ export class ServiceManager {
 	];
 	// Active
 	activeContainer: HTMLElement;
-	mainService?: ManageableService;
+	mainService?: Service;
 	noServices: HTMLElement;
 	activeServices: ServiceName[] = [];
 	inactiveServices: ServiceName[] = [];
@@ -48,7 +48,7 @@ export class ServiceManager {
 		this.importContainer = document.getElementById('import-container') as HTMLElement;
 		this.exportContainer = document.getElementById('export-container') as HTMLElement;
 		// Bind
-		for (const manager of this.managers) {
+		for (const manager of this.services) {
 			if (manager.activeModule) {
 				manager.activeModule.bind();
 			}
@@ -62,44 +62,44 @@ export class ServiceManager {
 	 * Activate or desactivate all buttons in a Service card.
 	 * Check if the user is logged in on the Service and calls updateStatus to display warnings.
 	 */
-	reloadManager = async (manager: ManageableService): Promise<void> => {
-		if (!manager.activeModule) return;
-		const index = Options.services.indexOf(manager.service.name);
-		if (Options.mainService == manager.service.name) {
-			this.mainService = manager;
-			this.activeContainer.insertBefore(manager.activeModule.activeCard, this.activeContainer.firstElementChild);
-			manager.activeModule.activeCard.classList.add('active');
-			this.addActiveService(manager.service.name);
+	reloadManager = async (service: Service): Promise<void> => {
+		if (!service.activeModule) return;
+		const index = Options.services.indexOf(service.name);
+		if (Options.mainService == service.name) {
+			this.mainService = service;
+			this.activeContainer.insertBefore(service.activeModule.activeCard, this.activeContainer.firstElementChild);
+			service.activeModule.activeCard.classList.add('active');
+			this.addActiveService(service.name);
 		} else if (index >= 0) {
 			// Insert as the *index* child to follow the Options order
 			const activeCards = this.activeContainer.querySelectorAll('.card.active');
 			const length = activeCards.length;
 			if (length == 0) {
 				this.activeContainer.insertBefore(
-					manager.activeModule.activeCard,
+					service.activeModule.activeCard,
 					this.activeContainer.firstElementChild
 				);
 			} else if (index >= length) {
 				this.activeContainer.insertBefore(
-					manager.activeModule.activeCard,
+					service.activeModule.activeCard,
 					activeCards[length - 1].nextElementSibling
 				);
 			} else if (index < length) {
-				this.activeContainer.insertBefore(manager.activeModule.activeCard, activeCards[index]);
+				this.activeContainer.insertBefore(service.activeModule.activeCard, activeCards[index]);
 			}
-			manager.activeModule.activeCard.classList.add('active');
-			this.addActiveService(manager.service.name);
+			service.activeModule.activeCard.classList.add('active');
+			this.addActiveService(service.name);
 		} else {
-			this.activeContainer.appendChild(manager.activeModule.activeCard);
+			this.activeContainer.appendChild(service.activeModule.activeCard);
 		}
 		// Update displayed state (buttons)
 		if (index >= 0) {
-			manager.activeModule.loading();
-			manager.service.loggedIn().then((status) => {
-				(manager.activeModule as ActivableModule).updateStatus(status);
+			service.activeModule.loading();
+			service.activeModule.loggedIn().then((status) => {
+				(service.activeModule as ActivableModule).updateStatus(status);
 			});
 		} else {
-			manager.activeModule.desactivate();
+			service.activeModule.desactivate();
 		}
 	};
 
@@ -161,7 +161,7 @@ export class ServiceManager {
 		this.noServices.classList.add('hidden');
 		this.inactiveWarning.classList.add('hidden');
 		// Insert all Services card
-		for (const manager of this.managers) {
+		for (const manager of this.services) {
 			this.reloadManager(manager);
 		}
 		if (this.activeServices.length == 0) {
@@ -174,7 +174,7 @@ export class ServiceManager {
 	// Import/Export
 
 	fillSaveContainers = (): void => {
-		for (const service of this.managers) {
+		for (const service of this.services) {
 			if (service.importModule) {
 				DOM.append(this.importContainer, service.importModule.card);
 			}

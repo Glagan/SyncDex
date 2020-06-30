@@ -1,8 +1,7 @@
 import { Options } from '../../src/Options';
 import { Title, TitleCollection } from '../../src/Title';
-import { Status, Service, ServiceKey, ServiceName } from '../../src/Service';
-import { ImportSummary, ManageableService, FileImportFormat, FileImportableModule } from './Service';
-import { RequestStatus } from '../../src/Runtime';
+import { ImportSummary, Service, FileImportFormat, FileImportableModule } from './Service';
+import { ServiceKey, Status, ServiceName } from '../../src/core';
 
 interface MyMangaDexTitle {
 	id: number;
@@ -59,21 +58,6 @@ type MyMangaDexSave = {
 } & {
 	[key: string]: MyMangaDexTitle;
 };
-
-class MyMangaDexService extends Service {
-	key: ServiceKey = ServiceKey.MyMangaDex;
-	name: ServiceName = ServiceName.MyMangaDex;
-
-	loggedIn = async (): Promise<RequestStatus> => {
-		return RequestStatus.SUCCESS;
-	};
-	toStatus = (status: Status): Status => {
-		return status;
-	};
-	fromStatus = (status: Status): Status => {
-		return status;
-	};
-}
 
 // TODO: Handle save <2.4
 class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTitle> {
@@ -177,8 +161,10 @@ class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTi
 	};
 }
 
-export class MyMangaDex extends ManageableService {
-	service = new MyMangaDexService();
+export class MyMangaDex extends Service {
+	key: ServiceKey = ServiceKey.MyAnimeList;
+	name: ServiceName = ServiceName.MyAnimeList;
+
 	activeModule = undefined;
 	importModule: MyMangaDexImport = new MyMangaDexImport(this);
 	exportModule = undefined;

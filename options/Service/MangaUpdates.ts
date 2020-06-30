@@ -1,30 +1,25 @@
-import { Progress } from '../../src/interfaces';
-import { Status, ServiceName } from '../../src/Service';
-import { Runtime, RawResponse } from '../../src/Runtime';
-import { TitleCollection, Title } from '../../src/Title';
-import { Mochi } from '../../src/Mochi';
-import {
-	ManageableService,
-	ActivableModule,
-	APIImportableModule,
-	ImportStep,
-	LoginMethod,
-	APIExportableModule,
-} from './Service';
-import { MangaUpdates as MangaUpdatesService } from '../../src/Service/MangaUpdates';
+import { Runtime, RawResponse, RequestStatus } from '../../src/Runtime';
+import { Service, ActivableModule, APIImportableModule, ImportStep, LoginMethod, APIExportableModule } from './Service';
+import { MangaUpdatesTitle, MangaUpdatesStatus } from '../../src/Service/MangaUpdates';
 import { DOM } from '../../src/DOM';
-
-interface MangaUpdatesTitle {
-	id: number;
-	progress: Progress;
-	status: Status;
-	score?: number;
-	name: string;
-}
+import { Title } from '../../src/Title';
+import { ServiceKey, ServiceName } from '../../src/core';
 
 class MangaUpdatesActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	loginUrl: string = 'https://www.mangaupdates.com/login.html';
+
+	loggedIn = async (): Promise<RequestStatus> => {
+		const response = await Runtime.request<RawResponse>({
+			url: 'https://www.mangaupdates.com/aboutus.html',
+			credentials: 'include',
+		});
+		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
+		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (response.body && response.body.indexOf(`You are currently logged in as`) >= 0) return RequestStatus.SUCCESS;
+		return RequestStatus.FAIL;
+	};
+
 	login = undefined;
 	logout = undefined;
 }
@@ -44,19 +39,19 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 		return 0;
 	};
 
-	toStatus = (list: string): Status => {
+	listToStatus = (list: string): MangaUpdatesStatus => {
 		if (list === 'read') {
-			return Status.READING;
+			return MangaUpdatesStatus.READING;
 		} else if (list === 'wish') {
-			return Status.PLAN_TO_READ;
+			return MangaUpdatesStatus.PLAN_TO_READ;
 		} else if (list === 'complete') {
-			return Status.COMPLETED;
+			return MangaUpdatesStatus.COMPLETED;
 		} else if (list === 'unfinished') {
-			return Status.DROPPED;
+			return MangaUpdatesStatus.DROPPED;
 		} else if (list === 'hold') {
-			return Status.PAUSED;
+			return MangaUpdatesStatus.PAUSED;
 		}
-		return Status.NONE;
+		return MangaUpdatesStatus.NONE;
 	};
 
 	getNextPage = (): boolean => {
@@ -84,7 +79,7 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 		if (response.ok && response.body.indexOf('You must be a user to access this page.') < 0) {
 			const body = this.parser.parseFromString(response.body, 'text/html');
 			const rows = body.querySelectorAll(`div[id^='r']`);
-			const status = this.toStatus(MangaUpdatesImport.lists[this.currentList - 1]);
+			const status = this.listToStatus(MangaUpdatesImport.lists[this.currentList - 1]);
 			let titles: MangaUpdatesTitle[] = [];
 			for (const row of rows) {
 				const scoreLink = row.querySelector(`a[title='Update Rating']`);
@@ -94,51 +89,21 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 					if (isNaN(score)) score = undefined;
 				}
 				const name = row.querySelector(`a[title='Series Info']`) as HTMLElement;
-				titles.push({
-					id: parseInt(row.id.slice(1)),
-					progress: {
-						chapter: this.progressFromNode(row.querySelector(`a[title='Increment Chapter']`)),
-						volume: this.progressFromNode(row.querySelector(`a[title='Increment Volume']`)),
-					},
-					status: status,
-					score: score,
-					name: name.textContent as string,
-				});
+				titles.push(
+					new MangaUpdatesTitle(parseInt(row.id.slice(1)), {
+						progress: {
+							chapter: this.progressFromNode(row.querySelector(`a[title='Increment Chapter']`)),
+							volume: this.progressFromNode(row.querySelector(`a[title='Increment Volume']`)),
+						},
+						status: status,
+						score: score,
+						name: name.textContent as string,
+					})
+				);
 			}
 			return titles;
 		}
 		return false;
-	};
-
-	convertTitles = async (titles: TitleCollection, titleList: MangaUpdatesTitle[]): Promise<number> => {
-		const connections = await Mochi.findMany(
-			titleList.map((t) => t.id),
-			this.manager.service.name
-		);
-		let total = 0;
-		if (connections !== undefined) {
-			for (const key in connections) {
-				if (connections.hasOwnProperty(key)) {
-					const connection = connections[key];
-					if (connection['MangaDex'] !== undefined) {
-						const id = parseInt(key);
-						const title = titleList.find((t) => t.id == id) as MangaUpdatesTitle;
-						titles.add(
-							new Title(connection['MangaDex'] as number, {
-								services: { mu: title.id },
-								progress: title.progress,
-								status: title.status,
-								chapters: [],
-								score: title.score,
-								name: title.name,
-							})
-						);
-						total++;
-					}
-				}
-			}
-		}
-		return total;
 	};
 }
 
@@ -153,7 +118,7 @@ class MangaUpdatesExport extends APIExportableModule {
 			DOM.space(),
 			this.stopButton,
 		]);
-		const importModule = new MangaUpdatesImport(this.manager);
+		const importModule = new MangaUpdatesImport(this.service);
 		while (!this.doStop && importModule.getNextPage() !== false) {
 			let tmp: MangaUpdatesTitle[] | false = await importModule.handlePage();
 			if (tmp === false) {
@@ -170,87 +135,20 @@ class MangaUpdatesExport extends APIExportableModule {
 		return true; // TODO: Also *Import* at the same time to just have the latest values ?
 	};
 
-	fromStatus = (status: Status): string => {
-		if (status == Status.READING) {
-			return 'read';
-		} else if (status == Status.PLAN_TO_READ) {
-			return 'wish';
-		} else if (status == Status.COMPLETED) {
-			return 'complete';
-		} else if (status == Status.DROPPED) {
-			return 'unfinished';
-		} else if (status == Status.PAUSED) {
-			return 'hold';
-		}
-		return '__invalid__';
-	};
-
-	delete = async (id: number, from: Status): Promise<void> => {
-		await Runtime.request<RawResponse>({
-			url: `https://www.mangaupdates.com/ajax/list_update.php?s=${id}&l=${this.fromStatus(from)}&r=1`,
-			credentials: 'include',
-		});
-	};
-
-	updateStatus = async (id: number, to: Status): Promise<void> => {
-		if (to !== Status.NONE) {
-			const status = this.fromStatus(to);
-			await Runtime.request<RawResponse>({
-				url: `https://www.mangaupdates.com/ajax/list_update.php?s=${id}&l=${status}`,
-				method: 'GET',
-				credentials: 'include',
-			});
-		}
-	};
-
 	exportTitle = async (title: Title): Promise<boolean> => {
-		const id = title.services.mu as number;
-		const muTitle = this.actual[id];
-		// Update status
-		if (muTitle == undefined || muTitle.status != title.status) {
-			// Status requirements
-			let list = MangaUpdatesService.pathToStatus(muTitle?.status, title.status, muTitle !== undefined);
-			for (const status of list) {
-				if (status == Status.NONE) {
-					this.delete(id, muTitle?.status as Status);
-				} else await this.updateStatus(id, status);
-			}
-			// Real status
-			await this.updateStatus(id, title.status);
-			// Update muTitle if there are duplicates
-			muTitle.status = title.status;
+		const exportTitle = MangaUpdatesTitle.fromTitle(title);
+		if (exportTitle && exportTitle.status !== MangaUpdatesStatus.NONE) {
+			const responseStatus = await exportTitle.persist();
+			return responseStatus == RequestStatus.SUCCESS;
 		}
-		// Update progress -- only if chapter or volume is different
-		if (
-			muTitle == undefined ||
-			(muTitle != undefined &&
-				((title.progress.chapter > 1 && title.progress.chapter != muTitle.progress.chapter) ||
-					(title.progress.volume !== undefined &&
-						title.progress.volume > 0 &&
-						title.progress.volume != muTitle.progress.volume)))
-		) {
-			const volume =
-				title.progress.volume !== undefined && title.progress.volume > 0
-					? `&set_v=${title.progress.volume}`
-					: '';
-			await Runtime.request<RawResponse>({
-				url: `https://www.mangaupdates.com/ajax/chap_update.php?s=${id}${volume}&set_c=${title.progress.chapter}`,
-				credentials: 'include',
-			});
-		}
-		// Update score
-		if ((muTitle != undefined && title.score != muTitle.score) || (muTitle == undefined && title.score > 0)) {
-			await Runtime.request<RawResponse>({
-				url: `https://www.mangaupdates.com/ajax/update_rating.php?s=${id}&r=${title.score}`,
-				credentials: 'include',
-			});
-		}
-		return true;
+		return false;
 	};
 }
 
-export class MangaUpdates extends ManageableService {
-	service: MangaUpdatesService = new MangaUpdatesService();
+export class MangaUpdates extends Service {
+	key: ServiceKey = ServiceKey.MangaUpdates;
+	name: ServiceName = ServiceName.MangaUpdates;
+
 	activeModule: MangaUpdatesActive = new MangaUpdatesActive(this);
 	importModule: MangaUpdatesImport = new MangaUpdatesImport(this);
 	exportModule: MangaUpdatesExport = new MangaUpdatesExport(this);

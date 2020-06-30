@@ -1,11 +1,11 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
-import { Service, Status, ServiceName, ServiceKey } from '../../src/Service';
 import { TitleCollection, Title, ServiceTitle } from '../../src/Title';
 import { LocalStorage } from '../../src/Storage';
 import { Mochi } from '../../src/Mochi';
 import { RequestStatus } from '../../src/Runtime';
+import { ServiceName, ServiceKey, Status } from '../../src/core';
 
 export const enum LoginMethod {
 	EXTERNAL,
@@ -115,9 +115,11 @@ export class Modal {
 	};
 }
 
-export abstract class ManageableService {
+export abstract class Service {
 	manager: ServiceManager;
-	abstract service: Service;
+
+	abstract key: ServiceKey;
+	abstract name: ServiceName;
 	abstract activeModule?: ActivableModule;
 	abstract importModule?: ImportableModule;
 	abstract exportModule?: ExportableModule;
@@ -131,7 +133,7 @@ export abstract class ManageableService {
 			class: 'card',
 		});
 		const header = DOM.create('div', {
-			class: `header ${this.service.name.toLowerCase()}`,
+			class: `header ${this.name.toLowerCase()}`,
 			childs: [this.createTitle()],
 		});
 		DOM.append(card, header);
@@ -145,12 +147,12 @@ export abstract class ManageableService {
 	};
 
 	createTitle = (): AppendableElement => {
-		return DOM.text(this.service.name);
+		return DOM.text(this.name);
 	};
 }
 
 export abstract class ActivableModule {
-	manager: ManageableService;
+	service: Service;
 	activable: boolean = true;
 	loginMethod?: LoginMethod;
 	loginUrl?: string;
@@ -164,6 +166,7 @@ export abstract class ActivableModule {
 	checkStatusButton: HTMLElement;
 	loginButton: HTMLAnchorElement;
 	removeButton: HTMLElement;
+	abstract loggedIn(): Promise<RequestStatus>;
 	abstract login?(username: string, password: string): Promise<RequestStatus>;
 	abstract logout?(): Promise<void>;
 
@@ -178,10 +181,10 @@ export abstract class ActivableModule {
 		return message;
 	};
 
-	constructor(service: ManageableService) {
-		this.manager = service;
+	constructor(service: Service) {
+		this.service = service;
 		// Create
-		this.activeCard = this.manager.createCard(true);
+		this.activeCard = this.service.createCard(true);
 		this.activeCardContent = this.activeCard.lastElementChild as HTMLElement;
 		// Messages
 		this.loadingMessage = this.message('default', 'Loading...');
@@ -251,45 +254,45 @@ export abstract class ActivableModule {
 		}
 		// Bind
 		this.activateButton.addEventListener('click', async () => {
-			Options.services.push(this.manager.service.name);
+			Options.services.push(this.service.name);
 			if (Options.services.length == 1) {
-				Options.mainService = this.manager.service.name;
-				const containerFirstChild = this.manager.manager.activeContainer.firstElementChild;
+				Options.mainService = this.service.name;
+				const containerFirstChild = this.service.manager.activeContainer.firstElementChild;
 				if (this.activeCard != containerFirstChild) {
-					this.manager.manager.activeContainer.insertBefore(this.activeCard, containerFirstChild);
+					this.service.manager.activeContainer.insertBefore(this.activeCard, containerFirstChild);
 				}
 			} else {
-				let activeCards = this.manager.manager.activeContainer.querySelectorAll('.card.active');
-				this.manager.manager.activeContainer.insertBefore(
+				let activeCards = this.service.manager.activeContainer.querySelectorAll('.card.active');
+				this.service.manager.activeContainer.insertBefore(
 					this.activeCard,
 					activeCards[activeCards.length - 1].nextElementSibling
 				);
 			}
 			Options.save();
-			this.manager.manager.reloadManager(this.manager);
+			this.service.manager.reloadManager(this.service);
 		});
 		this.mainButton.addEventListener('click', () => {
 			// Make service the first in the list
-			const index = Options.services.indexOf(this.manager.service.name);
+			const index = Options.services.indexOf(this.service.name);
 			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
-			Options.mainService = this.manager.service.name;
+			Options.mainService = this.service.name;
 			Options.save();
 			// Remove main button and add the main button to the previous main
-			if (this.manager.manager.mainService && this.manager.manager.mainService.activeModule) {
-				const oldMainContent = this.manager.manager.mainService.activeModule.activeCardContent;
+			if (this.service.manager.mainService && this.service.manager.mainService.activeModule) {
+				const oldMainContent = this.service.manager.mainService.activeModule.activeCardContent;
 				oldMainContent.insertBefore(
-					this.manager.manager.mainService.activeModule.mainButton,
+					this.service.manager.mainService.activeModule.mainButton,
 					oldMainContent.firstElementChild
 				);
-				this.manager.manager.mainService.activeModule.mainMessage.remove();
+				this.service.manager.mainService.activeModule.mainMessage.remove();
 			}
-			this.manager.manager.mainService = this.manager;
+			this.service.manager.mainService = this.service;
 			this.mainButton.remove();
 			this.activeCardContent.insertBefore(this.mainMessage, this.activeCardContent.firstElementChild);
 			// Move the card to the first position
-			this.manager.manager.activeContainer.insertBefore(
+			this.service.manager.activeContainer.insertBefore(
 				this.activeCard,
-				this.manager.manager.activeContainer.firstElementChild
+				this.service.manager.activeContainer.firstElementChild
 			);
 		});
 		let busy = false;
@@ -303,7 +306,7 @@ export abstract class ActivableModule {
 				if (this.loginMethod == LoginMethod.EXTERNAL) {
 					await Options.reloadTokens();
 				}
-				const status = await this.manager.service.loggedIn();
+				const status = await this.loggedIn();
 				this.updateStatus(status);
 				this.loadingMessage.remove();
 				busy = false;
@@ -311,10 +314,10 @@ export abstract class ActivableModule {
 		});
 		this.removeButton.addEventListener('click', async () => {
 			// Remove service from Service list and assign new main if possible
-			const index = Options.services.indexOf(this.manager.service.name);
+			const index = Options.services.indexOf(this.service.name);
 			if (index > -1) {
 				Options.services.splice(index, 1);
-				if (Options.mainService == this.manager.service.name) {
+				if (Options.mainService == this.service.name) {
 					Options.mainService = Options.services.length > 0 ? Options.services[0] : undefined;
 				}
 			}
@@ -325,29 +328,29 @@ export abstract class ActivableModule {
 			// Save
 			Options.save();
 			// Disable card
-			this.manager.manager.removeActiveService(this.manager.service.name);
+			this.service.manager.removeActiveService(this.service.name);
 			this.desactivate();
 			// Move service card after the active cards
 			while (
 				this.activeCard.nextElementSibling &&
 				this.activeCard.nextElementSibling.classList.contains('active')
 			) {
-				this.manager.manager.activeContainer.insertBefore(
+				this.service.manager.activeContainer.insertBefore(
 					this.activeCard,
 					this.activeCard.nextElementSibling.nextElementSibling
 				);
 			}
 			// Set the new main
 			if (Options.mainService) {
-				const mainService = this.manager.manager.managers.find(
-					(manager: ManageableService) => manager.service.name == Options.mainService
+				const mainService = this.service.manager.services.find(
+					(service: Service) => service.name == Options.mainService
 				);
 				if (mainService && mainService.activeModule) {
 					mainService.activeModule.mainButton.classList.add('hidden');
-					this.manager.manager.mainService = mainService;
+					this.service.manager.mainService = mainService;
 				}
 			} else {
-				this.manager.manager.mainService = undefined;
+				this.service.manager.mainService = undefined;
 			}
 		});
 		this.loginButton.addEventListener('click', (event) => {
@@ -356,8 +359,8 @@ export abstract class ActivableModule {
 				if (!this) return;
 				// Create modal
 				const modal = new Modal('small');
-				modal.header.classList.add(this.manager.service.name.toLocaleLowerCase());
-				modal.header.appendChild(this.manager.createTitle());
+				modal.header.classList.add(this.service.name.toLocaleLowerCase());
+				modal.header.appendChild(this.service.createTitle());
 				const form = DOM.create('form', {
 					class: 'body',
 					childs: [
@@ -428,7 +431,7 @@ export abstract class ActivableModule {
 	};
 
 	updateStatus = (status: RequestStatus): void => {
-		this.activate(Options.mainService == this.manager.service.name);
+		this.activate(Options.mainService == this.service.name);
 		if (status == RequestStatus.SUCCESS) {
 			this.statusMessage.className = 'message success';
 			this.statusMessage.textContent = 'Active';
@@ -438,14 +441,14 @@ export abstract class ActivableModule {
 			this.statusMessage.textContent = 'Inactive';
 			this.activeCardContent.insertBefore(this.loginButton, this.checkStatusButton);
 		}
-		this.manager.manager.updateServiceStatus(this.manager.service.name, status);
+		this.service.manager.updateServiceStatus(this.service.name, status);
 	};
 }
 
 export abstract class SaveModule {
 	card: HTMLElement;
 	modal: Modal;
-	manager: ManageableService;
+	service: Service;
 	preForm?(): void;
 	reset?(): void;
 	postForm?(form: HTMLFormElement): void;
@@ -459,8 +462,8 @@ export abstract class SaveModule {
 	stopButton: HTMLButtonElement;
 	closeButton: HTMLButtonElement;
 
-	constructor(service: ManageableService) {
-		this.manager = service;
+	constructor(service: Service) {
+		this.service = service;
 		this.modal = this.createModal();
 		this.stopButton = DOM.create('button', {
 			class: 'danger',
@@ -483,7 +486,7 @@ export abstract class SaveModule {
 			},
 			childs: [DOM.icon('times-circle')],
 		});
-		this.card = this.manager.createCard(false);
+		this.card = this.service.createCard(false);
 		this.card.addEventListener('click', () => {
 			this.resetModal();
 			this.modal.show(); // TODO: Avoid modal in FileExport
@@ -491,7 +494,7 @@ export abstract class SaveModule {
 	}
 
 	checkLogin = async (): Promise<boolean> => {
-		return (await this.manager.service.loggedIn()) === RequestStatus.SUCCESS;
+		return (await this.service.activeModule?.loggedIn()) === RequestStatus.SUCCESS;
 	};
 
 	notification = (
@@ -520,8 +523,8 @@ export abstract class SaveModule {
 	createModal = (): Modal => {
 		const modal = new Modal();
 		modal.modal.classList.add('ieport');
-		modal.header.classList.add(this.manager.service.name.toLocaleLowerCase());
-		modal.header.appendChild(this.manager.createTitle());
+		modal.header.classList.add(this.service.name.toLocaleLowerCase());
+		modal.header.appendChild(this.service.createTitle());
 		return modal;
 	};
 
@@ -675,7 +678,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 
 	createForm = (): HTMLFormElement => {
 		const form = DOM.create('form', { class: 'body' });
-		const inputId = `file_${this.manager.service.name}`;
+		const inputId = `file_${this.service.name}`;
 		form.appendChild(DOM.create('h2', { textContent: 'Options' }));
 		const options = Checkbox.make('merge', 'Merge with current save');
 		Checkbox.make('checkServices', 'Check Services ID with Mochi after Import', options);
@@ -800,7 +803,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		}
 		await Options.save(); // Always save -- options are deleted in LocalStorage
 		if (this.handleOptions) {
-			this.manager.manager.reloadOptions(); // TODO: Reload
+			this.service.manager.reloadOptions(); // TODO: Reload
 		}
 		notification.remove();
 		this.displaySummary();
@@ -808,7 +811,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 	};
 }
 
-export abstract class APIImportableModule<T extends ServiceTitle> extends ImportableModule {
+export abstract class APIImportableModule<T extends ServiceTitle<T>> extends ImportableModule {
 	currentTitle: number = 0;
 	state: ImportState = { current: 0, max: 1 };
 	abstract handlePage(): Promise<T[] | false>;
@@ -898,7 +901,7 @@ export abstract class APIImportableModule<T extends ServiceTitle> extends Import
 			notification.textContent = this.getProgress(ImportStep.CONVERT_TITLES, titles.length);
 			const connections = await Mochi.findMany(
 				titleList.map((t) => t.id),
-				this.manager.service.name
+				this.service.name
 			);
 			if (connections !== undefined) {
 				for (const key in connections) {
@@ -951,7 +954,7 @@ export abstract class ExportableModule extends SaveModule {
 	// By default, select all titles with a Service key for the current service and a status
 	selectTitles = async (): Promise<Title[]> => {
 		return (await TitleCollection.get()).collection.filter((title) => {
-			const id = title.services[this.manager.service.key];
+			const id = title.services[this.service.key];
 			return id !== undefined && id > 0 && title.status !== Status.NONE;
 		});
 	};

@@ -1,7 +1,6 @@
-import { Service, Status, ServiceName, ServiceKey } from '../Service';
-import { Runtime, RawResponse, RequestStatus } from '../Runtime';
+import { RequestStatus } from '../Runtime';
 import { ServiceTitle, Title } from '../Title';
-import { Progress } from '../interfaces';
+import { ServiceKey, ServiceName, Status } from '../core';
 
 export enum MyAnimeListStatus {
 	NONE = 0,
@@ -12,76 +11,29 @@ export enum MyAnimeListStatus {
 	PLAN_TO_READ = 6,
 }
 
-export class MyAnimeList extends Service {
-	key: ServiceKey = ServiceKey.MyAnimeList;
-	name: ServiceName = ServiceName.MyAnimeList;
+export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
+	readonly serviceKey: ServiceKey = ServiceKey.MyAnimeList;
+	readonly serviceName: ServiceName = ServiceName.MyAnimeList;
 
-	loggedIn = async (): Promise<RequestStatus> => {
-		const response = await Runtime.request<RawResponse>({
-			url: 'https://myanimelist.net/login.php',
-			method: 'GET',
-			credentials: 'include',
-		});
-		if (response.status >= 500) {
-			return RequestStatus.SERVER_ERROR;
-		} else if (response.status >= 400 && response.status < 500) {
-			return RequestStatus.BAD_REQUEST;
-		}
-		if (response.ok && response.body && response.url.indexOf('login.php') < 0) {
-			return RequestStatus.SUCCESS;
-		}
-		return RequestStatus.FAIL;
-	};
-}
-
-export class MyAnimeListTitle extends ServiceTitle {
-	id: number;
-	mangaDex?: number;
-
-	progress: Progress = {
-		chapter: 0,
-	};
 	status: MyAnimeListStatus = MyAnimeListStatus.NONE;
-	start?: string;
-	end?: string;
-	score?: number;
-	name?: string;
+	// TODO: csrf Token
+	csrtf: string = '';
 
-	constructor(id: number, title?: Partial<MyAnimeListTitle>) {
-		super();
-		this.id = id;
-		if (title !== undefined) {
-			Object.assign(this, title);
-		}
-	}
-
-	static get = async (id: string | number): Promise<RequestStatus> => {
+	static get = async <T extends ServiceTitle<T> = MyAnimeListTitle>(
+		id: string | number
+	): Promise<MyAnimeListTitle | RequestStatus> => {
+		// TODO
 		return RequestStatus.SUCCESS;
 	};
 
 	persist = async (): Promise<RequestStatus> => {
+		// TODO
 		return RequestStatus.SUCCESS;
 	};
 
 	delete = async (): Promise<RequestStatus> => {
+		// TODO
 		return RequestStatus.SUCCESS;
-	};
-
-	toStatus = (): Status => {
-		switch (this.status) {
-			case MyAnimeListStatus.NONE:
-				return Status.NONE;
-			case MyAnimeListStatus.READING:
-				return Status.READING;
-			case MyAnimeListStatus.COMPLETED:
-				return Status.COMPLETED;
-			case MyAnimeListStatus.PAUSED:
-				return Status.PAUSED;
-			case MyAnimeListStatus.DROPPED:
-				return Status.DROPPED;
-			case MyAnimeListStatus.PLAN_TO_READ:
-				return Status.PLAN_TO_READ;
-		}
 	};
 
 	// Convert a YYYY-MM-DD MyAnimeList date to a Date timestamp
@@ -92,17 +44,61 @@ export class MyAnimeListTitle extends ServiceTitle {
 		return d.getTime();
 	};
 
-	title = (): Title | undefined => {
+	static toStatus = (status: MyAnimeListStatus): Status => {
+		switch (status) {
+			case MyAnimeListStatus.NONE:
+				return Status.NONE;
+			case MyAnimeListStatus.READING:
+				return Status.READING;
+			case MyAnimeListStatus.PLAN_TO_READ:
+				return Status.PLAN_TO_READ;
+			case MyAnimeListStatus.COMPLETED:
+				return Status.COMPLETED;
+			case MyAnimeListStatus.DROPPED:
+				return Status.DROPPED;
+			case MyAnimeListStatus.PAUSED:
+				return Status.PAUSED;
+		}
+	};
+
+	toTitle = (): Title | undefined => {
 		if (!this.mangaDex) return undefined;
 		return new Title(this.mangaDex, {
-			services: { mal: this.id },
+			services: { mal: this.id as number },
 			progress: this.progress,
-			status: this.toStatus(),
-			// TODO: Score conversion
-			score: this.score && this.score > 0 ? this.score : undefined,
-			start: this.dateToTime(this.start),
-			end: this.dateToTime(this.end),
+			status: MyAnimeListTitle.toStatus(this.status),
+			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
+			start: this.start ? this.start.getTime() : undefined,
+			end: this.end ? this.end.getTime() : undefined,
 			name: this.name,
+		});
+	};
+
+	static fromStatus = (status: Status): MyAnimeListStatus => {
+		switch (status) {
+			case Status.READING:
+				return MyAnimeListStatus.READING;
+			case Status.COMPLETED:
+				return MyAnimeListStatus.COMPLETED;
+			case Status.PAUSED:
+				return MyAnimeListStatus.PAUSED;
+			case Status.DROPPED:
+				return MyAnimeListStatus.DROPPED;
+			case Status.PLAN_TO_READ:
+				return MyAnimeListStatus.PLAN_TO_READ;
+		}
+		return MyAnimeListStatus.NONE;
+	};
+
+	static fromTitle = <T extends ServiceTitle<T> = MyAnimeListTitle>(title: Title): MyAnimeListTitle | undefined => {
+		if (!title.services.ap) return undefined;
+		return new MyAnimeListTitle(title.services.ap, {
+			progress: title.progress,
+			status: MyAnimeListTitle.fromStatus(title.status),
+			score: title.score ? title.score : undefined,
+			start: title.start ? new Date(title.start) : undefined,
+			end: title.end ? new Date(title.end) : undefined,
+			name: title.name,
 		});
 	};
 }

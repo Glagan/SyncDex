@@ -1,5 +1,4 @@
-import { Progress, ExportedSave } from './interfaces';
-import { Status, ServiceKeyMap, Service } from './Service';
+import { Progress, ExportedSave, Status, ServiceKey, ServiceKeyMap, ServiceName } from './core';
 import { LocalStorage } from './Storage';
 import { Options } from './Options';
 import { RequestStatus } from './Runtime';
@@ -267,16 +266,37 @@ export class TitleCollection {
 	};
 }
 
-export abstract class ServiceTitle {
-	abstract id: number;
+export abstract class ServiceTitle<T extends ServiceTitle<T>> {
+	abstract readonly serviceKey: ServiceKey;
+	abstract readonly serviceName: ServiceName;
+
+	id: number | string;
 	mangaDex?: number;
 
+	progress: Progress = {
+		chapter: 0,
+	};
+	score?: number = 0;
+	start?: Date;
+	end?: Date;
+	name?: string;
+
+	constructor(id: number | string, title?: Partial<T>) {
+		this.id = id;
+		if (title !== undefined) {
+			Object.assign(this, title);
+		}
+	}
+
 	// abstract static get(id): RequestStatus
-	static get = async (id: number): Promise<RequestStatus> => {
+	static get = async <T extends ServiceTitle<T>>(id: number | string): Promise<ServiceTitle<T> | RequestStatus> => {
 		return RequestStatus.FAIL;
 	};
 	abstract persist(): Promise<RequestStatus>;
 	abstract delete(): Promise<RequestStatus>;
+
 	abstract toTitle(): Title | undefined;
-	abstract fromTitle(title: Title): void;
+	static fromTitle = <T extends ServiceTitle<T>>(title: Title): ServiceTitle<T> | undefined => {
+		return undefined;
+	};
 }

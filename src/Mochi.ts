@@ -1,5 +1,5 @@
 import { Runtime, JSONResponse } from './Runtime';
-import { ServiceName } from './Service';
+import { ServiceName } from './core';
 
 type MochiConnections = {
 	[key in ServiceName]: number;
@@ -43,7 +43,7 @@ export class Mochi {
 	}
 
 	static async findMany(
-		title: number[] | string[],
+		title: (number | string)[],
 		source: ServiceName = ServiceName.MangaDex
 	): Promise<MochiConnections[] | undefined> {
 		const response = await Runtime.request<JSONResponse>({

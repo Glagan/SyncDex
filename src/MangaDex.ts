@@ -1,7 +1,6 @@
-import { Status } from './Service';
 import { DOM } from './DOM';
 import { Options } from './Options';
-import { Progress } from './interfaces';
+import { Progress, Status } from './core';
 
 interface ChapterRow {
 	progress: Progress | undefined;
@@ -249,16 +248,6 @@ class ChapterGroup {
 
 export class MangaDex {
 	document: Document;
-	static status: { [key in Status]: number } = {
-		[Status.READING]: 1,
-		[Status.COMPLETED]: 2,
-		[Status.PAUSED]: 3,
-		[Status.PLAN_TO_READ]: 4,
-		[Status.DROPPED]: 5,
-		[Status.REREADING]: 6,
-		[Status.NONE]: 0,
-		[Status.WONT_READ]: 0,
-	};
 
 	constructor(document: Document) {
 		this.document = document;

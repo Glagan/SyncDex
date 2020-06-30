@@ -1,9 +1,8 @@
 import { DOM } from '../../src/DOM';
 import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
-import { Status, ServiceName } from '../../src/Service';
 import {
-	ManageableService,
+	Service,
 	FileImportableModule,
 	FileImportFormat,
 	BatchExportableModule,
@@ -12,7 +11,7 @@ import {
 	ActivableModule,
 } from './Service';
 import { RawResponse, Runtime, RequestStatus } from '../../src/Runtime';
-import { MyAnimeList as MyAnimeListService } from '../../src/Service/MyAnimeList';
+import { ServiceKey, Status, ServiceName } from '../../src/core';
 
 enum MyAnimeListStatus {
 	COMPLETED = 'Completed',
@@ -37,12 +36,10 @@ interface MyAnimeListTitle {
 class MyAnimeListActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	loginUrl: string = 'https://myanimelist.net/login.php';
-	login = undefined;
-	logout = undefined;
 
-	isLoggedIn = async (): Promise<RequestStatus> => {
+	loggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
-			url: this.loginUrl,
+			url: 'https://myanimelist.net/login.php',
 			method: 'GET',
 			credentials: 'include',
 		});
@@ -56,6 +53,9 @@ class MyAnimeListActive extends ActivableModule {
 		}
 		return RequestStatus.FAIL;
 	};
+
+	login = undefined;
+	logout = undefined;
 }
 
 /**
@@ -206,7 +206,7 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 				return title.id > 0 && title.chapters >= 0 && title.status != MyAnimeListStatus.NONE;
 			})
 			.map((t) => t.id);
-		const connections = await Mochi.findMany(ids, this.manager.service.name);
+		const connections = await Mochi.findMany(ids, this.service.name);
 		let total = 0;
 		if (connections !== undefined) {
 			for (const key in connections) {
@@ -346,8 +346,10 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 	};
 }
 
-export class MyAnimeList extends ManageableService {
-	service = new MyAnimeListService();
+export class MyAnimeList extends Service {
+	key: ServiceKey = ServiceKey.MyAnimeList;
+	name: ServiceName = ServiceName.MyAnimeList;
+
 	activeModule: MyAnimeListActive = new MyAnimeListActive(this);
 	importModule: MyAnimeListImport = new MyAnimeListImport(this);
 	exportModule: MyAnimeListExport = new MyAnimeListExport(this);

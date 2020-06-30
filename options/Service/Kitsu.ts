@@ -1,73 +1,31 @@
 import { Options } from '../../src/Options';
-import { Status, ServiceName } from '../../src/Service';
 import { Runtime, JSONResponse, RequestStatus } from '../../src/Runtime';
-import { Mochi } from '../../src/Mochi';
-import { TitleCollection, Title } from '../../src/Title';
-import { ManageableService, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
-import { Kitsu as KitsuService, KitsuStatus } from '../../src/Service/Kitsu';
+import { Title } from '../../src/Title';
+import { Service, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
+import { KitsuStatus, KitsuTitle, KitsuManga, KitsuResponse, KitsuHeaders, KitsuAPI } from '../../src/Service/Kitsu';
 import { DOM } from '../../src/DOM';
-
-interface EntryAttributes {
-	status: KitsuStatus;
-	progress: number;
-	volumesOwned: number;
-	ratingTwenty: number | null;
-	startedAt: string | null;
-	finishedAt: string | null;
-}
-
-interface KitsuManga {
-	id: string;
-	type: 'manga';
-	links: any;
-	attributes: {
-		canonicalTitle: string;
-	};
-}
-
-interface KitsuResponse {
-	data: {
-		id: string;
-		type: string;
-		links: any;
-		attributes: EntryAttributes;
-		relationships: {
-			manga: {
-				links: any;
-				data: {
-					type: 'manga';
-					id: string;
-				};
-			};
-		};
-	}[];
-	included: KitsuManga[];
-	meta: {
-		statusCounts: {
-			current?: number;
-			planned?: number;
-			completed?: number;
-			onHold?: number;
-			dropped?: number;
-		};
-		count: number;
-	};
-	links: any;
-}
-
-interface KitsuTitle {
-	id: number;
-	status: Status;
-	chapter: number;
-	volume: number;
-	score: number;
-	start: string | null;
-	end: string | null;
-	name: string;
-}
+import { ServiceKey, ServiceName } from '../../src/core';
 
 class KitsuActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.FORM;
+
+	loggedIn = async (): Promise<RequestStatus> => {
+		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken) return RequestStatus.MISSING_TOKEN;
+		const response = await Runtime.request<JSONResponse>({
+			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
+			isJson: true,
+			headers: {
+				Authorization: `Bearer ${Options.tokens.kitsuToken}`,
+				Accept: 'application/vnd.api+json',
+			},
+		});
+		if (response.status >= 500) {
+			return RequestStatus.SERVER_ERROR;
+		} else if (response.status >= 400 && response.status < 500) {
+			return RequestStatus.BAD_REQUEST;
+		}
+		return RequestStatus.SUCCESS;
+	};
 
 	getUserId = async (): Promise<RequestStatus> => {
 		if (Options.tokens.kitsuToken === undefined) return RequestStatus.MISSING_TOKEN;
@@ -75,7 +33,7 @@ class KitsuActive extends ActivableModule {
 			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
 			isJson: true,
 			method: 'GET',
-			headers: KitsuService.LoggedHeaders(),
+			headers: KitsuHeaders(),
 		});
 		if (data.ok) {
 			Options.tokens.kitsuUser = data.body.data[0].id;
@@ -130,7 +88,7 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 
 	handlePage = async (): Promise<KitsuTitle[] | false> => {
 		const response = await Runtime.request<JSONResponse>({
-			url: `https://kitsu.io/api/edge/library-entries?
+			url: `${KitsuAPI}?
 					filter[user_id]=${Options.tokens.kitsuUser}&
 					filter[kind]=manga&
 					fields[libraryEntries]=status,progress,volumesOwned,ratingTwenty,startedAt,finishedAt,manga&
@@ -139,7 +97,7 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 					page[limit]=500&
 					page[offset]=${(this.state.current - 1) * 500}`,
 			isJson: true,
-			headers: KitsuService.LoggedHeaders(),
+			headers: KitsuHeaders(),
 		});
 		if (response.status >= 400) {
 			this.notification('warning', 'The request failed, maybe Kitsu is having problems, retry later.');
@@ -156,60 +114,26 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 		const body = response.body as KitsuResponse;
 		// Each row has a data-id field
 		for (const title of body.data) {
+			if (!title.relationships.manga.data) continue;
 			const manga = this.findManga(body.included, title.relationships.manga.data.id);
-			const kitsuTitle: KitsuTitle = {
-				id: parseInt(title.relationships.manga.data.id),
-				chapter: title.attributes.progress,
-				volume: title.attributes.volumesOwned,
-				status: this.manager.service.toStatus(title.attributes.status),
-				score: title.attributes.ratingTwenty !== null ? title.attributes.ratingTwenty : 0,
-				start: title.attributes.startedAt,
-				end: title.attributes.finishedAt,
-				name: manga.attributes.canonicalTitle,
-			};
-			if (kitsuTitle.status !== Status.NONE) {
-				titles.push(kitsuTitle);
-			}
+			titles.push(
+				new KitsuTitle(parseInt(title.relationships.manga.data.id), {
+					id: parseInt(title.relationships.manga.data.id),
+					progress: {
+						chapter: title.attributes.progress,
+						volume: title.attributes.volumesOwned,
+					},
+					status: title.attributes.status,
+					score: title.attributes.ratingTwenty !== null ? title.attributes.ratingTwenty : 0,
+					start: title.attributes.startedAt ? new Date(title.attributes.startedAt) : undefined,
+					end: title.attributes.finishedAt ? new Date(title.attributes.finishedAt) : undefined,
+					name: manga.attributes.canonicalTitle,
+				})
+			);
 		}
 		// We get 500 entries per page
 		this.state.max = Math.ceil(body.meta.count / 500);
 		return titles;
-	};
-
-	convertTitles = async (titles: TitleCollection, titleList: KitsuTitle[]): Promise<number> => {
-		const connections = await Mochi.findMany(
-			titleList.map((t) => t.id),
-			this.manager.service.name
-		);
-		let total = 0;
-		if (connections !== undefined) {
-			for (const key in connections) {
-				if (connections.hasOwnProperty(key)) {
-					const connection = connections[key];
-					if (connection['MangaDex'] !== undefined) {
-						const id = parseInt(key);
-						const title = titleList.find((t) => t.id == id) as KitsuTitle;
-						titles.add(
-							new Title(connection['MangaDex'], {
-								services: { ku: title.id },
-								progress: {
-									chapter: title.chapter,
-									volume: title.volume,
-								},
-								status: title.status,
-								chapters: [],
-								score: title.score,
-								start: title.start ? new Date(title.start).getTime() : undefined,
-								end: title.end ? new Date(title.end).getTime() : undefined,
-								name: title.name,
-							})
-						);
-						total++;
-					}
-				}
-			}
-		}
-		return total;
 	};
 }
 
@@ -227,7 +151,7 @@ class KitsuExport extends APIExportableModule {
 		for (let current = 1; current <= max; current++) {
 			const ids = titles.slice((current - 1) * 500, current * 500).map((title) => title.services.ku as number);
 			const response = await Runtime.request<JSONResponse>({
-				url: `${KitsuService.APIUrl}
+				url: `${KitsuAPI}
 					?filter[user_id]=${Options.tokens.kitsuUser}
 					&filter[mangaId]=${ids.join(',')}
 					&fields[libraryEntries]=id,manga
@@ -235,7 +159,7 @@ class KitsuExport extends APIExportableModule {
 					&fields[manga]=id
 					&page[limit]=500`,
 				isJson: true,
-				headers: KitsuService.LoggedHeaders(),
+				headers: KitsuHeaders(),
 			});
 			if (response.status >= 400) {
 				this.stopButton.remove();
@@ -245,7 +169,9 @@ class KitsuExport extends APIExportableModule {
 			}
 			const body = response.body as KitsuResponse;
 			for (const title of body.data) {
-				this.inList[title.relationships.manga.data.id] = +title.id;
+				if (title.relationships.manga.data) {
+					this.inList[title.relationships.manga.data.id] = +title.id;
+				}
 			}
 		}
 		this.stopButton.remove();
@@ -253,62 +179,20 @@ class KitsuExport extends APIExportableModule {
 		return true; // TODO: Also just *Import* at the same time to just have the latest values ?
 	};
 
-	createTitle = (title: Title): Partial<EntryAttributes> => {
-		let values: Partial<EntryAttributes> = {
-			status: this.manager.service.fromStatus(title.status),
-			progress: title.progress.chapter,
-			volumesOwned: title.progress.volume || undefined,
-		};
-		console.log('converting title', title);
-		if (title.score !== undefined && title.score > 0) values.ratingTwenty = title.score; // TODO: convert ratingTwenty
-		if (title.start !== undefined) {
-			values.startedAt = new Date(title.start).toISOString();
-		}
-		if (title.end !== undefined) {
-			values.finishedAt = new Date(title.end).toISOString();
-		}
-		return values;
-	};
-
 	exportTitle = async (title: Title): Promise<boolean> => {
-		if (this.manager.service.fromStatus(title.status) !== KitsuStatus.NONE) {
-			const libraryEntryId = this.inList[title.services.ku as number];
-			const method = libraryEntryId !== undefined ? 'PATCH' : 'POST';
-			const url = `${KitsuService.APIUrl}${libraryEntryId !== undefined ? `/${libraryEntryId}` : ''}`;
-			const response = await Runtime.request<JSONResponse>({
-				url: url,
-				method: method,
-				headers: KitsuService.LoggedHeaders(),
-				body: JSON.stringify({
-					data: {
-						id: libraryEntryId,
-						attributes: this.createTitle(title),
-						relationships: {
-							manga: {
-								data: {
-									type: 'manga',
-									id: title.services.ku,
-								},
-							},
-							user: {
-								data: {
-									type: 'users',
-									id: Options.tokens.kitsuUser,
-								},
-							},
-						},
-						type: 'library-entries',
-					},
-				}),
-			});
-			return response.ok;
+		const exportTitle = KitsuTitle.fromTitle(title);
+		if (exportTitle && exportTitle.status !== KitsuStatus.NONE) {
+			const responseStatus = await exportTitle.persist();
+			return responseStatus == RequestStatus.SUCCESS;
 		}
 		return false;
 	};
 }
 
-export class Kitsu extends ManageableService {
-	service: KitsuService = new KitsuService();
+export class Kitsu extends Service {
+	key: ServiceKey = ServiceKey.Kitsu;
+	name: ServiceName = ServiceName.Kitsu;
+
 	activeModule: KitsuActive = new KitsuActive(this);
 	importModule: KitsuImport = new KitsuImport(this);
 	exportModule: KitsuExport = new KitsuExport(this);

@@ -1,4 +1,21 @@
-import { RequestStatus } from './Runtime';
+import { AvailableOptions } from './Options';
+import { SaveTitle } from './Title';
+
+export interface Progress {
+	chapter: number;
+	volume?: number;
+}
+
+export const enum Status {
+	NONE,
+	READING,
+	COMPLETED,
+	PAUSED,
+	DROPPED,
+	PLAN_TO_READ,
+	REREADING,
+	WONT_READ,
+}
 
 export enum ServiceName {
 	MyAnimeList = 'MyAnimeList',
@@ -33,19 +50,16 @@ export interface ServiceKeyMap {
 	[ServiceKey.SyncDex]: number;
 }
 
-export const enum Status {
-	NONE,
-	READING,
-	COMPLETED,
-	PAUSED,
-	DROPPED,
-	PLAN_TO_READ,
-	REREADING,
-	WONT_READ,
-}
+export type ExportOptions = {
+	options?: AvailableOptions;
+};
 
-export abstract class Service {
-	abstract key: ServiceKey;
-	abstract name: ServiceName;
-	abstract loggedIn(): Promise<RequestStatus>;
-}
+export type ExportHistory = {
+	history?: number[];
+};
+
+export type ExportedTitles = {
+	[key: string]: SaveTitle;
+};
+
+export type ExportedSave = ExportOptions & ExportHistory & ExportedTitles;
