@@ -47,19 +47,8 @@ class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
 
 	status: Status = Status.NONE;
 
-	static get = async <T extends ServiceTitle<T> = MangaDexTitle>(
-		id: number | string
-	): Promise<MangaDexTitle | RequestStatus> => {
-		const response = await Runtime.request<RawResponse>({
-			url: `https://mangadex.org/title/${id}`,
-			method: 'GET',
-			credentials: 'include',
-		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
-		// Convert Response to MangaDexTitle
-		// TODO
-		return new MangaDexTitle(id);
+	static get = async <T extends ServiceTitle<T> = MangaDexTitle>(id: number | string): Promise<RequestStatus> => {
+		return RequestStatus.FAIL;
 	};
 
 	persist = async (): Promise<RequestStatus> => {
@@ -78,8 +67,7 @@ class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
 	};
 
 	delete = async (): Promise<RequestStatus> => {
-		// TODO
-		return RequestStatus.SUCCESS;
+		return RequestStatus.FAIL;
 	};
 
 	toTitle = (): Title | undefined => {
@@ -96,7 +84,7 @@ class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
 		return new MangaDexTitle(title.services.al, {
 			progress: title.progress,
 			status: title.status,
-			score: title.score ? title.score : undefined,
+			score: title.score,
 			name: title.name,
 		});
 	};
@@ -104,7 +92,6 @@ class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
 
 class MangaDexImport extends APIImportableModule<MangaDexTitle> {
 	parser: DOMParser = new DOMParser();
-	convertManyTitles = undefined;
 
 	handlePage = async (): Promise<MangaDexTitle[] | false> => {
 		const response = await Runtime.request<RawResponse>({

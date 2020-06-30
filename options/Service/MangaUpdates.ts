@@ -25,12 +25,10 @@ class MangaUpdatesActive extends ActivableModule {
 }
 
 class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
-	needReference: boolean = false;
 	parser: DOMParser = new DOMParser();
 	currentPage: string = '';
 	currentList: number = 0;
 	static lists: string[] = ['read', 'wish', 'complete', 'unfinished', 'hold'];
-	convertManyTitles = undefined;
 
 	progressFromNode = (node: HTMLElement | null): number => {
 		if (node !== null) {
@@ -108,26 +106,21 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 }
 
 class MangaUpdatesExport extends APIExportableModule {
-	actual: { [key: string]: MangaUpdatesTitle } = {};
+	onlineList: { [key: string]: MangaUpdatesTitle | undefined } = {};
 
 	// We need the status of each titles before to move them from lists to lists
 	// Use ImportModule and get a list of MangaUpdatesTitles
 	preMain = async (_titles: Title[]): Promise<boolean> => {
-		let notification = this.notification('default', [
-			DOM.text('Checking current status of each titles'),
-			DOM.space(),
-			this.stopButton,
-		]);
+		let notification = this.notification('default', 'Checking current status of each titles');
 		const importModule = new MangaUpdatesImport(this.service);
 		while (!this.doStop && importModule.getNextPage() !== false) {
 			let tmp: MangaUpdatesTitle[] | false = await importModule.handlePage();
 			if (tmp === false) {
-				this.stopButton.remove();
 				notification.classList.remove('loading');
 				return false;
 			}
 			for (const title of tmp) {
-				this.actual[title.id] = title;
+				this.onlineList[title.id] = title;
 			}
 		}
 		this.stopButton.remove();
@@ -138,6 +131,14 @@ class MangaUpdatesExport extends APIExportableModule {
 	exportTitle = async (title: Title): Promise<boolean> => {
 		const exportTitle = MangaUpdatesTitle.fromTitle(title);
 		if (exportTitle && exportTitle.status !== MangaUpdatesStatus.NONE) {
+			const onlineTitle = this.onlineList[exportTitle.id];
+			if (onlineTitle) {
+				exportTitle.current = {
+					progress: onlineTitle.progress,
+					status: onlineTitle.status,
+					score: onlineTitle.score,
+				};
+			}
 			const responseStatus = await exportTitle.persist();
 			return responseStatus == RequestStatus.SUCCESS;
 		}

@@ -1,6 +1,7 @@
 import { Runtime, RawResponse, RequestStatus } from '../Runtime';
 import { ServiceTitle, Title } from '../Title';
 import { Progress, ServiceKey, ServiceName, Status } from '../core';
+import { MangaUpdates } from '../../options/Service/MangaUpdates';
 
 export const enum MangaUpdatesStatus {
 	NONE = -1,
@@ -16,16 +17,11 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 	readonly serviceName: ServiceName = ServiceName.MangaUpdates;
 
 	status: MangaUpdatesStatus = MangaUpdatesStatus.NONE;
-	original: {
+	current?: {
 		progress: Progress;
 		status: MangaUpdatesStatus;
-		score: number;
-	} = {
-		progress: { chapter: 0 },
-		status: MangaUpdatesStatus.NONE,
-		score: 0,
+		score?: number;
 	};
-	newEntry: boolean = true;
 
 	static get = async <T extends ServiceTitle<T> = MangaUpdatesTitle>(
 		id: number | string
@@ -42,22 +38,21 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 	// Get a list of status to go through to be able to update to the wanted status
 	pathToStatus = (): MangaUpdatesStatus[] => {
 		let list: MangaUpdatesStatus[] = [];
-		const from = this.original.status;
+		const newEntry = this.current === undefined;
+		const from = newEntry ? MangaUpdatesStatus.NONE : this.current?.status;
 		const to = this.status;
 		// PAUSED requirements
 		if (to == MangaUpdatesStatus.PAUSED) {
-			if (this.newEntry) {
+			if (newEntry) {
 				list.push(MangaUpdatesStatus.READING);
-			}
-			if (from != MangaUpdatesStatus.READING && from != MangaUpdatesStatus.DROPPED) {
+			} else if (from != MangaUpdatesStatus.READING && from != MangaUpdatesStatus.DROPPED) {
 				list.push(MangaUpdatesStatus.READING);
 			}
 			// DROPPED requirements
 		} else if (to == MangaUpdatesStatus.DROPPED) {
-			if (this.newEntry) {
+			if (newEntry) {
 				list.push(MangaUpdatesStatus.READING);
-			}
-			if (from != MangaUpdatesStatus.PAUSED) {
+			} else if (from != MangaUpdatesStatus.PAUSED) {
 				if (from != MangaUpdatesStatus.READING) {
 					list.push(MangaUpdatesStatus.READING);
 				}
@@ -65,12 +60,12 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 			}
 			// PLAN TO READ requirements
 		} else if (to == MangaUpdatesStatus.PLAN_TO_READ) {
-			if (!this.newEntry) {
+			if (!newEntry) {
 				list.push(MangaUpdatesStatus.NONE);
 			}
 			// COMPLETED requirements
 		} else if (to == MangaUpdatesStatus.COMPLETED) {
-			if (!this.newEntry && from != MangaUpdatesStatus.READING) {
+			if (!newEntry && from != MangaUpdatesStatus.READING) {
 				list.push(MangaUpdatesStatus.READING);
 			}
 		}
@@ -97,10 +92,11 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		await this.updateStatus(this.status);
 		// Update progress -- only if chapter or volume is different
 		if (
-			(this.progress.chapter > 1 && this.progress.chapter != this.original.progress.chapter) ||
+			this.current === undefined ||
+			(this.progress.chapter > 1 && this.progress.chapter != this.current.progress.chapter) ||
 			(this.progress.volume !== undefined &&
 				this.progress.volume > 0 &&
-				this.progress.volume != this.original.progress.volume)
+				this.progress.volume != this.current.progress.volume)
 		) {
 			const volume =
 				this.progress.volume !== undefined && this.progress.volume > 0 ? `&set_v=${this.progress.volume}` : '';
@@ -111,8 +107,11 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		}
 		// Update score
 		if (
-			(this.original != undefined && this.score != this.original.score && this.original.score > 0) ||
-			(this.original == undefined && this.score !== undefined && this.score > 0)
+			(this.current === undefined && this.score !== undefined && this.score > 0) ||
+			(this.current !== undefined &&
+				this.current.score !== undefined &&
+				this.score != this.current.score &&
+				this.current.score > 0)
 		) {
 			await Runtime.request<RawResponse>({
 				url: `https://www.mangaupdates.com/ajax/update_rating.php?s=${this.id}&r=${this.score}`,

@@ -13,7 +13,7 @@ import {
 import { RawResponse, Runtime, RequestStatus } from '../../src/Runtime';
 import { ServiceKey, Status, ServiceName } from '../../src/core';
 
-enum MyAnimeListStatus {
+enum MyAnimeListExportStatus {
 	COMPLETED = 'Completed',
 	PLAN_TO_READ = 'Plan to Read',
 	READING = 'Reading',
@@ -26,7 +26,7 @@ interface MyAnimeListTitle {
 	id: number;
 	chapters: number;
 	volumes: number;
-	status: MyAnimeListStatus;
+	status: MyAnimeListExportStatus;
 	start: string;
 	end: string;
 	score: number;
@@ -136,17 +136,18 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 		}
 	};
 
-	toStatus = (status: MyAnimeListStatus): Status => {
-		if (status == 'Completed') {
-			return Status.COMPLETED;
-		} else if (status == 'Plan to Read') {
-			return Status.PLAN_TO_READ;
-		} else if (status == 'Reading') {
-			return Status.READING;
-		} else if (status == 'On-Hold') {
-			return Status.PAUSED;
-		} else if (status == 'Dropped') {
-			return Status.DROPPED;
+	toStatus = (status: MyAnimeListExportStatus): Status => {
+		switch (status) {
+			case MyAnimeListExportStatus.READING:
+				return Status.READING;
+			case MyAnimeListExportStatus.COMPLETED:
+				return Status.COMPLETED;
+			case MyAnimeListExportStatus.PLAN_TO_READ:
+				return Status.PLAN_TO_READ;
+			case MyAnimeListExportStatus.PAUSED:
+				return Status.PAUSED;
+			case MyAnimeListExportStatus.DROPPED:
+				return Status.DROPPED;
 		}
 		return Status.NONE;
 	};
@@ -179,7 +180,7 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 				id: parseInt(manga.querySelector('manga_mangadb_id')?.textContent || '0'),
 				chapters: parseInt(manga.querySelector('my_read_chapters')?.textContent || '0'),
 				volumes: parseInt(manga.querySelector('my_read_volumes')?.textContent || '0'),
-				status: (manga.querySelector('my_status')?.textContent || 'Invalid') as MyAnimeListStatus,
+				status: (manga.querySelector('my_status')?.textContent || 'Invalid') as MyAnimeListExportStatus,
 				score: parseInt(manga.querySelector('my_score')?.textContent || '0'),
 				start: '0000-00-00',
 				end: '0000-00-00',
@@ -203,7 +204,7 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 	convertTitles = async (titles: TitleCollection, titleList: MyAnimeListTitle[]): Promise<number> => {
 		const ids = titleList
 			.filter((title) => {
-				return title.id > 0 && title.chapters >= 0 && title.status != MyAnimeListStatus.NONE;
+				return title.id > 0 && title.chapters >= 0 && title.status != MyAnimeListExportStatus.NONE;
 			})
 			.map((t) => t.id);
 		const connections = await Mochi.findMany(ids, this.service.name);
@@ -259,19 +260,20 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 		return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 	};
 
-	fromStatus = (status: Status): MyAnimeListStatus => {
-		if (status == Status.COMPLETED) {
-			return MyAnimeListStatus.COMPLETED;
-		} else if (status == Status.PLAN_TO_READ) {
-			return MyAnimeListStatus.PLAN_TO_READ;
-		} else if (status == Status.READING) {
-			return MyAnimeListStatus.READING;
-		} else if (status == Status.PAUSED) {
-			return MyAnimeListStatus.PAUSED;
-		} else if (status == Status.DROPPED) {
-			return MyAnimeListStatus.DROPPED;
+	fromStatus = (status: Status): MyAnimeListExportStatus => {
+		switch (status) {
+			case Status.COMPLETED:
+				return MyAnimeListExportStatus.COMPLETED;
+			case Status.PLAN_TO_READ:
+				return MyAnimeListExportStatus.PLAN_TO_READ;
+			case Status.READING:
+				return MyAnimeListExportStatus.READING;
+			case Status.PAUSED:
+				return MyAnimeListExportStatus.PAUSED;
+			case Status.DROPPED:
+				return MyAnimeListExportStatus.DROPPED;
 		}
-		return MyAnimeListStatus.NONE;
+		return MyAnimeListExportStatus.NONE;
 	};
 
 	createTitle = (document: Document, title: Title): HTMLElement => {
@@ -319,7 +321,7 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 		if (!csrfTokenArr) return false;
 		// Upload file and look at response
 		const response = await Runtime.request<RawResponse>({
-			url: `http://localhost/import.php`, // https://myanimelist.net/import.php
+			url: `http://localhost/import.php`,
 			method: 'POST',
 			credentials: 'include',
 			body: {

@@ -77,8 +77,6 @@ class KitsuActive extends ActivableModule {
 }
 
 class KitsuImport extends APIImportableModule<KitsuTitle> {
-	convertManyTitles = undefined;
-
 	findManga = (included: KitsuManga[], id: string): KitsuManga => {
 		for (const manga of included) {
 			if (manga.id == id) return manga;
@@ -138,7 +136,7 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 }
 
 class KitsuExport extends APIExportableModule {
-	inList: { [key: string]: number } = {};
+	onlineList: { [key: string]: number | undefined } = {};
 
 	// Fetch all Kitsu titles to check if they already are in user list
 	preMain = async (titles: Title[]): Promise<boolean> => {
@@ -170,7 +168,7 @@ class KitsuExport extends APIExportableModule {
 			const body = response.body as KitsuResponse;
 			for (const title of body.data) {
 				if (title.relationships.manga.data) {
-					this.inList[title.relationships.manga.data.id] = +title.id;
+					this.onlineList[title.relationships.manga.data.id] = +title.id;
 				}
 			}
 		}
@@ -182,6 +180,10 @@ class KitsuExport extends APIExportableModule {
 	exportTitle = async (title: Title): Promise<boolean> => {
 		const exportTitle = KitsuTitle.fromTitle(title);
 		if (exportTitle && exportTitle.status !== KitsuStatus.NONE) {
+			const libraryEntryId = this.onlineList[exportTitle.id];
+			if (libraryEntryId) {
+				exportTitle.libraryEntryId = libraryEntryId;
+			}
 			const responseStatus = await exportTitle.persist();
 			return responseStatus == RequestStatus.SUCCESS;
 		}

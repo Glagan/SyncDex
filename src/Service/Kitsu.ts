@@ -88,7 +88,6 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 	readonly serviceName: ServiceName = ServiceName.Kitsu;
 
 	status: KitsuStatus = KitsuStatus.NONE;
-	// TODO: libraryEntryId
 	libraryEntryId: number = 0;
 
 	// abstract static get(id): RequestStatus
@@ -107,12 +106,12 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 		const values: Partial<KitsuTitle> = {};
 		if (body.data.length == 1) {
 			const libraryEntry = body.data[0];
+			values.libraryEntryId = parseInt(libraryEntry.id);
 			const attributes = libraryEntry.attributes;
 			values.progress = {
 				chapter: attributes.progress,
 				volume: attributes.volumesOwned,
 			};
-			values;
 			status = attributes.status;
 			if (attributes.ratingTwenty !== null) values.score = attributes.ratingTwenty;
 			if (attributes.startedAt !== null) values.start = new Date(attributes.startedAt);
@@ -123,7 +122,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 	};
 
 	persist = async (): Promise<RequestStatus> => {
-		const method = this.libraryEntryId > 0 ? 'PATCH' : 'POST';
+		const method = this.libraryEntryId && this.libraryEntryId > 0 ? 'PATCH' : 'POST';
 		const url = `${KitsuAPI}${this.libraryEntryId !== undefined ? `/${this.libraryEntryId}` : ''}`;
 		const response = await Runtime.request<JSONResponse>({
 			url: url,
@@ -160,6 +159,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 		});
 		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
 		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		// TODO: Get libraryEntryId if it was a new title
 		return RequestStatus.SUCCESS;
 	};
 

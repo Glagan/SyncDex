@@ -40,7 +40,6 @@ class AnimePlanetActive extends ActivableModule {
 
 class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 	parser: DOMParser = new DOMParser();
-	convertManyTitles = undefined;
 
 	// Set the list type to 'list'
 	preMain = async (): Promise<boolean> => {
@@ -110,6 +109,7 @@ class AnimePlanetExport extends APIExportableModule {
 	exportTitle = async (title: Title): Promise<boolean> => {
 		const exportTitle = AnimePlanetTitle.fromTitle(title);
 		if (exportTitle && exportTitle.status !== AnimePlanetStatus.NONE) {
+			exportTitle.token = (this.service as AnimePlanet).activeModule.token;
 			const responseStatus = await exportTitle.persist();
 			return responseStatus == RequestStatus.SUCCESS;
 		}

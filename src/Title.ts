@@ -46,6 +46,28 @@ export interface FullTitle {
 	lastRead?: number;
 }
 
+export class SaveTitle {
+	static valid(title: SaveTitle): boolean {
+		return (
+			typeof title.s === 'object' &&
+			typeof title.st === 'number' &&
+			typeof title.p === 'object' &&
+			title.p.c !== undefined &&
+			(title.sc === undefined || typeof title.sc === 'number') &&
+			(title.c === undefined || Array.isArray(title.c)) &&
+			(title.sd === undefined || typeof title.sd === 'number') &&
+			(title.ed === undefined || typeof title.ed === 'number') &&
+			(title.lt === undefined || typeof title.lt === 'number') &&
+			(title.lc === undefined || typeof title.lc === 'number') &&
+			(title.id === undefined || typeof title.id === 'number') &&
+			(title.h === undefined || (typeof title.h === 'object' && title.h.c !== undefined)) &&
+			(title.hi === undefined || typeof title.hi === 'number') &&
+			(title.lr === undefined || typeof title.lr === 'number') &&
+			(title.n === undefined || typeof title.n === 'string')
+		);
+	}
+}
+
 /**
  * Handle conversion between a SaveTitle in LocalStorage and a FullTitle.
  */
