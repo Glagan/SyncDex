@@ -22,11 +22,8 @@ class OptionsManager {
 		this.colorManager = new ColorManager();
 		this.checkboxManager = new CheckboxManager();
 		this.inputManager = new InputManager();
-		this.menuHighlight = new MenuHighlight(document.getElementById('content') as HTMLElement);
-		this.serviceManager = new ServiceManager(
-			document.getElementById('service-list') as HTMLElement,
-			document.getElementById('save-container') as HTMLElement
-		);
+		this.menuHighlight = new MenuHighlight();
+		this.serviceManager = new ServiceManager();
 		// Delete save event
 		const deleteSave = document.getElementById('delete-save');
 		if (deleteSave) {
@@ -63,18 +60,14 @@ class OptionsManager {
 			document.body.classList.add('dark');
 			themeButton.className = 'fas fa-sun';
 		}
-		themeRow.addEventListener('click', (event) => {
+		const toggleTheme = (): void => {
 			themeButton.classList.toggle('fa-sun');
 			themeButton.classList.toggle('fa-moon');
 			document.body.classList.toggle('dark');
 			document.body.classList.toggle('light');
-		});
-		prefersColorScheme.addEventListener('change', () => {
-			themeButton.classList.toggle('fa-sun');
-			themeButton.classList.toggle('fa-moon');
-			document.body.classList.toggle('dark');
-			document.body.classList.toggle('light');
-		});
+		};
+		themeRow.addEventListener('click', toggleTheme);
+		prefersColorScheme.addEventListener('change', toggleTheme);
 	};
 
 	reload = (): void => {

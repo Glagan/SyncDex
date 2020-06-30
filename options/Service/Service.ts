@@ -814,6 +814,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 export abstract class APIImportableModule<T extends ServiceTitle<T>> extends ImportableModule {
 	currentTitle: number = 0;
 	state: ImportState = { current: 0, max: 1 };
+	convertTitles?(titles: TitleCollection, titleList: T[]): Promise<number>;
 	abstract handlePage(): Promise<T[] | false>;
 	perConvert: number = 250;
 	preMain?(): Promise<boolean>;
@@ -899,22 +900,27 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 			const titleList = titles.slice(offset, offset + this.perConvert);
 			offset += this.perConvert;
 			notification.textContent = this.getProgress(ImportStep.CONVERT_TITLES, titles.length);
-			const connections = await Mochi.findMany(
-				titleList.map((t) => t.id),
-				this.service.name
-			);
-			if (connections !== undefined) {
-				for (const key in connections) {
-					if (connections.hasOwnProperty(key)) {
-						const connection = connections[key];
-						if (connection['MangaDex'] !== undefined) {
-							const id = parseInt(key);
-							const title = titleList.find((t) => t.id == id) as T;
-							title.mangaDex = connection['MangaDex'];
-							const convertedTitle = title.toTitle();
-							if (convertedTitle) {
-								collection.add(convertedTitle);
-								this.summary.valid++;
+			if (this.convertTitles) {
+				const converted = await this.convertTitles(collection, titleList);
+				this.summary.valid += converted;
+			} else {
+				const connections = await Mochi.findMany(
+					titleList.map((t) => t.id),
+					this.service.name
+				);
+				if (connections !== undefined) {
+					for (const key in connections) {
+						if (connections.hasOwnProperty(key)) {
+							const connection = connections[key];
+							if (connection['MangaDex'] !== undefined) {
+								const id = parseInt(key);
+								const title = titleList.find((t) => t.id == id) as T;
+								title.mangaDex = connection['MangaDex'];
+								const convertedTitle = title.toTitle();
+								if (convertedTitle) {
+									collection.add(convertedTitle);
+									this.summary.valid++;
+								}
 							}
 						}
 					}

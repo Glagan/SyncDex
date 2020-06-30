@@ -7,6 +7,7 @@ import { ServiceKey, ServiceName, Status } from '../../src/core';
 class MangaDexActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	loginUrl: string = 'https://mangadex.org/login';
+	activable: boolean = false;
 
 	parser: DOMParser = new DOMParser();
 	user: number = 0;
@@ -154,8 +155,8 @@ class MangaDexImport extends APIImportableModule<MangaDexTitle> {
 		return titles;
 	};
 
-	convertTitles = async (titles: TitleCollection, titleList: Title[]): Promise<number> => {
-		titles.add(...titleList);
+	convertTitles = async (titles: TitleCollection, titleList: MangaDexTitle[]): Promise<number> => {
+		titles.add(...(titleList.map((title) => title.toTitle()).filter((title) => title !== undefined) as Title[]));
 		return titleList.length;
 	};
 }

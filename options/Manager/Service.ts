@@ -39,8 +39,8 @@ export class ServiceManager {
 	importContainer: HTMLElement;
 	exportContainer: HTMLElement;
 
-	constructor(active: HTMLElement, saveContainer: HTMLElement) {
-		this.activeContainer = active;
+	constructor() {
+		this.activeContainer = document.getElementById('service-list') as HTMLElement;
 		// Warnings
 		this.noServices = document.getElementById('no-service') as HTMLElement;
 		this.inactiveWarning = document.getElementById('inactive-service') as HTMLElement;
@@ -63,7 +63,7 @@ export class ServiceManager {
 	 * Check if the user is logged in on the Service and calls updateStatus to display warnings.
 	 */
 	reloadManager = async (service: Service): Promise<void> => {
-		if (!service.activeModule) return;
+		if (!service.activeModule || !service.activeModule.activable) return;
 		const index = Options.services.indexOf(service.name);
 		if (Options.mainService == service.name) {
 			this.mainService = service;

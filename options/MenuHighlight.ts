@@ -20,22 +20,26 @@ export class MenuHighlight {
 	menus: Menu[] = [];
 	activeMenu: number = 0;
 
-	constructor(node: HTMLElement) {
-		this.node = node;
+	constructor() {
+		this.node = document.getElementById('content') as HTMLElement;
 		document.querySelectorAll<HTMLElement>('[data-link]').forEach((link) => {
 			const menu = new Menu(link);
 			link.addEventListener('click', () => {
-				node.scroll({
+				this.node.scroll({
 					top: menu.header.offsetTop - menu.marginTop,
 					behavior: 'smooth',
 				});
 			});
 			this.menus.push(menu);
 		});
-		node.addEventListener('scroll', () => window.requestAnimationFrame(() => this.frame(node.scrollTop)), {
-			passive: true,
-		});
-		this.frame(node.scrollTop);
+		this.node.addEventListener(
+			'scroll',
+			() => window.requestAnimationFrame(() => this.frame(this.node.scrollTop)),
+			{
+				passive: true,
+			}
+		);
+		this.frame(this.node.scrollTop);
 	}
 
 	frame = (scrollTop: number): void => {
