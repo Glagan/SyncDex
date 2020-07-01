@@ -1,9 +1,7 @@
 import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, ActivableModule, APIImportableModule, ImportStep, LoginMethod, APIExportableModule } from './Service';
 import { MangaUpdatesTitle, MangaUpdatesStatus } from '../../src/Service/MangaUpdates';
-import { DOM } from '../../src/DOM';
-import { Title } from '../../src/Title';
-import { ServiceKey, ServiceName } from '../../src/core';
+import { Title, ServiceKey, ServiceName } from '../../src/Title';
 
 class MangaUpdatesActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;

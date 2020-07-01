@@ -1,7 +1,6 @@
-import { ExportedSave, ServiceName, ServiceKey } from '../../src/core';
 import { AvailableOptions } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
-import { SaveTitle, Title, TitleCollection } from '../../src/Title';
+import { SaveTitle, Title, TitleCollection, ExportedSave, ServiceKey, ServiceName } from '../../src/Title';
 import { ImportSummary, Service, FileImportableModule, FileImportFormat, FileExportableModule } from './Service';
 
 class SyncDexImport extends FileImportableModule<ExportedSave, Title> {

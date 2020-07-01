@@ -1,6 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title } from '../Title';
-import { ServiceKey, ServiceName, Status } from '../core';
+import { ServiceTitle, Title, ServiceKey, ServiceName } from '../Title';
 import { Options } from '../Options';
 
 export const enum AnilistStatus {

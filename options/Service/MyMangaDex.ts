@@ -1,7 +1,6 @@
 import { Options } from '../../src/Options';
-import { Title, TitleCollection } from '../../src/Title';
+import { Title, TitleCollection, ServiceKey, ServiceName } from '../../src/Title';
 import { ImportSummary, Service, FileImportFormat, FileImportableModule } from './Service';
-import { ServiceKey, Status, ServiceName } from '../../src/core';
 
 interface MyMangaDexTitle {
 	id: number;

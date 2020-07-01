@@ -1,10 +1,9 @@
 import { Options } from '../../src/Options';
 import { Runtime, RequestStatus } from '../../src/Runtime';
-import { Title } from '../../src/Title';
+import { Title, ServiceKey, ServiceName } from '../../src/Title';
 import { Service, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule, Modal } from './Service';
 import { KitsuStatus, KitsuTitle, KitsuManga, KitsuResponse, KitsuHeaders, KitsuAPI } from '../../src/Service/Kitsu';
 import { DOM } from '../../src/DOM';
-import { ServiceKey, ServiceName } from '../../src/core';
 
 interface KitsuUserResponse {
 	data: {

@@ -1,6 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title } from '../Title';
-import { Progress, ServiceKey, ServiceName, Status } from '../core';
+import { ServiceTitle, Title, ServiceKey, ServiceName } from '../Title';
 
 export const enum AnimePlanetStatus {
 	NONE = 0,

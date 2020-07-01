@@ -1,5 +1,5 @@
 import { Runtime } from './Runtime';
-import { ServiceName } from './core';
+import { ServiceName } from './Title';
 
 type MochiConnections = {
 	[key in ServiceName]: number;

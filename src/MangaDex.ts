@@ -1,6 +1,5 @@
 import { DOM } from './DOM';
 import { Options } from './Options';
-import { Progress, Status } from './core';
 
 interface ChapterRow {
 	progress: Progress | undefined;

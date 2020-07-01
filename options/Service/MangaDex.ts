@@ -1,8 +1,7 @@
-import { TitleCollection, Title, ServiceTitle } from '../../src/Title';
+import { TitleCollection, Title, ServiceTitle, ServiceKey, ServiceName } from '../../src/Title';
 import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, APIImportableModule, APIExportableModule, ActivableModule, LoginMethod } from './Service';
 import { AppendableElement, DOM } from '../../src/DOM';
-import { ServiceKey, ServiceName, Status } from '../../src/core';
 
 class MangaDexActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;

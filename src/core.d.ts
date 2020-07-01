@@ -3,6 +3,22 @@ interface Window {
 	browser?: typeof browser;
 }
 
+const enum Status {
+	NONE,
+	READING,
+	COMPLETED,
+	PAUSED,
+	DROPPED,
+	PLAN_TO_READ,
+	REREADING,
+	WONT_READ,
+}
+
+interface Progress {
+	chapter: number;
+	volume?: number;
+}
+
 interface FormDataFile {
 	content: string[];
 	name: string;

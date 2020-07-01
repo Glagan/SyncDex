@@ -1,11 +1,10 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
-import { TitleCollection, Title, ServiceTitle } from '../../src/Title';
+import { TitleCollection, Title, ServiceTitle, ServiceKey, ServiceName } from '../../src/Title';
 import { LocalStorage } from '../../src/Storage';
 import { Mochi } from '../../src/Mochi';
 import { RequestStatus } from '../../src/Runtime';
-import { ServiceName, ServiceKey, Status } from '../../src/core';
 
 export const enum LoginMethod {
 	EXTERNAL,

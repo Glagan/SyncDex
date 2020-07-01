@@ -1,6 +1,5 @@
 import { RequestStatus, Runtime } from '../Runtime';
-import { ServiceTitle, Title } from '../Title';
-import { ServiceKey, ServiceName, Status } from '../core';
+import { ServiceTitle, Title, ServiceKey, ServiceName } from '../Title';
 
 export enum MyAnimeListStatus {
 	NONE = 0,

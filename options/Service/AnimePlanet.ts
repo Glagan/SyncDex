@@ -2,8 +2,7 @@ import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
 import { AnimePlanetTitle, AnimePlanetStatus } from '../../src/Service/AnimePlanet';
 import { DOM } from '../../src/DOM';
-import { Title } from '../../src/Title';
-import { ServiceKey, ServiceName } from '../../src/core';
+import { Title, ServiceKey, ServiceName } from '../../src/Title';
 
 class AnimePlanetActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;

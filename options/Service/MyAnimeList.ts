@@ -1,5 +1,5 @@
 import { DOM } from '../../src/DOM';
-import { TitleCollection, Title } from '../../src/Title';
+import { TitleCollection, Title, ServiceKey, ServiceName } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import {
 	Service,
@@ -11,7 +11,6 @@ import {
 	ActivableModule,
 } from './Service';
 import { Runtime, RequestStatus } from '../../src/Runtime';
-import { ServiceKey, Status, ServiceName } from '../../src/core';
 
 enum MyAnimeListExportStatus {
 	COMPLETED = 'Completed',

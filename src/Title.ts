@@ -1,11 +1,43 @@
-import { Progress, ExportedSave, Status, ServiceKey, ServiceKeyMap, ServiceName } from './core';
 import { LocalStorage } from './Storage';
-import { Options } from './Options';
+import { Options, AvailableOptions } from './Options';
 import { RequestStatus } from './Runtime';
 
 interface SaveProgress {
 	c: number;
 	v?: number;
+}
+
+export enum ServiceName {
+	MyAnimeList = 'MyAnimeList',
+	MangaUpdates = 'MangaUpdates',
+	Anilist = 'Anilist',
+	Kitsu = 'Kitsu',
+	AnimePlanet = 'AnimePlanet',
+	MangaDex = 'MangaDex',
+	MyMangaDex = 'MyMangaDex',
+	SyncDex = 'SyncDex',
+}
+
+export enum ServiceKey {
+	MyAnimeList = 'mal',
+	MangaUpdates = 'mu',
+	Anilist = 'al',
+	Kitsu = 'ku',
+	AnimePlanet = 'ap',
+	MangaDex = 'md',
+	MyMangaDex = 'mmd',
+	SyncDex = 'sc',
+}
+
+export interface ServiceKeyMap {
+	[ServiceKey.MyAnimeList]: number;
+	[ServiceKey.MangaUpdates]: number;
+	[ServiceKey.Anilist]: number;
+	[ServiceKey.Kitsu]: number;
+	[ServiceKey.AnimePlanet]: number;
+	[ServiceKey.MangaDex]: number;
+	[ServiceKey.MyMangaDex]: number;
+	[ServiceKey.SyncDex]: number;
 }
 
 export type ServiceList = Partial<{ [key in keyof ServiceKeyMap]: ServiceKeyMap[key] }>;
@@ -45,6 +77,20 @@ export interface FullTitle {
 	name?: string;
 	lastRead?: number;
 }
+
+export type ExportOptions = {
+	options?: AvailableOptions;
+};
+
+export type ExportHistory = {
+	history?: number[];
+};
+
+export type ExportedTitles = {
+	[key: string]: SaveTitle;
+};
+
+export type ExportedSave = ExportOptions & ExportHistory & ExportedTitles;
 
 export class SaveTitle {
 	static valid(title: SaveTitle): boolean {

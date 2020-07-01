@@ -12,14 +12,11 @@ export class LocalStorage {
 		return browser.storage.local.get<T>(keys === undefined ? null : (keys as string[]));
 	}
 
-	static get<T>(key?: number | string): Promise<any | T | undefined> {
+	static async get<T>(key?: number | string): Promise<any | T | undefined> {
 		if (typeof key === 'number') key = key.toString();
-		return browser.storage.local.get<T>(key === undefined ? null : key).then((data):
-			| T
-			| undefined => {
-			if (key !== undefined && key !== undefined && data !== undefined) return data[key];
-			return data as any;
-		});
+		const data = await browser.storage.local.get<T>(key === undefined ? null : key);
+		if (key !== undefined && key !== undefined && data !== undefined) return data[key];
+		return data as any;
 	}
 
 	static raw(data: Object): Promise<any> {

@@ -1,10 +1,9 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { Options } from '../../src/Options';
 import { Runtime, RequestStatus } from '../../src/Runtime';
-import { Title } from '../../src/Title';
+import { Title, ServiceKey, ServiceName } from '../../src/Title';
 import { Service, ActivableModule, APIImportableModule, ImportStep, APIExportableModule, LoginMethod } from './Service';
 import { AnilistStatus, AnilistTitle, AnilistDate, AnilistAPI, AnilistHeaders } from '../../src/Service/Anilist';
-import { ServiceKey, ServiceName } from '../../src/core';
 
 interface AnilistViewerResponse {
 	data: {
