@@ -35,17 +35,20 @@ browser.runtime.onMessage.addListener(
 			}
 			// Options
 			message.isJson = !!message.isJson;
-			message.with = message.with || 'request';
 			message.method = message.method || 'GET';
 			message.body = message.body || null;
+			message.redirect = message.redirect || 'manual';
+			message.cache = message.cache || 'default';
 			let body: FormData | string | undefined;
 			if (typeof message.body === 'object' && message.body !== null) {
 				let data = new FormData();
 				for (const key in message.body as FormDataProxy) {
 					if (message.body.hasOwnProperty(key)) {
-						const element = (message.body as FormDataProxy)[key] as string | FormDataFile;
+						const element = (message.body as FormDataProxy)[key] as string | number | FormDataFile;
 						if (typeof element === 'string') {
 							data.append(key, element);
+						} else if (typeof element === 'number') {
+							data.append(key, element.toString());
 						} else if (typeof element === 'object') {
 							data.append(key, new File(element.content, element.name, element.options));
 						}
@@ -65,6 +68,7 @@ browser.runtime.onMessage.addListener(
 				}).then(async (response) => {
 					return {
 						url: response.url,
+						redirected: response.redirected,
 						ok: response.status >= 200 && response.status < 400,
 						status: response.status,
 						headers: JSON.parse(JSON.stringify(response.headers)),

@@ -1,7 +1,6 @@
 import { Runtime, RawResponse, RequestStatus } from '../Runtime';
 import { ServiceTitle, Title } from '../Title';
 import { Progress, ServiceKey, ServiceName, Status } from '../core';
-import { MangaUpdates } from '../../options/Service/MangaUpdates';
 
 export const enum MangaUpdatesStatus {
 	NONE = -1,
@@ -23,6 +22,22 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		score?: number;
 	};
 
+	static listToStatus = (list: string): MangaUpdatesStatus => {
+		switch (list) {
+			case 'read':
+				return MangaUpdatesStatus.READING;
+			case 'wish':
+				return MangaUpdatesStatus.PLAN_TO_READ;
+			case 'complete':
+				return MangaUpdatesStatus.COMPLETED;
+			case 'unfinished':
+				return MangaUpdatesStatus.DROPPED;
+			case 'hold':
+				return MangaUpdatesStatus.PAUSED;
+		}
+		return MangaUpdatesStatus.NONE;
+	};
+
 	static get = async <T extends ServiceTitle<T> = MangaUpdatesTitle>(
 		id: number | string
 	): Promise<MangaUpdatesTitle | RequestStatus> => {
@@ -31,8 +46,40 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 			method: 'GET',
 			credentials: 'include',
 		});
-		// TODO
-		return new MangaUpdatesTitle(id);
+		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
+		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		const parser = new DOMParser();
+		const body = parser.parseFromString(response.body, 'text/html');
+		const values: Partial<MangaUpdatesTitle> = {};
+		const showList = body.getElementById('showList');
+		if (showList !== null) {
+			const listType = /mylist\.html(?:\?list=(.+))?/.exec(
+				(showList.querySelector('a') as HTMLAnchorElement).href
+			);
+			if (listType !== null) {
+				values.status = MangaUpdatesTitle.listToStatus(listType[1]);
+				values.current = { progress: { chapter: 0 }, status: values.status };
+				// The state in list is only displayed if the title is in the READING list
+				if (values.status == MangaUpdatesStatus.READING) {
+					const chapter = showList.querySelector(`a[title='Increment Chapter']`) as HTMLAnchorElement;
+					const volume = showList.querySelector(`a[title='Increment Volume']`) as HTMLAnchorElement;
+					values.progress = {
+						chapter: parseInt((chapter.textContent as string).substr(2)), // Remove c. and v.
+						volume: parseInt((volume.textContent as string).substr(2)),
+					};
+					values.current.progress = Object.assign({}, values.progress); // Avoid reference
+				}
+			}
+			// We only get the rating if it's in the list - even if it's not required
+			const scoreNode = body.querySelector<HTMLInputElement>(`input[type='radio'][name='rating'][checked]`);
+			if (scoreNode) {
+				values.score = parseInt(scoreNode.value);
+				if (values.current) values.current.score = values.score;
+			}
+		}
+		const title = body.querySelector('span.releasestitle');
+		values.name = title ? (title.textContent as string) : undefined;
+		return new MangaUpdatesTitle(id, values);
 	};
 
 	// Get a list of status to go through to be able to update to the wanted status
@@ -82,6 +129,7 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 
 	persist = async (): Promise<RequestStatus> => {
 		// Status requirements
+		const newEntry = this.current === undefined;
 		let list = this.pathToStatus();
 		for (const status of list) {
 			if (status == MangaUpdatesStatus.NONE) {
@@ -118,6 +166,7 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 				credentials: 'include',
 			});
 		}
+		if (newEntry) return RequestStatus.CREATED;
 		return RequestStatus.SUCCESS;
 	};
 

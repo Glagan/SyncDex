@@ -1,4 +1,4 @@
-import { RequestStatus } from '../Runtime';
+import { RequestStatus, Runtime, RawResponse, FormDataProxy } from '../Runtime';
 import { ServiceTitle, Title } from '../Title';
 import { ServiceKey, ServiceName, Status } from '../core';
 
@@ -16,23 +16,111 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 	readonly serviceName: ServiceName = ServiceName.MyAnimeList;
 
 	status: MyAnimeListStatus = MyAnimeListStatus.NONE;
-	// TODO: csrf Token
-	csrtf: string = '';
+	newEntry: boolean = false;
+	csrf: string = '';
+
+	static dateRowToDate = (body: Document, row: 'start' | 'finish'): Date | undefined => {
+		const year = body.getElementById(`add_manga_${row}_date_year`),
+			month = body.getElementById(`add_manga_${row}_date_month`),
+			day = body.getElementById(`add_manga_${row}_date_day`);
+		if (month == null || day == null || year == null) return undefined;
+		return new Date(
+			parseInt((year as HTMLSelectElement).value),
+			parseInt((month as HTMLSelectElement).value),
+			parseInt((day as HTMLSelectElement).value)
+		);
+	};
 
 	static get = async <T extends ServiceTitle<T> = MyAnimeListTitle>(
 		id: string | number
 	): Promise<MyAnimeListTitle | RequestStatus> => {
-		// TODO
-		return RequestStatus.SUCCESS;
+		const response = await Runtime.request<RawResponse>({
+			url: `https://myanimelist.net/ownlist/manga/${id}/edit?hideLayout`,
+			method: 'GET',
+			cache: 'no-cache',
+			credentials: 'include',
+			redirect: 'follow',
+		});
+		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
+		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		const values: Partial<MyAnimeListTitle> = {};
+		const csrf = /'csrf_token'\scontent='(.{40})'/.exec(response.body);
+		if (csrf !== null) values.csrf = csrf[1];
+		const parser = new DOMParser();
+		const body = parser.parseFromString(response.body, 'text/html');
+		const title = body.querySelector<HTMLElement>(`a[href^='/manga/']`);
+		if (!response.redirected) {
+			if (title !== null) {
+				values.name = title.textContent as string;
+				values.status = parseInt((body.getElementById('add_manga_status') as HTMLSelectElement).value);
+				values.progress = {
+					chapter:
+						parseInt((body.getElementById('add_manga_num_read_chapters') as HTMLInputElement).value) || 0,
+					volume:
+						parseInt((body.getElementById('add_manga_num_read_volumes') as HTMLInputElement).value) || 0,
+				};
+				const score = (body.getElementById('add_manga_score') as HTMLSelectElement).value;
+				if (score !== '') values.score = parseInt(score);
+				values.start = MyAnimeListTitle.dateRowToDate(body, 'start');
+				values.end = MyAnimeListTitle.dateRowToDate(body, 'finish');
+			}
+		}
+		values.newEntry = response.redirected && title !== null;
+		return new MyAnimeListTitle(id, values);
 	};
 
 	persist = async (): Promise<RequestStatus> => {
-		// TODO
+		let url = `https://myanimelist.net/ownlist/manga/${this.id}/edit?hideLayout`;
+		if (this.newEntry) url = `https://myanimelist.net/ownlist/manga/add?selected_manga_id=${this.id}&hideLayout`;
+		const body: FormDataProxy = {
+			manga_id: this.id,
+			'add_manga[status]': this.status,
+			'add_manga[num_read_chapters]': this.progress.chapter,
+			csrf_token: this.csrf,
+		};
+		if (this.progress.volume) body['add_manga[num_read_volumes]'] = this.progress.volume;
+		if (this.score) body['add_manga[score]'] = this.score;
+		if (this.start) {
+			body['add_manga[start_date][yeay]'] = this.start.getUTCFullYear();
+			body['add_manga[start_date][month]'] = this.start.getMonth() + 1;
+			body['add_manga[start_date][day]'] = this.start.getDate();
+		}
+		if (this.end) {
+			body['add_manga[finish_date][yeay]'] = this.end.getUTCFullYear();
+			body['add_manga[finish_date][month]'] = this.end.getMonth() + 1;
+			body['add_manga[finish_date][day]'] = this.end.getDate();
+		}
+		const response = await Runtime.request<RawResponse>({
+			url: url,
+			method: 'POST',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+			body: body,
+		});
+		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
+		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (this.newEntry) {
+			this.newEntry = false;
+			return RequestStatus.CREATED;
+		}
 		return RequestStatus.SUCCESS;
 	};
 
 	delete = async (): Promise<RequestStatus> => {
-		// TODO
+		const response = await Runtime.request<RawResponse>({
+			url: `https://myanimelist.net/ownlist/manga/${this.id}delete`,
+			method: 'POST',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+			body: `csrf_token=${this.csrf}`,
+		});
+		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
+		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		this.newEntry = true;
 		return RequestStatus.SUCCESS;
 	};
 

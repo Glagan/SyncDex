@@ -24,7 +24,6 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 	readonly serviceName: ServiceName = ServiceName.AnimePlanet;
 
 	status: AnimePlanetStatus = AnimePlanetStatus.NONE;
-	// TODO: Token
 	token: string = '';
 
 	static get = async <T extends ServiceTitle<T> = AnimePlanetTitle>(
@@ -35,8 +34,30 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 			method: 'GET',
 			credentials: 'include',
 		});
-		// TODO
-		return new AnimePlanetTitle(id);
+		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
+		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (response.redirected) return RequestStatus.NOT_FOUND;
+		const values: Partial<AnimePlanetTitle> = {};
+		const tokenArr = /TOKEN\s*=\s*'(.{40})';/.exec(response.body);
+		const parser = new DOMParser();
+		const body = parser.parseFromString(response.body, 'text/html');
+		if (tokenArr !== null) {
+			values.token = tokenArr[1];
+			const mediaEntryForm = body.querySelector('form[id^=manga]');
+			if (mediaEntryForm) {
+				const statusSelector = mediaEntryForm.querySelector<HTMLOptionElement>(
+					'select.changeStatus [selected]'
+				);
+				if (statusSelector) values.status = parseInt(statusSelector.value);
+				const chapterSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.chapters [selected]');
+				values.progress = { chapter: 0 };
+				if (chapterSelector) values.progress.chapter = parseInt(chapterSelector.value);
+				const volumeSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.volumes [selected]');
+				if (volumeSelector) values.progress.volume = parseInt(volumeSelector.value);
+			}
+		}
+		values.name = (body.querySelector(`h1[itemprop='name']`) as HTMLElement).textContent as string;
+		return new AnimePlanetTitle(id, values);
 	};
 
 	persist = async (): Promise<RequestStatus> => {
@@ -45,7 +66,6 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 			isJson: true,
 			credentials: 'include',
 		});
-		const body = response.body as AnimePlanetAPIResponse;
 		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
 		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
 		// Chapter progress
@@ -55,7 +75,6 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 				isJson: true,
 				credentials: 'include',
 			});
-			const body = response.body as AnimePlanetAPIResponse;
 			if (response.status >= 500) return RequestStatus.SERVER_ERROR;
 			if (response.status >= 400) return RequestStatus.BAD_REQUEST;
 		}
@@ -73,7 +92,14 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 	};
 
 	delete = async (): Promise<RequestStatus> => {
-		// TODO
+		if (this.token == '') return RequestStatus.BAD_REQUEST;
+		const response = await Runtime.request<JSONResponse>({
+			url: `https://www.anime-planet.com/api/list/status/manga/${this.id}/0/${this.token}`,
+			method: 'GET',
+			credentials: 'include',
+		});
+		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
+		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
 		return RequestStatus.SUCCESS;
 	};
 

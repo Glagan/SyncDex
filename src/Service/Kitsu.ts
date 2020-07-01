@@ -19,38 +19,42 @@ export interface KitsuManga {
 	};
 }
 
-export interface KitsuResponse {
-	data: {
-		id: string;
-		type: 'libraryEntries';
-		links: {
-			self: string;
-		};
-		attributes: {
-			status: KitsuStatus;
-			progress: number;
-			volumesOwned: number;
-			reconsuming: boolean;
-			reconsumeCount: number;
-			notes: string | null;
-			private: boolean;
-			reactionSkipped: 'unskipped' | 'skipped' | 'ignored';
-			rating: string;
-			ratingTwenty: number | null;
-			startedAt: string | null;
-			finishedAt: string | null;
-			progressedAt: string | null;
-		};
-		relationships: {
-			manga: {
-				links: any;
-				data?: {
-					type: 'manga';
-					id: string;
-				};
+interface KitsuLibraryEntryAttributes {
+	status: KitsuStatus;
+	progress: number;
+	volumesOwned: number;
+	reconsuming: boolean;
+	reconsumeCount: number;
+	notes: string | null;
+	private: boolean;
+	reactionSkipped: 'unskipped' | 'skipped' | 'ignored';
+	rating: string;
+	ratingTwenty: number | null;
+	startedAt: string | null;
+	finishedAt: string | null;
+	progressedAt: string | null;
+}
+
+interface KitsuLibraryEntry {
+	id: string;
+	type: 'libraryEntries';
+	links: {
+		self: string;
+	};
+	attributes: KitsuLibraryEntryAttributes;
+	relationships: {
+		manga: {
+			links: any;
+			data?: {
+				type: 'manga';
+				id: string;
 			};
 		};
-	}[];
+	};
+}
+
+export interface KitsuResponse {
+	data: KitsuLibraryEntry[];
 	included: KitsuManga[];
 	meta: {
 		statusCounts: {
@@ -63,6 +67,10 @@ export interface KitsuResponse {
 		count: number;
 	};
 	links: any;
+}
+
+interface KitsuPersistResponse {
+	data: KitsuLibraryEntry;
 }
 
 export const enum KitsuStatus {
@@ -128,6 +136,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 			url: url,
 			method: method,
 			headers: KitsuHeaders(),
+			isJson: true,
 			body: JSON.stringify({
 				data: {
 					id: this.libraryEntryId,
@@ -159,12 +168,21 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 		});
 		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
 		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
-		// TODO: Get libraryEntryId if it was a new title
+		const body = response.body as KitsuPersistResponse;
+		this.libraryEntryId = parseInt(body.data.id);
 		return RequestStatus.SUCCESS;
 	};
 
 	delete = async (): Promise<RequestStatus> => {
-		// TODO
+		if (this.libraryEntryId <= 0) return RequestStatus.BAD_REQUEST;
+		let response = await Runtime.request({
+			url: `https://kitsu.io/api/edge/library-entries/${this.libraryEntryId}`,
+			method: 'DELETE',
+			headers: KitsuHeaders(),
+		});
+		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
+		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		this.libraryEntryId = 0;
 		return RequestStatus.SUCCESS;
 	};
 

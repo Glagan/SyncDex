@@ -37,21 +37,6 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 		return 0;
 	};
 
-	listToStatus = (list: string): MangaUpdatesStatus => {
-		if (list === 'read') {
-			return MangaUpdatesStatus.READING;
-		} else if (list === 'wish') {
-			return MangaUpdatesStatus.PLAN_TO_READ;
-		} else if (list === 'complete') {
-			return MangaUpdatesStatus.COMPLETED;
-		} else if (list === 'unfinished') {
-			return MangaUpdatesStatus.DROPPED;
-		} else if (list === 'hold') {
-			return MangaUpdatesStatus.PAUSED;
-		}
-		return MangaUpdatesStatus.NONE;
-	};
-
 	getNextPage = (): boolean => {
 		if (this.currentList == MangaUpdatesImport.lists.length) {
 			return false;
@@ -77,7 +62,7 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 		if (response.ok && response.body.indexOf('You must be a user to access this page.') < 0) {
 			const body = this.parser.parseFromString(response.body, 'text/html');
 			const rows = body.querySelectorAll(`div[id^='r']`);
-			const status = this.listToStatus(MangaUpdatesImport.lists[this.currentList - 1]);
+			const status = MangaUpdatesTitle.listToStatus(MangaUpdatesImport.lists[this.currentList - 1]);
 			let titles: MangaUpdatesTitle[] = [];
 			for (const row of rows) {
 				const scoreLink = row.querySelector(`a[title='Update Rating']`);

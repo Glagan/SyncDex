@@ -1,9 +1,11 @@
 export const enum RequestStatus {
 	MISSING_TOKEN,
 	SUCCESS,
+	CREATED,
 	FAIL,
 	SERVER_ERROR,
 	BAD_REQUEST,
+	NOT_FOUND,
 }
 
 export enum MessageAction {
@@ -18,7 +20,7 @@ export interface FormDataFile {
 }
 
 export interface FormDataProxy {
-	[key: string]: string | FormDataFile;
+	[key: string]: string | number | FormDataFile;
 }
 
 export interface RequestMessage {
@@ -26,9 +28,10 @@ export interface RequestMessage {
 	method?: 'GET' | 'POST' | 'HEAD' | 'OPTIONS' | 'DELETE' | 'PUT' | 'PATCH';
 	url: string;
 	isJson?: boolean;
-	with?: 'XHR' | 'request';
 	body?: FormDataProxy | FormData | string | null;
-	headers?: { [key: string]: string };
+	cache?: RequestCache;
+	headers?: HeadersInit;
+	redirect?: RequestRedirect;
 	credentials?: RequestCredentials;
 }
 
@@ -44,6 +47,7 @@ export type Message = RequestMessage | OpenOptionsMessage;
 
 export interface Response {
 	url: string;
+	redirected: boolean;
 	ok: boolean;
 	status: number;
 	headers: Record<string, string>;

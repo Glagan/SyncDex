@@ -71,8 +71,9 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 	readonly serviceName: ServiceName = ServiceName.Anilist;
 
 	status: AnilistStatus = AnilistStatus.NONE;
+	mediaEntryId: number = 0;
 
-	static getQuery = `
+	static readonly getQuery = `
 		query ($mediaId: Int) {
 			Media(id: $mediaId) {
 				title {
@@ -97,7 +98,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 				}
 			}
 		}`;
-	static persistQuery = `
+	static readonly persistQuery = `
 		mutation ($mediaId: Int, $status: MediaListStatus, $score: Float, $progress: Int, $progressVolumes: Int, $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput) {
 			SaveMediaListEntry (mediaId: $mediaId, status: $status, score: $score, progress: $progress, progressVolumes: $progressVolumes, startedAt: $startedAt, completedAt: $completedAt) {
 				mediaId
@@ -115,6 +116,12 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 					month
 					day
 				}
+			}
+		}`;
+	static readonly deleteQuery = `
+		mutation ($id: Int) {
+			DeleteMediaListEntry (id: $id) {
+				deleted
 			}
 		}`;
 
@@ -149,6 +156,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 			name: body.data.Media.title.userPreferred,
 		};
 		if (mediaEntry) {
+			values.mediaEntryId = mediaEntry.id;
 			values.progress = {
 				chapter: mediaEntry.progress,
 				volume: mediaEntry.progressVolumes,
@@ -169,33 +177,45 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 	};
 
 	persist = async (): Promise<RequestStatus> => {
-		if (this.status !== AnilistStatus.NONE) {
-			const response = await Runtime.request<JSONResponse>({
-				url: AnilistAPI,
-				method: 'POST',
-				headers: AnilistHeaders(),
-				body: JSON.stringify({
-					query: AnilistTitle.persistQuery,
-					variables: <SaveMediaListEntry>{
-						mediaId: this.id,
-						status: this.status,
-						score: this.score !== undefined && this.score > 0 ? this.score : undefined,
-						progress: this.progress.chapter,
-						progressVolumes: this.progress.volume,
-						startedAt: AnilistTitle.dateToAnilist(this.start),
-						completedAt: AnilistTitle.dateToAnilist(this.end),
-					},
-				}),
-			});
-			if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-			if (response.status >= 400) return RequestStatus.BAD_REQUEST;
-			return RequestStatus.SUCCESS;
-		}
+		if (this.status !== AnilistStatus.NONE) return RequestStatus.FAIL;
+		const response = await Runtime.request<JSONResponse>({
+			url: AnilistAPI,
+			method: 'POST',
+			headers: AnilistHeaders(),
+			body: JSON.stringify({
+				query: AnilistTitle.persistQuery,
+				variables: <SaveMediaListEntry>{
+					mediaId: this.id,
+					status: this.status,
+					score: this.score !== undefined && this.score > 0 ? this.score : undefined,
+					progress: this.progress.chapter,
+					progressVolumes: this.progress.volume,
+					startedAt: AnilistTitle.dateToAnilist(this.start),
+					completedAt: AnilistTitle.dateToAnilist(this.end),
+				},
+			}),
+		});
+		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
+		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
 		return RequestStatus.SUCCESS;
 	};
 
 	delete = async (): Promise<RequestStatus> => {
-		// TODO
+		if (this.mediaEntryId <= 0) return RequestStatus.BAD_REQUEST;
+		const response = await Runtime.request<JSONResponse>({
+			url: AnilistAPI,
+			method: 'POST',
+			headers: AnilistHeaders(),
+			body: JSON.stringify({
+				query: AnilistTitle.deleteQuery,
+				variables: {
+					id: this.mediaEntryId,
+				},
+			}),
+		});
+		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
+		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		this.mediaEntryId = 0;
 		return RequestStatus.SUCCESS;
 	};
 
