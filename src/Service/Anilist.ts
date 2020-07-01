@@ -146,8 +146,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 				},
 			}),
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (!response.ok) return Runtime.responseStatus<JSONResponse>(response);
 		// Convert Response to AnilistTitle
 		const body = response.body;
 		const mediaEntry = body.data.Media.mediaListEntry;
@@ -194,9 +193,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 				},
 			}),
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
-		return RequestStatus.SUCCESS;
+		return Runtime.responseStatus(response);
 	};
 
 	delete = async (): Promise<RequestStatus> => {
@@ -212,8 +209,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 				},
 			}),
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (!response.ok) return Runtime.responseStatus(response);
 		this.mediaEntryId = 0;
 		return RequestStatus.SUCCESS;
 	};

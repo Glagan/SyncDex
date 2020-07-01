@@ -17,9 +17,7 @@ class MangaDexActive extends ActivableModule {
 			url: `https://mangadex.org/about`,
 			credentials: 'include',
 		});
-		if (response.status >= 400) {
-			return RequestStatus.FAIL;
-		}
+		if (!response.ok) return Runtime.responseStatus(response);
 		try {
 			const body = this.parser.parseFromString(response.body, 'text/html');
 			const profileLink = body.querySelector('a[href^="/user/"]');
@@ -61,9 +59,7 @@ class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
 				'X-Requested-With': 'XMLHttpRequest',
 			},
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
-		return RequestStatus.SUCCESS;
+		return Runtime.responseStatus(response);
 	};
 
 	delete = async (): Promise<RequestStatus> => {
@@ -98,7 +94,7 @@ class MangaDexImport extends APIImportableModule<MangaDexTitle> {
 			url: `https://mangadex.org/list/${(this.service as MangaDex).activeModule.user}/0/2/${this.state.current}`,
 			credentials: 'include',
 		});
-		if (response.status >= 400 || typeof response.body !== 'string') {
+		if (!response.ok || typeof response.body !== 'string') {
 			this.notification('warning', 'The request failed, maybe MangaDex is having problems, retry later.');
 			return false;
 		}
@@ -164,8 +160,8 @@ class MangaDexExport extends APIExportableModule {
 }
 
 export class MangaDex extends Service {
-	key: ServiceKey = ServiceKey.MangaDex;
-	name: ServiceName = ServiceName.MangaDex;
+	readonly key: ServiceKey = ServiceKey.MangaDex;
+	readonly name: ServiceName = ServiceName.MangaDex;
 
 	createTitle = (): AppendableElement => {
 		return DOM.create('span', {

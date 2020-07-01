@@ -31,7 +31,7 @@ export class Mochi {
 		const response = await Runtime.jsonRequest<MochiResult>({
 			url: `${Mochi.server}/connections.php?id=${title}&source=${source}`,
 		});
-		if (response.status >= 400) return undefined;
+		if (!response.ok) return undefined;
 		if (response.body.data === undefined) return undefined;
 		return response.body.data[+title];
 	}
@@ -43,7 +43,7 @@ export class Mochi {
 		const response = await Runtime.jsonRequest<MochiResult>({
 			url: `${Mochi.server}/connections.php?id=${title.join(',')}&source=${source}`,
 		});
-		if (response.status >= 400) return undefined;
+		if (!response.ok) return undefined;
 		return response.body.data;
 	}
 }

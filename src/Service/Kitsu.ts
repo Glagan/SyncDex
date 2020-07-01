@@ -106,8 +106,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 			method: 'GET',
 			headers: KitsuHeaders(),
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (!response.ok) return Runtime.responseStatus(response);
 		const body = response.body;
 		const values: Partial<KitsuTitle> = {};
 		if (body.data.length == 1) {
@@ -163,8 +162,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 				},
 			}),
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (!response.ok) return Runtime.responseStatus(response);
 		this.libraryEntryId = parseInt(response.body.data.id);
 		return RequestStatus.SUCCESS;
 	};
@@ -176,8 +174,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 			method: 'DELETE',
 			headers: KitsuHeaders(),
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (!response.ok) return Runtime.responseStatus(response);
 		this.libraryEntryId = 0;
 		return RequestStatus.SUCCESS;
 	};

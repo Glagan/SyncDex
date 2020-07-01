@@ -16,11 +16,7 @@ class AnimePlanetActive extends ActivableModule {
 			url: 'https://www.anime-planet.com/contact',
 			credentials: 'include',
 		});
-		if (response.status >= 500) {
-			return RequestStatus.SERVER_ERROR;
-		} else if (response.status >= 400 && response.status < 500) {
-			return RequestStatus.BAD_REQUEST;
-		}
+		if (!response.ok) return Runtime.responseStatus(response);
 		// Find username
 		const parser = new DOMParser();
 		const body = parser.parseFromString(response.body, 'text/html');
@@ -43,19 +39,14 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 
 	// Set the list type to 'list'
 	preMain = async (): Promise<boolean> => {
-		const notification = this.notification('default', [
-			DOM.text('Setting list type...'),
-			DOM.space(),
-			this.stopButton,
-		]);
+		const notification = this.notification('loading', 'Setting list type...');
 		const username = (this.service as AnimePlanet).activeModule.username;
 		const response = await Runtime.request<RawResponse>({
 			url: `https://www.anime-planet.com/users/${username}/manga/reading?sort=title&mylist_view=list`,
 			credentials: 'include',
 		});
 		notification.classList.remove('loading');
-		this.stopButton.remove();
-		DOM.append(notification, DOM.text('done'));
+		DOM.append(notification, DOM.text(' done !'));
 		return response.ok;
 	};
 
@@ -68,7 +59,7 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 			url: `https://www.anime-planet.com/users/${username}/manga?sort=title&page=${this.state.current}`,
 			credentials: 'include',
 		});
-		if (response.status >= 400 || typeof response.body !== 'string') {
+		if (!response.ok || typeof response.body !== 'string') {
 			this.notification('warning', 'The request failed, maybe AnimePlanet is having problems, retry later.');
 			return false;
 		}
@@ -118,8 +109,8 @@ class AnimePlanetExport extends APIExportableModule {
 }
 
 export class AnimePlanet extends Service {
-	key: ServiceKey = ServiceKey.AnimePlanet;
-	name: ServiceName = ServiceName.AnimePlanet;
+	readonly key: ServiceKey = ServiceKey.AnimePlanet;
+	readonly name: ServiceName = ServiceName.AnimePlanet;
 
 	activeModule: AnimePlanetActive = new AnimePlanetActive(this);
 	importModule: AnimePlanetImport = new AnimePlanetImport(this);

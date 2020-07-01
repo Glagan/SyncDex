@@ -46,8 +46,7 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 			method: 'GET',
 			credentials: 'include',
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (!response.ok) return Runtime.responseStatus(response);
 		const parser = new DOMParser();
 		const body = parser.parseFromString(response.body, 'text/html');
 		const values: Partial<MangaUpdatesTitle> = {};
@@ -134,10 +133,14 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		for (const status of list) {
 			if (status == MangaUpdatesStatus.NONE) {
 				this.delete();
-			} else await this.updateStatus(status);
+			} else {
+				const response = await this.updateStatus(status);
+				if (!response.ok) return Runtime.responseStatus(response);
+			}
 		}
 		// Real status
-		await this.updateStatus(this.status);
+		const response = await this.updateStatus(this.status);
+		if (!response.ok) return Runtime.responseStatus(response);
 		// Update progress -- only if chapter or volume is different
 		if (
 			this.current === undefined ||
@@ -148,10 +151,11 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		) {
 			const volume =
 				this.progress.volume !== undefined && this.progress.volume > 0 ? `&set_v=${this.progress.volume}` : '';
-			await Runtime.request<RawResponse>({
+			const response = await Runtime.request<RawResponse>({
 				url: `https://www.mangaupdates.com/ajax/chap_update.php?s=${this.id}${volume}&set_c=${this.progress.chapter}`,
 				credentials: 'include',
 			});
+			if (!response.ok) return Runtime.responseStatus(response);
 		}
 		// Update score
 		if (
@@ -161,10 +165,11 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 				this.score != this.current.score &&
 				this.current.score > 0)
 		) {
-			await Runtime.request<RawResponse>({
+			const response = await Runtime.request<RawResponse>({
 				url: `https://www.mangaupdates.com/ajax/update_rating.php?s=${this.id}&r=${this.score}`,
 				credentials: 'include',
 			});
+			if (!response.ok) return Runtime.responseStatus(response);
 		}
 		if (newEntry) return RequestStatus.CREATED;
 		return RequestStatus.SUCCESS;
@@ -175,9 +180,7 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 			url: `https://www.mangaupdates.com/ajax/list_update.php?s=${this.id}&r=1`,
 			credentials: 'include',
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
-		return RequestStatus.SUCCESS;
+		return Runtime.responseStatus(response);
 	};
 
 	static toStatus = (status: MangaUpdatesStatus): Status => {

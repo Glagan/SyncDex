@@ -14,8 +14,7 @@ class MangaUpdatesActive extends ActivableModule {
 			url: 'https://www.mangaupdates.com/aboutus.html',
 			credentials: 'include',
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (!response.ok) return Runtime.responseStatus(response);
 		if (response.body && response.body.indexOf(`You are currently logged in as`) >= 0) return RequestStatus.SUCCESS;
 		return RequestStatus.FAIL;
 	};
@@ -96,7 +95,7 @@ class MangaUpdatesExport extends APIExportableModule {
 	// We need the status of each titles before to move them from lists to lists
 	// Use ImportModule and get a list of MangaUpdatesTitles
 	preMain = async (_titles: Title[]): Promise<boolean> => {
-		let notification = this.notification('default', 'Checking current status of each titles');
+		let notification = this.notification('loading', 'Checking current status of each titles');
 		const importModule = new MangaUpdatesImport(this.service);
 		while (!this.doStop && importModule.getNextPage() !== false) {
 			let tmp: MangaUpdatesTitle[] | false = await importModule.handlePage();
@@ -108,7 +107,6 @@ class MangaUpdatesExport extends APIExportableModule {
 				this.onlineList[title.id] = title;
 			}
 		}
-		this.stopButton.remove();
 		notification.classList.remove('loading');
 		return true;
 	};
@@ -132,8 +130,8 @@ class MangaUpdatesExport extends APIExportableModule {
 }
 
 export class MangaUpdates extends Service {
-	key: ServiceKey = ServiceKey.MangaUpdates;
-	name: ServiceName = ServiceName.MangaUpdates;
+	readonly key: ServiceKey = ServiceKey.MangaUpdates;
+	readonly name: ServiceName = ServiceName.MangaUpdates;
 
 	activeModule: MangaUpdatesActive = new MangaUpdatesActive(this);
 	importModule: MangaUpdatesImport = new MangaUpdatesImport(this);

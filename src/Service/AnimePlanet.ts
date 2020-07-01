@@ -34,8 +34,7 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 			method: 'GET',
 			credentials: 'include',
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (!response.ok) return Runtime.responseStatus(response);
 		if (response.redirected) return RequestStatus.NOT_FOUND;
 		const values: Partial<AnimePlanetTitle> = {};
 		const tokenArr = /TOKEN\s*=\s*'(.{40})';/.exec(response.body);
@@ -65,16 +64,14 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 			url: `https://www.anime-planet.com/api/list/status/manga/${this.id}/${this.status}/${this.token}`,
 			credentials: 'include',
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (!response.ok) return Runtime.responseStatus(response);
 		// Chapter progress
 		if (this.progress.chapter > 0) {
 			response = await Runtime.jsonRequest({
 				url: `https://www.anime-planet.com/api/list/update/manga/${this.id}/${this.progress.chapter}/0/${this.token}`,
 				credentials: 'include',
 			});
-			if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-			if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+			if (!response.ok) return Runtime.responseStatus(response);
 		}
 		// Score
 		if (this.score !== undefined && this.score > 0) {
@@ -82,8 +79,7 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 				url: `https://www.anime-planet.com/api/list/rate/manga/${this.id}/${this.progress.chapter}/${this.token}`,
 				credentials: 'include',
 			});
-			if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-			if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+			if (!response.ok) return Runtime.responseStatus(response);
 		}
 		return RequestStatus.SUCCESS;
 	};
@@ -95,9 +91,7 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 			method: 'GET',
 			credentials: 'include',
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
-		return RequestStatus.SUCCESS;
+		return Runtime.responseStatus(response);
 	};
 
 	static toStatus = (status: AnimePlanetStatus): Status => {

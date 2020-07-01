@@ -66,21 +66,24 @@ browser.runtime.onMessage.addListener(
 				body,
 			})
 				.then(async (response) => {
-					return {
+					return <RequestResponse>{
 						url: response.url,
 						ok: response.status >= 200 && response.status < 400,
-						status: response.status,
+						failed: false,
+						code: response.status,
 						redirected: response.redirected,
+						// chrome doesn't allow message with the Headers object
 						headers: JSON.parse(JSON.stringify(response.headers)),
 						body: msg.isJson ? await response.json() : await response.text(),
 					};
 				})
 				.catch((error) => {
 					console.error(error);
-					return {
+					return <RequestResponse>{
 						url: msg.url,
 						ok: false,
-						status: 0,
+						failed: true,
+						code: 0,
 						redirected: false,
 						headers: {},
 						body: msg.isJson ? {} : '',

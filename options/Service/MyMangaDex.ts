@@ -162,8 +162,8 @@ class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTi
 }
 
 export class MyMangaDex extends Service {
-	key: ServiceKey = ServiceKey.MyMangaDex;
-	name: ServiceName = ServiceName.MyMangaDex;
+	readonly key: ServiceKey = ServiceKey.MyMangaDex;
+	readonly name: ServiceName = ServiceName.MyMangaDex;
 
 	activeModule = undefined;
 	importModule: MyMangaDexImport = new MyMangaDexImport(this);

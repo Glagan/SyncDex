@@ -1,7 +1,7 @@
 import { Options } from '../../src/Options';
 import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Title } from '../../src/Title';
-import { Service, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
+import { Service, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule, Modal } from './Service';
 import { KitsuStatus, KitsuTitle, KitsuManga, KitsuResponse, KitsuHeaders, KitsuAPI } from '../../src/Service/Kitsu';
 import { DOM } from '../../src/DOM';
 import { ServiceKey, ServiceName } from '../../src/core';
@@ -21,6 +21,26 @@ interface KitsuUserResponse {
 class KitsuActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.FORM;
 
+	preModalForm = (modal: Modal): void => {
+		modal.body.appendChild(
+			DOM.create('div', {
+				class: 'message',
+				textContent: 'No Account ? ',
+				childs: [
+					DOM.create('a', {
+						textContent: 'Register',
+						attributes: {
+							href: 'https://kitsu.io/',
+							target: '_blank',
+							rel: 'noreferrer noopener',
+						},
+						childs: [DOM.space(), DOM.icon('external-link-alt')],
+					}),
+				],
+			})
+		);
+	};
+
 	loggedIn = async (): Promise<RequestStatus> => {
 		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<KitsuUserResponse>({
@@ -30,9 +50,7 @@ class KitsuActive extends ActivableModule {
 				Accept: 'application/vnd.api+json',
 			},
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
-		return RequestStatus.SUCCESS;
+		return Runtime.responseStatus(response);
 	};
 
 	getUserId = async (): Promise<RequestStatus> => {
@@ -42,8 +60,7 @@ class KitsuActive extends ActivableModule {
 			method: 'GET',
 			headers: KitsuHeaders(),
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (!response.ok) return Runtime.responseStatus(response);
 		Options.tokens.kitsuUser = response.body.data[0].id;
 		return RequestStatus.SUCCESS;
 	};
@@ -60,8 +77,7 @@ class KitsuActive extends ActivableModule {
 				password
 			)}`,
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (!response.ok) return Runtime.responseStatus(response);
 		Options.tokens.kitsuToken = response.body.access_token;
 		const userIdResp = await this.getUserId();
 		await Options.save();
@@ -96,7 +112,7 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 					page[offset]=${(this.state.current - 1) * 500}`,
 			headers: KitsuHeaders(),
 		});
-		if (response.status >= 400) {
+		if (!response.ok) {
 			this.notification('warning', 'The request failed, maybe Kitsu is having problems, retry later.');
 			return false;
 		}
@@ -139,11 +155,7 @@ class KitsuExport extends APIExportableModule {
 
 	// Fetch all Kitsu titles to check if they already are in user list
 	preMain = async (titles: Title[]): Promise<boolean> => {
-		let notification = this.notification('default', [
-			DOM.text('Checking current status of each titles'),
-			DOM.space(),
-			this.stopButton,
-		]);
+		let notification = this.notification('loading', 'Checking current status of each titles');
 		let max = Math.ceil(titles.length / 500);
 		for (let current = 1; current <= max; current++) {
 			const ids = titles.slice((current - 1) * 500, current * 500).map((title) => title.services.ku as number);
@@ -157,8 +169,7 @@ class KitsuExport extends APIExportableModule {
 					&page[limit]=500`,
 				headers: KitsuHeaders(),
 			});
-			if (response.status >= 400) {
-				this.stopButton.remove();
+			if (!response.ok) {
 				notification.classList.remove('loading');
 				this.notification('warning', 'The request failed, maybe Kitsu is having problems, retry later.');
 				return false;
@@ -170,7 +181,6 @@ class KitsuExport extends APIExportableModule {
 				}
 			}
 		}
-		this.stopButton.remove();
 		notification.classList.remove('loading');
 		return true;
 	};
@@ -190,8 +200,8 @@ class KitsuExport extends APIExportableModule {
 }
 
 export class Kitsu extends Service {
-	key: ServiceKey = ServiceKey.Kitsu;
-	name: ServiceName = ServiceName.Kitsu;
+	readonly key: ServiceKey = ServiceKey.Kitsu;
+	readonly name: ServiceName = ServiceName.Kitsu;
 
 	activeModule: KitsuActive = new KitsuActive(this);
 	importModule: KitsuImport = new KitsuImport(this);

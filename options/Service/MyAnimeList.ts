@@ -43,14 +43,8 @@ class MyAnimeListActive extends ActivableModule {
 			method: 'GET',
 			credentials: 'include',
 		});
-		if (response.status >= 500) {
-			return RequestStatus.SERVER_ERROR;
-		} else if (response.status >= 400 && response.status < 500) {
-			return RequestStatus.BAD_REQUEST;
-		}
-		if (response.ok && response.body && response.url.indexOf('login.php') < 0) {
-			return RequestStatus.SUCCESS;
-		}
+		if (!response.ok) return Runtime.responseStatus(response);
+		if (response.body && response.url.indexOf('login.php') < 0) return RequestStatus.SUCCESS;
 		return RequestStatus.FAIL;
 	};
 
@@ -312,15 +306,16 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 
 	sendBatch = async (batch: string, summary: Summary): Promise<boolean> => {
 		// Get CSRF token
-		const importPage = await Runtime.request<RawResponse>({
+		let response = await Runtime.request<RawResponse>({
 			url: `https://myanimelist.net/import.php`,
 			method: 'GET',
 			credentials: 'include',
 		});
-		const csrfTokenArr = /'csrf_token'\scontent='(.{40})'/.exec(importPage.body);
+		if (!response.ok) return false;
+		const csrfTokenArr = /'csrf_token'\scontent='(.{40})'/.exec(response.body);
 		if (!csrfTokenArr) return false;
 		// Upload file and look at response
-		const response = await Runtime.request<RawResponse>({
+		response = await Runtime.request<RawResponse>({
 			url: `http://localhost/import.php`,
 			method: 'POST',
 			credentials: 'include',
@@ -337,20 +332,18 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 				},
 			},
 		});
-		// Update summary with number of updated titles
-		if (response.status == 200) {
-			const totalArr = /Total\s*Entries\s*Updated:\s*(\d+)/.exec(response.body);
-			const totalUpdated = totalArr ? +totalArr[1] : 0;
-			summary.valid = totalUpdated;
-			return true;
-		}
-		return false;
+		if (!response.ok) return false;
+		// Update summary with number of updated titles	if (response.code == 200) {
+		const totalArr = /Total\s*Entries\s*Updated:\s*(\d+)/.exec(response.body);
+		const totalUpdated = totalArr ? +totalArr[1] : 0;
+		summary.valid = totalUpdated;
+		return true;
 	};
 }
 
 export class MyAnimeList extends Service {
-	key: ServiceKey = ServiceKey.MyAnimeList;
-	name: ServiceName = ServiceName.MyAnimeList;
+	readonly key: ServiceKey = ServiceKey.MyAnimeList;
+	readonly name: ServiceName = ServiceName.MyAnimeList;
 
 	activeModule: MyAnimeListActive = new MyAnimeListActive(this);
 	importModule: MyAnimeListImport = new MyAnimeListImport(this);

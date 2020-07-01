@@ -55,9 +55,7 @@ class AnilistActive extends ActivableModule {
 			headers: AnilistHeaders(),
 			body: JSON.stringify({ query: AnilistActive.LoginQuery }),
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
-		return RequestStatus.SUCCESS;
+		return Runtime.responseStatus(response);
 	};
 
 	logout = async (): Promise<void> => {
@@ -129,7 +127,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 				query: AnilistImport.viewerQuery,
 			}),
 		});
-		if (response.status >= 400) {
+		if (!response.ok) {
 			this.notification(
 				'warning',
 				`The request failed, maybe Anilist is having problems or your token expired, retry later.`
@@ -152,10 +150,10 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 				},
 			}),
 		});
-		if (response.status >= 500) {
+		if (response.code >= 500) {
 			this.notification('warning', 'The request failed, maybe Anilist is having problems, retry later.');
 			return false;
-		} else if (response.status >= 400) {
+		} else if (response.code >= 400) {
 			this.notification('warning', 'Bad Request, check if your token is valid.');
 			return false;
 		}
@@ -195,8 +193,8 @@ class AnilistExport extends APIExportableModule {
 }
 
 export class Anilist extends Service {
-	key: ServiceKey = ServiceKey.Anilist;
-	name: ServiceName = ServiceName.Anilist;
+	readonly key: ServiceKey = ServiceKey.Anilist;
+	readonly name: ServiceName = ServiceName.Anilist;
 
 	createTitle = (): AppendableElement => {
 		return DOM.create('span', {

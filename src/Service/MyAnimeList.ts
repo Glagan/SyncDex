@@ -41,8 +41,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 			credentials: 'include',
 			redirect: 'follow',
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (!response.ok) return Runtime.responseStatus(response);
 		const values: Partial<MyAnimeListTitle> = {};
 		const csrf = /'csrf_token'\scontent='(.{40})'/.exec(response.body);
 		if (csrf !== null) values.csrf = csrf[1];
@@ -99,8 +98,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 			},
 			body: body,
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (!response.ok) return Runtime.responseStatus(response);
 		if (this.newEntry) {
 			this.newEntry = false;
 			return RequestStatus.CREATED;
@@ -118,8 +116,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 			},
 			body: `csrf_token=${this.csrf}`,
 		});
-		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
-		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		if (!response.ok) return Runtime.responseStatus(response);
 		this.newEntry = true;
 		return RequestStatus.SUCCESS;
 	};

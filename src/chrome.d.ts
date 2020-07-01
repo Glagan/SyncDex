@@ -35,22 +35,19 @@ interface OpenOptionsMessage {
 
 type Message = RequestMessage | OpenOptionsMessage;
 
-interface RequestResponse {
+interface RequestResponse<T extends {} = Record<string, any> | string> {
 	url: string;
 	redirected: boolean;
 	ok: boolean;
-	status: number;
+	failed: boolean;
+	code: number;
 	headers: Record<string, string>;
-	body: Record<string, string> | string;
-}
-
-interface JSONResponse<T extends {} = Record<string, any>> extends RequestResponse {
 	body: T;
 }
 
-interface RawResponse extends RequestResponse {
-	body: string;
-}
+interface JSONResponse<T extends {} = Record<string, any>> extends RequestResponse<T> {}
+
+interface RawResponse extends RequestResponse<string> {}
 
 declare const chrome: {
 	runtime: {

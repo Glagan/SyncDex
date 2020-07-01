@@ -14,14 +14,14 @@ export enum MessageAction {
 }
 
 export class Runtime {
-	static sendMessage<T extends RequestResponse | void>(message: Message): Promise<T> {
-		return browser.runtime.sendMessage<T>(message);
+	static sendMessage<R extends RequestResponse | void>(message: Message): Promise<R> {
+		return browser.runtime.sendMessage<R>(message);
 	}
 
-	static jsonRequest<T extends {} = Record<string, any>>(
+	static jsonRequest<R extends {} = Record<string, any>>(
 		message: Omit<RequestMessage, 'action' | 'isJson'>
-	): Promise<JSONResponse<T>> {
-		return Runtime.sendMessage<JSONResponse<T>>(
+	): Promise<JSONResponse<R>> {
+		return Runtime.sendMessage<JSONResponse<R>>(
 			Object.assign(message, {
 				action: MessageAction.request,
 				isJson: true,
@@ -41,5 +41,12 @@ export class Runtime {
 		return Runtime.sendMessage({
 			action: MessageAction.openOptions,
 		});
+	}
+
+	static responseStatus<R extends RequestResponse>(response: R): RequestStatus {
+		if (response.code == 0) return RequestStatus.FAIL;
+		else if (response.code >= 500) return RequestStatus.SERVER_ERROR;
+		else if (response.code >= 400) return RequestStatus.BAD_REQUEST;
+		return RequestStatus.SUCCESS;
 	}
 }

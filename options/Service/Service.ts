@@ -169,6 +169,8 @@ export abstract class ActivableModule {
 	abstract loggedIn(): Promise<RequestStatus>;
 	abstract login?(username: string, password: string): Promise<RequestStatus>;
 	abstract logout?(): Promise<void>;
+	identifierField: [string, string] = ['Email', 'email'];
+	preModalForm?(modal: Modal): void;
 
 	message = (type: 'default' | 'warning' | 'success', content: string, append: boolean = true): HTMLElement => {
 		const message = DOM.create('div', {
@@ -367,9 +369,14 @@ export abstract class ActivableModule {
 						DOM.create('div', {
 							class: 'row-parameter',
 							childs: [
-								DOM.create('label', { textContent: 'Email' }),
+								DOM.create('label', { textContent: this.identifierField[0] }),
 								DOM.create('input', {
-									attributes: { type: 'text', name: 'email', placeholder: 'Email', required: 'true' },
+									attributes: {
+										type: this.identifierField[1],
+										name: 'identifier',
+										placeholder: this.identifierField[0],
+										required: 'true',
+									},
 								}),
 								DOM.create('label', { textContent: 'Password' }),
 								DOM.create('input', {
@@ -395,6 +402,7 @@ export abstract class ActivableModule {
 					class: 'default center',
 					childs: [DOM.icon('times-circle'), DOM.text('Cancel')],
 				});
+				if (this.preModalForm) this.preModalForm(modal);
 				DOM.append(modal.body, DOM.append(form, cancelButton));
 				// Bind
 				let busy = false;
@@ -408,7 +416,7 @@ export abstract class ActivableModule {
 						busy = true;
 						modal.content.classList.add('loading');
 						// Login call Options.save itself
-						const res = await this.login(form.email.value.trim(), form.password.value);
+						const res = await this.login(form.identifier.value.trim(), form.password.value);
 						modal.content.classList.remove('loading');
 						if (res == RequestStatus.SUCCESS) {
 							this.loginButton.remove();
