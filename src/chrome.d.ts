@@ -3,30 +3,77 @@ interface Window {
 	browser?: typeof browser;
 }
 
-// TODO: Remove <any> ?
+interface FormDataFile {
+	content: string[];
+	name: string;
+	options?: FilePropertyBag | undefined;
+}
+
+interface FormDataProxy {
+	[key: string]: string | number | FormDataFile;
+}
+
+interface RequestMessage {
+	action: MessageAction.request;
+	method?: 'GET' | 'POST' | 'HEAD' | 'OPTIONS' | 'DELETE' | 'PUT' | 'PATCH';
+	url: string;
+	isJson?: boolean;
+	body?: FormDataProxy | FormData | string | null;
+	cache?: RequestCache;
+	headers?: HeadersInit;
+	redirect?: RequestRedirect;
+	credentials?: RequestCredentials;
+}
+
+interface FetchJSONMessage extends RequestMessage {
+	isJson: true;
+}
+
+interface OpenOptionsMessage {
+	action: MessageAction.openOptions;
+}
+
+type Message = RequestMessage | OpenOptionsMessage;
+
+interface RequestResponse {
+	url: string;
+	redirected: boolean;
+	ok: boolean;
+	status: number;
+	headers: Record<string, string>;
+	body: Record<string, string> | string;
+}
+
+interface JSONResponse<T extends {} = Record<string, any>> extends RequestResponse {
+	body: T;
+}
+
+interface RawResponse extends RequestResponse {
+	body: string;
+}
+
 declare const chrome: {
 	runtime: {
 		getManifest: () => {
 			version: string;
 		};
-		openOptionsPage: (resolve?: () => void) => Promise<any>;
-		sendMessage: (message: FetchMessage | OpenOptionsMessage, resolve?: (response?: any) => void) => Promise<any>;
+		openOptionsPage: (resolve?: () => void) => Promise<void>;
+		sendMessage: <T extends RequestResponse | void>(
+			message: Message,
+			resolve?: (response?: T) => void
+		) => Promise<any>;
 		onMessage: {
 			addListener: (
-				fnct: (
-					message: FetchMessage | OpenOptionsMessage,
-					_sender: any,
-					sendResponse: (response?: any) => void
-				) => any
+				fnct: (message: Message, _sender: any, sendResponse: (response?: RequestResponse | void) => void) => any
 			) => void;
 		};
 	};
 	storage: {
 		local: {
 			get: <T>(key: string[] | string | null, resolve?: () => void) => Promise<Record<string, T> | undefined>;
-			set: (data: Object, resolve?: () => void) => Promise<any>;
-			remove: (key: string, resolve?: () => void) => Promise<any>;
-			clear: (resolve?: () => void) => Promise<any>;
+			set: (data: Object, resolve?: () => void) => Promise<void>;
+			remove: (key: string, resolve?: () => void) => Promise<void>;
+			clear: (resolve?: () => void) => Promise<void>;
 		};
 	};
 	browserAction: {
@@ -39,10 +86,10 @@ declare const chrome: {
 declare const browser: {
 	runtime: {
 		getManifest: typeof chrome.runtime.getManifest;
-		openOptionsPage: () => Promise<any>;
-		sendMessage: (message: FetchMessage | OpenOptionsMessage) => Promise<any>;
+		openOptionsPage: () => Promise<void>;
+		sendMessage: <T extends RequestResponse | void>(message: Message) => Promise<T>;
 		onMessage: {
-			addListener: (fnct: (message: FetchMessage | OpenOptionsMessage) => Promise<any>) => void;
+			addListener: (fnct: (message: Message) => Promise<RequestResponse | void>) => void;
 		};
 	};
 	storage: {

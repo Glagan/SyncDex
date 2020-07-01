@@ -10,7 +10,7 @@ import {
 	LoginMethod,
 	ActivableModule,
 } from './Service';
-import { RawResponse, Runtime, RequestStatus } from '../../src/Runtime';
+import { Runtime, RequestStatus } from '../../src/Runtime';
 import { ServiceKey, Status, ServiceName } from '../../src/core';
 
 enum MyAnimeListExportStatus {

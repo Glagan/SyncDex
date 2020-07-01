@@ -1,4 +1,4 @@
-import { Runtime, RawResponse, RequestStatus } from '../../src/Runtime';
+import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, ActivableModule, APIImportableModule, ImportStep, LoginMethod, APIExportableModule } from './Service';
 import { MangaUpdatesTitle, MangaUpdatesStatus } from '../../src/Service/MangaUpdates';
 import { DOM } from '../../src/DOM';
@@ -110,7 +110,7 @@ class MangaUpdatesExport extends APIExportableModule {
 		}
 		this.stopButton.remove();
 		notification.classList.remove('loading');
-		return true; // TODO: Also *Import* at the same time to just have the latest values ?
+		return true;
 	};
 
 	exportTitle = async (title: Title): Promise<boolean> => {

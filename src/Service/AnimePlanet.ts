@@ -1,4 +1,4 @@
-import { Runtime, RawResponse, RequestStatus, JSONResponse } from '../Runtime';
+import { Runtime, RequestStatus } from '../Runtime';
 import { ServiceTitle, Title } from '../Title';
 import { Progress, ServiceKey, ServiceName, Status } from '../core';
 
@@ -61,18 +61,16 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 	};
 
 	persist = async (): Promise<RequestStatus> => {
-		let response = await Runtime.request<JSONResponse>({
+		let response = await Runtime.jsonRequest({
 			url: `https://www.anime-planet.com/api/list/status/manga/${this.id}/${this.status}/${this.token}`,
-			isJson: true,
 			credentials: 'include',
 		});
 		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
 		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
 		// Chapter progress
 		if (this.progress.chapter > 0) {
-			response = await Runtime.request<JSONResponse>({
+			response = await Runtime.jsonRequest({
 				url: `https://www.anime-planet.com/api/list/update/manga/${this.id}/${this.progress.chapter}/0/${this.token}`,
-				isJson: true,
 				credentials: 'include',
 			});
 			if (response.status >= 500) return RequestStatus.SERVER_ERROR;
@@ -80,9 +78,8 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 		}
 		// Score
 		if (this.score !== undefined && this.score > 0) {
-			response = await Runtime.request<JSONResponse>({
+			response = await Runtime.jsonRequest({
 				url: `https://www.anime-planet.com/api/list/rate/manga/${this.id}/${this.progress.chapter}/${this.token}`,
-				isJson: true,
 				credentials: 'include',
 			});
 			if (response.status >= 500) return RequestStatus.SERVER_ERROR;
@@ -93,7 +90,7 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 
 	delete = async (): Promise<RequestStatus> => {
 		if (this.token == '') return RequestStatus.BAD_REQUEST;
-		const response = await Runtime.request<JSONResponse>({
+		const response = await Runtime.jsonRequest({
 			url: `https://www.anime-planet.com/api/list/status/manga/${this.id}/0/${this.token}`,
 			method: 'GET',
 			credentials: 'include',

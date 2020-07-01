@@ -1,6 +1,6 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { Options } from '../../src/Options';
-import { Runtime, JSONResponse, RequestStatus } from '../../src/Runtime';
+import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Title } from '../../src/Title';
 import { Service, ActivableModule, APIImportableModule, ImportStep, APIExportableModule, LoginMethod } from './Service';
 import { AnilistStatus, AnilistTitle, AnilistDate, AnilistAPI, AnilistHeaders } from '../../src/Service/Anilist';
@@ -49,10 +49,9 @@ class AnilistActive extends ActivableModule {
 
 	loggedIn = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.anilistToken === undefined) return RequestStatus.MISSING_TOKEN;
-		const response = await Runtime.request<JSONResponse>({
+		const response = await Runtime.jsonRequest({
 			method: 'POST',
 			url: AnilistAPI,
-			isJson: true,
 			headers: AnilistHeaders(),
 			body: JSON.stringify({ query: AnilistActive.LoginQuery }),
 		});
@@ -122,10 +121,9 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 
 	handlePage = async (): Promise<AnilistTitle[] | false> => {
 		// Find required username
-		let response = await Runtime.request<JSONResponse>({
+		let response = await Runtime.jsonRequest({
 			url: AnilistAPI,
 			method: 'POST',
-			isJson: true,
 			headers: AnilistHeaders(),
 			body: JSON.stringify({
 				query: AnilistImport.viewerQuery,
@@ -140,10 +138,9 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 		}
 		const username = (response.body as AnilistViewerResponse).data.Viewer.name;
 		// Get list of *all* titles
-		response = await Runtime.request<JSONResponse>({
+		response = await Runtime.jsonRequest({
 			url: AnilistAPI,
 			method: 'POST',
-			isJson: true,
 			headers: {
 				Accept: 'application/json',
 				'Content-Type': 'application/json',

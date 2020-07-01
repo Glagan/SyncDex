@@ -1,53 +1,56 @@
 import { Options } from '../../src/Options';
-import { Runtime, JSONResponse, RequestStatus } from '../../src/Runtime';
+import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Title } from '../../src/Title';
 import { Service, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
 import { KitsuStatus, KitsuTitle, KitsuManga, KitsuResponse, KitsuHeaders, KitsuAPI } from '../../src/Service/Kitsu';
 import { DOM } from '../../src/DOM';
 import { ServiceKey, ServiceName } from '../../src/core';
 
+interface KitsuUserResponse {
+	data: {
+		id: string;
+		type: 'users';
+		links: {};
+		attributes: {};
+		relationships: {};
+	}[];
+	meta: {};
+	links: {};
+}
+
 class KitsuActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.FORM;
 
 	loggedIn = async (): Promise<RequestStatus> => {
 		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken) return RequestStatus.MISSING_TOKEN;
-		const response = await Runtime.request<JSONResponse>({
+		const response = await Runtime.jsonRequest<KitsuUserResponse>({
 			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
-			isJson: true,
 			headers: {
 				Authorization: `Bearer ${Options.tokens.kitsuToken}`,
 				Accept: 'application/vnd.api+json',
 			},
 		});
-		if (response.status >= 500) {
-			return RequestStatus.SERVER_ERROR;
-		} else if (response.status >= 400 && response.status < 500) {
-			return RequestStatus.BAD_REQUEST;
-		}
+		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
+		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
 		return RequestStatus.SUCCESS;
 	};
 
 	getUserId = async (): Promise<RequestStatus> => {
 		if (Options.tokens.kitsuToken === undefined) return RequestStatus.MISSING_TOKEN;
-		let data = await Runtime.request<JSONResponse>({
+		let response = await Runtime.jsonRequest<KitsuUserResponse>({
 			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
-			isJson: true,
 			method: 'GET',
 			headers: KitsuHeaders(),
 		});
-		if (data.ok) {
-			Options.tokens.kitsuUser = data.body.data[0].id;
-			return RequestStatus.SUCCESS;
-		} else if (data.status >= 500) {
-			return RequestStatus.SERVER_ERROR;
-		}
-		return RequestStatus.BAD_REQUEST;
+		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
+		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		Options.tokens.kitsuUser = response.body.data[0].id;
+		return RequestStatus.SUCCESS;
 	};
 
 	login = async (username: string, password: string): Promise<RequestStatus> => {
-		let data = await Runtime.request<JSONResponse>({
+		let response = await Runtime.jsonRequest({
 			url: 'https://kitsu.io/api/oauth/token',
-			isJson: true,
 			method: 'POST',
 			headers: {
 				Accept: 'application/vnd.api+json',
@@ -57,16 +60,13 @@ class KitsuActive extends ActivableModule {
 				password
 			)}`,
 		});
-		if (data.status == 200) {
-			Options.tokens.kitsuToken = data.body.access_token;
-			const userIdResp = await this.getUserId();
-			await Options.save();
-			if (userIdResp !== RequestStatus.SUCCESS) return userIdResp;
-			return RequestStatus.SUCCESS;
-		} else if (data.status >= 500) {
-			return RequestStatus.SERVER_ERROR;
-		}
-		return RequestStatus.BAD_REQUEST;
+		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
+		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
+		Options.tokens.kitsuToken = response.body.access_token;
+		const userIdResp = await this.getUserId();
+		await Options.save();
+		if (userIdResp !== RequestStatus.SUCCESS) return userIdResp;
+		return RequestStatus.SUCCESS;
 	};
 
 	logout = async (): Promise<void> => {
@@ -85,7 +85,7 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 	};
 
 	handlePage = async (): Promise<KitsuTitle[] | false> => {
-		const response = await Runtime.request<JSONResponse>({
+		const response = await Runtime.jsonRequest<KitsuResponse>({
 			url: `${KitsuAPI}?
 					filter[user_id]=${Options.tokens.kitsuUser}&
 					filter[kind]=manga&
@@ -94,7 +94,6 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 					fields[manga]=canonicalTitle&
 					page[limit]=500&
 					page[offset]=${(this.state.current - 1) * 500}`,
-			isJson: true,
 			headers: KitsuHeaders(),
 		});
 		if (response.status >= 400) {
@@ -109,7 +108,7 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 			return false;
 		}
 		let titles: KitsuTitle[] = [];
-		const body = response.body as KitsuResponse;
+		const body = response.body;
 		// Each row has a data-id field
 		for (const title of body.data) {
 			if (!title.relationships.manga.data) continue;
@@ -148,7 +147,7 @@ class KitsuExport extends APIExportableModule {
 		let max = Math.ceil(titles.length / 500);
 		for (let current = 1; current <= max; current++) {
 			const ids = titles.slice((current - 1) * 500, current * 500).map((title) => title.services.ku as number);
-			const response = await Runtime.request<JSONResponse>({
+			const response = await Runtime.jsonRequest<KitsuResponse>({
 				url: `${KitsuAPI}
 					?filter[user_id]=${Options.tokens.kitsuUser}
 					&filter[mangaId]=${ids.join(',')}
@@ -156,7 +155,6 @@ class KitsuExport extends APIExportableModule {
 					&include=manga
 					&fields[manga]=id
 					&page[limit]=500`,
-				isJson: true,
 				headers: KitsuHeaders(),
 			});
 			if (response.status >= 400) {
@@ -165,7 +163,7 @@ class KitsuExport extends APIExportableModule {
 				this.notification('warning', 'The request failed, maybe Kitsu is having problems, retry later.');
 				return false;
 			}
-			const body = response.body as KitsuResponse;
+			const body = response.body;
 			for (const title of body.data) {
 				if (title.relationships.manga.data) {
 					this.onlineList[title.relationships.manga.data.id] = +title.id;
@@ -174,7 +172,7 @@ class KitsuExport extends APIExportableModule {
 		}
 		this.stopButton.remove();
 		notification.classList.remove('loading');
-		return true; // TODO: Also just *Import* at the same time to just have the latest values ?
+		return true;
 	};
 
 	exportTitle = async (title: Title): Promise<boolean> => {

@@ -1,5 +1,5 @@
 import { setBrowser } from '../src/Browser';
-import { Message, MessageAction, FormDataProxy, FormDataFile } from '../src/Runtime';
+import { MessageAction } from '../src/Runtime';
 
 console.log('SyncDex :: Background');
 
@@ -19,11 +19,11 @@ const cooldowns: Record<string, number> = {
 	localhost: 250,
 };
 browser.runtime.onMessage.addListener(
-	// TODO: Remove <any>
-	async (message: Message): Promise<any> => {
+	async (message: Message): Promise<RequestResponse | void> => {
 		if (message.action == MessageAction.request) {
+			const msg = message as RequestMessage;
 			// Cooldown
-			const domain = findDomain(message.url);
+			const domain = findDomain(msg.url);
 			const now = Date.now();
 			// Sleep until cooldown is reached
 			if (nextRequest[domain] && nextRequest[domain] >= now) {
@@ -34,17 +34,19 @@ browser.runtime.onMessage.addListener(
 				nextRequest[domain] = now + (cooldowns[domain] ?? 1000) + 100;
 			}
 			// Options
-			message.isJson = !!message.isJson;
-			message.method = message.method || 'GET';
-			message.body = message.body || null;
-			message.redirect = message.redirect || 'manual';
-			message.cache = message.cache || 'default';
+			msg.isJson = !!msg.isJson;
+			msg.method = msg.method || 'GET';
+			msg.body = msg.body || null;
+			msg.redirect = msg.redirect || 'manual';
+			msg.cache = msg.cache || 'default';
+			msg.credentials = msg.credentials || 'same-origin';
+			msg.headers = msg.headers || {};
 			let body: FormData | string | undefined;
-			if (typeof message.body === 'object' && message.body !== null) {
+			if (typeof msg.body === 'object' && msg.body !== null) {
 				let data = new FormData();
-				for (const key in message.body as FormDataProxy) {
-					if (message.body.hasOwnProperty(key)) {
-						const element = (message.body as FormDataProxy)[key] as string | number | FormDataFile;
+				for (const key in msg.body as FormDataProxy) {
+					if (msg.body.hasOwnProperty(key)) {
+						const element = (msg.body as FormDataProxy)[key] as string | number | FormDataFile;
 						if (typeof element === 'string') {
 							data.append(key, element);
 						} else if (typeof element === 'number') {
@@ -55,36 +57,35 @@ browser.runtime.onMessage.addListener(
 					}
 				}
 				body = data;
-			} else if (message.body !== null) {
-				body = message.body;
+			} else if (msg.body !== null) {
+				body = msg.body;
 			}
-			message.credentials = message.credentials || 'same-origin';
-			message.headers = message.headers || {};
 			// Fetch
-			try {
-				return fetch(message.url, {
-					...message,
-					body,
-				}).then(async (response) => {
+			return fetch(msg.url, {
+				...message,
+				body,
+			})
+				.then(async (response) => {
 					return {
 						url: response.url,
-						redirected: response.redirected,
 						ok: response.status >= 200 && response.status < 400,
 						status: response.status,
+						redirected: response.redirected,
 						headers: JSON.parse(JSON.stringify(response.headers)),
-						body: message.isJson ? await response.json() : await response.text(),
+						body: msg.isJson ? await response.json() : await response.text(),
+					};
+				})
+				.catch((error) => {
+					console.error(error);
+					return {
+						url: msg.url,
+						ok: false,
+						status: 0,
+						redirected: false,
+						headers: {},
+						body: msg.isJson ? {} : '',
 					};
 				});
-			} catch (error) {
-				console.error(error);
-				return {
-					url: message.url,
-					ok: false,
-					status: 400,
-					headers: {},
-					body: message.isJson ? {} : '',
-				};
-			}
 		} else if (message.action == MessageAction.openOptions) {
 			return browser.runtime.openOptionsPage();
 		}

@@ -1,4 +1,4 @@
-import { Runtime, JSONResponse, RequestStatus } from '../Runtime';
+import { Runtime, RequestStatus } from '../Runtime';
 import { ServiceTitle, Title } from '../Title';
 import { ServiceKey, ServiceName, Status } from '../core';
 import { Options } from '../Options';
@@ -135,10 +135,9 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 	static get = async <T extends ServiceTitle<T> = AnilistTitle>(
 		id: number | string
 	): Promise<AnilistTitle | RequestStatus> => {
-		const response = await Runtime.request<JSONResponse>({
+		const response = await Runtime.jsonRequest<AnilistGetResponse>({
 			url: AnilistAPI,
 			method: 'POST',
-			isJson: true,
 			headers: AnilistHeaders(),
 			body: JSON.stringify({
 				query: AnilistTitle.getQuery,
@@ -150,7 +149,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
 		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
 		// Convert Response to AnilistTitle
-		const body = response.body as AnilistGetResponse;
+		const body = response.body;
 		const mediaEntry = body.data.Media.mediaListEntry;
 		const values: Partial<AnilistTitle> = {
 			name: body.data.Media.title.userPreferred,
@@ -178,7 +177,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 
 	persist = async (): Promise<RequestStatus> => {
 		if (this.status !== AnilistStatus.NONE) return RequestStatus.FAIL;
-		const response = await Runtime.request<JSONResponse>({
+		const response = await Runtime.jsonRequest({
 			url: AnilistAPI,
 			method: 'POST',
 			headers: AnilistHeaders(),
@@ -202,7 +201,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 
 	delete = async (): Promise<RequestStatus> => {
 		if (this.mediaEntryId <= 0) return RequestStatus.BAD_REQUEST;
-		const response = await Runtime.request<JSONResponse>({
+		const response = await Runtime.jsonRequest({
 			url: AnilistAPI,
 			method: 'POST',
 			headers: AnilistHeaders(),

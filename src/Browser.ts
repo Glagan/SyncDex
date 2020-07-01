@@ -1,10 +1,7 @@
-import { Message } from './Runtime';
-
 console.log('SyncDex :: Browser');
 
 export const isChrome = window.chrome && window.browser === undefined;
 // Promisify Chrome
-// TODO: Remove <any> ?
 export const setBrowser = ((): (() => void) => {
 	if (isChrome) {
 		window.browser = window.chrome;
@@ -15,26 +12,28 @@ export const setBrowser = ((): (() => void) => {
 			return new Promise((resolve) => chromeGet(key, resolve));
 		};
 		const chromeSet = chrome.storage.local.set.bind(chrome.storage.local);
-		browser.storage.local.set = (data: Object): Promise<any> => {
+		browser.storage.local.set = (data: Object): Promise<void> => {
 			return new Promise((resolve) => chromeSet(data, resolve));
 		};
 		const chromeRemove = chrome.storage.local.remove.bind(chrome.storage.local);
-		browser.storage.local.remove = (key: string): Promise<any> => {
+		browser.storage.local.remove = (key: string): Promise<void> => {
 			return new Promise((resolve) => chromeRemove(key, resolve));
 		};
 		const chromeClear = chrome.storage.local.clear.bind(chrome.storage.local);
-		browser.storage.local.clear = (): Promise<any> => {
+		browser.storage.local.clear = (): Promise<void> => {
 			return new Promise((resolve) => chromeClear(resolve));
 		};
 		const chromeOnMessage = chrome.runtime.onMessage.addListener.bind(chrome.runtime.onMessage);
 		browser.runtime.onMessage.addListener = (fnct: (message: Message) => Promise<any>): void => {
-			chromeOnMessage((message: Message, _sender: any, sendResponse: (response?: any) => void): true => {
-				fnct(message).then((response) => sendResponse(response));
-				return true;
-			});
+			chromeOnMessage(
+				(message: Message, _sender: any, sendResponse: (response?: RequestResponse | void) => void): true => {
+					fnct(message).then((response) => sendResponse(response));
+					return true;
+				}
+			);
 		};
 		const chromeSendMessage = chrome.runtime.sendMessage;
-		browser.runtime.sendMessage = (message: Object): Promise<any> => {
+		browser.runtime.sendMessage = (message: Message): Promise<any> => {
 			return new Promise((resolve) => chromeSendMessage(message, resolve));
 		};
 	}

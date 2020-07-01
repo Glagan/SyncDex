@@ -1,4 +1,4 @@
-import { Runtime, JSONResponse } from './Runtime';
+import { Runtime } from './Runtime';
 import { ServiceName } from './core';
 
 type MochiConnections = {
@@ -28,31 +28,22 @@ export class Mochi {
 		title: number | string,
 		source: ServiceName = ServiceName.MangaDex
 	): Promise<MochiConnections | undefined> {
-		const response = await Runtime.request<JSONResponse>({
+		const response = await Runtime.jsonRequest<MochiResult>({
 			url: `${Mochi.server}/connections.php?id=${title}&source=${source}`,
-			isJson: true,
 		});
-		if (response.status >= 400) {
-			return undefined;
-		}
-		const body = response.body as MochiResult;
-		if (body.data === undefined) {
-			return undefined;
-		}
-		return body.data[+title];
+		if (response.status >= 400) return undefined;
+		if (response.body.data === undefined) return undefined;
+		return response.body.data[+title];
 	}
 
 	static async findMany(
 		title: (number | string)[],
 		source: ServiceName = ServiceName.MangaDex
 	): Promise<MochiConnections[] | undefined> {
-		const response = await Runtime.request<JSONResponse>({
+		const response = await Runtime.jsonRequest<MochiResult>({
 			url: `${Mochi.server}/connections.php?id=${title.join(',')}&source=${source}`,
-			isJson: true,
 		});
-		if (response.status >= 400) {
-			return undefined;
-		}
-		return (response.body as MochiResult).data;
+		if (response.status >= 400) return undefined;
+		return response.body.data;
 	}
 }

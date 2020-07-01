@@ -1,5 +1,5 @@
 import { Options } from '../Options';
-import { Runtime, JSONResponse, RequestStatus } from '../Runtime';
+import { Runtime, RequestStatus } from '../Runtime';
 import { ServiceTitle, Title } from '../Title';
 import { ServiceKey, ServiceName, Status } from '../core';
 
@@ -13,7 +13,7 @@ interface KitsuHeaders {
 export interface KitsuManga {
 	id: string;
 	type: 'manga';
-	links: any;
+	links: {};
 	attributes: {
 		canonicalTitle: string;
 	};
@@ -38,13 +38,11 @@ interface KitsuLibraryEntryAttributes {
 interface KitsuLibraryEntry {
 	id: string;
 	type: 'libraryEntries';
-	links: {
-		self: string;
-	};
+	links: {};
 	attributes: KitsuLibraryEntryAttributes;
 	relationships: {
 		manga: {
-			links: any;
+			links: {};
 			data?: {
 				type: 'manga';
 				id: string;
@@ -56,6 +54,7 @@ interface KitsuLibraryEntry {
 export interface KitsuResponse {
 	data: KitsuLibraryEntry[];
 	included: KitsuManga[];
+	errors?: any;
 	meta: {
 		statusCounts: {
 			current?: number;
@@ -66,7 +65,7 @@ export interface KitsuResponse {
 		};
 		count: number;
 	};
-	links: any;
+	links: {};
 }
 
 interface KitsuPersistResponse {
@@ -102,15 +101,14 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 	static get = async <T extends ServiceTitle<T> = KitsuTitle>(
 		id: number | string
 	): Promise<KitsuTitle | RequestStatus> => {
-		const response = await Runtime.request<JSONResponse>({
+		const response = await Runtime.jsonRequest<KitsuResponse>({
 			url: `${KitsuAPI}?filter[manga_id]=${id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=canonicalTitle`,
-			isJson: true,
 			method: 'GET',
 			headers: KitsuHeaders(),
 		});
 		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
 		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
-		const body = response.body as KitsuResponse;
+		const body = response.body;
 		const values: Partial<KitsuTitle> = {};
 		if (body.data.length == 1) {
 			const libraryEntry = body.data[0];
@@ -132,11 +130,10 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 	persist = async (): Promise<RequestStatus> => {
 		const method = this.libraryEntryId && this.libraryEntryId > 0 ? 'PATCH' : 'POST';
 		const url = `${KitsuAPI}${this.libraryEntryId !== undefined ? `/${this.libraryEntryId}` : ''}`;
-		const response = await Runtime.request<JSONResponse>({
+		const response = await Runtime.jsonRequest<KitsuPersistResponse>({
 			url: url,
 			method: method,
 			headers: KitsuHeaders(),
-			isJson: true,
 			body: JSON.stringify({
 				data: {
 					id: this.libraryEntryId,
@@ -168,8 +165,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 		});
 		if (response.status >= 500) return RequestStatus.SERVER_ERROR;
 		if (response.status >= 400) return RequestStatus.BAD_REQUEST;
-		const body = response.body as KitsuPersistResponse;
-		this.libraryEntryId = parseInt(body.data.id);
+		this.libraryEntryId = parseInt(response.body.data.id);
 		return RequestStatus.SUCCESS;
 	};
 
