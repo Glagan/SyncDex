@@ -21,6 +21,11 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		score?: number;
 	};
 
+	constructor(id: number | string, title?: Partial<MangaUpdatesTitle>) {
+		super(id, title);
+		this.status = title && title.status !== undefined ? title.status : MangaUpdatesStatus.NONE;
+	}
+
 	static listToStatus = (list: string): MangaUpdatesStatus => {
 		switch (list) {
 			case 'read':

@@ -22,8 +22,14 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 	readonly serviceKey: ServiceKey = ServiceKey.AnimePlanet;
 	readonly serviceName: ServiceName = ServiceName.AnimePlanet;
 
-	status: AnimePlanetStatus = AnimePlanetStatus.NONE;
-	token: string = '';
+	status: AnimePlanetStatus;
+	token: string;
+
+	constructor(id: number | string, title?: Partial<AnimePlanetTitle>) {
+		super(id, title);
+		this.status = title && title.status !== undefined ? title.status : AnimePlanetStatus.NONE;
+		this.token = title && title.token !== undefined ? title.token : '';
+	}
 
 	static get = async <T extends ServiceTitle<T> = AnimePlanetTitle>(
 		id: number | string

@@ -42,7 +42,12 @@ class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
 	readonly serviceKey: ServiceKey = ServiceKey.MangaDex;
 	readonly serviceName: ServiceName = ServiceName.MangaDex;
 
-	status: Status = Status.NONE;
+	status: Status;
+
+	constructor(id: number | string, title?: Partial<MangaDexTitle>) {
+		super(id, title);
+		this.status = title && title.status !== undefined ? title.status : Status.NONE;
+	}
 
 	static get = async <T extends ServiceTitle<T> = MangaDexTitle>(id: number | string): Promise<RequestStatus> => {
 		return RequestStatus.FAIL;

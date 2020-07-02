@@ -31,7 +31,6 @@ export interface AvailableOptions {
 	notifications: boolean;
 	errorNotifications: boolean;
 	// Global
-	useXHR: boolean;
 	useMochi: boolean;
 	acceptLowScore: boolean;
 	updateMD: boolean;
@@ -83,7 +82,6 @@ export const DefaultOptions: AvailableOptions = {
 	notifications: true,
 	errorNotifications: true,
 	// Global
-	useXHR: false,
 	useMochi: true,
 	acceptLowScore: false,
 	updateMD: false,

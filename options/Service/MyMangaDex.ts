@@ -67,7 +67,7 @@ class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTi
 			titles.add(
 				new Title(title.id, {
 					services: {
-						mal: title.mal,
+						mal: title.mal > 0 ? title.mal : undefined,
 					},
 					status: Status.NONE,
 					progress: {

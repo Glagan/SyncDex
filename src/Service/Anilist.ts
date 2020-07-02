@@ -69,8 +69,8 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 	readonly serviceKey: ServiceKey = ServiceKey.Anilist;
 	readonly serviceName: ServiceName = ServiceName.Anilist;
 
-	status: AnilistStatus = AnilistStatus.NONE;
-	mediaEntryId: number = 0;
+	status: AnilistStatus;
+	mediaEntryId: number;
 
 	static readonly getQuery = `
 		query ($mediaId: Int) {
@@ -123,6 +123,12 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 				deleted
 			}
 		}`;
+
+	constructor(id: number | string, title?: Partial<AnilistTitle>) {
+		super(id, title);
+		this.status = title && title.status !== undefined ? title.status : AnilistStatus.NONE;
+		this.mediaEntryId = title && title.mediaEntryId !== undefined ? title.mediaEntryId : 0;
+	}
 
 	static dateFromAnilist = (date: AnilistDate): Date | undefined => {
 		if (date.day !== null && date.month !== null && date.year !== null) {

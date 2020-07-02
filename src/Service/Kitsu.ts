@@ -93,8 +93,14 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 	readonly serviceKey: ServiceKey = ServiceKey.Kitsu;
 	readonly serviceName: ServiceName = ServiceName.Kitsu;
 
-	status: KitsuStatus = KitsuStatus.NONE;
-	libraryEntryId: number = 0;
+	status: KitsuStatus;
+	libraryEntryId: number;
+
+	constructor(id: number | string, title?: Partial<KitsuTitle>) {
+		super(id, title);
+		this.status = title && title.status !== undefined ? title.status : KitsuStatus.NONE;
+		this.libraryEntryId = title && title.libraryEntryId !== undefined ? title.libraryEntryId : 0;
+	}
 
 	// abstract static get(id): RequestStatus
 	static get = async <T extends ServiceTitle<T> = KitsuTitle>(

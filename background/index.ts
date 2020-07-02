@@ -34,13 +34,13 @@ browser.runtime.onMessage.addListener(
 				nextRequest[domain] = now + (cooldowns[domain] ?? 1000) + 100;
 			}
 			// Options
-			msg.isJson = !!msg.isJson;
-			msg.method = msg.method || 'GET';
-			msg.body = msg.body || null;
-			msg.redirect = msg.redirect || 'manual';
-			msg.cache = msg.cache || 'default';
-			msg.credentials = msg.credentials || 'same-origin';
-			msg.headers = msg.headers || {};
+			msg.isJson = msg.isJson !== undefined ? msg.isJson : false;
+			msg.method = msg.method !== undefined ? msg.method : 'GET';
+			msg.body = msg.body !== undefined ? msg.body : null;
+			msg.redirect = msg.redirect !== undefined ? msg.redirect : 'follow';
+			msg.cache = msg.cache !== undefined ? msg.cache : 'default';
+			msg.credentials = msg.credentials !== undefined ? msg.credentials : 'same-origin';
+			msg.headers = msg.headers !== undefined ? msg.headers : {};
 			let body: FormData | string | undefined;
 			if (typeof msg.body === 'object' && msg.body !== null) {
 				let data = new FormData();
@@ -78,7 +78,7 @@ browser.runtime.onMessage.addListener(
 					};
 				})
 				.catch((error) => {
-					console.error(error);
+					console.error('SyncDex :: Request Error', error);
 					return <RequestResponse>{
 						url: msg.url,
 						ok: false,

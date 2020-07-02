@@ -14,9 +14,16 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 	readonly serviceKey: ServiceKey = ServiceKey.MyAnimeList;
 	readonly serviceName: ServiceName = ServiceName.MyAnimeList;
 
-	status: MyAnimeListStatus = MyAnimeListStatus.NONE;
-	newEntry: boolean = false;
-	csrf: string = '';
+	status: MyAnimeListStatus;
+	newEntry: boolean;
+	csrf: string;
+
+	constructor(id: number | string, title?: Partial<MyAnimeListTitle>) {
+		super(id, title);
+		this.status = title && title.status !== undefined ? title.status : MyAnimeListStatus.NONE;
+		this.csrf = title && title.csrf !== undefined ? title.csrf : '';
+		this.newEntry = title && title.newEntry !== undefined ? title.newEntry : false;
+	}
 
 	static dateRowToDate = (body: Document, row: 'start' | 'finish'): Date | undefined => {
 		const year = body.getElementById(`add_manga_${row}_date_year`),
