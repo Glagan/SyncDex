@@ -81,7 +81,7 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 		// Score
 		if (this.score !== undefined && this.score > 0) {
 			response = await Runtime.jsonRequest({
-				url: `https://www.anime-planet.com/api/list/rate/manga/${this.id}/${this.progress.chapter}/${this.token}`,
+				url: `https://www.anime-planet.com/api/list/rate/manga/${this.id}/${this.score}/${this.token}`,
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);

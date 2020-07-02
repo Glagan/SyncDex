@@ -80,8 +80,8 @@ class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
 	};
 
 	static fromTitle = <T extends ServiceTitle<T> = MangaDexTitle>(title: Title): MangaDexTitle | undefined => {
-		if (!title.services.al) return undefined;
-		return new MangaDexTitle(title.services.al, {
+		if (!title.id) return undefined;
+		return new MangaDexTitle(title.id, {
 			progress: title.progress,
 			status: title.status,
 			score: title.score,

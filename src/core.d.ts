@@ -8,8 +8,8 @@ const enum Status {
 	READING,
 	COMPLETED,
 	PAUSED,
-	DROPPED,
 	PLAN_TO_READ,
+	DROPPED,
 	REREADING,
 	WONT_READ,
 }

@@ -93,7 +93,7 @@ class MangaUpdatesExport extends APIExportableModule {
 	// We need the status of each titles before to move them from lists to lists
 	// Use ImportModule and get a list of MangaUpdatesTitles
 	preMain = async (_titles: Title[]): Promise<boolean> => {
-		let notification = this.notification('loading', 'Checking current status of each titles');
+		let notification = this.notification('loading', 'Checking current status of each titles...');
 		const importModule = new MangaUpdatesImport(this.service);
 		while (!this.doStop && importModule.getNextPage() !== false) {
 			let tmp: MangaUpdatesTitle[] | false = await importModule.handlePage();

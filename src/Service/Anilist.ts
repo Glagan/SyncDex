@@ -19,6 +19,7 @@ export interface AnilistDate {
 }
 
 export interface SaveMediaListEntry {
+	id: number;
 	mediaId: number;
 	status: AnilistStatus;
 	score?: number;
@@ -46,6 +47,12 @@ export interface AnilistMedia {
 export interface AnilistGetResponse {
 	data: {
 		Media: AnilistMedia;
+	};
+}
+
+interface AnilistPersistResponse {
+	data: {
+		SaveMediaListEntry: SaveMediaListEntry;
 	};
 }
 
@@ -100,6 +107,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 	static readonly persistQuery = `
 		mutation ($mediaId: Int, $status: MediaListStatus, $score: Float, $progress: Int, $progressVolumes: Int, $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput) {
 			SaveMediaListEntry (mediaId: $mediaId, status: $status, score: $score, progress: $progress, progressVolumes: $progressVolumes, startedAt: $startedAt, completedAt: $completedAt) {
+				id
 				mediaId
 				status
 				score
@@ -180,8 +188,8 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 	};
 
 	persist = async (): Promise<RequestStatus> => {
-		if (this.status !== AnilistStatus.NONE) return RequestStatus.FAIL;
-		const response = await Runtime.jsonRequest({
+		if (this.status === AnilistStatus.NONE) return RequestStatus.FAIL;
+		const response = await Runtime.jsonRequest<AnilistPersistResponse>({
 			url: AnilistAPI,
 			method: 'POST',
 			headers: AnilistHeaders(),
@@ -198,7 +206,9 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 				},
 			}),
 		});
-		return Runtime.responseStatus(response);
+		if (!response.ok) return Runtime.responseStatus(response);
+		this.mediaEntryId = response.body.data.SaveMediaListEntry.id;
+		return RequestStatus.SUCCESS;
 	};
 
 	delete = async (): Promise<RequestStatus> => {
@@ -221,8 +231,6 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 
 	static toStatus = (status: AnilistStatus): Status => {
 		switch (status) {
-			case AnilistStatus.NONE:
-				return Status.NONE;
 			case AnilistStatus.READING:
 				return Status.READING;
 			case AnilistStatus.COMPLETED:
@@ -236,6 +244,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 			case AnilistStatus.REREADING:
 				return Status.REREADING;
 		}
+		return Status.NONE;
 	};
 
 	toTitle = (): Title | undefined => {

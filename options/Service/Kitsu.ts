@@ -154,7 +154,7 @@ class KitsuExport extends APIExportableModule {
 
 	// Fetch all Kitsu titles to check if they already are in user list
 	preMain = async (titles: Title[]): Promise<boolean> => {
-		let notification = this.notification('loading', 'Checking current status of each titles');
+		let notification = this.notification('loading', 'Checking current status of each titles...');
 		let max = Math.ceil(titles.length / 500);
 		for (let current = 1; current <= max; current++) {
 			const ids = titles.slice((current - 1) * 500, current * 500).map((title) => title.services.ku as number);

@@ -973,7 +973,7 @@ export abstract class ExportableModule extends SaveModule {
 	};
 
 	cancel = (forced = false): void => {
-		this.notification('warning', forced ? 'The export was cancelled' : 'You cancelled the export.');
+		this.notification('warning', forced ? 'The export was cancelled.' : 'You cancelled the export.');
 		this.complete();
 	};
 
@@ -1199,17 +1199,17 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 		}
 		// Generate batch
 		this.summary.total = titles.length;
-		notification = this.notification('loading', 'Generating batch');
+		notification = this.notification('loading', `Generating batch with ${titles.length} titles.`);
 		const batch = await this.generateBatch(titles);
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		// Export batch
-		notification = this.notification('loading', 'Sending batch');
+		notification = this.notification('loading', 'Sending batch...');
 		const batchResult = await this.sendBatch(batch, this.summary);
 		notification.classList.remove('loading');
 		// Done
 		if (batchResult === false) {
-			this.notification('warning', 'There was an error while exporting the batch, maybe retry later');
+			this.notification('warning', 'There was an error while exporting the batch, maybe retry later.');
 			return this.cancel(true);
 		}
 		this.displaySummary();

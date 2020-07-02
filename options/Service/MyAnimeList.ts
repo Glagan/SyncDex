@@ -315,7 +315,7 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 		if (!csrfTokenArr) return false;
 		// Upload file and look at response
 		response = await Runtime.request<RawResponse>({
-			url: `http://localhost/import.php`,
+			url: `https://myanimelist.net/import.php`,
 			method: 'POST',
 			credentials: 'include',
 			body: {

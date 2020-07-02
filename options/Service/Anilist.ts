@@ -78,6 +78,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 			MediaListCollection(userId: $userId, userName: $userName, type: MANGA) {
 				lists {
 					entries {
+						id
 						mediaId
 						status
 						score
@@ -135,7 +136,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 		}
 		const username = (response.body as AnilistViewerResponse).data.Viewer.name;
 		// Get list of *all* titles
-		response = await Runtime.jsonRequest({
+		response = await Runtime.jsonRequest<AnilistListResponse>({
 			url: AnilistAPI,
 			method: 'POST',
 			headers: {
@@ -158,7 +159,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 		}
 		// Transform to array
 		let titles: AnilistTitle[] = [];
-		const body = response.body as AnilistListResponse;
+		const body = response.body;
 		for (const list of body.data.MediaListCollection.lists) {
 			for (const entry of list.entries) {
 				titles.push(
