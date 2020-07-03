@@ -32,9 +32,7 @@ export class SyncDex {
 
 	execute = (location: string): void => {
 		const fnct = this.router.match(location);
-		if (fnct) {
-			fnct();
-		}
+		if (fnct) fnct();
 	};
 
 	chapterList = async (): Promise<any> => {

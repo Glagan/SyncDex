@@ -1,6 +1,11 @@
 console.log('SyncDex :: Storage');
 
 export class LocalStorage {
+	/**
+	 * Get all objects identified by `keys`.
+	 * Each keys in the returned object can be undefined if it wasn't saved.
+	 * Pass null to retrieve all Local Storage.
+	 */
 	static getAll<T = Record<string, any>>(
 		keys?: number[] | string[]
 	): Promise<Record<string, any> | Record<string, T> | undefined> {
@@ -12,6 +17,10 @@ export class LocalStorage {
 		return browser.storage.local.get<T>(keys === undefined ? null : (keys as string[]));
 	}
 
+	/**
+	 * Get the object identified by `key` from Local Storage, or undefined.
+	 * Pass null to retrieve all Local Storage.
+	 */
 	static async get<T>(key?: number | string): Promise<any | T | undefined> {
 		if (typeof key === 'number') key = key.toString();
 		const data = await browser.storage.local.get<T>(key === undefined ? null : key);
@@ -19,21 +28,34 @@ export class LocalStorage {
 		return data as any;
 	}
 
-	static raw(data: Object): Promise<any> {
+	/**
+	 * Save a raw object to Local Storage.
+	 * Allow to save multiple entries at the same time.
+	 */
+	static raw(data: Object): Promise<void> {
 		return browser.storage.local.set(data);
 	}
 
-	static set(key: number | string, data: Object): Promise<any> {
+	/**
+	 * Save the { key: data } object in Local Storage.
+	 */
+	static set(key: number | string, data: Object): Promise<void> {
 		if (typeof key == 'number') key = key.toString();
 		return browser.storage.local.set({ [key]: data });
 	}
 
-	static async remove(key: number | string): Promise<any> {
+	/**
+	 * Remove `key` from Local Storage.
+	 */
+	static async remove(key: number | string): Promise<void> {
 		if (typeof key == 'number') key = key.toString();
 		return browser.storage.local.remove(key);
 	}
 
-	static clear(): Promise<any> {
+	/**
+	 * Clear Local Storage.
+	 */
+	static clear(): Promise<void> {
 		return browser.storage.local.clear();
 	}
 }

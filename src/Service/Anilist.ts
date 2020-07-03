@@ -72,6 +72,10 @@ export const AnilistHeaders = (): AnilistHeaders => {
 	};
 };
 
+/**
+ * An Anilist MediaEntry.
+ * Score are automatically converted in a 0-100 range.
+ */
 export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 	readonly serviceKey: ServiceKey = ServiceKey.Anilist;
 	readonly serviceName: ServiceName = ServiceName.Anilist;
@@ -88,7 +92,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 				mediaListEntry {
 					id
 					status
-					score
+					score(format: POINT_100)
 					progress
 					progressVolumes
 					startedAt {
@@ -110,7 +114,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 				id
 				mediaId
 				status
-				score
+				score(format: POINT_100)
 				progress
 				progressVolumes
 				startedAt {
@@ -148,6 +152,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 	static get = async <T extends ServiceTitle<T> = AnilistTitle>(
 		id: number | string
 	): Promise<AnilistTitle | RequestStatus> => {
+		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<AnilistGetResponse>({
 			url: AnilistAPI,
 			method: 'POST',
@@ -188,6 +193,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 	};
 
 	persist = async (): Promise<RequestStatus> => {
+		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
 		if (this.status === AnilistStatus.NONE) return RequestStatus.FAIL;
 		const response = await Runtime.jsonRequest<AnilistPersistResponse>({
 			url: AnilistAPI,
@@ -212,6 +218,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 	};
 
 	delete = async (): Promise<RequestStatus> => {
+		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
 		if (this.mediaEntryId <= 0) return RequestStatus.BAD_REQUEST;
 		const response = await Runtime.jsonRequest({
 			url: AnilistAPI,

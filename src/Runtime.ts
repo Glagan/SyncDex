@@ -14,10 +14,16 @@ export enum MessageAction {
 }
 
 export class Runtime {
+	/**
+	 * Send a message to the background running script.
+	 */
 	static sendMessage<R extends RequestResponse | void>(message: Message): Promise<R> {
 		return browser.runtime.sendMessage<R>(message);
 	}
 
+	/**
+	 * Send a fetch request with an expected JSON response.
+	 */
 	static jsonRequest<R extends {} = Record<string, any>>(
 		message: Omit<RequestMessage, 'action' | 'isJson'>
 	): Promise<JSONResponse<R>> {
@@ -29,6 +35,9 @@ export class Runtime {
 		);
 	}
 
+	/**
+	 * Send a fetch request.
+	 */
 	static request<R extends RequestResponse>(message: Omit<RequestMessage, 'action'>): Promise<R> {
 		return Runtime.sendMessage<R>(
 			Object.assign(message, {
@@ -37,12 +46,18 @@ export class Runtime {
 		);
 	}
 
+	/**
+	 * Open a new tab of the Options page.
+	 */
 	static openOptions(): Promise<void> {
 		return Runtime.sendMessage({
 			action: MessageAction.openOptions,
 		});
 	}
 
+	/**
+	 * Return the response.code corresponding RequestStatus code.
+	 */
 	static responseStatus<R extends RequestResponse>(response: R): RequestStatus {
 		if (response.code == 0) return RequestStatus.FAIL;
 		else if (response.code >= 500) return RequestStatus.SERVER_ERROR;

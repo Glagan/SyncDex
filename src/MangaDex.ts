@@ -304,6 +304,7 @@ export class MangaDex {
 		return groups;
 	};
 
+	// TODO
 	loggedIn = (): Promise<boolean> => {
 		return new Promise((resolve) => resolve(true));
 	};

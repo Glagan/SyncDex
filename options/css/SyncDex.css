@@ -85,8 +85,11 @@
 	--white-100: #ffffff;
 
 	--shadow-10: 0 1px 4px rgba(12, 12, 13, 0.1);
+	--light-shadow-10: 0 1px 4px rgba(255, 255, 255, 0.1);
 	--shadow-20: 0 2px 8px rgba(12, 12, 13, 0.1);
+	--light-shadow-20: 0 2px 8px rgba(255, 255, 255, 0.1);
 	--shadow-30: 0 4px 16px rgba(12, 12, 13, 0.1);
+	--light-shadow-30: 0 4px 16px rgba(255, 255, 255, 0.1);
 
 	--focus: 0 0 0 1px var(--blue-50) inset, 0 0 0 1px var(--blue-50), 0 0 0 4px var(--blue-50-a30);
 
@@ -502,6 +505,7 @@ input[type='file'] {
 	min-width: 15%;
 	overflow: hidden;
 	margin: 32px;
+	transition: all 150 var(--animation);
 }
 .card:hover {
 	box-shadow: var(--shadow-20);
@@ -808,6 +812,12 @@ h2 {
 	}
 	:not(.light) .modal .card .content {
 		color: var(--grey-90);
+	}
+	:not(.light) .card {
+		box-shadow: var(--light-shadow-10);
+	}
+	:not(.light) .card:hover {
+		box-shadow: var(--light-shadow-20);
 	}
 }
 

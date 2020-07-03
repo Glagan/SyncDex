@@ -118,22 +118,73 @@ export class SaveTitle {
  * Handle conversion between a SaveTitle in LocalStorage and a FullTitle.
  */
 export class Title implements FullTitle {
+	/**
+	 * Was the Title present in Local Storage.
+	 */
 	new: boolean;
+	/**
+	 * MangaDex ID of the Title.
+	 */
 	id: number;
+	/**
+	 * `ServiceKey` list of mapped Service for the Title.
+	 */
 	services: ServiceList = {};
-	status: Status = Status.NONE;
-	score: number = 0;
+	/**
+	 * Current Chapter/Volume that should be synced with External Services.
+	 */
 	progress: Progress = { chapter: -1, volume: 0 };
+	/**
+	 * Status of the Title.
+	 */
+	status: Status = Status.NONE;
+	/**
+	 * Score of the Title.
+	 */
+	score: number = 0;
+	/**
+	 * List of all read Chapters.
+	 */
 	chapters: number[] = [];
+	/**
+	 * Start Date of the Title.
+	 */
 	start?: number;
+	/**
+	 * End Date of the Title.
+	 */
 	end?: number;
+	/**
+	 * Last time the Title page of the Title was visited.
+	 */
 	lastTitle?: number;
+	/**
+	 * Last time the Title was synced with an external Service
+	 */
 	lastCheck?: number;
+
 	// History
+
+	/**
+	 * MangaDex Chapter ID of the last read chapter.
+	 */
 	lastChapter?: number;
+	/**
+	 * Displayed Chapter/Volume in the History page.
+	 * This Progress is the last read chapter without looking at any options.
+	 */
 	history?: Progress;
+	/**
+	 * Highest read chapter on MangaDex
+	 */
 	highest?: number;
+	/**
+	 * Name of the Title
+	 */
 	name?: string;
+	/**
+	 * Last time a Chapter was read for the Title
+	 */
 	lastRead?: number;
 
 	constructor(id: number, title?: Partial<FullTitle>) {
@@ -144,6 +195,9 @@ export class Title implements FullTitle {
 		}
 	}
 
+	/**
+	 * Convert a SaveTitle to a full length Title
+	 */
 	static toTitle(title: SaveTitle): FullTitle {
 		const mapped: FullTitle = {
 			services: title.s,
@@ -173,8 +227,7 @@ export class Title implements FullTitle {
 	}
 
 	/**
-	 * Retrieve a Title in a SaveTitle format and return an instance of Title
-	 * @param id number The MangaDex id of the Title
+	 * Retrieve a Title by it's MangaDex ID from Local Storage.
 	 */
 	static async get(id: number | string): Promise<Title> {
 		const title = await LocalStorage.get<SaveTitle>(id);
@@ -186,7 +239,7 @@ export class Title implements FullTitle {
 	}
 
 	/**
-	 * Select highest values of both Titles and assign them to *this*
+	 * Select highest values of both Titles and assign them to the receiving Title.
 	 */
 	merge = (other: Title): void => {
 		// Update all 'number' properties to select the highest ones -- except for dates
@@ -219,6 +272,10 @@ export class Title implements FullTitle {
 		}
 	};
 
+	/**
+	 * Convert a Title to a `SaveTitle` with reduced key length.
+	 * All keys with no value or empty value are not saved.
+	 */
 	toSave = (): SaveTitle => {
 		const mapped: SaveTitle = {
 			s: this.services,
@@ -264,20 +321,33 @@ export class TitleCollection {
 		this.collection = titles;
 	}
 
+	/**
+	 * Add Title(s) to the Collection.
+	 */
 	add = (...title: Title[]): void => {
 		this.collection.push(...title);
 	};
 
+	/**
+	 * List of all MangaDex IDs in the Collection.
+	 */
 	get ids(): number[] {
 		return this.collection.map((title) => {
 			return title.id;
 		});
 	}
 
+	/**
+	 * The length of the Collection.
+	 */
 	get length(): number {
 		return this.collection.length;
 	}
 
+	/**
+	 * Retrieve all Titles with the IDs inside `list` inside a Collection.
+	 * If `list` is undefined, return all Titles in Local Storage.
+	 */
 	static async get(list?: number[] | string[]): Promise<TitleCollection> {
 		let collection = new TitleCollection();
 		if (list === undefined) {
@@ -303,6 +373,9 @@ export class TitleCollection {
 		return collection;
 	}
 
+	/**
+	 * Find the title with the MangaDex ID `id` inside the Collection.
+	 */
 	find = (id: number): Title | undefined => {
 		for (const title of this.collection) {
 			if (title.id === id) return title;
@@ -311,8 +384,8 @@ export class TitleCollection {
 	};
 
 	/**
-	 * Apply merge to each Titles in *this* collection with the other Collection.
-	 * Add missing Titles in *this*
+	 * Apply merge to each Titles in the receiving Collection with the other Collection.
+	 * Add missing Titles to the receiving Collection.
 	 */
 	merge = (other: TitleCollection): void => {
 		for (const title of other.collection) {
@@ -325,6 +398,9 @@ export class TitleCollection {
 		}
 	};
 
+	/**
+	 * Persist the Collection to Local Storage.
+	 */
 	save = async (): Promise<void> => {
 		const mapped: { [key: number]: SaveTitle } = {};
 		for (const title of this.collection) {
@@ -338,15 +414,36 @@ export abstract class ServiceTitle<T extends ServiceTitle<T>> {
 	abstract readonly serviceKey: ServiceKey;
 	abstract readonly serviceName: ServiceName;
 
+	/**
+	 * The key of the Media on the Service.
+	 */
 	id: number | string;
+	/**
+	 * The mapped MangaDex ID of the Media.
+	 */
 	mangaDex?: number;
-
+	/**
+	 * Progress on the Media.
+	 */
 	progress: Progress = {
 		chapter: 0,
 	};
+	/**
+	 * Media Score if supported by the Service.
+	 * In a 0-100 range that (might) need to be converted inside final classes.
+	 */
 	score?: number = 0;
+	/**
+	 * Media Start Date if supported by the Service.
+	 */
 	start?: Date;
+	/**
+	 * Media End Date if supported by the Service.
+	 */
 	end?: Date;
+	/**
+	 * Name of the Media on the Service.
+	 */
 	name?: string;
 
 	constructor(id: number | string, title?: Partial<T>) {
@@ -356,14 +453,28 @@ export abstract class ServiceTitle<T extends ServiceTitle<T>> {
 		}
 	}
 
-	// abstract static get(id): RequestStatus
+	/**
+	 * Pull the current status of the Media identified by ID.
+	 * Return a `RequestStatus` on error.
+	 */
 	static get = async <T extends ServiceTitle<T>>(id: number | string): Promise<ServiceTitle<T> | RequestStatus> => {
 		return RequestStatus.FAIL;
 	};
+	/**
+	 * Send any necessary requests to save the Media on the Service.
+	 */
 	abstract persist(): Promise<RequestStatus>;
+	/**
+	 * Send any necessary requests to delete the Media on the Service.
+	 */
 	abstract delete(): Promise<RequestStatus>;
-
+	/**
+	 * Convert the Media to a Title if possible (MangaDex ID available), or undefined.
+	 */
 	abstract toTitle(): Title | undefined;
+	/**
+	 * Convert a Title for the Media if possible (Service ID available), or undefined.
+	 */
 	static fromTitle = <T extends ServiceTitle<T>>(title: Title): ServiceTitle<T> | undefined => {
 		return undefined;
 	};
