@@ -53,11 +53,16 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 					'select.changeStatus [selected]'
 				);
 				if (statusSelector) values.status = parseInt(statusSelector.value);
+				// Chapter
 				const chapterSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.chapters [selected]');
 				values.progress = { chapter: 0 };
 				if (chapterSelector) values.progress.chapter = parseInt(chapterSelector.value);
+				// Volume
 				const volumeSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.volumes [selected]');
 				if (volumeSelector) values.progress.volume = parseInt(volumeSelector.value);
+				// Score
+				const score = mediaEntryForm.querySelector<HTMLElement>('div.starrating > div[name]');
+				if (score) values.score = parseFloat(score.getAttribute('name') as string) * 20;
 			}
 		}
 		values.name = (body.querySelector(`h1[itemprop='name']`) as HTMLElement).textContent as string;
@@ -80,8 +85,10 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 		}
 		// Score
 		if (this.score !== undefined && this.score > 0) {
+			// Convert 0-100 score to the 0-5 range -- Round to nearest .5
+			const apScore = Math.round((this.score / 20) * 2) / 2;
 			response = await Runtime.jsonRequest({
-				url: `https://www.anime-planet.com/api/list/rate/manga/${this.id}/${this.score}/${this.token}`,
+				url: `https://www.anime-planet.com/api/list/rate/manga/${this.id}/${apScore}/${this.token}`,
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);

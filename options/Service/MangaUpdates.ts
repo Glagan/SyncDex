@@ -65,7 +65,7 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 				const scoreLink = row.querySelector(`a[title='Update Rating']`);
 				let score: number | undefined;
 				if (scoreLink !== null) {
-					score = parseInt(scoreLink.textContent as string);
+					score = parseInt(scoreLink.textContent as string) * 10;
 					if (isNaN(score)) score = undefined;
 				}
 				const name = row.querySelector(`a[title='Series Info']`) as HTMLElement;

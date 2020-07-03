@@ -136,7 +136,7 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 						volume: title.attributes.volumesOwned,
 					},
 					status: title.attributes.status,
-					score: title.attributes.ratingTwenty !== null ? title.attributes.ratingTwenty : 0,
+					score: title.attributes.ratingTwenty !== null ? title.attributes.ratingTwenty * 5 : 0,
 					start: title.attributes.startedAt ? new Date(title.attributes.startedAt) : undefined,
 					end: title.attributes.finishedAt ? new Date(title.attributes.finishedAt) : undefined,
 					name: manga.attributes.canonicalTitle,

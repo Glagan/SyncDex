@@ -65,7 +65,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 						parseInt((body.getElementById('add_manga_num_read_volumes') as HTMLInputElement).value) || 0,
 				};
 				const score = (body.getElementById('add_manga_score') as HTMLSelectElement).value;
-				if (score !== '') values.score = parseInt(score);
+				if (score !== '') values.score = parseInt(score) * 10;
 				values.start = MyAnimeListTitle.dateRowToDate(body, 'start');
 				values.end = MyAnimeListTitle.dateRowToDate(body, 'finish');
 			}
@@ -84,7 +84,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 			csrf_token: this.csrf,
 		};
 		if (this.progress.volume) body['add_manga[num_read_volumes]'] = this.progress.volume;
-		if (this.score) body['add_manga[score]'] = this.score;
+		if (this.score) body['add_manga[score]'] = Math.round(this.score / 10);
 		if (this.start) {
 			body['add_manga[start_date][yeay]'] = this.start.getUTCFullYear();
 			body['add_manga[start_date][month]'] = this.start.getMonth() + 1;

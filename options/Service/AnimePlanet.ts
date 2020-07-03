@@ -71,6 +71,7 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 			const chapter = row.querySelector('select[name="chapters"]') as HTMLSelectElement;
 			const volume = row.querySelector('select[name="volumes"]') as HTMLSelectElement;
 			const status = row.querySelector('select.changeStatus') as HTMLSelectElement;
+			// Score range: 0-5 with increments of 0.5
 			const score = row.querySelector('div.starrating > div[name]') as HTMLElement;
 			titles.push(
 				new AnimePlanetTitle(parseInt(form.dataset.id as string), {
@@ -79,7 +80,7 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 						volume: parseInt(volume.value as string),
 					},
 					status: parseInt(status.value),
-					score: parseInt(score.getAttribute('name') as string),
+					score: parseFloat(score.getAttribute('name') as string) * 20,
 					name: name.textContent as string,
 				})
 			);

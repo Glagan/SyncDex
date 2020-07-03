@@ -63,6 +63,7 @@ class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
 				'X-Requested-With': 'XMLHttpRequest',
 			},
 		});
+		// TODO: Add Score ?
 		return Runtime.responseStatus(response);
 	};
 
@@ -117,11 +118,12 @@ class MangaDexImport extends APIImportableModule<MangaDexTitle> {
 			const id = parseInt(row.dataset.id || '');
 			if (!isNaN(id)) {
 				const status = row.querySelector<HTMLElement>('.dropdown-menu > .disabled');
+				// MangaDex has a simple 0-10 range
 				const score = row.querySelector('.disabled.manga_rating_button');
 				titles.push(
 					new MangaDexTitle(id, {
 						status: status ? parseInt(status.getAttribute('id') as string) : Status.NONE,
-						score: score ? parseInt(score.getAttribute('id') as string) : undefined,
+						score: score ? parseInt(score.getAttribute('id') as string) * 10 : undefined,
 						name: (row.querySelector('.manga_title') as HTMLElement).textContent as string,
 					})
 				);

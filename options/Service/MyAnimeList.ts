@@ -76,7 +76,7 @@ class MyAnimeListActive extends ActivableModule {
  * 			 my_start_date: date, default to 0000-00-00 (year-month-day)
  * 			 my_finish_date: date, ^
  * 			 my_scanalation_group: string, CDATA
- * 			 my_score: number
+ * 			 my_score: number, 0-10 range
  * 			 my_storage: TODO
  * 			 my_status: Completed, Plan to Read, Reading, On-Hold, Dropped
  * 			 my_comments: string, CDATA
@@ -217,7 +217,8 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 									volume: title.volumes,
 								},
 								status: this.toStatus(title.status),
-								score: title.score > 0 ? title.score : undefined,
+								// Convert MyAnimeList 0-10 range to 0-100
+								score: title.score > 0 ? title.score * 10 : undefined,
 								start: this.dateToTime(title.start),
 								end: this.dateToTime(title.end),
 								chapters: [],
@@ -278,6 +279,10 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 			this.node(document, 'my_read_chapters', title.progress.chapter),
 			this.node(document, 'update_on_import', 1)
 		);
+		if (title.score > 0) {
+			// Conver back to the 0-10 range
+			node.appendChild(this.node(document, 'my_score', Math.round(title.score / 10)));
+		}
 		if (title.progress.volume) {
 			node.appendChild(this.node(document, 'my_read_volumes', title.progress.volume));
 		}

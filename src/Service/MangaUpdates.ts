@@ -76,7 +76,8 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 			// We only get the rating if it's in the list - even if it's not required
 			const scoreNode = body.querySelector<HTMLInputElement>(`input[type='radio'][name='rating'][checked]`);
 			if (scoreNode) {
-				values.score = parseInt(scoreNode.value);
+				// MangaUpdates as a simple 0-10 range
+				values.score = parseInt(scoreNode.value) * 10;
 				if (values.current) values.current.score = values.score;
 			}
 		}
@@ -163,14 +164,18 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		}
 		// Update score
 		if (
-			(this.current === undefined && this.score !== undefined && this.score > 0) ||
-			(this.current !== undefined &&
-				this.current.score !== undefined &&
-				this.score != this.current.score &&
-				this.current.score > 0)
+			this.score !== undefined &&
+			this.score > 0 &&
+			(this.current === undefined ||
+				(this.current !== undefined &&
+					this.current.score !== undefined &&
+					this.score != this.current.score &&
+					this.current.score > 0))
 		) {
+			// Convert back to the MangaUpdates 0-10 range
+			const muScore = Math.round(this.score / 10);
 			const response = await Runtime.request<RawResponse>({
-				url: `https://www.mangaupdates.com/ajax/update_rating.php?s=${this.id}&r=${this.score}`,
+				url: `https://www.mangaupdates.com/ajax/update_rating.php?s=${this.id}&r=${muScore}`,
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);

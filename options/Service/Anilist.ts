@@ -74,14 +74,14 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 		}`;
 
 	static listQuery = `
-		query ($userId: Int, $userName: String) {
-			MediaListCollection(userId: $userId, userName: $userName, type: MANGA) {
+		query ($userName: String) {
+			MediaListCollection(userName: $userName, type: MANGA) {
 				lists {
 					entries {
 						id
 						mediaId
 						status
-						score
+						score(format: POINT_100)
 						progress
 						progressVolumes
 						startedAt {

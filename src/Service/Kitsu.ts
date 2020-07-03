@@ -106,6 +106,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 	static get = async <T extends ServiceTitle<T> = KitsuTitle>(
 		id: number | string
 	): Promise<KitsuTitle | RequestStatus> => {
+		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<KitsuResponse>({
 			url: `${KitsuAPI}?filter[manga_id]=${id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=canonicalTitle`,
 			method: 'GET',
@@ -123,7 +124,8 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 				volume: attributes.volumesOwned,
 			};
 			status = attributes.status;
-			if (attributes.ratingTwenty !== null) values.score = attributes.ratingTwenty;
+			// Kitsu as a 0-20 range
+			if (attributes.ratingTwenty !== null) values.score = attributes.ratingTwenty * 5;
 			if (attributes.startedAt !== null) values.start = new Date(attributes.startedAt);
 			if (attributes.finishedAt !== null) values.end = new Date(attributes.finishedAt);
 			values.name = body.included[0].attributes.canonicalTitle;
@@ -132,8 +134,11 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 	};
 
 	persist = async (): Promise<RequestStatus> => {
+		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		const method = this.libraryEntryId && this.libraryEntryId > 0 ? 'PATCH' : 'POST';
 		const url = `${KitsuAPI}${this.libraryEntryId !== undefined ? `/${this.libraryEntryId}` : ''}`;
+		// Convert 0-100 score to the 0-20 range -- round to the nearest
+		const kuScore = this.score !== undefined && this.score > 0 ? Math.round(this.score / 5) : undefined;
 		const response = await Runtime.jsonRequest<KitsuPersistResponse>({
 			url: url,
 			method: method,
@@ -145,7 +150,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 						status: this.status,
 						progress: this.progress.chapter,
 						volumesOwned: this.progress.volume,
-						ratingTwenty: this.score !== undefined && this.score > 0 ? this.score : undefined,
+						ratingTwenty: kuScore,
 						startedAt: this.start !== undefined ? this.start.toISOString() : undefined,
 						finishedAt: this.end !== undefined ? this.end.toISOString() : undefined,
 					},
@@ -173,6 +178,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 	};
 
 	delete = async (): Promise<RequestStatus> => {
+		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		if (this.libraryEntryId <= 0) return RequestStatus.BAD_REQUEST;
 		let response = await Runtime.request({
 			url: `https://kitsu.io/api/edge/library-entries/${this.libraryEntryId}`,
