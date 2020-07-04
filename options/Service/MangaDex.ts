@@ -151,8 +151,8 @@ class MangaDexImport extends APIImportableModule<MangaDexTitle> {
 }
 
 class MangaDexExport extends APIExportableModule {
-	selectTitles = async (): Promise<Title[]> => {
-		return (await TitleCollection.get()).collection.filter((title) => title.status != Status.NONE);
+	selectTitles = async (titleCollection: TitleCollection): Promise<Title[]> => {
+		return titleCollection.collection.filter((title) => title.status != Status.NONE);
 	};
 
 	exportTitle = async (title: Title): Promise<boolean> => {

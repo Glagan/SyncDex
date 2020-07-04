@@ -201,6 +201,7 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 			})
 			.map((t) => t.id);
 		const connections = await Mochi.findMany(ids, this.service.name);
+		const found: number[] = [];
 		let total = 0;
 		if (connections !== undefined) {
 			for (const key in connections) {
@@ -225,10 +226,14 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 								name: title.name,
 							})
 						);
+						found.push(title.id);
 						total++;
 					}
 				}
 			}
+			// Find title that don't have a connection
+			const noIds = titleList.filter((mt) => found.indexOf(mt.id) < 0);
+			this.summary.failed.push(...noIds.filter((mt) => mt.name !== undefined).map((mt) => mt.name as string));
 		}
 		return total;
 	};

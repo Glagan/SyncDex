@@ -108,13 +108,8 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 		return this.currentPage++ == 0;
 	};
 
-	getProgress = (step: ImportStep, total?: number): string => {
-		if (step == ImportStep.FETCH_PAGES) {
-			return `Importing Titles.`;
-		}
-		// ImportStep.CONVERT_TITLES
-		this.currentTitle = Math.min(total as number, this.currentTitle + this.perConvert);
-		return `Converting title ${this.currentTitle} out of ${total}.`;
+	importProgress = (): string => {
+		return `Importing Titles.`;
 	};
 
 	handlePage = async (): Promise<AnilistTitle[] | false> => {

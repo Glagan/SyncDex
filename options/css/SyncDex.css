@@ -133,24 +133,19 @@
 
 @keyframes pulse {
 	0% {
-		box-shadow: 0px 0px 4px 3px #78c5d5;
-		/* background-color: #78c5d5; */
+		box-shadow: 0px 0px 4px 3px var(--blue-40);
 	}
 	25% {
-		box-shadow: 0px 0px 4px 3px #79c268;
-		/* background-color: #79c268; */
+		box-shadow: 0px 0px 4px 3px var(--green-50);
 	}
 	50% {
-		box-shadow: 0px 0px 4px 3px #f5d63d;
-		/* background-color: #f5d63d; */
+		box-shadow: 0px 0px 4px 3px var(--yellow-50);
 	}
 	75% {
-		box-shadow: 0px 0px 4px 3px #e868a1;
-		/* background-color: #e868a1; */
+		box-shadow: 0px 0px 4px 3px var(--magenta-50);
 	}
 	100% {
-		box-shadow: 0px 0px 4px 3px #bf63a6;
-		/* background-color: #bf63a6; */
+		box-shadow: 0px 0px 4px 3px var(--purple-40);
 	}
 }
 
@@ -465,37 +460,118 @@ input[type='file'] {
 /* Messages */
 .message {
 	border-radius: 4px;
-	min-height: 32px;
 	width: auto;
-	line-height: 32px;
-	padding-left: 24px;
 	font-size: var(--body-10);
 	font-weight: var(--regular);
 	color: var(--grey-90);
-	background: url('../icons/info.svg') 4px 8px / 16px no-repeat, var(--grey-20);
+	background: var(--grey-20);
 	margin-bottom: 8px;
 	transition: all var(--animation);
+	display: grid;
+	grid-gap: 4px;
+	grid-template-columns: min-content auto;
+	padding: 4px;
+}
+.message > div.icon {
+	font-family: 'Font Awesome 5 Free';
+	font-size: 16px;
+	line-height: 16px;
+	height: 16px;
+	width: 16px;
+	margin: 4px;
+	padding: 4px;
+}
+.message > div.icon::before {
+	content: '\f05a';
+}
+.message .content {
+	align-self: center;
+}
+.message .content > p {
+	padding: 4px 0;
 }
 .message.hidden {
 	min-height: 0px;
 	max-height: 0px;
 	overflow: hidden;
 	margin-bottom: 0;
+	padding: 0;
 }
 .message.large {
 	width: 100%;
 }
+.message.loading > div.icon::before {
+	content: '\f1ce';
+}
 .message.warning {
 	color: var(--yellow-90);
-	background: url('../icons/warning.svg') 4px 8px / 16px no-repeat, var(--yellow-50);
+	background: var(--yellow-50);
+}
+.message.warning > div.icon::before {
+	content: '\f071';
 }
 .message.success {
 	color: var(--green-90);
-	background: url('../icons/check.svg') 4px 8px / 16px no-repeat, var(--green-50);
+	background: var(--green-50);
+}
+.message.success > div.icon::before {
+	content: '\f00c';
 }
 .message.error {
 	color: var(--white-100);
-	background: url('../icons/warning.svg') 4px 8px / 16px no-repeat, var(--red-60);
+	background: var(--red-60);
+}
+.message.error > div.icon::before {
+	content: '\f06a';
+}
+.message button,
+.message .button {
+	background-color: var(--grey-60);
+	margin: 0 8px;
+}
+.message button:hover,
+.message .button:hover {
+	background-color: var(--grey-70);
+}
+.message button:active,
+.message .button:active {
+	background-color: var(--grey-80);
+}
+.message.warning button,
+.message.warning .button {
+	background-color: var(--yellow-60);
+}
+.message.warning button:hover,
+.message.warning .button:hover {
+	background-color: var(--yellow-70);
+}
+.message.warning button:active,
+.message.warning .button:active {
+	background-color: var(--yellow-80);
+}
+.message.success button,
+.message.success .button {
+	background-color: var(--green-60);
+}
+.message.success button:hover,
+.message.success .button:hover {
+	background-color: var(--green-70);
+}
+.message.success button:active,
+.message.success .button:active {
+	background-color: var(--green-80);
+}
+.message.error button,
+.message.error .button {
+	background-color: var(--red-60);
+}
+.message.error button:hover,
+.message.error .button:hover {
+	background-color: var(--red-70);
+}
+.message.error button:active,
+.message.error .button:active {
+	background-color: var(--red-80);
 }
 
 /* Cards */
@@ -515,12 +591,15 @@ input[type='file'] {
 	text-align: center;
 	padding: 32px;
 }
-.card .content {
+.card > .content {
 	padding: 8px;
 	background-color: var(--grey-10);
 }
-.card.large .content {
+.card.large > .content {
 	padding: 20px;
+}
+.card .body {
+	overflow: auto;
 }
 
 /* Reset */
@@ -795,6 +874,9 @@ h2 {
 	transform-origin: top center;
 	animation: shrink 200ms 1 forwards;
 }
+.ieport .message {
+	overflow: hidden;
+}
 .ieport .message:not(.in-place) {
 	font-size: var(--body-20);
 	animation: flash 250ms 1 forwards;
@@ -803,6 +885,24 @@ h2 {
 	font-size: var(--body-20);
 	animation: flash 250ms 1 forwards, pulse 2s ease-in-out alternate infinite;
 }
+.ieport .message:not(.in-place).loading > div.icon {
+	animation: fa-spin 2s linear infinite;
+	transform-origin: center center;
+}
+.ieport .leave {
+	margin-bottom: 8px;
+}
+.ieport ul.failed {
+	transform-origin: top center;
+	display: none;
+}
+.ieport ul.failed.open {
+	display: block;
+	animation: expand 250ms 1 forwards;
+}
+.ieport ul.failed li {
+	line-height: 24px;
+}
 
 /* Dark Theme */
 @media (prefers-color-scheme: dark) {
@@ -810,7 +910,7 @@ h2 {
 		background-color: var(--grey-70);
 		color: var(--white-100);
 	}
-	:not(.light) .modal .card .content {
+	:not(.light) .modal .card > .content {
 		color: var(--grey-90);
 	}
 	:not(.light) .card {
@@ -825,6 +925,6 @@ body.dark {
 	background-color: var(--grey-70);
 	color: var(--white-100);
 }
-body.dark .modal .card .content {
+body.dark .modal .card > .content {
 	color: var(--grey-90);
 }

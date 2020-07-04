@@ -24,6 +24,7 @@ export const enum ImportStep {
 export class Summary {
 	total: number = 0;
 	valid: number = 0;
+	failed: string[] = [];
 }
 
 export class ImportSummary extends Summary {
@@ -115,10 +116,10 @@ export class Modal {
 }
 
 export abstract class Service {
+	abstract readonly key: ServiceKey;
+	abstract readonly name: ServiceName;
 	manager: ServiceManager;
 
-	abstract key: ServiceKey;
-	abstract name: ServiceName;
 	abstract activeModule?: ActivableModule;
 	abstract importModule?: ImportableModule;
 	abstract exportModule?: ExportableModule;
@@ -150,6 +151,8 @@ export abstract class Service {
 	};
 }
 
+type MessageType = 'default' | 'loading' | 'warning' | 'success';
+
 export abstract class ActivableModule {
 	service: Service;
 	activable: boolean = true;
@@ -159,6 +162,7 @@ export abstract class ActivableModule {
 	activeCardContent: HTMLElement;
 	loadingMessage: HTMLElement;
 	statusMessage: HTMLElement;
+	statusMessageContent: HTMLElement;
 	activateButton: HTMLButtonElement;
 	mainMessage: HTMLElement;
 	mainButton: HTMLButtonElement;
@@ -171,10 +175,13 @@ export abstract class ActivableModule {
 	identifierField: [string, string] = ['Email', 'email'];
 	preModalForm?(modal: Modal): void;
 
-	message = (type: 'default' | 'warning' | 'success', content: string, append: boolean = true): HTMLElement => {
+	message = (type: MessageType, content: string, append: boolean = true): HTMLElement => {
 		const message = DOM.create('div', {
 			class: `message ${type}`,
-			textContent: content,
+			childs: [
+				DOM.create('div', { class: 'icon' }),
+				DOM.create('div', { class: 'content', childs: [DOM.create('p', { textContent: content })] }),
+			],
 		});
 		if (append) {
 			DOM.append(this.activeCardContent, message);
@@ -188,10 +195,10 @@ export abstract class ActivableModule {
 		this.activeCard = this.service.createCard(true);
 		this.activeCardContent = this.activeCard.lastElementChild as HTMLElement;
 		// Messages
-		this.loadingMessage = this.message('default', 'Loading...');
-		this.loadingMessage.classList.add('loading');
+		this.loadingMessage = this.message('loading', 'Loading...');
 		this.mainMessage = this.message('default', 'Main Service', false);
 		this.statusMessage = this.message('default', 'Loading...', false);
+		this.statusMessageContent = this.statusMessage.querySelector('.content > p') as HTMLElement;
 		// Buttons
 		this.activateButton = DOM.create('button', {
 			class: 'primary',
@@ -441,11 +448,11 @@ export abstract class ActivableModule {
 		this.activate(Options.mainService == this.service.name);
 		if (status == RequestStatus.SUCCESS) {
 			this.statusMessage.className = 'message success';
-			this.statusMessage.textContent = 'Active';
+			this.statusMessageContent.textContent = 'Active';
 			this.loginButton.remove();
 		} else {
 			this.statusMessage.className = 'message warning';
-			this.statusMessage.textContent = 'Inactive';
+			this.statusMessageContent.textContent = 'Inactive';
 			this.activeCardContent.insertBefore(this.loginButton, this.checkStatusButton);
 		}
 		this.service.manager.updateServiceStatus(this.service.name, status);
@@ -504,19 +511,17 @@ export abstract class SaveModule {
 		return (await this.service.activeModule?.loggedIn()) === RequestStatus.SUCCESS;
 	};
 
-	notification = (
-		type: 'default' | 'loading' | 'warning' | 'success',
-		content: string | AppendableElement[],
-		parent?: HTMLElement
-	): HTMLElement => {
+	notification = (type: MessageType, content: string | AppendableElement[], parent?: HTMLElement): HTMLElement => {
+		const messageContent = DOM.create('div', { class: 'content' });
+		if (typeof content === 'string') {
+			messageContent.appendChild(DOM.create('p', { textContent: content }));
+		} else {
+			DOM.append(messageContent, ...content);
+		}
 		let notification = DOM.create('div', {
 			class: `message ${type}`,
+			childs: [DOM.create('div', { class: 'icon' }), messageContent],
 		});
-		if (typeof content === 'string') {
-			notification.textContent = content;
-		} else {
-			DOM.append(notification, ...content);
-		}
 		if (parent) {
 			parent.appendChild(notification);
 		} else if (this.activeContainer) {
@@ -577,7 +582,7 @@ export abstract class SaveModule {
 	displayActive = (): void => {
 		this.activeContainer = DOM.create('div');
 		this.modal.body.appendChild(this.activeContainer);
-		this.modal.body.appendChild(DOM.create('div', { class: 'right', childs: [this.stopButton] }));
+		this.modal.body.appendChild(DOM.create('div', { class: 'leave right', childs: [this.stopButton] }));
 	};
 
 	complete = (): void => {
@@ -599,31 +604,13 @@ export abstract class SaveModule {
 		}
 		return 0;
 	};
-}
-
-export abstract class ImportableModule extends SaveModule {
-	summary: ImportSummary = new ImportSummary();
-
-	reset = (): void => {
-		this.summary = new ImportSummary();
-	};
-
-	cancel = (forced = false): void => {
-		this.notification(
-			'warning',
-			forced ? 'The import was cancelled, nothing was saved' : 'You cancelled the import, nothing was saved.'
-		);
-		this.complete();
-	};
 
 	mochiCheck = async (collection: TitleCollection): Promise<void> => {
 		const progress = DOM.create('span', {
 			textContent: 'Page 1 out of 1',
 		});
 		let notification = this.notification('loading', [
-			DOM.text('Checking Services with Mochi...'),
-			DOM.space(),
-			progress,
+			DOM.create('p', { textContent: 'Checking Services with Mochi... ', childs: [progress] }),
 		]);
 		let offset = 0;
 		let max = Math.ceil(collection.length / 250);
@@ -651,16 +638,58 @@ export abstract class ImportableModule extends SaveModule {
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 	};
+}
+
+export abstract class ImportableModule extends SaveModule {
+	summary: ImportSummary = new ImportSummary();
+
+	reset = (): void => {
+		this.summary = new ImportSummary();
+	};
+
+	cancel = (forced = false): void => {
+		this.notification(
+			'warning',
+			forced ? 'The import was cancelled, nothing was saved' : 'You cancelled the import, nothing was saved.'
+		);
+		this.complete();
+	};
 
 	displaySummary = (): void => {
 		// this.notification('success', `Done Importing ${this.service.name} !`);
 		if (this.summary.total != this.summary.valid) {
-			this.notification(
-				'warning',
-				`${
+			const content = DOM.create('p', {
+				textContent: `${
 					this.summary.total - this.summary.valid
-				} titles were not imported since they had invalid or missing properties.`
-			);
+				} titles were not imported since they had invalid or missing properties.`,
+			});
+			const notification = this.notification('warning', [content]);
+			if (this.summary.failed.length > 0) {
+				const failedBlock = DOM.create('ul', { class: 'failed' });
+				for (const name of this.summary.failed) {
+					failedBlock.appendChild(DOM.create('li', { textContent: name }));
+				}
+				DOM.append(
+					content,
+					DOM.create('button', {
+						class: 'micro',
+						textContent: 'Show',
+						events: {
+							click: (event) => {
+								event.preventDefault();
+								if (!failedBlock.classList.contains('open')) {
+									failedBlock.classList.add('open');
+									failedBlock.classList.remove('closed');
+								} else {
+									failedBlock.classList.remove('open');
+									failedBlock.classList.add('closed');
+								}
+							},
+						},
+					}),
+					failedBlock
+				);
+			}
 		}
 		let report = `Successfully imported ${this.summary.valid} titles`;
 		if (this.summary.options > 0)
@@ -775,7 +804,9 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 			const titleList = titles.slice(offset, offset + this.perConvert);
 			offset += this.perConvert;
 			currentTitle = Math.min(this.summary.total, currentTitle + this.perConvert);
-			notification.textContent = `Converting title ${currentTitle} out of ${this.summary.total}.`;
+			(notification.querySelector(
+				'.content p'
+			) as HTMLElement).textContent = `Converting title ${currentTitle} out of ${this.summary.total}.`;
 			const converted = await this.convertTitles(collection, titleList);
 			this.summary.valid += converted;
 		}
@@ -819,7 +850,6 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 }
 
 export abstract class APIImportableModule<T extends ServiceTitle<T>> extends ImportableModule {
-	currentTitle: number = 0;
 	state: ImportState = { current: 0, max: 1 };
 	convertTitles?(titles: TitleCollection, titleList: T[]): Promise<number>;
 	abstract handlePage(): Promise<T[] | false>;
@@ -827,7 +857,6 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 	preMain?(): Promise<boolean>;
 
 	reset = (): void => {
-		this.currentTitle = 0;
 		this.state = { current: 0, max: 1 };
 		this.summary = new ImportSummary();
 	};
@@ -840,13 +869,13 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 		return false;
 	};
 
-	getProgress = (step: ImportStep, total?: number): string => {
-		if (step == ImportStep.FETCH_PAGES) {
-			return `Importing page ${this.state.current} out of ${this.state.max}.`;
-		}
-		// ImportStep.CONVERT_TITLES
-		this.currentTitle = Math.min(total as number, this.currentTitle + this.perConvert);
-		return `Converting title ${this.currentTitle} out of ${total}.`;
+	importProgress = (): string => {
+		return `Importing page ${this.state.current} out of ${this.state.max}.`;
+	};
+
+	convertProgress = (): string => {
+		const current = Math.min(this.summary.total, this.state.current + this.perConvert);
+		return `Converting title ${current} out of ${this.summary.total}.`;
 	};
 
 	createForm = (): HTMLFormElement => {
@@ -879,10 +908,11 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 			}
 		}
 		if (this.doStop) return this.cancel();
-		notification = this.notification('loading', '');
+		let progress = DOM.create('p');
+		notification = this.notification('loading', [progress]);
 		// Fetch each pages to get a list of titles in the Service format
 		while (!this.doStop && this.getNextPage() !== false) {
-			notification.textContent = this.getProgress(ImportStep.FETCH_PAGES);
+			progress.textContent = this.importProgress();
 			let tmp: T[] | false = await this.handlePage();
 			if (tmp === false) {
 				notification.classList.remove('loading');
@@ -897,16 +927,18 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 			this.notification('success', 'No titles found !');
 			return this.cancel(true);
 		}
-		this.notification('success', `Found a total of ${titles.length} Titles.`);
+		this.notification('success', `Found a total of ${this.summary.total} Titles.`);
 		// Find MangaDex IDs from ServiceTitle
-		notification = this.notification('loading', '');
+		progress = DOM.create('p');
+		notification = this.notification('loading', [progress]);
+		let found: (number | string)[] = [];
 		let collection = new TitleCollection();
-		let offset = 0;
-		let max = Math.ceil(titles.length / this.perConvert);
-		for (let i = 0; !this.doStop && i < max; i++) {
-			const titleList = titles.slice(offset, offset + this.perConvert);
-			offset += this.perConvert;
-			notification.textContent = this.getProgress(ImportStep.CONVERT_TITLES, titles.length);
+		this.state.current = 0;
+		this.state.max = Math.ceil(this.summary.total / this.perConvert);
+		for (let i = 0; !this.doStop && i < this.state.max; i++) {
+			const titleList = titles.slice(this.state.current, this.state.current + this.perConvert);
+			this.state.current += this.perConvert;
+			progress.textContent = this.convertProgress();
 			if (this.convertTitles) {
 				const converted = await this.convertTitles(collection, titleList);
 				this.summary.valid += converted;
@@ -928,12 +960,16 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 									collection.add(convertedTitle);
 									this.summary.valid++;
 								}
+								found.push(id);
 							}
 						}
 					}
 				}
 			}
 		}
+		// Add missing titles to the failed Summary
+		const noIds = titles.filter((t) => found.indexOf(t.id) < 0);
+		this.summary.failed.push(...noIds.filter((t) => t.name !== undefined).map((t) => t.name as string));
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		// Merge
@@ -965,8 +1001,8 @@ export abstract class ExportableModule extends SaveModule {
 	};
 
 	// By default, select all titles with a Service key for the current service and a status
-	selectTitles = async (): Promise<Title[]> => {
-		return (await TitleCollection.get()).collection.filter((title) => {
+	selectTitles = async (titleCollection: TitleCollection): Promise<Title[]> => {
+		return titleCollection.collection.filter((title) => {
 			const id = title.services[this.service.key];
 			return id !== undefined && id > 0 && title.status !== Status.NONE;
 		});
@@ -978,7 +1014,6 @@ export abstract class ExportableModule extends SaveModule {
 	};
 
 	displaySummary = (): void => {
-		// this.notification('success', `Done Importing ${this.service.name} !`);
 		if (this.summary.total != this.summary.valid) {
 			this.notification(
 				'warning',
@@ -987,9 +1022,7 @@ export abstract class ExportableModule extends SaveModule {
 				} titles were not exported since they had invalid or missing properties.`
 			);
 		}
-		let report = `Successfully exported ${this.summary.valid} titles`;
-		report += ` !`;
-		this.notification('success', report);
+		this.notification('success', `Successfully exported ${this.summary.valid} titles  !`);
 	};
 }
 
@@ -1056,47 +1089,15 @@ export abstract class APIExportableModule extends ExportableModule {
 		DOM.append(notification, DOM.text('logged in !'));
 		if (this.doStop) return this.cancel();
 		// Check Services
+		const collection = await TitleCollection.get();
 		if (checkServices) {
-			const progress = DOM.create('span', {
-				textContent: 'Page 1 out of 1',
-			});
-			notification = this.notification('loading', [
-				DOM.text('Checking Services with Mochi...'),
-				DOM.space(),
-				progress,
-			]);
-			const titles = await TitleCollection.get();
-			const collection = titles.collection;
-			let offset = 0;
-			let max = Math.ceil(titles.length / 250);
-			for (let i = 0; !this.doStop && i < max; i++) {
-				progress.textContent = `Page ${i + 1} out of ${max}`;
-				const titleList = collection.slice(offset, offset + 250);
-				offset += 250;
-				const connections = await Mochi.findMany(titleList.map((title) => title.id));
-				if (connections !== undefined) {
-					for (const titleId in connections) {
-						const id = parseInt(titleId);
-						const title = titleList.find((t) => t.id == id);
-						if (title && connections.hasOwnProperty(titleId)) {
-							const connection = connections[titleId];
-							for (const s in connection) {
-								if (connection.hasOwnProperty(s)) {
-									const service = s as ServiceName;
-									title.services[ServiceKey[service] as ServiceKey] = connection[service];
-								}
-							}
-						}
-					}
-				}
-			}
-			await titles.save();
-			notification.classList.remove('loading');
-			if (this.doStop) return this.cancel();
+			await this.mochiCheck(collection);
+			collection.save();
+			if (this.doStop) return;
 		}
 		// Select local titles
 		notification = this.notification('loading', 'Loading Titles...');
-		let titles = await this.selectTitles();
+		let titles = await this.selectTitles(collection);
 		notification.classList.remove('loading');
 		if (titles.length == 0) {
 			this.notification('default', `You don't have any Titles in your list that can be exported.`);
@@ -1110,12 +1111,15 @@ export abstract class APIExportableModule extends ExportableModule {
 		}
 		if (this.doStop) return this.cancel();
 		// Export one by one...
-		notification = this.notification('loading', '');
+		let progress = DOM.create('p');
+		notification = this.notification('loading', [progress]);
 		for (let i = 0; !this.doStop && i < this.summary.total; i++) {
-			notification.textContent = `Exporting title ${i + 1} out of ${this.summary.total}.`;
+			progress.textContent = `Exporting title ${i + 1} out of ${this.summary.total}.`;
 			const title = titles[i];
 			if (await this.exportTitle(title)) {
 				this.summary.valid++;
+			} else if (title.name) {
+				this.summary.failed.push(title.name);
 			}
 		}
 		notification.classList.remove('loading');
@@ -1151,47 +1155,15 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 		DOM.append(notification, DOM.text('logged in !'));
 		if (this.doStop) return this.cancel();
 		// Check Services
+		const collection = await TitleCollection.get();
 		if (checkServices) {
-			const progress = DOM.create('span', {
-				textContent: 'Page 1 out of 1',
-			});
-			notification = this.notification('loading', [
-				DOM.text('Checking Services with Mochi...'),
-				DOM.space(),
-				progress,
-			]);
-			const titles = await TitleCollection.get();
-			const collection = titles.collection;
-			let offset = 0;
-			let max = Math.ceil(titles.length / 250);
-			for (let i = 0; !this.doStop && i < max; i++) {
-				progress.textContent = `Page ${i + 1} out of ${max}`;
-				const titleList = collection.slice(offset, offset + 250);
-				offset += 250;
-				const connections = await Mochi.findMany(titleList.map((title) => title.id));
-				if (connections !== undefined) {
-					for (const titleId in connections) {
-						const id = parseInt(titleId);
-						const title = titleList.find((t) => t.id == id);
-						if (title && connections.hasOwnProperty(titleId)) {
-							const connection = connections[titleId];
-							for (const s in connection) {
-								if (connection.hasOwnProperty(s)) {
-									const service = s as ServiceName;
-									title.services[ServiceKey[service] as ServiceKey] = connection[service];
-								}
-							}
-						}
-					}
-				}
-			}
-			await titles.save();
-			notification.classList.remove('loading');
-			if (this.doStop) return this.cancel();
+			await this.mochiCheck(collection);
+			collection.save();
+			if (this.doStop) return;
 		}
 		// Select local titles
 		notification = this.notification('loading', 'Loading Titles...');
-		let titles = await this.selectTitles();
+		let titles = await this.selectTitles(collection);
 		notification.classList.remove('loading');
 		if (titles.length == 0) {
 			this.notification('default', `You don't have any Titles in your list that can be exported.`);

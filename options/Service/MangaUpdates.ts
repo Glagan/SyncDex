@@ -42,13 +42,8 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 		return true;
 	};
 
-	getProgress = (step: ImportStep, total?: number): string => {
-		if (step == ImportStep.FETCH_PAGES) {
-			return `Importing list ${this.currentList} out of 5.`;
-		}
-		// ImportStep.CONVERT_TITLES
-		this.currentTitle = Math.min(total as number, this.currentTitle + this.perConvert);
-		return `Converting title ${this.currentTitle} out of ${total}.`;
+	importProgress = (): string => {
+		return `Importing list ${this.currentList} out of 5.`;
 	};
 
 	handlePage = async (): Promise<MangaUpdatesTitle[] | false> => {
