@@ -2,6 +2,7 @@ import { AvailableOptions } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
 import { SaveTitle, Title, TitleCollection, ExportedSave, ServiceKey, ServiceName } from '../../src/Title';
 import { ImportSummary, Service, FileImportableModule, FileImportFormat, FileExportableModule } from './Service';
+import { AppendableElement, DOM } from '../../src/DOM';
 
 class SyncDexImport extends FileImportableModule<ExportedSave, Title> {
 	fileType: FileImportFormat = 'JSON';
@@ -57,6 +58,19 @@ class SyncDexExport extends FileExportableModule {
 export class SyncDex extends Service {
 	readonly key: ServiceKey = ServiceKey.SyncDex;
 	readonly name: ServiceName = ServiceName.SyncDex;
+
+	createTitle = (): AppendableElement => {
+		return DOM.create('span', {
+			class: 'sync',
+			textContent: 'Sync',
+			childs: [
+				DOM.create('span', {
+					class: 'dex',
+					textContent: 'Dex',
+				}),
+			],
+		});
+	};
 
 	activeModule = undefined;
 	importModule: SyncDexImport = new SyncDexImport(this);

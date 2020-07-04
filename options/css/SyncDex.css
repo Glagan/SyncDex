@@ -115,8 +115,9 @@
 
 	--mymangadex: rgba(47, 82, 162);
 	--mymangadex-bg: white;
-	--syncdex: #0c0c0d;
-	--syncdex-bg: #d7d7db;
+	--syncdex-1: rgb(81, 165, 234);
+	--syncdex-2: rgb(247, 148, 33);
+	--syncdex-bg: #fefefe;
 	--mangadex: rgba(247, 148, 33);
 	--mangadex-bg: #2a2f34;
 	--myanimelist: rgba(47, 82, 162);
@@ -500,6 +501,10 @@ input[type='file'] {
 .message.large {
 	width: 100%;
 }
+.message.loading > div.icon {
+	animation: fa-spin 2s linear infinite;
+	transform-origin: center center;
+}
 .message.loading > div.icon::before {
 	content: '\f1ce';
 }
@@ -593,7 +598,7 @@ input[type='file'] {
 }
 .card > .content {
 	padding: 8px;
-	background-color: var(--grey-10);
+	background-color: var(--white-100);
 }
 .card.large > .content {
 	padding: 20px;
@@ -727,7 +732,12 @@ h2 {
 }
 .card .header.syncdex {
 	background: url('/icons/sc.png') 8px center / 16px no-repeat, var(--syncdex-bg);
-	color: var(--syncdex);
+}
+.sync {
+	color: var(--syncdex-1);
+}
+.sync .dex {
+	color: var(--syncdex-2);
 }
 .card .header.mangadex {
 	background: url('/icons/md.png') 8px center / 16px no-repeat, var(--mangadex-bg);
@@ -884,10 +894,6 @@ h2 {
 .ieport .message:not(.in-place).loading {
 	font-size: var(--body-20);
 	animation: flash 250ms 1 forwards, pulse 2s ease-in-out alternate infinite;
-}
-.ieport .message:not(.in-place).loading > div.icon {
-	animation: fa-spin 2s linear infinite;
-	transform-origin: center center;
 }
 .ieport .leave {
 	margin-bottom: 8px;

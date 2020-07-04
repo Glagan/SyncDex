@@ -38,9 +38,9 @@ let mainManifest = {
 		'storage',
 	],
 	icons: {
-		48: 'icons/sc.png',
-		96: 'icons/sc.png',
-		128: 'icons/sc.png',
+		48: 'icons/48.png',
+		96: 'icons/96.png',
+		128: 'icons/128.png',
 	},
 	background: {
 		page: 'background/index.html',
@@ -73,9 +73,9 @@ let mainManifest = {
 	],
 	browser_action: {
 		default_icon: {
-			48: 'icons/sc.png',
-			96: 'icons/sc.png',
-			128: 'icons/sc.png',
+			48: 'icons/48.png',
+			96: 'icons/96.png',
+			128: 'icons/128.png',
 		},
 		default_title: 'SyncDex',
 	},
