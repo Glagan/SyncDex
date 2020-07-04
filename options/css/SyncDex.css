@@ -490,6 +490,7 @@ input[type='file'] {
 }
 .message .content > p {
 	padding: 4px 0;
+	white-space: pre-wrap;
 }
 .message.hidden {
 	min-height: 0px;

@@ -21,10 +21,33 @@ export const enum ImportStep {
 	CONVERT_TITLES,
 }
 
+/**
+ * Convert a duration in ms to a string
+ */
+function duration(time: number): string {
+	if (time == 0) return '0s';
+	const diff = Math.floor(time) / 1000;
+	let r = [];
+	let p: Partial<Record<'hours' | 'mins' | 'sec', number>> = {};
+	if ((p.hours = Math.floor((diff % 86400) / 3600)) > 0) r.push(p.hours, `hour${p.hours > 1 ? 's' : ''} `);
+	if ((p.mins = Math.floor((diff % 3600) / 60)) > 0) r.push(p.mins, `minute${p.mins > 1 ? 's' : ''} `);
+	if ((p.sec = Math.floor(diff % 60)) > 0) r.push(p.sec, 's ');
+	return r.join('').trim();
+}
+
 export class Summary {
 	total: number = 0;
 	valid: number = 0;
 	failed: string[] = [];
+	startTime: number = 0;
+
+	start = (): void => {
+		this.startTime = Date.now();
+	};
+
+	totalTime = (): string => {
+		return duration(Date.now() - this.startTime);
+	};
 }
 
 export class ImportSummary extends Summary {
@@ -459,7 +482,7 @@ export abstract class ActivableModule {
 	};
 }
 
-export abstract class SaveModule {
+export abstract class SaveModule<T extends Summary = Summary> {
 	card: HTMLElement;
 	modal: Modal;
 	service: Service;
@@ -470,8 +493,8 @@ export abstract class SaveModule {
 	activeContainer?: HTMLElement;
 	abstract handle(form: HTMLFormElement): Promise<void>;
 	abstract cancel(): void;
-	// Display summary and button to go back to Service selection
-	abstract displaySummary(summary: Summary): void;
+	abstract summary: T;
+	abstract displaySummary(): void;
 	doStop: boolean = false;
 	stopButton: HTMLButtonElement;
 	closeButton: HTMLButtonElement;
@@ -583,6 +606,7 @@ export abstract class SaveModule {
 		this.activeContainer = DOM.create('div');
 		this.modal.body.appendChild(this.activeContainer);
 		this.modal.body.appendChild(DOM.create('div', { class: 'leave right', childs: [this.stopButton] }));
+		this.summary.start();
 	};
 
 	complete = (): void => {
@@ -640,7 +664,7 @@ export abstract class SaveModule {
 	};
 }
 
-export abstract class ImportableModule extends SaveModule {
+export abstract class ImportableModule extends SaveModule<ImportSummary> {
 	summary: ImportSummary = new ImportSummary();
 
 	reset = (): void => {
@@ -695,7 +719,7 @@ export abstract class ImportableModule extends SaveModule {
 		if (this.summary.options > 0)
 			report += `${this.summary.history ? ', ' : ' and '} ${this.summary.options} Options`;
 		if (this.summary.history) report += ` and History`;
-		report += ` !`;
+		report += ` in ${this.summary.totalTime()} !`;
 		this.notification('success', report);
 	};
 }
@@ -891,7 +915,8 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 		const merge = form.querySelector(`.checkbox[name='merge'].checked`) !== null;
 		const checkServices = form.querySelector(`.checkbox[name='checkServices'].checked`) !== null;
 		this.displayActive();
-		let notification: HTMLElement = this.notification('loading', 'Checking login status...');
+		const loginProgress = DOM.create('p', { textContent: 'Checking login status...' });
+		let notification = this.notification('loading', [loginProgress]);
 		// Check login status
 		if (!(await this.checkLogin())) {
 			notification.classList.remove('loading');
@@ -899,7 +924,7 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 			return this.cancel(true);
 		}
 		notification.classList.remove('loading');
-		DOM.append(notification, DOM.space(), DOM.text('logged in !'));
+		DOM.append(loginProgress, DOM.space(), DOM.text('logged in !'));
 		if (this.doStop) return this.cancel();
 		let titles: T[] = [];
 		if (this.preMain) {
@@ -1000,7 +1025,9 @@ export abstract class ExportableModule extends SaveModule {
 		this.summary = new Summary();
 	};
 
-	// By default, select all titles with a Service key for the current service and a status
+	/**
+	 * By default, select all titles with a Service key for the current service and a status
+	 */
 	selectTitles = async (titleCollection: TitleCollection): Promise<Title[]> => {
 		return titleCollection.collection.filter((title) => {
 			const id = title.services[this.service.key];
@@ -1022,7 +1049,7 @@ export abstract class ExportableModule extends SaveModule {
 				} titles were not exported since they had invalid or missing properties.`
 			);
 		}
-		this.notification('success', `Successfully exported ${this.summary.valid} titles  !`);
+		this.notification('success', `Exported ${this.summary.valid} titles in ${this.summary.totalTime()} !`);
 	};
 }
 
@@ -1079,14 +1106,15 @@ export abstract class APIExportableModule extends ExportableModule {
 		const checkServices = form.querySelector(`.checkbox[name='checkServices'].checked`) !== null;
 		this.displayActive();
 		// Check login status
-		let notification: HTMLElement = this.notification('loading', 'Checking login status...');
+		const loginProgress = DOM.create('p', { textContent: 'Checking login status...' });
+		let notification = this.notification('loading', [loginProgress]);
 		if (!(await this.checkLogin())) {
 			notification.classList.remove('loading');
 			this.notification('warning', 'You are not logged in !');
 			return this.cancel(true);
 		}
 		notification.classList.remove('loading');
-		DOM.append(notification, DOM.text('logged in !'));
+		DOM.append(loginProgress, DOM.space(), DOM.text('logged in !'));
 		if (this.doStop) return this.cancel();
 		// Check Services
 		const collection = await TitleCollection.get();
@@ -1113,14 +1141,27 @@ export abstract class APIExportableModule extends ExportableModule {
 		// Export one by one...
 		let progress = DOM.create('p');
 		notification = this.notification('loading', [progress]);
+		let average = 0;
 		for (let i = 0; !this.doStop && i < this.summary.total; i++) {
-			progress.textContent = `Exporting title ${i + 1} out of ${this.summary.total}.`;
 			const title = titles[i];
+			let currentProgress = '';
+			if (title.name) {
+				currentProgress = `Exporting title ${title.name} (${i + 1} out of ${this.summary.total}).`;
+			} else {
+				currentProgress = `Exporting title ${i + 1} out of ${this.summary.total}.`;
+			}
+			if (average > 0) {
+				currentProgress += `\nEstimated time remaining: ${duration((this.summary.total - i) * average)}.`;
+			}
+			progress.textContent = currentProgress;
+			const before = Date.now();
 			if (await this.exportTitle(title)) {
 				this.summary.valid++;
 			} else if (title.name) {
 				this.summary.failed.push(title.name);
 			}
+			if (average == 0) average = Date.now() - before;
+			else average = (average + (Date.now() - before)) / 2;
 		}
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
@@ -1145,14 +1186,15 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 		const checkServices = form.querySelector(`.checkbox[name='checkServices'].checked`) !== null;
 		this.displayActive();
 		// Check login status
-		let notification: HTMLElement = this.notification('loading', 'Checking login status...');
+		const loginProgress = DOM.create('p', { textContent: 'Checking login status...' });
+		let notification = this.notification('loading', [loginProgress]);
 		if (!(await this.checkLogin())) {
 			notification.classList.remove('loading');
 			this.notification('warning', 'You are not logged in !');
 			return this.cancel(true);
 		}
 		notification.classList.remove('loading');
-		DOM.append(notification, DOM.text('logged in !'));
+		DOM.append(loginProgress, DOM.space(), DOM.text('logged in !'));
 		if (this.doStop) return this.cancel();
 		// Check Services
 		const collection = await TitleCollection.get();
