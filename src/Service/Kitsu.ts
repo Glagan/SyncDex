@@ -93,6 +93,10 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 	readonly serviceKey: ServiceKey = ServiceKey.Kitsu;
 	readonly serviceName: ServiceName = ServiceName.Kitsu;
 
+	static link(id: number | string): string {
+		return `https://kitsu.io/manga/${id}`;
+	}
+
 	status: KitsuStatus;
 	libraryEntryId: number;
 

@@ -1,8 +1,16 @@
-import { Title, TitleCollection } from '../src/Title';
+import { Title, TitleCollection, ServiceKey } from '../src/Title';
 import { DOM, AppendableElement } from '../src/DOM';
+import { LocalStorage } from '../src/Storage';
+import { MyAnimeListTitle } from '../src/Service/MyAnimeList';
+import { AnilistTitle } from '../src/Service/Anilist';
+import { KitsuTitle } from '../src/Service/Kitsu';
+import { AnimePlanetTitle } from '../src/Service/AnimePlanet';
+import { MangaUpdatesTitle } from '../src/Service/MangaUpdates';
 
 export class SaveViewer {
 	body: HTMLElement;
+	titles: TitleCollection = new TitleCollection();
+
 	static statusMap: { [key in Status]: string } = {
 		[Status.NONE]: 'NONE',
 		[Status.READING]: 'READING',
@@ -19,14 +27,31 @@ export class SaveViewer {
 		this.updateAll();
 	}
 
+	serviceLink = (key: ServiceKey, id: string | number): string => {
+		switch (key) {
+			case ServiceKey.MyAnimeList:
+				return MyAnimeListTitle.link(id);
+			case ServiceKey.Anilist:
+				return AnilistTitle.link(id);
+			case ServiceKey.Kitsu:
+				return KitsuTitle.link(id);
+			case ServiceKey.AnimePlanet:
+				return AnimePlanetTitle.link(id);
+			case ServiceKey.MangaUpdates:
+				return MangaUpdatesTitle.link(id);
+		}
+		return '#';
+	};
+
 	titleServices = (title: Title): AppendableElement[] => {
 		const icons: AppendableElement[] = [];
 		for (const serviceKey in title.services) {
+			const key = serviceKey as ServiceKey;
 			icons.push(
 				DOM.create('a', {
 					attributes: {
 						target: '_blank',
-						href: `#`,
+						href: this.serviceLink(key, title.services[key] as string | number),
 						rel: 'noreferrer noopener',
 					},
 					childs: [DOM.create('img', { attributes: { src: `/icons/${serviceKey}.png` } })],
@@ -51,7 +76,9 @@ export class SaveViewer {
 	};
 
 	createRow = (title: Title): HTMLElement => {
-		return DOM.create('tr', {
+		const editButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('edit')] });
+		const deleteButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('trash')] });
+		const row = DOM.create('tr', {
 			childs: [
 				DOM.create('td', {
 					class: 'mangadex',
@@ -75,18 +102,32 @@ export class SaveViewer {
 				DOM.create('td', { textContent: title.end ? this.dateFormat(title.end) : '-' }),
 				DOM.create('td', {
 					class: 'actions',
-					childs: [DOM.create('button', { class: 'ghost', childs: [DOM.icon('trash')] })],
+					childs: [editButton, deleteButton],
 				}),
 			],
 		});
+		editButton.addEventListener('click', async (event) => {});
+		deleteButton.addEventListener('click', async (event) => {
+			event.preventDefault();
+			deleteButton.disabled = true;
+			deleteButton.classList.add('loading');
+			await LocalStorage.remove(title.id);
+			row.remove();
+		});
+		return row;
 	};
 
 	updateAll = async (): Promise<void> => {
 		DOM.clear(this.body);
-		const titles = await TitleCollection.get();
+		this.titles = await TitleCollection.get();
 		const fragment = document.createDocumentFragment();
-		for (const title of titles.collection) {
+		let i = 0;
+		for (const title of this.titles.collection) {
 			fragment.appendChild(this.createRow(title));
+			if (++i == 50) {
+				// TODO: Load more
+				break;
+			}
 		}
 		this.body.appendChild(fragment);
 	};

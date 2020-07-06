@@ -1,6 +1,6 @@
 import { DOM } from '../../src/DOM';
 import { TitleCollection, Title, ServiceKey, ServiceName } from '../../src/Title';
-import { Mochi } from '../../src/Mochi';
+import { Mochi, MochiConnections } from '../../src/Mochi';
 import {
 	Service,
 	FileImportableModule,
@@ -205,13 +205,13 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 		let total = 0;
 		if (connections !== undefined) {
 			for (const key in connections) {
-				if (connections.hasOwnProperty(key)) {
-					const connection = connections[key];
-					if (connection['MangaDex'] !== undefined) {
-						const id = parseInt(key);
-						const title = titleList.find((t) => t.id == id) as MyAnimeListTitle;
+				const connection = connections[key];
+				if (connection !== undefined) {
+					const id = parseInt(key);
+					const title = titleList.find((t) => t.id == id) as MyAnimeListTitle;
+					if (title && connection[ServiceKey.MangaDex]) {
 						titles.add(
-							new Title(connection['MangaDex'], {
+							new Title(connection[ServiceKey.MangaDex], {
 								services: { mal: title.id },
 								progress: {
 									chapter: title.chapters,

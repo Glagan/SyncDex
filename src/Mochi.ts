@@ -1,8 +1,8 @@
 import { Runtime } from './Runtime';
-import { ServiceName } from './Title';
+import { ServiceName, ServiceKeyMap } from './Title';
 
-type MochiConnections = {
-	[key in ServiceName]: number;
+export type MochiConnections = {
+	[key in keyof ServiceKeyMap]: ServiceKeyMap[key];
 };
 
 interface MochiResult {

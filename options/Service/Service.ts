@@ -1,7 +1,7 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
-import { TitleCollection, Title, ServiceTitle, ServiceKey, ServiceName } from '../../src/Title';
+import { TitleCollection, Title, ServiceTitle, ServiceKey, ServiceName, ServiceKeyMap } from '../../src/Title';
 import { LocalStorage } from '../../src/Storage';
 import { Mochi } from '../../src/Mochi';
 import { RequestStatus } from '../../src/Runtime';
@@ -647,13 +647,11 @@ export abstract class SaveModule<T extends Summary = Summary> {
 				for (const titleId in connections) {
 					const id = parseInt(titleId);
 					const title = titleList.find((t) => t.id == id);
-					if (title && connections.hasOwnProperty(titleId)) {
+					if (title) {
 						const connection = connections[titleId];
-						for (const s in connection) {
-							if (connection.hasOwnProperty(s)) {
-								const service = s as ServiceName;
-								title.services[ServiceKey[service] as ServiceKey] = connection[service];
-							}
+						for (const key in connection) {
+							const serviceKey = key as ServiceKey;
+							(title.services[serviceKey] as string | number) = connection[serviceKey];
 						}
 					}
 				}
@@ -849,7 +847,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		// Merge
 		if (!merge) {
 			await LocalStorage.clear();
-		} else {
+		} else if (collection.length > 0) {
 			collection.merge(await TitleCollection.get(collection.ids));
 		}
 		// Mochi
@@ -974,19 +972,17 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 				);
 				if (connections !== undefined) {
 					for (const key in connections) {
-						if (connections.hasOwnProperty(key)) {
-							const connection = connections[key];
-							if (connection['MangaDex'] !== undefined) {
-								const id = parseInt(key);
-								const title = titleList.find((t) => t.id == id) as T;
-								title.mangaDex = connection['MangaDex'];
-								const convertedTitle = title.toTitle();
-								if (convertedTitle) {
-									collection.add(convertedTitle);
-									this.summary.valid++;
-								}
-								found.push(id);
+						const connection = connections[key];
+						if (connection[ServiceKey.MangaDex] !== undefined) {
+							const id = parseInt(key);
+							const title = titleList.find((t) => t.id == id) as T;
+							title.mangaDex = connection[ServiceKey.MangaDex];
+							const convertedTitle = title.toTitle();
+							if (convertedTitle) {
+								collection.add(convertedTitle);
+								this.summary.valid++;
 							}
+							found.push(id);
 						}
 					}
 				}
@@ -1062,7 +1058,7 @@ export abstract class FileExportableModule extends ExportableModule {
 
 	handle = async (_form: HTMLFormElement): Promise<void> => {
 		this.displayActive();
-		const progress = DOM.create('p', { textContent: 'Creating file...' })
+		const progress = DOM.create('p', { textContent: 'Creating file...' });
 		let notification = this.notification('loading', [progress]);
 		let save = await this.fileContent();
 		DOM.append(progress, DOM.space(), DOM.text('done !'));

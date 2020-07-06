@@ -14,6 +14,10 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 	readonly serviceKey: ServiceKey = ServiceKey.MangaUpdates;
 	readonly serviceName: ServiceName = ServiceName.MangaUpdates;
 
+	static link(id: number | string): string {
+		return `https://www.mangaupdates.com/series.html?id=${id}`;
+	}
+
 	status: MangaUpdatesStatus = MangaUpdatesStatus.NONE;
 	current?: {
 		progress: Progress;

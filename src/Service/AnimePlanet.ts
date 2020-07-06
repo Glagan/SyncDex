@@ -22,6 +22,10 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 	readonly serviceKey: ServiceKey = ServiceKey.AnimePlanet;
 	readonly serviceName: ServiceName = ServiceName.AnimePlanet;
 
+	static link(id: number | string): string {
+		return `https://www.anime-planet.com/manga/${id}`;
+	}
+
 	status: AnimePlanetStatus;
 	token: string;
 
@@ -128,7 +132,7 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 	toTitle = (): Title | undefined => {
 		if (!this.mangaDex) return undefined;
 		return new Title(this.mangaDex, {
-			services: { ap: this.id as number },
+			services: { ap: this.id as string },
 			progress: this.progress,
 			status: AnimePlanetTitle.toStatus(this.status),
 			score: this.score !== undefined && this.score > 0 ? this.score : undefined,

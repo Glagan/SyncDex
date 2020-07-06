@@ -34,7 +34,7 @@ export interface ServiceKeyMap {
 	[ServiceKey.MangaUpdates]: number;
 	[ServiceKey.Anilist]: number;
 	[ServiceKey.Kitsu]: number;
-	[ServiceKey.AnimePlanet]: number;
+	[ServiceKey.AnimePlanet]: string;
 	[ServiceKey.MangaDex]: number;
 	[ServiceKey.MyMangaDex]: number;
 	[ServiceKey.SyncDex]: number;
@@ -413,6 +413,13 @@ export class TitleCollection {
 export abstract class ServiceTitle<T extends ServiceTitle<T>> {
 	abstract readonly serviceKey: ServiceKey;
 	abstract readonly serviceName: ServiceName;
+
+	/**
+	 * Link to a single Media page.
+	 */
+	static link(id: number | string): string {
+		return '#';
+	}
 
 	/**
 	 * The key of the Media on the Service.

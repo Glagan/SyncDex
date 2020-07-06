@@ -80,6 +80,10 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 	readonly serviceKey: ServiceKey = ServiceKey.Anilist;
 	readonly serviceName: ServiceName = ServiceName.Anilist;
 
+	static link(id: number | string): string {
+		return `https://anilist.co/manga/${id}`;
+	}
+
 	status: AnilistStatus;
 	mediaEntryId: number;
 

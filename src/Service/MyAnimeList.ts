@@ -14,6 +14,10 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 	readonly serviceKey: ServiceKey = ServiceKey.MyAnimeList;
 	readonly serviceName: ServiceName = ServiceName.MyAnimeList;
 
+	static link(id: number | string): string {
+		return `https://myanimelist.net/manga/${id}`;
+	}
+
 	status: MyAnimeListStatus;
 	newEntry: boolean;
 	csrf: string;

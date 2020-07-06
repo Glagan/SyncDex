@@ -114,7 +114,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 
 	handlePage = async (): Promise<AnilistTitle[] | false> => {
 		// Find required username
-		let response = await Runtime.jsonRequest({
+		const viewerResponse = await Runtime.jsonRequest({
 			url: AnilistAPI,
 			method: 'POST',
 			headers: AnilistHeaders(),
@@ -122,16 +122,16 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 				query: AnilistImport.viewerQuery,
 			}),
 		});
-		if (!response.ok) {
+		if (!viewerResponse.ok) {
 			this.notification(
 				'warning',
 				`The request failed, maybe Anilist is having problems or your token expired, retry later.`
 			);
 			return false;
 		}
-		const username = (response.body as AnilistViewerResponse).data.Viewer.name;
+		const username = (viewerResponse.body as AnilistViewerResponse).data.Viewer.name;
 		// Get list of *all* titles
-		response = await Runtime.jsonRequest<AnilistListResponse>({
+		const response = await Runtime.jsonRequest<AnilistListResponse>({
 			url: AnilistAPI,
 			method: 'POST',
 			headers: {
@@ -164,6 +164,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 							chapter: entry.progress,
 							volume: entry.progressVolumes,
 						},
+						name: entry.media.title.userPreferred,
 						status: entry.status,
 						start: AnilistTitle.dateFromAnilist(entry.startedAt),
 						end: AnilistTitle.dateFromAnilist(entry.completedAt),
