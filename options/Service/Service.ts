@@ -1062,9 +1062,10 @@ export abstract class FileExportableModule extends ExportableModule {
 
 	handle = async (_form: HTMLFormElement): Promise<void> => {
 		this.displayActive();
-		let notification = this.notification('loading', 'Creating file...');
+		const progress = DOM.create('p', { textContent: 'Creating file...' })
+		let notification = this.notification('loading', [progress]);
 		let save = await this.fileContent();
-		DOM.append(notification, DOM.space(), DOM.text('done !'));
+		DOM.append(progress, DOM.space(), DOM.text('done !'));
 		const blob = new Blob([save], { type: 'application/json;charset=utf-8' });
 		const href = URL.createObjectURL(blob);
 		notification.classList.remove('loading');

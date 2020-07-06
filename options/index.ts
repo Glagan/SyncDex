@@ -7,6 +7,7 @@ import { MenuHighlight } from './MenuHighlight';
 import { InputManager } from './Manager/Input';
 import { ServiceManager } from './Manager/Service';
 import { LocalStorage } from '../src/Storage';
+import { SaveViewer } from './SaveViewer';
 
 class OptionsManager {
 	highlightsManager?: HighlightsManager;
@@ -15,6 +16,7 @@ class OptionsManager {
 	inputManager?: InputManager;
 	menuHighlight?: MenuHighlight;
 	serviceManager?: ServiceManager;
+	saveViewer?: SaveViewer;
 
 	execute = async (): Promise<void> => {
 		await Options.load();
@@ -24,6 +26,7 @@ class OptionsManager {
 		this.inputManager = new InputManager();
 		this.menuHighlight = new MenuHighlight();
 		this.serviceManager = new ServiceManager();
+		this.saveViewer = new SaveViewer();
 		// Delete save event
 		const deleteSave = document.getElementById('delete-save');
 		if (deleteSave) {
@@ -76,6 +79,7 @@ class OptionsManager {
 		this.checkboxManager?.updateAll();
 		this.inputManager?.updateAll();
 		this.serviceManager?.refreshActive();
+		this.saveViewer?.updateAll();
 	};
 }
 

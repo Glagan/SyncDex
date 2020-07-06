@@ -22,6 +22,7 @@
 			<li data-link="general"><i class="fas fa-cog"></i> General</li>
 			<li data-link="notifications"><i class="fas fa-bell"></i> Notifications</li>
 			<li data-link="history"><i class="fas fa-history"></i> History</li>
+			<li data-link="save"><i class="fas fa-save"></i> Save Viewer</li>
 			<li data-link="import"><i class="fas fa-download"></i> Import</li>
 			<li data-link="export"><i class="fas fa-upload"></i> Export</li>
 			<li data-link="other"><i class="fas fa-ellipsis-h"></i> Other</li>
@@ -230,6 +231,26 @@
 				<label>Save each titles you read and display a bigger history than the original 20 that <b>MangaDex</b> save.</label>
 				<div class="checkbox" data-checkbox="chapterStatus" data-dependency="biggerHistory"></div>
 				<label>Highlight Covers to quickly see if you read the last chapter for a title.</label>
+			</div>
+		</div>
+		<h1 id="save"><i class="fas fa-save"></i> Save Viewer</h1>
+		<div class="section">
+			<div id="save-wrapper">
+				<table>
+					<thead>
+						<tr>
+							<th class="mangadex">MangaDex</th>
+							<th class="name">Name</th>
+							<th>Services</th>
+							<th>Status</th>
+							<th>Score</th>
+							<th>Start</th>
+							<th>End</th>
+							<th class="actions">Action</th>
+						</tr>
+					</thead>
+					<tbody id="save-body"></tbody>
+				</table>
 			</div>
 		</div>
 		<h1 id="import"><i class="fas fa-download"></i> Import</h1>

@@ -608,6 +608,32 @@ input[type='file'] {
 	overflow: auto;
 }
 
+/* Table */
+table {
+	width: calc(100% - 16px - 2px);
+	margin: 8px;
+	border: 1px solid var(--grey-20);
+	border-radius: 2px;
+	background-color: var(--white-100);
+	color: var(--grey-90);
+	text-align: center;
+	border-collapse: collapse;
+	table-layout: fixed;
+}
+table thead {
+	background-color: var(--grey-30);
+}
+table thead th {
+	border-bottom: 1px solid var(--grey-20);
+	padding: 4px;
+}
+table tbody tr:nth-child(even) {
+	background-color: var(--grey-10);
+}
+table tbody tr td {
+	padding: 4px;
+}
+
 /* Reset */
 * {
 	margin: 0;
@@ -911,27 +937,64 @@ h2 {
 	line-height: 24px;
 }
 
-/* Dark Theme */
-@media (prefers-color-scheme: dark) {
-	body:not(.light) {
-		background-color: var(--grey-70);
-		color: var(--white-100);
-	}
-	:not(.light) .modal .card > .content {
-		color: var(--grey-90);
-	}
-	:not(.light) .card {
-		box-shadow: var(--light-shadow-10);
-	}
-	:not(.light) .card:hover {
-		box-shadow: var(--light-shadow-20);
-	}
+/* Save Viewer */
+#save-wrapper {
+	max-height: 80vh;
+	overflow-y: auto;
+}
+table tr th.name {
+	width: 25%;
+}
+table tr th.actions {
+	width: 5%;
+}
+table tr td.mangadex a[href] {
+	color: var(--grey-90);
+}
+table tr td.name {
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
 }
 
-body.dark {
+/* Dark Theme */
+body:not(.light) {
 	background-color: var(--grey-70);
 	color: var(--white-100);
 }
-body.dark .modal .card > .content {
+body:not(.light) {
+	background-color: var(--grey-70);
+	color: var(--white-100);
+}
+body:not(.light) .modal .card > .content {
 	color: var(--grey-90);
+}
+body:not(.light) .card {
+	box-shadow: var(--light-shadow-10);
+}
+body:not(.light) .card:hover {
+	box-shadow: var(--light-shadow-20);
+}
+body:not(.light) table {
+	border: 1px solid var(--grey-80);
+	background-color: var(--grey-60);
+	color: var(--white-100);
+}
+body:not(.light) table thead {
+	background-color: var(--grey-70);
+}
+body:not(.light) table thead th {
+	border-bottom: 1px solid var(--grey-80);
+}
+body:not(.light) table tbody tr:nth-child(even) {
+	background-color: var(--grey-50);
+}
+body:not(.light) .modal .card > .content {
+	color: var(--grey-90);
+}
+body:not(.light) table tr td.mangadex a[href] {
+	color: var(--white-100);
+}
+body:not(.light) table tbody td.actions button {
+	color: var(--grey-10);
 }
