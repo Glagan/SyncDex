@@ -1,12 +1,8 @@
 import { Runtime } from './Runtime';
-import { ServiceName, ServiceKeyMap } from './Title';
-
-export type MochiConnections = {
-	[key in keyof ServiceKeyMap]: ServiceKeyMap[key];
-};
+import { ServiceName, ServiceKeyMap, ServiceList } from './Title';
 
 interface MochiResult {
-	data: MochiConnections[];
+	data: ServiceList[];
 	meta: {
 		time: Record<string, number>;
 	} & Record<string, any>;
@@ -37,7 +33,7 @@ export class Mochi {
 	static async find(
 		title: number | string,
 		source: ServiceName = ServiceName.MangaDex
-	): Promise<MochiConnections | undefined> {
+	): Promise<ServiceList | undefined> {
 		const response = await Runtime.jsonRequest<MochiResult>({
 			url: Mochi.connections(title, source),
 		});
@@ -54,7 +50,7 @@ export class Mochi {
 	static async findMany(
 		title: (number | string)[],
 		source: ServiceName = ServiceName.MangaDex
-	): Promise<MochiConnections[] | undefined> {
+	): Promise<ServiceList[] | undefined> {
 		const response = await Runtime.jsonRequest<MochiResult>({
 			url: Mochi.connections(title, source),
 		});

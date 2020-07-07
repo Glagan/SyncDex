@@ -16,9 +16,6 @@ class MangaUpdatesActive extends ActivableModule {
 		if (response.body && response.body.indexOf(`You are currently logged in as`) >= 0) return RequestStatus.SUCCESS;
 		return RequestStatus.FAIL;
 	};
-
-	login = undefined;
-	logout = undefined;
 }
 
 class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {

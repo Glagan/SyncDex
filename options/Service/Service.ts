@@ -193,8 +193,8 @@ export abstract class ActivableModule {
 	loginButton: HTMLAnchorElement;
 	removeButton: HTMLElement;
 	abstract loggedIn(): Promise<RequestStatus>;
-	abstract login?(username: string, password: string): Promise<RequestStatus>;
-	abstract logout?(): Promise<void>;
+	login?(username: string, password: string): Promise<RequestStatus>;
+	logout?(): Promise<void>;
 	identifierField: [string, string] = ['Email', 'email'];
 	preModalForm?(modal: Modal): void;
 
@@ -956,7 +956,6 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 		// Find MangaDex IDs from ServiceTitle
 		progress = DOM.create('p');
 		notification = this.notification('loading', [progress]);
-		let found: (number | string)[] = [];
 		let collection = new TitleCollection();
 		this.state.current = 0;
 		this.state.max = Math.ceil(this.summary.total / this.perConvert);
@@ -972,27 +971,30 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 					titleList.map((t) => t.id),
 					this.service.name
 				);
+				let found: (number | string)[] = [];
 				if (connections !== undefined) {
 					for (const key in connections) {
 						const connection = connections[key];
 						if (connection[ServiceKey.MangaDex] !== undefined) {
 							const id = parseInt(key);
 							const title = titleList.find((t) => t.id == id) as T;
-							title.mangaDex = connection[ServiceKey.MangaDex];
-							const convertedTitle = title.toTitle();
-							if (convertedTitle) {
-								collection.add(convertedTitle);
-								this.summary.valid++;
+							if (title) {
+								title.mangaDex = connection[ServiceKey.MangaDex];
+								const convertedTitle = title.toTitle();
+								if (convertedTitle) {
+									collection.add(convertedTitle);
+									this.summary.valid++;
+								}
+								found.push(id);
 							}
-							found.push(id);
 						}
 					}
 				}
+				// Add missing titles to the failed Summary
+				const noIds = titles.filter((t) => found.indexOf(t.id) < 0);
+				this.summary.failed.push(...noIds.filter((t) => t.name !== undefined).map((t) => t.name as string));
 			}
 		}
-		// Add missing titles to the failed Summary
-		const noIds = titles.filter((t) => found.indexOf(t.id) < 0);
-		this.summary.failed.push(...noIds.filter((t) => t.name !== undefined).map((t) => t.name as string));
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		// Merge

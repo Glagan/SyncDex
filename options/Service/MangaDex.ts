@@ -33,9 +33,6 @@ class MangaDexActive extends ActivableModule {
 			return RequestStatus.FAIL;
 		}
 	};
-
-	login = undefined;
-	logout = undefined;
 }
 
 class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
