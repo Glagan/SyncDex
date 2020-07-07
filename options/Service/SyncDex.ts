@@ -1,6 +1,6 @@
 import { AvailableOptions } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
-import { SaveTitle, Title, TitleCollection, ExportedSave, ServiceKey, ServiceName } from '../../src/Title';
+import { SaveTitle, Title, TitleCollection, ExportedSave } from '../../src/Title';
 import { ImportSummary, Service, FileImportableModule, FileImportFormat, FileExportableModule } from './Service';
 import { AppendableElement, DOM } from '../../src/DOM';
 
@@ -56,8 +56,8 @@ class SyncDexExport extends FileExportableModule {
 }
 
 export class SyncDex extends Service {
-	readonly key: ServiceKey = ServiceKey.SyncDex;
-	readonly name: ServiceName = ServiceName.SyncDex;
+	readonly name: ServiceName = 'SyncDex';
+	readonly key: ServiceKey = 'sc';
 
 	createTitle = (): AppendableElement => {
 		return DOM.create('span', {

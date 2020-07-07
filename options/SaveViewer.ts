@@ -1,4 +1,4 @@
-import { Title, TitleCollection, ServiceKey } from '../src/Title';
+import { Title, TitleCollection, ServiceIdType } from '../src/Title';
 import { DOM, AppendableElement } from '../src/DOM';
 import { LocalStorage } from '../src/Storage';
 import { MyAnimeListTitle } from '../src/Service/MyAnimeList';
@@ -27,18 +27,18 @@ export class SaveViewer {
 		this.updateAll();
 	}
 
-	serviceLink = (key: ServiceKey, id: string | number): string => {
+	serviceLink = (key: ServiceKey, id: number | AnimePlanetReference): string => {
 		switch (key) {
-			case ServiceKey.MyAnimeList:
-				return MyAnimeListTitle.link(id);
-			case ServiceKey.Anilist:
-				return AnilistTitle.link(id);
-			case ServiceKey.Kitsu:
-				return KitsuTitle.link(id);
-			case ServiceKey.AnimePlanet:
-				return AnimePlanetTitle.link(id);
-			case ServiceKey.MangaUpdates:
-				return MangaUpdatesTitle.link(id);
+			case 'mal':
+				return MyAnimeListTitle.link(id as number);
+			case 'al':
+				return AnilistTitle.link(id as number);
+			case 'ku':
+				return KitsuTitle.link(id as number);
+			case 'ap':
+				return AnimePlanetTitle.link(id as AnimePlanetReference);
+			case 'mu':
+				return MangaUpdatesTitle.link(id as number);
 		}
 		return '#';
 	};
@@ -51,7 +51,7 @@ export class SaveViewer {
 				DOM.create('a', {
 					attributes: {
 						target: '_blank',
-						href: this.serviceLink(key, title.services[key] as string | number),
+						href: this.serviceLink(key, title.services[key] as number | AnimePlanetReference),
 						rel: 'noreferrer noopener',
 					},
 					childs: [DOM.create('img', { attributes: { src: `/icons/${serviceKey}.png` } })],

@@ -1,7 +1,7 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
-import { TitleCollection, Title, ServiceTitle, ServiceKey, ServiceName, ServiceKeyMap } from '../../src/Title';
+import { TitleCollection, Title, ServiceTitle } from '../../src/Title';
 import { LocalStorage } from '../../src/Storage';
 import { Mochi } from '../../src/Mochi';
 import { RequestStatus } from '../../src/Runtime';
@@ -975,11 +975,11 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 				if (connections !== undefined) {
 					for (const key in connections) {
 						const connection = connections[key];
-						if (connection[ServiceKey.MangaDex] !== undefined) {
+						if (connection['md'] !== undefined) {
 							const id = parseInt(key);
 							const title = titleList.find((t) => t.id == id) as T;
 							if (title) {
-								title.mangaDex = connection[ServiceKey.MangaDex];
+								title.mangaDex = connection['md'];
 								const convertedTitle = title.toTitle();
 								if (convertedTitle) {
 									collection.add(convertedTitle);

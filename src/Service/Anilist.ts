@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceKey, ServiceName } from '../Title';
+import { ServiceTitle, Title, ServiceIdType } from '../Title';
 import { Options } from '../Options';
 
 export const enum AnilistStatus {
@@ -77,10 +77,10 @@ export const AnilistHeaders = (): AnilistHeaders => {
  * Score are automatically converted in a 0-100 range.
  */
 export class AnilistTitle extends ServiceTitle<AnilistTitle> {
-	readonly serviceKey: ServiceKey = ServiceKey.Anilist;
-	readonly serviceName: ServiceName = ServiceName.Anilist;
+	readonly serviceName: ServiceName = 'Anilist';
+	readonly serviceKey: ServiceKey = 'al';
 
-	static link(id: number | string): string {
+	static link(id: number): string {
 		return `https://anilist.co/manga/${id}`;
 	}
 
@@ -140,7 +140,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 			}
 		}`;
 
-	constructor(id: number | string, title?: Partial<AnilistTitle>) {
+	constructor(id: number, title?: Partial<AnilistTitle>) {
 		super(id, title);
 		this.status = title && title.status !== undefined ? title.status : AnilistStatus.NONE;
 		this.mediaEntryId = title && title.mediaEntryId !== undefined ? title.mediaEntryId : 0;
@@ -153,9 +153,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 		return undefined;
 	};
 
-	static get = async <T extends ServiceTitle<T> = AnilistTitle>(
-		id: number | string
-	): Promise<AnilistTitle | RequestStatus> => {
+	static get = async <T extends ServiceTitle<T>>(id: ServiceIdType): Promise<AnilistTitle | RequestStatus> => {
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<AnilistGetResponse>({
 			url: AnilistAPI,
@@ -186,7 +184,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 			values.start = AnilistTitle.dateFromAnilist(mediaEntry.startedAt);
 			values.end = AnilistTitle.dateFromAnilist(mediaEntry.completedAt);
 		}
-		return new AnilistTitle(id, values);
+		return new AnilistTitle(id as number, values);
 	};
 
 	static dateToAnilist = (date?: Date): AnilistDate | undefined => {

@@ -1,5 +1,5 @@
 import { Options } from '../../src/Options';
-import { Title, TitleCollection, ServiceKey, ServiceName } from '../../src/Title';
+import { Title, TitleCollection } from '../../src/Title';
 import { ImportSummary, Service, FileImportFormat, FileImportableModule } from './Service';
 
 interface MyMangaDexTitle {
@@ -140,9 +140,9 @@ class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTi
 			summary.options = total;
 		}
 		// Add MyAnimeList and save options
-		if (Options.services.indexOf(ServiceName.MyAnimeList) < 0) {
-			Options.services.unshift(ServiceName.MyAnimeList);
-			Options.mainService = ServiceName.MyAnimeList;
+		if (Options.services.indexOf('MyAnimeList') < 0) {
+			Options.services.unshift('MyAnimeList');
+			Options.mainService = 'MyAnimeList';
 		}
 	};
 
@@ -161,8 +161,8 @@ class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTi
 }
 
 export class MyMangaDex extends Service {
-	readonly key: ServiceKey = ServiceKey.MyMangaDex;
-	readonly name: ServiceName = ServiceName.MyMangaDex;
+	readonly name: ServiceName = 'MyMangaDex';
+	readonly key: ServiceKey = 'mmd';
 
 	activeModule = undefined;
 	importModule: MyMangaDexImport = new MyMangaDexImport(this);

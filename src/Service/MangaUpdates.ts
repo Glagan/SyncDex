@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceKey, ServiceName } from '../Title';
+import { ServiceTitle, Title, ServiceIdType } from '../Title';
 
 export const enum MangaUpdatesStatus {
 	NONE = -1,
@@ -11,10 +11,10 @@ export const enum MangaUpdatesStatus {
 }
 
 export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
-	readonly serviceKey: ServiceKey = ServiceKey.MangaUpdates;
-	readonly serviceName: ServiceName = ServiceName.MangaUpdates;
+	readonly serviceName: ServiceName = 'MangaUpdates';
+	readonly serviceKey: ServiceKey = 'mu';
 
-	static link(id: number | string): string {
+	static link(id: number): string {
 		return `https://www.mangaupdates.com/series.html?id=${id}`;
 	}
 
@@ -25,7 +25,7 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		score?: number;
 	};
 
-	constructor(id: number | string, title?: Partial<MangaUpdatesTitle>) {
+	constructor(id: number, title?: Partial<MangaUpdatesTitle>) {
 		super(id, title);
 		this.status = title && title.status !== undefined ? title.status : MangaUpdatesStatus.NONE;
 	}
@@ -47,7 +47,7 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 	};
 
 	static get = async <T extends ServiceTitle<T> = MangaUpdatesTitle>(
-		id: number | string
+		id: ServiceIdType
 	): Promise<MangaUpdatesTitle | RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: `https://www.mangaupdates.com/series.html?id=${id}`,
@@ -87,7 +87,7 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		}
 		const title = body.querySelector('span.releasestitle');
 		values.name = title ? (title.textContent as string) : undefined;
-		return new MangaUpdatesTitle(id, values);
+		return new MangaUpdatesTitle(id as number, values);
 	};
 
 	// Get a list of status to go through to be able to update to the wanted status

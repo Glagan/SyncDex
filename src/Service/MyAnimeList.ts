@@ -1,5 +1,5 @@
 import { RequestStatus, Runtime } from '../Runtime';
-import { ServiceTitle, Title, ServiceKey, ServiceName } from '../Title';
+import { ServiceTitle, Title, ServiceIdType } from '../Title';
 
 export enum MyAnimeListStatus {
 	NONE = 0,
@@ -11,10 +11,10 @@ export enum MyAnimeListStatus {
 }
 
 export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
-	readonly serviceKey: ServiceKey = ServiceKey.MyAnimeList;
-	readonly serviceName: ServiceName = ServiceName.MyAnimeList;
+	readonly serviceName: ServiceName = 'MyAnimeList';
+	readonly serviceKey: ServiceKey = 'mal';
 
-	static link(id: number | string): string {
+	static link(id: number): string {
 		return `https://myanimelist.net/manga/${id}`;
 	}
 
@@ -22,7 +22,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 	newEntry: boolean;
 	csrf: string;
 
-	constructor(id: number | string, title?: Partial<MyAnimeListTitle>) {
+	constructor(id: number, title?: Partial<MyAnimeListTitle>) {
 		super(id, title);
 		this.status = title && title.status !== undefined ? title.status : MyAnimeListStatus.NONE;
 		this.csrf = title && title.csrf !== undefined ? title.csrf : '';
@@ -42,7 +42,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 	};
 
 	static get = async <T extends ServiceTitle<T> = MyAnimeListTitle>(
-		id: string | number
+		id: ServiceIdType
 	): Promise<MyAnimeListTitle | RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: `https://myanimelist.net/ownlist/manga/${id}/edit?hideLayout`,
@@ -75,7 +75,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 			}
 		}
 		values.newEntry = response.redirected && title !== null;
-		return new MyAnimeListTitle(id, values);
+		return new MyAnimeListTitle(id as number, values);
 	};
 
 	persist = async (): Promise<RequestStatus> => {
@@ -186,8 +186,8 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 	};
 
 	static fromTitle = <T extends ServiceTitle<T> = MyAnimeListTitle>(title: Title): MyAnimeListTitle | undefined => {
-		if (!title.services.ap) return undefined;
-		return new MyAnimeListTitle(title.services.ap, {
+		if (!title.services.mal) return undefined;
+		return new MyAnimeListTitle(title.services.mal, {
 			progress: title.progress,
 			status: MyAnimeListTitle.fromStatus(title.status),
 			score: title.score ? title.score : undefined,

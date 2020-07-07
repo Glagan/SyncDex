@@ -1,6 +1,6 @@
 import { Options } from '../Options';
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceKey, ServiceName } from '../Title';
+import { ServiceTitle, Title, ServiceIdType } from '../Title';
 
 interface KitsuHeaders {
 	Accept: string;
@@ -90,17 +90,17 @@ export const KitsuHeaders = (): KitsuHeaders => {
 };
 
 export class KitsuTitle extends ServiceTitle<KitsuTitle> {
-	readonly serviceKey: ServiceKey = ServiceKey.Kitsu;
-	readonly serviceName: ServiceName = ServiceName.Kitsu;
+	readonly serviceName: ServiceName = 'Kitsu';
+	readonly serviceKey: ServiceKey = 'ku';
 
-	static link(id: number | string): string {
+	static link(id: number): string {
 		return `https://kitsu.io/manga/${id}`;
 	}
 
 	status: KitsuStatus;
 	libraryEntryId: number;
 
-	constructor(id: number | string, title?: Partial<KitsuTitle>) {
+	constructor(id: number, title?: Partial<KitsuTitle>) {
 		super(id, title);
 		this.status = title && title.status !== undefined ? title.status : KitsuStatus.NONE;
 		this.libraryEntryId = title && title.libraryEntryId !== undefined ? title.libraryEntryId : 0;
@@ -108,7 +108,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 
 	// abstract static get(id): RequestStatus
 	static get = async <T extends ServiceTitle<T> = KitsuTitle>(
-		id: number | string
+		id: ServiceIdType
 	): Promise<KitsuTitle | RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<KitsuResponse>({
@@ -134,7 +134,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 			if (attributes.finishedAt !== null) values.end = new Date(attributes.finishedAt);
 			values.name = body.included[0].attributes.canonicalTitle;
 		}
-		return new KitsuTitle(id, values);
+		return new KitsuTitle(id as number, values);
 	};
 
 	persist = async (): Promise<RequestStatus> => {

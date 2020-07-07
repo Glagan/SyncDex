@@ -2,7 +2,7 @@ import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
 import { AnimePlanetTitle, AnimePlanetStatus } from '../../src/Service/AnimePlanet';
 import { DOM } from '../../src/DOM';
-import { Title, ServiceKey, ServiceName, TitleCollection } from '../../src/Title';
+import { Title, TitleCollection } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 
 class AnimePlanetActive extends ActivableModule {
@@ -107,10 +107,10 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 		if (connections !== undefined) {
 			for (const key in connections) {
 				const connection = connections[key];
-				if (connection[ServiceKey.MangaDex] !== undefined) {
+				if (connection['md'] !== undefined) {
 					const title = titleList.find((t) => t.api == parseInt(key));
 					if (title) {
-						title.mangaDex = connection[ServiceKey.MangaDex];
+						title.mangaDex = connection['md'];
 						const convertedTitle = title.toTitle();
 						if (convertedTitle) {
 							titles.add(convertedTitle);
@@ -140,8 +140,8 @@ class AnimePlanetExport extends APIExportableModule {
 }
 
 export class AnimePlanet extends Service {
-	readonly key: ServiceKey = ServiceKey.AnimePlanet;
-	readonly name: ServiceName = ServiceName.AnimePlanet;
+	readonly name: ServiceName = 'AnimePlanet';
+	readonly key: ServiceKey = 'ap';
 
 	activeModule: AnimePlanetActive = new AnimePlanetActive(this);
 	importModule: AnimePlanetImport = new AnimePlanetImport(this);

@@ -1,6 +1,6 @@
 import { Options } from '../../src/Options';
 import { Runtime, RequestStatus } from '../../src/Runtime';
-import { Title, ServiceKey, ServiceName } from '../../src/Title';
+import { Title } from '../../src/Title';
 import { Service, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule, Modal } from './Service';
 import { KitsuStatus, KitsuTitle, KitsuManga, KitsuResponse, KitsuHeaders, KitsuAPI } from '../../src/Service/Kitsu';
 import { DOM } from '../../src/DOM';
@@ -199,8 +199,8 @@ class KitsuExport extends APIExportableModule {
 }
 
 export class Kitsu extends Service {
-	readonly key: ServiceKey = ServiceKey.Kitsu;
-	readonly name: ServiceName = ServiceName.Kitsu;
+	readonly name: ServiceName = 'Kitsu';
+	readonly key: ServiceKey = 'ku';
 
 	activeModule: KitsuActive = new KitsuActive(this);
 	importModule: KitsuImport = new KitsuImport(this);

@@ -1,7 +1,7 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { Options } from '../../src/Options';
 import { Runtime, RequestStatus } from '../../src/Runtime';
-import { Title, ServiceKey, ServiceName } from '../../src/Title';
+import { Title } from '../../src/Title';
 import { Service, ActivableModule, APIImportableModule, ImportStep, APIExportableModule, LoginMethod } from './Service';
 import { AnilistStatus, AnilistTitle, AnilistDate, AnilistAPI, AnilistHeaders } from '../../src/Service/Anilist';
 
@@ -189,8 +189,8 @@ class AnilistExport extends APIExportableModule {
 }
 
 export class Anilist extends Service {
-	readonly key: ServiceKey = ServiceKey.Anilist;
-	readonly name: ServiceName = ServiceName.Anilist;
+	readonly name: ServiceName = 'Anilist';
+	readonly key: ServiceKey = 'al';
 
 	createTitle = (): AppendableElement => {
 		return DOM.create('span', {

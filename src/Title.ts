@@ -7,41 +7,6 @@ interface SaveProgress {
 	v?: number;
 }
 
-export enum ServiceName {
-	MyAnimeList = 'MyAnimeList',
-	MangaUpdates = 'MangaUpdates',
-	Anilist = 'Anilist',
-	Kitsu = 'Kitsu',
-	AnimePlanet = 'AnimePlanet',
-	MangaDex = 'MangaDex',
-	MyMangaDex = 'MyMangaDex',
-	SyncDex = 'SyncDex',
-}
-
-export enum ServiceKey {
-	MyAnimeList = 'mal',
-	MangaUpdates = 'mu',
-	Anilist = 'al',
-	Kitsu = 'ku',
-	AnimePlanet = 'ap',
-	MangaDex = 'md',
-	MyMangaDex = 'mmd',
-	SyncDex = 'sc',
-}
-
-export interface ServiceKeyMap {
-	[ServiceKey.MyAnimeList]: number;
-	[ServiceKey.MangaUpdates]: number;
-	[ServiceKey.Anilist]: number;
-	[ServiceKey.Kitsu]: number;
-	[ServiceKey.AnimePlanet]: string;
-	[ServiceKey.MangaDex]: number;
-	[ServiceKey.MyMangaDex]: number;
-	[ServiceKey.SyncDex]: number;
-}
-
-export type ServiceList = { [key in keyof ServiceKeyMap]?: ServiceKeyMap[key] };
-
 export interface SaveTitle {
 	s: ServiceList; // services
 	st: Status; // status
@@ -410,21 +375,16 @@ export class TitleCollection {
 	};
 }
 
+export type ServiceIdType = number | string;
+
 export abstract class ServiceTitle<T extends ServiceTitle<T>> {
 	abstract readonly serviceKey: ServiceKey;
 	abstract readonly serviceName: ServiceName;
 
 	/**
-	 * Link to a single Media page.
-	 */
-	static link(id: number | string): string {
-		return '#';
-	}
-
-	/**
 	 * The key of the Media on the Service.
 	 */
-	id: number | string;
+	id: ServiceIdType;
 	/**
 	 * The mapped MangaDex ID of the Media.
 	 */
@@ -453,7 +413,7 @@ export abstract class ServiceTitle<T extends ServiceTitle<T>> {
 	 */
 	name?: string;
 
-	constructor(id: number | string, title?: Partial<T>) {
+	constructor(id: ServiceIdType, title?: Partial<T>) {
 		this.id = id;
 		if (title !== undefined) {
 			Object.assign(this, title);
@@ -461,10 +421,17 @@ export abstract class ServiceTitle<T extends ServiceTitle<T>> {
 	}
 
 	/**
+	 * Link to a single Media page.
+	 */
+	static link(id: number | AnimePlanetReference): string {
+		return '#';
+	}
+
+	/**
 	 * Pull the current status of the Media identified by ID.
 	 * Return a `RequestStatus` on error.
 	 */
-	static get = async <T extends ServiceTitle<T>>(id: number | string): Promise<ServiceTitle<T> | RequestStatus> => {
+	static get = async <T extends ServiceTitle<T>>(id: ServiceIdType): Promise<ServiceTitle<T> | RequestStatus> => {
 		return RequestStatus.FAIL;
 	};
 	/**

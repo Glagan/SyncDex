@@ -1,5 +1,5 @@
 import { DOM } from '../../src/DOM';
-import { TitleCollection, Title, ServiceKey, ServiceName } from '../../src/Title';
+import { TitleCollection, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import {
 	Service,
@@ -206,9 +206,9 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 				if (connection !== undefined) {
 					const id = parseInt(key);
 					const title = titleList.find((t) => t.id == id);
-					if (title && connection[ServiceKey.MangaDex]) {
+					if (title && connection['md']) {
 						titles.add(
-							new Title(connection[ServiceKey.MangaDex] as number, {
+							new Title(connection['md'] as number, {
 								services: { mal: title.id },
 								progress: {
 									chapter: title.chapters,
@@ -348,8 +348,8 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 }
 
 export class MyAnimeList extends Service {
-	readonly key: ServiceKey = ServiceKey.MyAnimeList;
-	readonly name: ServiceName = ServiceName.MyAnimeList;
+	readonly name: ServiceName = 'MyAnimeList';
+	readonly key: ServiceKey = 'mal';
 
 	activeModule: MyAnimeListActive = new MyAnimeListActive(this);
 	importModule: MyAnimeListImport = new MyAnimeListImport(this);
