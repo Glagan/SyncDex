@@ -651,7 +651,9 @@ export abstract class SaveModule<T extends Summary = Summary> {
 						const connection = connections[titleId];
 						for (const key in connection) {
 							const serviceKey = key as ServiceKey;
-							(title.services[serviceKey] as string | number) = connection[serviceKey];
+							Object.assign(title.services, {
+								[serviceKey]: connection[serviceKey],
+							});
 						}
 					}
 				}
