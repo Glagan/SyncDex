@@ -622,6 +622,8 @@ table {
 }
 table thead {
 	background-color: var(--grey-30);
+	position: sticky;
+	top: 0;
 }
 table thead th {
 	border-bottom: 1px solid var(--grey-20);
@@ -943,7 +945,7 @@ h2 {
 	overflow-y: auto;
 }
 table tr th.name {
-	width: 25%;
+	width: 20%;
 }
 table tr th.actions {
 	width: 5%;

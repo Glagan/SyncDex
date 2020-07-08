@@ -94,10 +94,19 @@ export class SaveViewer {
 						}),
 					],
 				}),
-				DOM.create('td', { class: 'name', textContent: title.name ? title.name : '-' }),
+				DOM.create('td', {
+					class: 'name',
+					textContent: title.name ? title.name : '-',
+					attributes: { title: title.name ? title.name : '-' },
+				}),
 				DOM.create('td', { childs: this.titleServices(title) }),
 				DOM.create('td', { textContent: SaveViewer.statusMap[title.status] }),
 				DOM.create('td', { textContent: title.score ? title.score.toString() : '-' }),
+				DOM.create('td', {
+					textContent: `Ch. ${title.progress.chapter}${
+						title.progress.volume ? ` V. ${title.progress.volume}` : ''
+					}`,
+				}),
 				DOM.create('td', { textContent: title.start ? this.dateFormat(title.start) : '-' }),
 				DOM.create('td', { textContent: title.end ? this.dateFormat(title.end) : '-' }),
 				DOM.create('td', {
