@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceIdType } from '../Title';
+import { ServiceTitle, Title } from '../Title';
 
 export const enum MangaUpdatesStatus {
 	NONE = -1,
@@ -18,6 +18,7 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		return `https://www.mangaupdates.com/series.html?id=${id}`;
 	}
 
+	id: number;
 	status: MangaUpdatesStatus = MangaUpdatesStatus.NONE;
 	current?: {
 		progress: Progress;
@@ -26,7 +27,8 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 	};
 
 	constructor(id: number, title?: Partial<MangaUpdatesTitle>) {
-		super(id, title);
+		super(title);
+		this.id = id;
 		this.status = title && title.status !== undefined ? title.status : MangaUpdatesStatus.NONE;
 	}
 
@@ -46,11 +48,9 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		return MangaUpdatesStatus.NONE;
 	};
 
-	static get = async <T extends ServiceTitle<T> = MangaUpdatesTitle>(
-		id: ServiceIdType
-	): Promise<MangaUpdatesTitle | RequestStatus> => {
+	static get = async (id: number): Promise<MangaUpdatesTitle | RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
-			url: `https://www.mangaupdates.com/series.html?id=${id}`,
+			url: MangaUpdatesTitle.link(id),
 			method: 'GET',
 			credentials: 'include',
 		});
@@ -240,7 +240,7 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		return MangaUpdatesStatus.NONE;
 	};
 
-	static fromTitle = <T extends ServiceTitle<T> = MangaUpdatesTitle>(title: Title): MangaUpdatesTitle | undefined => {
+	static fromTitle = (title: Title): MangaUpdatesTitle | undefined => {
 		if (!title.services.mu) return undefined;
 		return new MangaUpdatesTitle(title.services.mu, {
 			progress: title.progress,
@@ -249,4 +249,8 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 			name: title.name,
 		});
 	};
+
+	get mochi(): number {
+		return this.id;
+	}
 }

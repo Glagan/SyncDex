@@ -75,16 +75,21 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 				// Score range: 0-5 with increments of 0.5
 				const score = row.querySelector('div.starrating > div[name]') as HTMLElement;
 				titles.push(
-					new AnimePlanetTitle(slug[1], {
-						api: parseInt(form.dataset.id as string),
-						progress: {
-							chapter: parseInt(chapter.value as string),
-							volume: parseInt(volume.value as string),
+					new AnimePlanetTitle(
+						{
+							s: slug[1],
+							i: parseInt(form.dataset.id as string),
 						},
-						status: parseInt(status.value),
-						score: parseFloat(score.getAttribute('name') as string) * 20,
-						name: name.textContent as string,
-					})
+						{
+							progress: {
+								chapter: parseInt(chapter.value as string),
+								volume: parseInt(volume.value as string),
+							},
+							status: parseInt(status.value),
+							score: parseFloat(score.getAttribute('name') as string) * 20,
+							name: name.textContent as string,
+						}
+					)
 				);
 			}
 		}
@@ -100,7 +105,7 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 
 	convertTitles = async (titles: TitleCollection, titleList: AnimePlanetTitle[]): Promise<number> => {
 		const connections = await Mochi.findMany(
-			titleList.map((t) => t.api),
+			titleList.map((t) => t.id.i),
 			this.service.name
 		);
 		const found: number[] = [];
@@ -108,20 +113,20 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 			for (const key in connections) {
 				const connection = connections[key];
 				if (connection['md'] !== undefined) {
-					const title = titleList.find((t) => t.api == parseInt(key));
+					const title = titleList.find((t) => t.id.i == parseInt(key));
 					if (title) {
 						title.mangaDex = connection['md'];
 						const convertedTitle = title.toTitle();
 						if (convertedTitle) {
 							titles.add(convertedTitle);
-							found.push(title.api);
+							found.push(title.id.i);
 						}
 					}
 				}
 			}
 		}
 		// Find title that don't have a connection
-		const noIds = titleList.filter((t) => found.indexOf(t.api) < 0);
+		const noIds = titleList.filter((t) => found.indexOf(t.id.i) < 0);
 		this.summary.failed.push(...noIds.filter((t) => t.name !== undefined).map((t) => t.name as string));
 		return found.length;
 	};

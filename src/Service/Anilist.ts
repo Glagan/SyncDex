@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceIdType } from '../Title';
+import { ServiceTitle, Title } from '../Title';
 import { Options } from '../Options';
 
 export const enum AnilistStatus {
@@ -84,6 +84,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 		return `https://anilist.co/manga/${id}`;
 	}
 
+	id: number;
 	status: AnilistStatus;
 	mediaEntryId: number;
 
@@ -141,7 +142,8 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 		}`;
 
 	constructor(id: number, title?: Partial<AnilistTitle>) {
-		super(id, title);
+		super(title);
+		this.id = id;
 		this.status = title && title.status !== undefined ? title.status : AnilistStatus.NONE;
 		this.mediaEntryId = title && title.mediaEntryId !== undefined ? title.mediaEntryId : 0;
 	}
@@ -153,7 +155,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 		return undefined;
 	};
 
-	static get = async <T extends ServiceTitle<T>>(id: ServiceIdType): Promise<AnilistTitle | RequestStatus> => {
+	static get = async (id: number): Promise<AnilistTitle | RequestStatus> => {
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<AnilistGetResponse>({
 			url: AnilistAPI,
@@ -287,7 +289,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 		return AnilistStatus.NONE;
 	};
 
-	static fromTitle = <T extends ServiceTitle<T> = AnilistTitle>(title: Title): AnilistTitle | undefined => {
+	static fromTitle = (title: Title): AnilistTitle | undefined => {
 		if (!title.services.al) return undefined;
 		return new AnilistTitle(title.services.al, {
 			progress: title.progress,
@@ -298,4 +300,8 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 			name: title.name,
 		});
 	};
+
+	get mochi(): number {
+		return this.id;
+	}
 }

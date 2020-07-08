@@ -1,5 +1,5 @@
 import { RequestStatus, Runtime } from '../Runtime';
-import { ServiceTitle, Title, ServiceIdType } from '../Title';
+import { ServiceTitle, Title } from '../Title';
 
 export enum MyAnimeListStatus {
 	NONE = 0,
@@ -18,12 +18,14 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 		return `https://myanimelist.net/manga/${id}`;
 	}
 
+	id: number;
 	status: MyAnimeListStatus;
 	newEntry: boolean;
 	csrf: string;
 
 	constructor(id: number, title?: Partial<MyAnimeListTitle>) {
-		super(id, title);
+		super(title);
+		this.id = id;
 		this.status = title && title.status !== undefined ? title.status : MyAnimeListStatus.NONE;
 		this.csrf = title && title.csrf !== undefined ? title.csrf : '';
 		this.newEntry = title && title.newEntry !== undefined ? title.newEntry : false;
@@ -41,9 +43,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 		);
 	};
 
-	static get = async <T extends ServiceTitle<T> = MyAnimeListTitle>(
-		id: ServiceIdType
-	): Promise<MyAnimeListTitle | RequestStatus> => {
+	static get = async (id: number): Promise<MyAnimeListTitle | RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: `https://myanimelist.net/ownlist/manga/${id}/edit?hideLayout`,
 			method: 'GET',
@@ -185,7 +185,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 		return MyAnimeListStatus.NONE;
 	};
 
-	static fromTitle = <T extends ServiceTitle<T> = MyAnimeListTitle>(title: Title): MyAnimeListTitle | undefined => {
+	static fromTitle = (title: Title): MyAnimeListTitle | undefined => {
 		if (!title.services.mal) return undefined;
 		return new MyAnimeListTitle(title.services.mal, {
 			progress: title.progress,
@@ -196,4 +196,8 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 			name: title.name,
 		});
 	};
+
+	get mochi(): number {
+		return this.id;
+	}
 }

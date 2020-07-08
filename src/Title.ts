@@ -375,8 +375,6 @@ export class TitleCollection {
 	};
 }
 
-export type ServiceIdType = number | string;
-
 export abstract class ServiceTitle<T extends ServiceTitle<T>> {
 	abstract readonly serviceKey: ServiceKey;
 	abstract readonly serviceName: ServiceName;
@@ -384,7 +382,7 @@ export abstract class ServiceTitle<T extends ServiceTitle<T>> {
 	/**
 	 * The key of the Media on the Service.
 	 */
-	id: ServiceIdType;
+	abstract id: number | string | AnimePlanetReference;
 	/**
 	 * The mapped MangaDex ID of the Media.
 	 */
@@ -413,27 +411,12 @@ export abstract class ServiceTitle<T extends ServiceTitle<T>> {
 	 */
 	name?: string;
 
-	constructor(id: ServiceIdType, title?: Partial<T>) {
-		this.id = id;
+	constructor(title?: Partial<T>) {
 		if (title !== undefined) {
 			Object.assign(this, title);
 		}
 	}
 
-	/**
-	 * Link to a single Media page.
-	 */
-	static link(id: number | AnimePlanetReference): string {
-		return '#';
-	}
-
-	/**
-	 * Pull the current status of the Media identified by ID.
-	 * Return a `RequestStatus` on error.
-	 */
-	static get = async <T extends ServiceTitle<T>>(id: ServiceIdType): Promise<ServiceTitle<T> | RequestStatus> => {
-		return RequestStatus.FAIL;
-	};
 	/**
 	 * Send any necessary requests to save the Media on the Service.
 	 */
@@ -447,9 +430,23 @@ export abstract class ServiceTitle<T extends ServiceTitle<T>> {
 	 */
 	abstract toTitle(): Title | undefined;
 	/**
+	 * Get the ID used by Mochi that can only be a number or a string.
+	 */
+	abstract get mochi(): number | string;
+
+	/**
+	 * Link to a single Media page.
+	 */
+	// static link(id: number | string | AnimePlanetReference): string;
+
+	/**
+	 * Pull the current status of the Media identified by ID.
+	 * Return a `RequestStatus` on error.
+	 */
+	// static async get(id: number | string | AnimePlanetReference): Promise<ServiceTitle<T> | RequestStatus>;
+
+	/**
 	 * Convert a Title for the Media if possible (Service ID available), or undefined.
 	 */
-	static fromTitle = <T extends ServiceTitle<T>>(title: Title): ServiceTitle<T> | undefined => {
-		return undefined;
-	};
+	// static fromTitle(title: Title): ServiceTitle<T> | undefined;
 }

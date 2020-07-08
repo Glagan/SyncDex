@@ -1,7 +1,8 @@
-import { TitleCollection, Title, ServiceTitle } from '../../src/Title';
+import { TitleCollection, Title } from '../../src/Title';
 import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, APIImportableModule, APIExportableModule, ActivableModule, LoginMethod } from './Service';
 import { AppendableElement, DOM } from '../../src/DOM';
+import { MangaDexTitle } from '../../src/Service/MangaDex';
 
 class MangaDexActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
@@ -32,59 +33,6 @@ class MangaDexActive extends ActivableModule {
 		} catch (error) {
 			return RequestStatus.FAIL;
 		}
-	};
-}
-
-class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
-	readonly serviceName: ServiceName = 'MangaDex';
-	readonly serviceKey: ServiceKey = 'md';
-
-	status: Status;
-
-	constructor(id: number | string, title?: Partial<MangaDexTitle>) {
-		super(id, title);
-		this.status = title && title.status !== undefined ? title.status : Status.NONE;
-	}
-
-	static get = async <T extends ServiceTitle<T> = MangaDexTitle>(id: number | string): Promise<RequestStatus> => {
-		return RequestStatus.FAIL;
-	};
-
-	persist = async (): Promise<RequestStatus> => {
-		const response = await Runtime.request<RawResponse>({
-			url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_follow&id=${this.id}&type=${
-				this.status
-			}&_=${Date.now()}`,
-			credentials: 'include',
-			headers: {
-				'X-Requested-With': 'XMLHttpRequest',
-			},
-		});
-		// TODO: Add Score ?
-		return Runtime.responseStatus(response);
-	};
-
-	delete = async (): Promise<RequestStatus> => {
-		return RequestStatus.FAIL;
-	};
-
-	toTitle = (): Title | undefined => {
-		return new Title(this.id as number, {
-			progress: this.progress,
-			status: this.status,
-			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
-			name: this.name,
-		});
-	};
-
-	static fromTitle = <T extends ServiceTitle<T> = MangaDexTitle>(title: Title): MangaDexTitle | undefined => {
-		if (!title.id) return undefined;
-		return new MangaDexTitle(title.id, {
-			progress: title.progress,
-			status: title.status,
-			score: title.score,
-			name: title.name,
-		});
 	};
 }
 

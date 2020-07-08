@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceIdType } from '../Title';
+import { ServiceTitle, Title } from '../Title';
 
 export const enum AnimePlanetStatus {
 	NONE = 0,
@@ -22,26 +22,26 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 	readonly serviceName: ServiceName = 'AnimePlanet';
 	readonly serviceKey: ServiceKey = 'ap';
 
-	static link(id: AnimePlanetReference): string {
+	static link(id: string | AnimePlanetReference): string {
+		if (typeof id === 'string') return `https://www.anime-planet.com/manga/${id}`;
 		return `https://www.anime-planet.com/manga/${id.s}`;
 	}
 
+	id: AnimePlanetReference;
 	status: AnimePlanetStatus;
-	api: number;
 	token: string;
 
-	constructor(id: string, title?: Partial<AnimePlanetTitle>) {
-		super(id, title);
+	constructor(id: AnimePlanetReference, title?: Partial<AnimePlanetTitle>) {
+		super(title);
+		this.id = id;
 		this.status = title && title.status !== undefined ? title.status : AnimePlanetStatus.NONE;
-		this.api = title && title.api !== undefined ? title.api : 0;
 		this.token = title && title.token !== undefined ? title.token : '';
 	}
 
-	static get = async <T extends ServiceTitle<T> = AnimePlanetTitle>(
-		id: ServiceIdType
-	): Promise<AnimePlanetTitle | RequestStatus> => {
+	static get = async (id: string | AnimePlanetReference): Promise<AnimePlanetTitle | RequestStatus> => {
+		const slug = typeof id === 'string' ? id : id.s;
 		const response = await Runtime.request<RawResponse>({
-			url: `https://www.anime-planet.com/manga/${id}`,
+			url: AnimePlanetTitle.link(id),
 			method: 'GET',
 			credentials: 'include',
 		});
@@ -53,36 +53,41 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 		const body = parser.parseFromString(response.body, 'text/html');
 		if (tokenArr !== null) values.token = tokenArr[1];
 		// No need to be logged in to have api ID
-		const mediaEntryForm = body.querySelector<HTMLFormElement>('form[id^=manga]');
-		if (mediaEntryForm) {
-			values.api = parseInt(mediaEntryForm.dataset.id as string);
-			const statusSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.changeStatus [selected]');
-			if (statusSelector) values.status = parseInt(statusSelector.value);
-			// Chapter
-			const chapterSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.chapters [selected]');
-			values.progress = { chapter: 0 };
-			if (chapterSelector) values.progress.chapter = parseInt(chapterSelector.value);
-			// Volume
-			const volumeSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.volumes [selected]');
-			if (volumeSelector) values.progress.volume = parseInt(volumeSelector.value);
-			// Score
-			const score = mediaEntryForm.querySelector<HTMLElement>('div.starrating > div[name]');
-			if (score) values.score = parseFloat(score.getAttribute('name') as string) * 20;
-		}
+		const mediaEntryForm = body.querySelector<HTMLFormElement>('form[id^=manga]') as HTMLFormElement;
+		const api = parseInt(mediaEntryForm.dataset.id as string);
+		const statusSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.changeStatus [selected]');
+		if (statusSelector) values.status = parseInt(statusSelector.value);
+		// Chapter
+		const chapterSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.chapters [selected]');
+		values.progress = { chapter: 0 };
+		if (chapterSelector) values.progress.chapter = parseInt(chapterSelector.value);
+		// Volume
+		const volumeSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.volumes [selected]');
+		if (volumeSelector) values.progress.volume = parseInt(volumeSelector.value);
+		// Score
+		const score = mediaEntryForm.querySelector<HTMLElement>('div.starrating > div[name]');
+		if (score) values.score = parseFloat(score.getAttribute('name') as string) * 20;
 		values.name = (body.querySelector(`h1[itemprop='name']`) as HTMLElement).textContent as string;
-		return new AnimePlanetTitle(id as string, values);
+		return new AnimePlanetTitle(
+			{
+				s: slug,
+				i: api,
+			},
+			values
+		);
 	};
 
 	persist = async (): Promise<RequestStatus> => {
+		const id = (this.id as AnimePlanetReference).i;
 		let response = await Runtime.jsonRequest({
-			url: `https://www.anime-planet.com/api/list/status/manga/${this.api}/${this.status}/${this.token}`,
+			url: `https://www.anime-planet.com/api/list/status/manga/${id}/${this.status}/${this.token}`,
 			credentials: 'include',
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		// Chapter progress
 		if (this.progress.chapter > 0) {
 			response = await Runtime.jsonRequest({
-				url: `https://www.anime-planet.com/api/list/update/manga/${this.api}/${this.progress.chapter}/0/${this.token}`,
+				url: `https://www.anime-planet.com/api/list/update/manga/${id}/${this.progress.chapter}/0/${this.token}`,
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);
@@ -92,7 +97,7 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 			// Convert 0-100 score to the 0-5 range -- Round to nearest .5
 			const apScore = Math.round((this.score / 20) * 2) / 2;
 			response = await Runtime.jsonRequest({
-				url: `https://www.anime-planet.com/api/list/rate/manga/${this.api}/${apScore}/${this.token}`,
+				url: `https://www.anime-planet.com/api/list/rate/manga/${id}/${apScore}/${this.token}`,
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);
@@ -102,8 +107,9 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 
 	delete = async (): Promise<RequestStatus> => {
 		if (this.token == '') return RequestStatus.BAD_REQUEST;
+		const id = (this.id as AnimePlanetReference).i;
 		const response = await Runtime.jsonRequest({
-			url: `https://www.anime-planet.com/api/list/status/manga/${this.api}/0/${this.token}`,
+			url: `https://www.anime-planet.com/api/list/status/manga/${id}/0/${this.token}`,
 			method: 'GET',
 			credentials: 'include',
 		});
@@ -132,7 +138,7 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 	toTitle = (): Title | undefined => {
 		if (!this.mangaDex) return undefined;
 		return new Title(this.mangaDex, {
-			services: { ap: { s: this.id as string, i: this.api } },
+			services: { ap: this.id as AnimePlanetReference },
 			progress: this.progress,
 			status: AnimePlanetTitle.toStatus(this.status),
 			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
@@ -158,14 +164,17 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 		return AnimePlanetStatus.NONE;
 	};
 
-	static fromTitle = <T extends ServiceTitle<T> = AnimePlanetTitle>(title: Title): AnimePlanetTitle | undefined => {
+	static fromTitle = (title: Title): AnimePlanetTitle | undefined => {
 		if (!title.services.ap) return undefined;
-		return new AnimePlanetTitle(title.services.ap.s, {
-			api: title.services.ap.i,
+		return new AnimePlanetTitle(title.services.ap, {
 			progress: title.progress,
 			status: AnimePlanetTitle.fromStatus(title.status),
 			score: title.score ? title.score : undefined,
 			name: title.name,
 		});
 	};
+
+	get mochi(): number {
+		return this.id.i;
+	}
 }

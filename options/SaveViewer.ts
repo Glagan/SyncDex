@@ -1,4 +1,4 @@
-import { Title, TitleCollection, ServiceIdType } from '../src/Title';
+import { Title, TitleCollection } from '../src/Title';
 import { DOM, AppendableElement } from '../src/DOM';
 import { LocalStorage } from '../src/Storage';
 import { MyAnimeListTitle } from '../src/Service/MyAnimeList';

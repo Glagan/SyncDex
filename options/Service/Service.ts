@@ -968,7 +968,7 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 				this.summary.valid += converted;
 			} else {
 				const connections = await Mochi.findMany(
-					titleList.map((t) => t.id),
+					titleList.map((t) => t.mochi),
 					this.service.name
 				);
 				let found: (number | string)[] = [];
@@ -991,7 +991,7 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 					}
 				}
 				// Add missing titles to the failed Summary
-				const noIds = titles.filter((t) => found.indexOf(t.id) < 0);
+				const noIds = titles.filter((t) => found.indexOf(t.mochi) < 0);
 				this.summary.failed.push(...noIds.filter((t) => t.name !== undefined).map((t) => t.name as string));
 			}
 		}

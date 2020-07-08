@@ -1,6 +1,6 @@
 import { Options } from '../Options';
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceIdType } from '../Title';
+import { ServiceTitle, Title } from '../Title';
 
 interface KitsuHeaders {
 	Accept: string;
@@ -97,19 +97,19 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 		return `https://kitsu.io/manga/${id}`;
 	}
 
+	id: number;
 	status: KitsuStatus;
 	libraryEntryId: number;
 
 	constructor(id: number, title?: Partial<KitsuTitle>) {
-		super(id, title);
+		super(title);
+		this.id = id;
 		this.status = title && title.status !== undefined ? title.status : KitsuStatus.NONE;
 		this.libraryEntryId = title && title.libraryEntryId !== undefined ? title.libraryEntryId : 0;
 	}
 
 	// abstract static get(id): RequestStatus
-	static get = async <T extends ServiceTitle<T> = KitsuTitle>(
-		id: ServiceIdType
-	): Promise<KitsuTitle | RequestStatus> => {
+	static get = async (id: number): Promise<KitsuTitle | RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<KitsuResponse>({
 			url: `${KitsuAPI}?filter[manga_id]=${id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=canonicalTitle`,
@@ -240,7 +240,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 		return KitsuStatus.NONE;
 	};
 
-	static fromTitle = <T extends ServiceTitle<T> = KitsuTitle>(title: Title): KitsuTitle | undefined => {
+	static fromTitle = (title: Title): KitsuTitle | undefined => {
 		if (!title.services.ku) return undefined;
 		return new KitsuTitle(title.services.ku, {
 			progress: title.progress,
@@ -251,4 +251,8 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 			name: title.name,
 		});
 	};
+
+	get mochi(): number {
+		return this.id;
+	}
 }
