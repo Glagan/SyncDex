@@ -29,11 +29,8 @@ class KitsuActive extends ActivableModule {
 				childs: [
 					DOM.create('a', {
 						textContent: 'Register',
-						attributes: {
-							href: 'https://kitsu.io/',
-							target: '_blank',
-							rel: 'noreferrer noopener',
-						},
+						href: 'https://kitsu.io/',
+						target: '_blank',
 						childs: [DOM.space(), DOM.icon('external-link-alt')],
 					}),
 				],

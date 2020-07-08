@@ -62,7 +62,7 @@ export class Checkbox {
 	static make(name: string, labelContent: string, parent?: HTMLElement): HTMLElement {
 		const checkbox = DOM.create('div', {
 			class: 'checkbox checked',
-			attributes: { name: name },
+			// name: name, // TODO: Broken Checkbox
 			childs: [DOM.icon('check')],
 		});
 		const label = DOM.create('label', { textContent: labelContent });
@@ -171,25 +171,22 @@ export abstract class ActivableModule {
 		// Buttons
 		this.activateButton = DOM.create('button', {
 			class: 'primary',
-			attributes: { title: 'Activate' },
+			title: 'Activate',
 			childs: [DOM.icon('plus'), DOM.text('Activate')],
 		});
 		this.mainButton = DOM.create('button', {
 			class: 'primary',
-			attributes: { title: 'Set as Main' },
+			title: 'Set as Main',
 			childs: [DOM.icon('angle-double-left'), DOM.text('Set as Main')],
 		});
 		this.checkStatusButton = DOM.create('button', {
-			attributes: { title: 'Refresh' },
+			title: 'Refresh',
 			childs: [DOM.icon('sync'), DOM.text('Refresh')],
 		});
 		this.loginButton = DOM.create('a', {
 			class: 'button primary',
-			attributes: {
-				title: 'Login',
-				rel: 'noreferrer noopener',
-				target: '_blank',
-			},
+			title: 'Login',
+			target: '_blank',
 			childs: [DOM.icon('external-link-alt'), DOM.text('Login')],
 		});
 		this.removeButton = DOM.create('button', {
@@ -346,29 +343,23 @@ export abstract class ActivableModule {
 							childs: [
 								DOM.create('label', { textContent: this.identifierField[0] }),
 								DOM.create('input', {
-									attributes: {
-										type: this.identifierField[1],
-										name: 'identifier',
-										placeholder: this.identifierField[0],
-										required: 'true',
-									},
+									type: this.identifierField[1],
+									name: 'identifier',
+									placeholder: this.identifierField[0],
+									required: true,
 								}),
 								DOM.create('label', { textContent: 'Password' }),
 								DOM.create('input', {
-									attributes: {
-										type: 'password',
-										name: 'password',
-										placeholder: 'Password',
-										required: 'true',
-									},
+									type: 'password',
+									name: 'password',
+									placeholder: 'Password',
+									required: true,
 								}),
 							],
 						}),
 						DOM.create('button', {
 							class: 'primary puffy',
-							attributes: {
-								type: 'submit',
-							},
+							type: 'submit',
 							childs: [DOM.icon('sign-in-alt'), DOM.text('Login')],
 						}),
 					],
@@ -691,7 +682,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		form.appendChild(options);
 		form.appendChild(
 			DOM.create('h2', {
-				childs: [DOM.create('label', { class: '', textContent: 'Save File', attributes: { for: inputId } })],
+				childs: [DOM.create('label', { class: '', textContent: 'Save File', htmlFor: inputId })],
 			})
 		);
 		DOM.append(
@@ -700,13 +691,11 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 				class: 'row-parameter',
 				childs: [
 					DOM.create('input', {
-						attributes: {
-							name: 'save',
-							id: inputId,
-							type: 'file',
-							required: 'true',
-							accept: this.acceptedFileType(),
-						},
+						name: 'save',
+						id: inputId,
+						type: 'file',
+						required: true,
+						accept: this.acceptedFileType(),
 					}),
 				],
 			})
@@ -1020,14 +1009,12 @@ export abstract class FileExportableModule extends ExportableModule {
 			return this.cancel(true);
 		}
 		let downloadLink = DOM.create('a', {
-			style: {
+			css: {
 				display: 'none',
 			},
-			attributes: {
-				download: 'SyncDex.json',
-				target: '_blank',
-				href: href,
-			},
+			download: 'SyncDex.json',
+			target: '_blank',
+			href: href,
 		});
 		document.body.appendChild(downloadLink);
 		downloadLink.click();

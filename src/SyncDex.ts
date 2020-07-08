@@ -52,9 +52,7 @@ export class SyncDex {
 		const container = Options.thumbnail
 			? (() => {
 					const container = DOM.create('div', {
-						attributes: {
-							id: 'tooltip-container',
-						},
+						id: 'tooltip-container',
 					});
 					document.body.appendChild(container);
 					return container;

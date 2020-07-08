@@ -35,10 +35,8 @@ class ChapterGroup {
 				let link = DOM.create('a', {
 					textContent: this.name,
 					class: 'text-truncate',
-					attributes: {
-						href: `/title/${this.titleId}`,
-						title: this.name,
-					},
+					href: `/title/${this.titleId}`,
+					title: this.name,
 				});
 				this.chapters[j].row.firstElementChild?.appendChild(link);
 			}
@@ -102,7 +100,7 @@ class ChapterGroup {
 		// Create tooltip
 		let tooltip = DOM.create('div', {
 			class: 'sd-tooltip loading',
-			style: {
+			css: {
 				left: `-${window.innerWidth}px`,
 				maxHeight: `${(window.innerHeight - 10) * (Options.thumbnailMaxHeight / 100)}px`,
 			},
@@ -115,7 +113,7 @@ class ChapterGroup {
 		// Thumbnail
 		let tooltipThumb = DOM.create('img', {
 			class: 'thumbnail loading',
-			style: {
+			css: {
 				maxHeight: `${(window.innerHeight - 10) * (Options.thumbnailMaxHeight / 100)}px`,
 			},
 		});

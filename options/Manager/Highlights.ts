@@ -18,10 +18,8 @@ class Highlights {
 			class: 'color',
 		});
 		this.input = DOM.create('input', {
-			attributes: {
-				type: 'text',
-				placeholder: 'Highlight color',
-			},
+			type: 'text',
+			placeholder: 'Highlight color',
 		});
 		this.remove = DOM.create('button', {
 			class: 'ghost danger',

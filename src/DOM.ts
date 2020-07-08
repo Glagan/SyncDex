@@ -1,72 +1,55 @@
 type DOMSimpleEvent<K extends keyof DocumentEventMap> = (ev: DocumentEventMap[K]) => any;
 export type AppendableElement = HTMLElement | Text;
 interface DOMProperties {
-	textContent?: string;
-	class?: string;
-	classList?: string[];
-	style?: { [key in keyof Partial<CSSStyleDeclaration>]: string };
-	attributes?: { [key: string]: string };
-	childs?: AppendableElement[];
-	events?: {
-		[key in keyof Partial<DocumentEventMap>]: DOMSimpleEvent<key>;
-	};
-	dataset?: Record<string, string>;
+	textContent: string;
+	class: string;
+	// classList: string[];
+	css: Partial<{ [key in keyof CSSStyleDeclaration]: string }>;
+	childs: AppendableElement[];
+	events: Partial<{ [key in keyof DocumentEventMap]: DOMSimpleEvent<key> }>;
+	dataset: DOMStringMap;
 }
 
 export class DOM {
 	static create<K extends keyof HTMLElementTagNameMap>(
 		tagName: K,
-		properties?: DOMProperties
+		properties?: Partial<HTMLElementTagNameMap[K]> & Partial<DOMProperties>
 	): HTMLElementTagNameMap[K] {
 		const elt = document.createElement(tagName);
+		// Automatically add rel to all links
+		if (tagName === 'a') (elt as HTMLAnchorElement).rel = 'noreferrer noopener';
+		// Add all other properties
 		if (properties) {
+			Object.assign(elt, properties);
 			if (properties.textContent) {
 				elt.textContent = properties.textContent;
 			}
 			if (properties.class) {
 				elt.className = properties.class;
 			}
-			if (properties.classList) {
+			/*if (properties.classList) {
 				for (const className of properties.classList) {
 					elt.classList.add(className);
 				}
-			}
+			}*/
 			if (properties.style) {
 				Object.assign(elt.style, properties.style);
 			}
-			if (properties.attributes) {
-				for (const key in properties.attributes) {
-					if (properties.attributes.hasOwnProperty(key)) {
-						const attr = properties.attributes[key];
-						elt.setAttribute(key, attr);
-					}
-				}
-			}
 			if (properties.childs) {
-				for (const child in properties.childs) {
-					if (properties.childs.hasOwnProperty(child)) {
-						elt.appendChild(properties.childs[child]);
-					}
-				}
+				DOM.append(elt, ...properties.childs);
 			}
 			if (properties.events) {
 				for (const event in properties.events) {
-					if (properties.events.hasOwnProperty(event)) {
-						elt.addEventListener(
-							event,
-							(<K extends keyof DocumentEventMap>(event: string): DOMSimpleEvent<K> => {
-								return properties.events[event as K] as DOMSimpleEvent<K>;
-							})(event)
-						);
-					}
+					elt.addEventListener(
+						event,
+						(<K extends keyof DocumentEventMap>(event: string): DOMSimpleEvent<K> => {
+							return properties.events[event as K] as DOMSimpleEvent<K>;
+						})(event)
+					);
 				}
 			}
 			if (properties.dataset) {
-				for (const data in properties.dataset) {
-					if (properties.dataset.hasOwnProperty(data)) {
-						elt.dataset[data] = properties.dataset[data];
-					}
-				}
+				Object.assign(elt.dataset, properties.dataset);
 			}
 		}
 		return elt;

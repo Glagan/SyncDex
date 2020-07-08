@@ -77,12 +77,9 @@ export class SaveViewer {
 			const key = serviceKey as ServiceKey;
 			icons.push(
 				DOM.create('a', {
-					attributes: {
-						target: '_blank',
-						href: this.serviceLink(key, title.services[key] as number | AnimePlanetReference),
-						rel: 'noreferrer noopener',
-					},
-					childs: [DOM.create('img', { attributes: { src: `/icons/${serviceKey}.png` } })],
+					target: '_blank',
+					href: this.serviceLink(key, title.services[key]!),
+					childs: [DOM.create('img', { src: `/icons/${serviceKey}.png` })],
 				})
 			);
 		}
@@ -103,10 +100,10 @@ export class SaveViewer {
 	};
 
 	statusOptions = (title: Title): HTMLSelectElement => {
-		const select = DOM.create('select', { attributes: { required: 'true' } });
+		const select = DOM.create('select', { id: 'ee_status', name: 'status', required: true });
 		const currentStatus = SaveViewer.statusMap[title.status];
 		for (const status of Object.values(SaveViewer.statusMap)) {
-			const option = DOM.create('option', { textContent: status, attributes: { value: status } });
+			const option = DOM.create('option', { textContent: status, value: status });
 			if (currentStatus == status) option.selected = true;
 			select.appendChild(option);
 		}
@@ -117,11 +114,11 @@ export class SaveViewer {
 		return DOM.create('div', { class: 'row', childs: content });
 	};
 
-	modalGroup = (title: string, content: string | AppendableElement[]): HTMLElement => {
+	modalGroup = (title: string, inputFor: string, content: string | AppendableElement[]): HTMLElement => {
 		return DOM.create('div', {
 			class: 'group',
 			childs: [
-				DOM.create('label', { textContent: title }),
+				DOM.create('label', { textContent: title, htmlFor: inputFor }),
 				...(typeof content === 'string' ? [DOM.text(content)] : content),
 			],
 		});
@@ -137,11 +134,8 @@ export class SaveViewer {
 					childs: [
 						DOM.create('a', {
 							textContent: title.id.toString(),
-							attributes: {
-								target: '_blank',
-								href: `https://mangadex.org/title/${title.id}`,
-								rel: 'noreferrer noopener',
-							},
+							target: '_blank',
+							href: `https://mangadex.org/title/${title.id}`,
 							childs: [DOM.space(), DOM.icon('external-link-alt')],
 						}),
 					],
@@ -149,7 +143,7 @@ export class SaveViewer {
 				DOM.create('td', {
 					class: 'name',
 					textContent: title.name ? title.name : '-',
-					attributes: { title: title.name ? title.name : '-' },
+					title: title.name ? title.name : '-',
 				}),
 				DOM.create('td', { childs: this.titleServices(title) }),
 				DOM.create('td', { textContent: SaveViewer.statusMap[title.status] }),
@@ -185,67 +179,71 @@ export class SaveViewer {
 			DOM.append(
 				form,
 				this.modalRow([
-					this.modalGroup('MangaDex', [
+					this.modalGroup('MangaDex', '', [
 						DOM.create('span', { class: 'helper', textContent: `# ${title.id}` }),
 					]),
-					this.modalGroup('Name', [
+					this.modalGroup('Name', 'ee_name', [
 						DOM.create('input', {
-							attributes: { type: 'text', placeholder: 'Name', value: title.name ? title.name : '' },
+							id: 'ee_name',
+							name: 'name',
+							type: 'text',
+							placeholder: 'Name',
+							value: title.name ? title.name : '',
 						}),
 					]),
 				]),
 				this.modalRow([
-					this.modalGroup('Chapter', [
+					this.modalGroup('Chapter', 'ee_chapter', [
 						DOM.create('input', {
-							attributes: {
-								type: 'number',
-								placeholder: 'Chapter',
-								value: `${title.progress.chapter}`,
-								required: 'true',
-							},
+							id: 'ee_chapter',
+							name: 'chapter',
+							type: 'number',
+							placeholder: 'Chapter',
+							value: `${title.progress.chapter}`,
+							required: true,
 						}),
 					]),
-					this.modalGroup('Volume', [
+					this.modalGroup('Volume', 'ee_volume', [
 						DOM.create('input', {
-							attributes: {
-								type: 'number',
-								placeholder: 'Volume',
-								value: title.progress.volume ? `${title.progress.volume}` : '',
-							},
-						}),
-					]),
-				]),
-				this.modalRow([
-					this.modalGroup('Status', [this.statusOptions(title)]),
-					this.modalGroup('Score (0-100)', [
-						DOM.create('input', {
-							attributes: {
-								type: 'number',
-								placeholder: 'Score (0-100)',
-								min: '0',
-								max: '100',
-								value: title.score > 0 ? `${title.score}` : '',
-							},
+							id: 'ee_volume',
+							name: 'volume',
+							type: 'number',
+							placeholder: 'Volume',
+							value: title.progress.volume ? `${title.progress.volume}` : '',
 						}),
 					]),
 				]),
 				this.modalRow([
-					this.modalGroup('Start', [
+					this.modalGroup('Status', 'status', [this.statusOptions(title)]),
+					this.modalGroup('Score (0-100)', 'ee_score', [
 						DOM.create('input', {
-							attributes: {
-								type: 'date',
-								placeholder: 'Start Date',
-								value: title.start ? this.dateFormat(title.start) : '',
-							},
+							id: 'ee_score',
+							name: 'score',
+							type: 'number',
+							placeholder: 'Score (0-100)',
+							min: '0',
+							max: '100',
+							value: title.score > 0 ? `${title.score}` : '',
 						}),
 					]),
-					this.modalGroup('End', [
+				]),
+				this.modalRow([
+					this.modalGroup('Start', 'ee_start', [
 						DOM.create('input', {
-							attributes: {
-								type: 'date',
-								placeholder: 'End Date',
-								value: title.end ? this.dateFormat(title.end) : '',
-							},
+							id: 'ee_start',
+							name: 'start',
+							type: 'date',
+							placeholder: 'Start Date',
+							value: title.start ? this.dateFormat(title.start) : '',
+						}),
+					]),
+					this.modalGroup('End', 'ee_end', [
+						DOM.create('input', {
+							id: 'ee_end',
+							name: 'end',
+							type: 'date',
+							placeholder: 'End Date',
+							value: title.end ? this.dateFormat(title.end) : '',
 						}),
 					]),
 				]),

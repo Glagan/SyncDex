@@ -102,11 +102,8 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 				DOM.space(),
 				DOM.create('a', {
 					textContent: 'here',
-					attributes: {
-						href: 'https://myanimelist.net/panel.php?go=export',
-						rel: 'noreferrer noopener',
-						target: '_blank',
-					},
+					href: 'https://myanimelist.net/panel.php?go=export',
+					target: '_blank',
 					childs: [DOM.space(), DOM.icon('external-link-alt')],
 				}),
 				DOM.text('.'),
