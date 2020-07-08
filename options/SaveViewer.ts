@@ -8,8 +8,16 @@ import { AnimePlanetTitle } from '../src/Service/AnimePlanet';
 import { MangaUpdatesTitle } from '../src/Service/MangaUpdates';
 
 export class SaveViewer {
+	paging: HTMLElement;
+	pagingPages: HTMLElement;
 	body: HTMLElement;
+	reloadButton: HTMLButtonElement;
 	titles: TitleCollection = new TitleCollection();
+	currentPage: number = 1;
+	maxPage: number = 1;
+	previousPage: HTMLButtonElement;
+	pages: { [key: number]: HTMLButtonElement } = {};
+	static perPage = 10;
 
 	static statusMap: { [key in Status]: string } = {
 		[Status.NONE]: 'NONE',
@@ -23,9 +31,28 @@ export class SaveViewer {
 	};
 
 	constructor() {
+		this.paging = document.getElementById('save-paging') as HTMLElement;
+		this.pagingPages = document.getElementById('paging-pages') as HTMLElement;
 		this.body = document.getElementById('save-body') as HTMLElement;
+		this.reloadButton = document.getElementById('reload-save-viewer') as HTMLButtonElement;
+		this.previousPage = DOM.create('button');
+		this.reloadButton.addEventListener('click', (event) => {
+			event.preventDefault();
+			this.updateAll();
+		});
 		this.updateAll();
 	}
+
+	loadPage = (page: number): void => {
+		DOM.clear(this.body);
+		this.currentPage = page;
+		let titles = this.titles.collection.slice(SaveViewer.perPage * (page - 1), page * SaveViewer.perPage);
+		const fragment = document.createDocumentFragment();
+		for (const title of titles) {
+			fragment.appendChild(this.createRow(title));
+		}
+		this.body.appendChild(fragment);
+	};
 
 	serviceLink = (key: ServiceKey, id: number | AnimePlanetReference): string => {
 		switch (key) {
@@ -104,7 +131,7 @@ export class SaveViewer {
 				DOM.create('td', { textContent: title.score ? title.score.toString() : '-' }),
 				DOM.create('td', {
 					textContent: `Ch. ${title.progress.chapter}${
-						title.progress.volume ? ` V. ${title.progress.volume}` : ''
+						title.progress.volume ? ` Vol. ${title.progress.volume}` : ''
 					}`,
 				}),
 				DOM.create('td', { textContent: title.start ? this.dateFormat(title.start) : '-' }),
@@ -121,23 +148,52 @@ export class SaveViewer {
 			deleteButton.disabled = true;
 			deleteButton.classList.add('loading');
 			await LocalStorage.remove(title.id);
+			this.titles.remove(title.id);
 			row.remove();
+			// Remove page buttons and load new pages if necessary
+			const oldMax = this.maxPage;
+			this.maxPage = Math.floor(this.titles.length / SaveViewer.perPage);
+			if (oldMax > this.maxPage) {
+				this.pages[oldMax].remove();
+				delete this.pages[oldMax];
+			}
+			if (this.currentPage < this.maxPage) {
+				this.loadPage(this.currentPage);
+			} else if (this.maxPage > 1 && oldMax > this.maxPage && this.currentPage == oldMax) {
+				this.previousPage = this.pages[this.maxPage];
+				this.previousPage.classList.add('active');
+				this.previousPage.disabled = true;
+				this.loadPage(this.currentPage - 1);
+			}
 		});
 		return row;
 	};
 
 	updateAll = async (): Promise<void> => {
+		DOM.clear(this.pagingPages);
 		DOM.clear(this.body);
 		this.titles = await TitleCollection.get();
-		const fragment = document.createDocumentFragment();
-		let i = 0;
-		for (const title of this.titles.collection) {
-			fragment.appendChild(this.createRow(title));
-			if (++i == 50) {
-				// TODO: Load more
-				break;
+		this.currentPage = 1;
+		this.pages = {};
+		this.maxPage = Math.floor(this.titles.length / SaveViewer.perPage);
+		for (let i = 0; i < this.maxPage; i++) {
+			const button = DOM.create('button', { class: 'ghost paging', textContent: `${i + 1}` });
+			button.addEventListener('click', (event) => {
+				this.previousPage.classList.remove('active');
+				this.previousPage.disabled = false;
+				button.classList.add('active');
+				button.disabled = true;
+				this.previousPage = button;
+				this.loadPage(i + 1);
+			});
+			if (i == 0) {
+				this.previousPage = button;
+				this.previousPage.disabled = true;
+				this.previousPage.classList.add('active');
 			}
+			this.pages[i + 1] = button;
+			this.pagingPages.appendChild(button);
 		}
-		this.body.appendChild(fragment);
+		this.loadPage(1);
 	};
 }

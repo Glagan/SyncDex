@@ -611,7 +611,6 @@ input[type='file'] {
 /* Table */
 table {
 	width: calc(100% - 16px - 2px);
-	margin: 8px;
 	border: 1px solid var(--grey-20);
 	border-radius: 2px;
 	background-color: var(--white-100);
@@ -619,9 +618,11 @@ table {
 	text-align: center;
 	border-collapse: collapse;
 	table-layout: fixed;
+	box-shadow: var(--shadow-10);
 }
 table thead {
 	background-color: var(--grey-30);
+	border: 1px solid var(--grey-20);
 	position: sticky;
 	top: 0;
 }
@@ -723,8 +724,6 @@ h2 {
 .center {
 	text-align: center;
 	align-self: center;
-	display: block;
-	margin: auto;
 }
 .right {
 	text-align: right;
@@ -958,6 +957,18 @@ table tr td.name {
 	overflow: hidden;
 	white-space: nowrap;
 }
+button.paging {
+	color: var(--grey-90);
+}
+button.paging.active {
+	background-color: var(--grey-90-a30);
+	font-weight: var(--bold);
+}
+#save-paging {
+	display: grid;
+	grid-template-columns: min-content auto;
+	grid-gap: 4px;
+}
 
 /* Dark Theme */
 body:not(.light) {
@@ -981,9 +992,11 @@ body:not(.light) table {
 	border: 1px solid var(--grey-80);
 	background-color: var(--grey-60);
 	color: var(--white-100);
+	box-shadow: var(--light-shadow-10);
 }
 body:not(.light) table thead {
 	background-color: var(--grey-70);
+	border: 1px solid var(--grey-80);
 }
 body:not(.light) table thead th {
 	border-bottom: 1px solid var(--grey-80);
@@ -999,4 +1012,7 @@ body:not(.light) table tr td.mangadex a[href] {
 }
 body:not(.light) table tbody td.actions button {
 	color: var(--grey-10);
+}
+body:not(.light) button.paging {
+	color: var(--white-100);
 }

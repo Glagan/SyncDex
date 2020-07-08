@@ -97,7 +97,7 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 		if (navigation !== null) {
 			const last = navigation.lastElementChild?.previousElementSibling;
 			if (last !== null && last !== undefined) {
-				this.state.max = 4; // parseInt(last.textContent as string);
+				this.state.max = parseInt(last.textContent as string);
 			}
 		}
 		return titles;

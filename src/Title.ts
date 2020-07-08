@@ -293,6 +293,13 @@ export class TitleCollection {
 		this.collection.push(...title);
 	};
 
+	remove = (id: number): void => {
+		const index = this.collection.findIndex((t) => t.id == id);
+		if (index !== undefined) {
+			this.collection.splice(index, 1);
+		}
+	};
+
 	/**
 	 * List of all MangaDex IDs in the Collection.
 	 */
