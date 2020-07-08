@@ -60,19 +60,17 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		const values: Partial<MangaUpdatesTitle> = {};
 		const showList = body.getElementById('showList');
 		if (showList !== null) {
-			const listType = /mylist\.html(?:\?list=(.+))?/.exec(
-				(showList.querySelector('a') as HTMLAnchorElement).href
-			);
+			const listType = /mylist\.html(?:\?list=(.+))?/.exec(showList.querySelector<HTMLAnchorElement>('a')!.href);
 			if (listType !== null) {
 				values.status = MangaUpdatesTitle.listToStatus(listType[1]);
 				values.current = { progress: { chapter: 0 }, status: values.status };
 				// The state in list is only displayed if the title is in the READING list
 				if (values.status == MangaUpdatesStatus.READING) {
-					const chapter = showList.querySelector(`a[title='Increment Chapter']`) as HTMLAnchorElement;
-					const volume = showList.querySelector(`a[title='Increment Volume']`) as HTMLAnchorElement;
+					const chapter = showList.querySelector<HTMLAnchorElement>(`a[title='Increment Chapter']`)!;
+					const volume = showList.querySelector<HTMLAnchorElement>(`a[title='Increment Volume']`)!;
 					values.progress = {
-						chapter: parseInt((chapter.textContent as string).substr(2)), // Remove c. and v.
-						volume: parseInt((volume.textContent as string).substr(2)),
+						chapter: parseInt(chapter.textContent!.substr(2)), // Remove c. and v.
+						volume: parseInt(volume.textContent!.substr(2)),
 					};
 					values.current.progress = Object.assign({}, values.progress); // Avoid reference
 				}
@@ -80,14 +78,14 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 			// We only get the rating if it's in the list - even if it's not required
 			const scoreNode = body.querySelector<HTMLInputElement>(`input[type='radio'][name='rating'][checked]`);
 			if (scoreNode) {
-				// MangaUpdates as a simple 0-10 range
+				// MangaUpdates have a simple 0-10 range
 				values.score = parseInt(scoreNode.value) * 10;
 				if (values.current) values.current.score = values.score;
 			}
 		}
 		const title = body.querySelector('span.releasestitle');
-		values.name = title ? (title.textContent as string) : undefined;
-		return new MangaUpdatesTitle(id as number, values);
+		values.name = title ? title.textContent! : undefined;
+		return new MangaUpdatesTitle(id, values);
 	};
 
 	// Get a list of status to go through to be able to update to the wanted status
@@ -216,7 +214,7 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 	toTitle = (): Title | undefined => {
 		if (!this.mangaDex) return undefined;
 		return new Title(this.mangaDex, {
-			services: { mu: this.id as number },
+			services: { mu: this.id },
 			progress: this.progress,
 			status: MangaUpdatesTitle.toStatus(this.status),
 			score: this.score !== undefined && this.score > 0 ? this.score : undefined,

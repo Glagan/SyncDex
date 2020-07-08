@@ -128,13 +128,13 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 				volume: attributes.volumesOwned,
 			};
 			status = attributes.status;
-			// Kitsu as a 0-20 range
+			// Kitsu have a 0-20 range
 			if (attributes.ratingTwenty !== null) values.score = attributes.ratingTwenty * 5;
 			if (attributes.startedAt !== null) values.start = new Date(attributes.startedAt);
 			if (attributes.finishedAt !== null) values.end = new Date(attributes.finishedAt);
 			values.name = body.included[0].attributes.canonicalTitle;
 		}
-		return new KitsuTitle(id as number, values);
+		return new KitsuTitle(id, values);
 	};
 
 	persist = async (): Promise<RequestStatus> => {
@@ -214,7 +214,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 	toTitle = (): Title | undefined => {
 		if (!this.mangaDex) return undefined;
 		return new Title(this.mangaDex, {
-			services: { al: this.id as number },
+			services: { al: this.id },
 			progress: this.progress,
 			status: KitsuTitle.toStatus(this.status),
 			score: this.score !== undefined && this.score > 0 ? this.score : undefined,

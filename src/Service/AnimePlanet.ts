@@ -53,8 +53,8 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 		const body = parser.parseFromString(response.body, 'text/html');
 		if (tokenArr !== null) values.token = tokenArr[1];
 		// No need to be logged in to have api ID
-		const mediaEntryForm = body.querySelector<HTMLFormElement>('form[id^=manga]') as HTMLFormElement;
-		const api = parseInt(mediaEntryForm.dataset.id as string);
+		const mediaEntryForm = body.querySelector<HTMLFormElement>('form[id^=manga]')!;
+		const api = parseInt(mediaEntryForm.dataset.id!);
 		const statusSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.changeStatus [selected]');
 		if (statusSelector) values.status = parseInt(statusSelector.value);
 		// Chapter
@@ -66,8 +66,8 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 		if (volumeSelector) values.progress.volume = parseInt(volumeSelector.value);
 		// Score
 		const score = mediaEntryForm.querySelector<HTMLElement>('div.starrating > div[name]');
-		if (score) values.score = parseFloat(score.getAttribute('name') as string) * 20;
-		values.name = (body.querySelector(`h1[itemprop='name']`) as HTMLElement).textContent as string;
+		if (score) values.score = parseFloat(score.getAttribute('name')!) * 20;
+		values.name = body.querySelector(`h1[itemprop='name']`)!.textContent!;
 		return new AnimePlanetTitle(
 			{
 				s: slug,
@@ -78,7 +78,7 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 	};
 
 	persist = async (): Promise<RequestStatus> => {
-		const id = (this.id as AnimePlanetReference).i;
+		const id = this.id.i;
 		let response = await Runtime.jsonRequest({
 			url: `https://www.anime-planet.com/api/list/status/manga/${id}/${this.status}/${this.token}`,
 			credentials: 'include',
@@ -107,7 +107,7 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 
 	delete = async (): Promise<RequestStatus> => {
 		if (this.token == '') return RequestStatus.BAD_REQUEST;
-		const id = (this.id as AnimePlanetReference).i;
+		const id = this.id.i;
 		const response = await Runtime.jsonRequest({
 			url: `https://www.anime-planet.com/api/list/status/manga/${id}/0/${this.token}`,
 			method: 'GET',
@@ -138,7 +138,7 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 	toTitle = (): Title | undefined => {
 		if (!this.mangaDex) return undefined;
 		return new Title(this.mangaDex, {
-			services: { ap: this.id as AnimePlanetReference },
+			services: { ap: this.id },
 			progress: this.progress,
 			status: AnimePlanetTitle.toStatus(this.status),
 			score: this.score !== undefined && this.score > 0 ? this.score : undefined,

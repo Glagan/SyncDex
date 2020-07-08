@@ -90,6 +90,8 @@ class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTi
 	isValidMyMangaDexTitle = (title: Record<string, any>): boolean => {
 		return (
 			typeof title.mal === 'number' &&
+			!isNaN(title.mal) &&
+			title.mal > 0 &&
 			typeof title.last === 'number' &&
 			Array.isArray(title.chapters) &&
 			(title.lastTitle === undefined || typeof title.lastTitle === 'number')

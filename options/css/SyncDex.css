@@ -396,6 +396,10 @@ input[type] {
 	color: var(--grey-90);
 	border: 2px solid var(--grey-90-a20);
 }
+input[type].fill {
+	width: 100%;
+	box-sizing: border-box;
+}
 input[type]::placeholder {
 	color: var(--grey-50);
 }
@@ -408,6 +412,16 @@ input[type]:focus {
 }
 input[type='file'] {
 	cursor: pointer;
+}
+
+/* Select */
+select {
+	border-radius: 2px;
+	padding: 0 8px;
+	width: auto;
+	height: 32px;
+	color: var(--grey-90);
+	border: 2px solid var(--grey-90-a20);
 }
 
 /*	Checkbox */
@@ -890,6 +904,10 @@ h2 {
 	margin-left: 40%;
 	margin-right: 40%;
 }
+.modal.medium > .content {
+	margin-left: 30%;
+	margin-right: 30%;
+}
 .modal > .content > .header {
 	border-radius: 2px;
 	flex-shrink: 0;
@@ -968,6 +986,20 @@ button.paging.active {
 	display: grid;
 	grid-template-columns: min-content auto;
 	grid-gap: 4px;
+}
+.card .header.title {
+	background: var(--syncdex-bg);
+	color: var(--grey-90);
+}
+form .row {
+	display: grid;
+	grid-template-columns: 50%;
+	grid-gap: 8px;
+	grid-auto-flow: column;
+	margin-bottom: 16px;
+}
+form .row input[type] {
+	min-width: 200px;
 }
 
 /* Dark Theme */

@@ -44,7 +44,7 @@ export class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
 	};
 
 	toTitle = (): Title | undefined => {
-		return new Title(this.id as number, {
+		return new Title(this.id, {
 			progress: this.progress,
 			status: this.status,
 			score: this.score !== undefined && this.score > 0 ? this.score : undefined,

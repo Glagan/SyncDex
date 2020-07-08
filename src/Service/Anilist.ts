@@ -186,7 +186,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 			values.start = AnilistTitle.dateFromAnilist(mediaEntry.startedAt);
 			values.end = AnilistTitle.dateFromAnilist(mediaEntry.completedAt);
 		}
-		return new AnilistTitle(id as number, values);
+		return new AnilistTitle(id, values);
 	};
 
 	static dateToAnilist = (date?: Date): AnilistDate | undefined => {
@@ -261,7 +261,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 	toTitle = (): Title | undefined => {
 		if (!this.mangaDex) return undefined;
 		return new Title(this.mangaDex, {
-			services: { al: this.id as number },
+			services: { al: this.id },
 			progress: this.progress,
 			status: AnilistTitle.toStatus(this.status),
 			score: this.score !== undefined && this.score > 0 ? this.score : undefined,

@@ -32,15 +32,11 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 	}
 
 	static dateRowToDate = (body: Document, row: 'start' | 'finish'): Date | undefined => {
-		const year = body.getElementById(`add_manga_${row}_date_year`),
-			month = body.getElementById(`add_manga_${row}_date_month`),
-			day = body.getElementById(`add_manga_${row}_date_day`);
+		const year = body.getElementById(`add_manga_${row}_date_year`) as HTMLSelectElement,
+			month = body.getElementById(`add_manga_${row}_date_month`) as HTMLSelectElement,
+			day = body.getElementById(`add_manga_${row}_date_day`) as HTMLSelectElement;
 		if (month == null || day == null || year == null) return undefined;
-		return new Date(
-			parseInt((year as HTMLSelectElement).value),
-			parseInt((month as HTMLSelectElement).value),
-			parseInt((day as HTMLSelectElement).value)
-		);
+		return new Date(parseInt(year.value), parseInt(month.value), parseInt(day.value));
 	};
 
 	static get = async (id: number): Promise<MyAnimeListTitle | RequestStatus> => {
@@ -60,7 +56,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 		const title = body.querySelector<HTMLElement>(`a[href^='/manga/']`);
 		if (!response.redirected) {
 			if (title !== null) {
-				values.name = title.textContent as string;
+				values.name = title.textContent!;
 				values.status = parseInt((body.getElementById('add_manga_status') as HTMLSelectElement).value);
 				values.progress = {
 					chapter:
@@ -75,7 +71,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 			}
 		}
 		values.newEntry = response.redirected && title !== null;
-		return new MyAnimeListTitle(id as number, values);
+		return new MyAnimeListTitle(id, values);
 	};
 
 	persist = async (): Promise<RequestStatus> => {
@@ -159,7 +155,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 	toTitle = (): Title | undefined => {
 		if (!this.mangaDex) return undefined;
 		return new Title(this.mangaDex, {
-			services: { mal: this.id as number },
+			services: { mal: this.id },
 			progress: this.progress,
 			status: MyAnimeListTitle.toStatus(this.status),
 			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
