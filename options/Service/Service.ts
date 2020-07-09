@@ -60,20 +60,13 @@ export type FileImportFormat = 'JSON' | 'XML';
 
 export class Checkbox {
 	static make(name: string, labelContent: string, parent?: HTMLElement): HTMLElement {
-		const checkbox = DOM.create('div', {
-			class: 'checkbox checked',
-			// name: name, // TODO: Broken Checkbox
-			childs: [DOM.icon('check')],
+		const checkbox = DOM.create('input', {
+			type: 'checkbox',
+			id: `ck_${name}`,
+			name: name,
+			checked: true,
 		});
-		const label = DOM.create('label', { textContent: labelContent });
-		checkbox.addEventListener('click', (event) => {
-			event.preventDefault();
-			checkbox.classList.toggle('checked');
-		});
-		label.addEventListener('click', (event) => {
-			event.preventDefault();
-			checkbox.classList.toggle('checked');
-		});
+		const label = DOM.create('label', { textContent: labelContent, htmlFor: `ck_${name}` });
 		if (parent) {
 			return DOM.append(parent, checkbox, label);
 		}
@@ -733,9 +726,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 				return;
 			}
 			if (notification) notification.classList.remove('loading');
-			const merge = form.querySelector(`.checkbox[name='merge'].checked`) !== null;
-			const checkServices = form.querySelector(`.checkbox[name='checkServices'].checked`) !== null;
-			this.import(data, merge, checkServices);
+			this.import(data, form.merge.checked, form.checkServices.checked);
 		};
 		reader.readAsText(form.save.files[0]);
 	};
@@ -847,8 +838,6 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 	};
 
 	handle = async (form: HTMLFormElement): Promise<void> => {
-		const merge = form.querySelector(`.checkbox[name='merge'].checked`) !== null;
-		const checkServices = form.querySelector(`.checkbox[name='checkServices'].checked`) !== null;
 		this.displayActive();
 		const loginProgress = DOM.create('p', { textContent: 'Checking login status...' });
 		let notification = this.notification('loading', [loginProgress]);
@@ -933,13 +922,13 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 		notification.classList.remove('loading');
 		if (this.doStop) return this.cancel();
 		// Merge
-		if (!merge) {
+		if (!form.merge.checked) {
 			await LocalStorage.clear();
 		} else {
 			collection.merge(await TitleCollection.get(collection.ids));
 		}
 		// Mochi
-		if (checkServices) {
+		if (form.checkServices.checked) {
 			await this.mochiCheck(collection);
 			if (this.doStop) return;
 		}
@@ -1037,7 +1026,6 @@ export abstract class APIExportableModule extends ExportableModule {
 	};
 
 	handle = async (form: HTMLFormElement): Promise<void> => {
-		const checkServices = form.querySelector(`.checkbox[name='checkServices'].checked`) !== null;
 		this.displayActive();
 		// Check login status
 		const loginProgress = DOM.create('p', { textContent: 'Checking login status...' });
@@ -1052,7 +1040,7 @@ export abstract class APIExportableModule extends ExportableModule {
 		if (this.doStop) return this.cancel();
 		// Check Services
 		const collection = await TitleCollection.get();
-		if (checkServices) {
+		if (form.checkServices.checked) {
 			await this.mochiCheck(collection);
 			collection.save();
 			if (this.doStop) return;
@@ -1117,7 +1105,6 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 	};
 
 	handle = async (form: HTMLFormElement): Promise<void> => {
-		const checkServices = form.querySelector(`.checkbox[name='checkServices'].checked`) !== null;
 		this.displayActive();
 		// Check login status
 		const loginProgress = DOM.create('p', { textContent: 'Checking login status...' });
@@ -1132,7 +1119,7 @@ export abstract class BatchExportableModule<T> extends ExportableModule {
 		if (this.doStop) return this.cancel();
 		// Check Services
 		const collection = await TitleCollection.get();
-		if (checkServices) {
+		if (form.checkServices.checked) {
 			await this.mochiCheck(collection);
 			collection.save();
 			if (this.doStop) return;

@@ -11,35 +11,26 @@ type BooleanOptions = Pick<
 
 export class Checkbox {
 	enabled: boolean = true;
-	node: HTMLElement;
+	node: HTMLInputElement;
 	label: HTMLLabelElement;
 	dependencies: Checkbox[] = [];
 	optionName: keyof BooleanOptions;
 	parent?: keyof BooleanOptions;
 
-	constructor(node: HTMLElement) {
+	constructor(node: HTMLInputElement) {
 		this.node = node;
-		this.node.appendChild(DOM.icon('check'));
 		this.label = this.node.nextElementSibling as HTMLLabelElement;
-		if (this.label == null) {
-			console.log('checkbox', this.node);
-		}
-		this.optionName = this.node.dataset.checkbox as keyof BooleanOptions;
+		if (!this.label) console.log(this.node);
+		this.optionName = this.node.dataset.name as keyof BooleanOptions;
 		if (this.node.dataset.dependency !== undefined) {
 			this.parent = this.node.dataset.dependency as keyof BooleanOptions;
-			this.node.classList.add('dependency');
-			this.label.classList.add('dependency');
 		}
 	}
 
 	bind = (): void => {
 		this.toggle(Options[this.optionName]);
-		this.node.addEventListener('click', (event) => {
-			event.preventDefault();
-			if (!this.enabled) return;
-			this.update(!Options[this.optionName]);
-		});
 		this.label.addEventListener('click', (event) => {
+			if (event.target !== this.label) return;
 			event.preventDefault();
 			if (!this.enabled) return;
 			this.update(!Options[this.optionName]);
@@ -48,14 +39,12 @@ export class Checkbox {
 
 	enable = (): void => {
 		this.enabled = true;
-		this.node.classList.remove('disabled');
-		this.label.classList.remove('disabled');
+		this.node.disabled = false;
 	};
 
 	disable = (): void => {
 		this.enabled = false;
-		this.node.classList.add('disabled');
-		this.label.classList.add('disabled');
+		this.node.disabled = true;
 	};
 
 	update = (value: boolean): void => {
@@ -67,12 +56,12 @@ export class Checkbox {
 
 	toggle = (value: boolean): void => {
 		if (value) {
-			this.node.classList.add('checked');
+			this.node.checked = true;
 			for (const dependency of this.dependencies) {
 				dependency.enable();
 			}
 		} else {
-			this.node.classList.remove('checked');
+			this.node.checked = false;
 			for (const dependency of this.dependencies) {
 				dependency.disable();
 			}
@@ -84,7 +73,7 @@ export class CheckboxManager {
 	checkboxes: Checkbox[] = [];
 
 	constructor() {
-		const checkboxes = document.querySelectorAll<HTMLElement>('[data-checkbox]');
+		const checkboxes = document.querySelectorAll<HTMLInputElement>(`input[type='checkbox']`);
 		for (const node of checkboxes) {
 			const checkbox = new Checkbox(node);
 			checkbox.bind();

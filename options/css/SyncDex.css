@@ -388,6 +388,10 @@ label,
 	display: block;
 	line-height: 20px;
 }
+label + .helper,
+.label + .helper {
+	margin-left: 30px;
+}
 input[type] {
 	border-radius: 2px;
 	padding: 0 8px;
@@ -425,51 +429,63 @@ select {
 }
 
 /*	Checkbox */
-.checkbox {
+input[type='checkbox'] {
+	visibility: hidden;
+	position: absolute;
+	left: -1000px;
+	clip: rect(0 0 0 0);
+}
+input[type='checkbox'] + label::before {
+	font-family: 'Font Awesome 5 Free';
+	content: '\f00c';
+	color: transparent;
 	border-radius: 2px;
 	height: 16px;
 	width: 16px;
-	color: var(--white-100);
 	font-size: 16px;
 	background-color: var(--grey-90-a10);
 	border: 1px solid var(--grey-60);
 	cursor: pointer;
 	transition: all 150ms var(--animation);
-	display: flex;
+	display: inline-flex;
 	justify-content: center;
 	align-items: center;
 	padding: 2px;
+	margin-right: 8px;
 }
-.checkbox img,
-.checkbox i {
-	opacity: 0;
-	transition: all 150ms var(--animation);
-}
-.checkbox:hover {
+input[type='checkbox'] + label:hover::before {
 	background-color: var(--grey-90-a20);
 }
-.checkbox:active {
+input[type='checkbox'] + label:active::before {
 	background-color: var(--grey-90-a30);
 }
-.checkbox:focus {
+input[type='checkbox'] + label:focus::before {
 	box-shadow: var(--focus);
 }
-.checkbox.checked {
+input[type='checkbox']:checked + label::before {
+	color: var(--white-100);
 	background-color: var(--blue-60);
 	border-color: transparent;
 }
-.checkbox.checked img,
-.checkbox.checked i {
-	opacity: 1;
-}
-.checkbox.checked:hover {
+input[type='checkbox']:checked + label:hover::before {
 	background-color: var(--blue-70);
 }
-.checkbox.checked:active {
+input[type='checkbox']:checked + label:active::before {
 	background-color: var(--blue-80);
 }
-.checkbox.checked:focus {
+input[type='checkbox']:checked + label:focus::before {
 	box-shadow: var(--focus);
+}
+input[type='checkbox']:disabled + label,
+input[type='checkbox']:disabled + label + .helper {
+	opacity: 0.4;
+}
+input[type='checkbox'][data-dependency] + label {
+	margin-top: 8px;
+	margin-left: 30px;
+}
+input[type='checkbox'][data-dependency] + label + .helper {
+	margin-left: 60px;
 }
 
 /* Messages */
@@ -820,15 +836,15 @@ h2 {
 
 /*	Parameters */
 .parameter {
-	display: grid;
+	/*display: grid;
 	grid-template-columns: 20px auto;
 	grid-template-rows: auto;
-	margin-bottom: 32px;
 	gap: 8px;
-	/*background-color: var(--white-100);
+	background-color: var(--white-100);
 	padding: 4px;
 	border: 1px solid var(--grey-20);
 	border-radius: 2px;*/
+	margin-bottom: 32px;
 }
 .row-parameter {
 	display: grid;
@@ -924,6 +940,12 @@ h2 {
 .ieport form .parameter,
 .ieport form .row-parameter {
 	margin-bottom: 32px;
+}
+.ieport form .parameter label {
+	margin-bottom: 8px;
+}
+.ieport form .parameter label:last-child {
+	margin-bottom: 0;
 }
 .ieport form.closed {
 	user-select: none;
