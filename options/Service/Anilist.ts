@@ -47,7 +47,7 @@ class AnilistActive extends ActivableModule {
 	login = undefined;
 
 	loggedIn = async (): Promise<RequestStatus> => {
-		if (!Options.tokens.anilistToken === undefined) return RequestStatus.MISSING_TOKEN;
+		if (Options.tokens.anilistToken === undefined) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest({
 			method: 'POST',
 			url: AnilistAPI,

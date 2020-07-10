@@ -15,6 +15,7 @@ export class SaveViewer {
 	previousPage: HTMLButtonElement;
 	pages: { [key: number]: HTMLButtonElement } = {};
 	static perPage = 10;
+	emptySave: HTMLElement;
 
 	static statusMap: { [key in Status]: string } = {
 		[Status.NONE]: 'NONE',
@@ -33,6 +34,25 @@ export class SaveViewer {
 		this.body = document.getElementById('save-body')!;
 		this.reloadButton = document.getElementById('reload-save-viewer') as HTMLButtonElement;
 		this.previousPage = DOM.create('button');
+		this.emptySave = DOM.create('tr', {
+			childs: [
+				DOM.create('td', {
+					colSpan: 9,
+					childs: [
+						DOM.create('div', {
+							class: 'message',
+							childs: [
+								DOM.create('div', { class: 'icon' }),
+								DOM.create('div', {
+									class: 'content',
+									textContent: 'Nothing in your Save.',
+								}),
+							],
+						}),
+					],
+				}),
+			],
+		});
 		this.reloadButton.addEventListener('click', (event) => {
 			event.preventDefault();
 			this.updateAll();
@@ -318,19 +338,20 @@ export class SaveViewer {
 			row.remove();
 			// Remove page buttons and load new pages if necessary
 			const oldMax = this.maxPage;
-			this.maxPage = Math.floor(this.titles.length / SaveViewer.perPage);
+			this.maxPage = Math.ceil(this.titles.length / SaveViewer.perPage);
 			if (oldMax > this.maxPage) {
 				this.pages[oldMax].remove();
 				delete this.pages[oldMax];
 			}
-			if (this.currentPage < this.maxPage) {
-				this.loadPage(this.currentPage);
-			} else if (this.maxPage > 1 && oldMax > this.maxPage && this.currentPage == oldMax) {
+			if (this.maxPage > 1 && oldMax > this.maxPage && this.currentPage == oldMax) {
 				this.previousPage = this.pages[this.maxPage];
 				this.previousPage.classList.add('active');
 				this.previousPage.disabled = true;
 				this.loadPage(this.currentPage - 1);
+			} else if (this.currentPage <= this.maxPage) {
+				this.loadPage(this.currentPage);
 			}
+			if (this.titles.length == 0) this.body.appendChild(this.emptySave);
 		});
 		return row;
 	};
@@ -341,25 +362,27 @@ export class SaveViewer {
 		this.titles = await TitleCollection.get();
 		this.currentPage = 1;
 		this.pages = {};
-		this.maxPage = Math.floor(this.titles.length / SaveViewer.perPage);
-		for (let i = 0; i < this.maxPage; i++) {
-			const button = DOM.create('button', { class: 'ghost paging', textContent: `${i + 1}` });
-			button.addEventListener('click', (event) => {
-				this.previousPage.classList.remove('active');
-				this.previousPage.disabled = false;
-				button.classList.add('active');
-				button.disabled = true;
-				this.previousPage = button;
-				this.loadPage(i + 1);
-			});
-			if (i == 0) {
-				this.previousPage = button;
-				this.previousPage.disabled = true;
-				this.previousPage.classList.add('active');
+		this.maxPage = Math.ceil(this.titles.length / SaveViewer.perPage);
+		if (this.maxPage > 0) {
+			for (let i = 0; i < this.maxPage; i++) {
+				const button = DOM.create('button', { class: 'ghost paging', textContent: `${i + 1}` });
+				button.addEventListener('click', (event) => {
+					this.previousPage.classList.remove('active');
+					this.previousPage.disabled = false;
+					button.classList.add('active');
+					button.disabled = true;
+					this.previousPage = button;
+					this.loadPage(i + 1);
+				});
+				if (i == 0) {
+					this.previousPage = button;
+					this.previousPage.disabled = true;
+					this.previousPage.classList.add('active');
+				}
+				this.pages[i + 1] = button;
+				this.pagingPages.appendChild(button);
 			}
-			this.pages[i + 1] = button;
-			this.pagingPages.appendChild(button);
-		}
-		this.loadPage(1);
+			this.loadPage(1);
+		} else this.body.appendChild(this.emptySave);
 	};
 }

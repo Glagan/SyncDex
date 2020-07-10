@@ -1032,6 +1032,9 @@ form .row input[type] {
 .entry-edit .service img {
 	flex-shrink: 0;
 }
+#save-body .message {
+	margin-bottom: 0;
+}
 
 /* Dark Theme */
 body:not(.light) {
