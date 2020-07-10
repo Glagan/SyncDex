@@ -1,8 +1,8 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { Options } from '../../src/Options';
 import { Runtime, RequestStatus } from '../../src/Runtime';
-import { Title, ServiceName, ServiceKey } from '../../src/Title';
-import { Service, ActivableModule, APIImportableModule, ImportStep, APIExportableModule, LoginMethod } from './Service';
+import { Title, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
+import { Service, ActivableModule, APIImportableModule, APIExportableModule, LoginMethod } from './Service';
 import { AnilistStatus, AnilistTitle, AnilistDate, AnilistAPI, AnilistHeaders } from '../../src/Service/Anilist';
 
 interface AnilistViewerResponse {
@@ -189,8 +189,13 @@ class AnilistExport extends APIExportableModule {
 }
 
 export class Anilist extends Service {
-	readonly name: ServiceName = ServiceName.Anilist;
-	readonly key: ServiceKey = ServiceKey.Anilist;
+	static readonly serviceName: ServiceName = ServiceName.Anilist;
+	static readonly key: ServiceKey = ServiceKey.Anilist;
+
+	static link(id: ServiceKeyType): string {
+		if (typeof id !== 'number') return '#';
+		return AnilistTitle.link(id);
+	}
 
 	createTitle = (): AppendableElement => {
 		return DOM.create('span', {

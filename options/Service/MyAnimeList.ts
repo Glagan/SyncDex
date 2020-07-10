@@ -1,5 +1,5 @@
 import { DOM } from '../../src/DOM';
-import { TitleCollection, Title, ServiceName, ServiceKey } from '../../src/Title';
+import { TitleCollection, Title, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import {
 	Service,
@@ -11,6 +11,7 @@ import {
 	ActivableModule,
 } from './Service';
 import { Runtime, RequestStatus } from '../../src/Runtime';
+import { MyAnimeListTitle } from '../../src/Service/MyAnimeList';
 
 enum MyAnimeListExportStatus {
 	COMPLETED = 'Completed',
@@ -21,7 +22,7 @@ enum MyAnimeListExportStatus {
 	NONE = 'Invalid',
 }
 
-interface MyAnimeListTitle {
+interface MyAnimeListXMLTitle {
 	id: number;
 	chapters: number;
 	volumes: number;
@@ -84,7 +85,7 @@ class MyAnimeListActive extends ActivableModule {
  * 		</manga>
  * </myanimelist>
  */
-class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle> {
+class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListXMLTitle> {
 	fileType: FileImportFormat = 'XML';
 	handleHistory = undefined;
 	handleOptions = undefined;
@@ -139,7 +140,7 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 		return Status.NONE;
 	};
 
-	validMyAnimeListTitle = (title: MyAnimeListTitle): boolean => {
+	validMyAnimeListTitle = (title: MyAnimeListXMLTitle): boolean => {
 		return (
 			!isNaN(+title.id) &&
 			!isNaN(+title.chapters) &&
@@ -159,11 +160,11 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 		return d.getTime();
 	};
 
-	handleTitles = async (save: Document): Promise<MyAnimeListTitle[]> => {
-		let titles: MyAnimeListTitle[] = [];
+	handleTitles = async (save: Document): Promise<MyAnimeListXMLTitle[]> => {
+		let titles: MyAnimeListXMLTitle[] = [];
 		const mangaList = save.querySelectorAll<HTMLElement>('manga');
 		for (const manga of mangaList) {
-			const title: MyAnimeListTitle = {
+			const title: MyAnimeListXMLTitle = {
 				id: parseInt(manga.querySelector('manga_mangadb_id')?.textContent || '0'),
 				chapters: parseInt(manga.querySelector('my_read_chapters')?.textContent || '0'),
 				volumes: parseInt(manga.querySelector('my_read_volumes')?.textContent || '0'),
@@ -188,13 +189,13 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListTitle>
 		return titles;
 	};
 
-	convertTitles = async (titles: TitleCollection, titleList: MyAnimeListTitle[]): Promise<number> => {
+	convertTitles = async (titles: TitleCollection, titleList: MyAnimeListXMLTitle[]): Promise<number> => {
 		const ids = titleList
 			.filter((title) => {
 				return title.id > 0 && title.chapters >= 0 && title.status != MyAnimeListExportStatus.NONE;
 			})
 			.map((t) => t.id);
-		const connections = await Mochi.findMany(ids, this.service.name);
+		const connections = await Mochi.findMany(ids, this.service.serviceName);
 		const found: number[] = [];
 		let total = 0;
 		if (connections !== undefined) {
@@ -345,8 +346,13 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 }
 
 export class MyAnimeList extends Service {
-	readonly name: ServiceName = ServiceName.MyAnimeList;
-	readonly key: ServiceKey = ServiceKey.MyAnimeList;
+	static readonly serviceName: ServiceName = ServiceName.MyAnimeList;
+	static readonly key: ServiceKey = ServiceKey.MyAnimeList;
+
+	static link(id: ServiceKeyType): string {
+		if (typeof id !== 'number') return '#';
+		return MyAnimeListTitle.link(id);
+	}
 
 	activeModule: MyAnimeListActive = new MyAnimeListActive(this);
 	importModule: MyAnimeListImport = new MyAnimeListImport(this);

@@ -56,8 +56,8 @@ class SyncDexExport extends FileExportableModule {
 }
 
 export class SyncDex extends Service {
-	readonly name: ServiceName = ServiceName.SyncDex;
-	readonly key: ServiceKey = ServiceKey.SyncDex;
+	static readonly serviceName: ServiceName = ServiceName.SyncDex;
+	static readonly key: ServiceKey = ServiceKey.SyncDex;
 
 	createTitle = (): AppendableElement => {
 		return DOM.create('span', {

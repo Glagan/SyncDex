@@ -1,6 +1,6 @@
 import { Options } from '../../src/Options';
 import { Runtime, RequestStatus } from '../../src/Runtime';
-import { Title, ServiceName, ServiceKey } from '../../src/Title';
+import { Title, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
 import { Service, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
 import { KitsuStatus, KitsuTitle, KitsuManga, KitsuResponse, KitsuHeaders, KitsuAPI } from '../../src/Service/Kitsu';
 import { DOM } from '../../src/DOM';
@@ -25,13 +25,19 @@ class KitsuActive extends ActivableModule {
 		modal.body.appendChild(
 			DOM.create('div', {
 				class: 'message',
-				textContent: 'No Account ? ',
 				childs: [
-					DOM.create('a', {
-						textContent: 'Register',
-						href: 'https://kitsu.io/',
-						target: '_blank',
-						childs: [DOM.space(), DOM.icon('external-link-alt')],
+					DOM.create('div', { class: 'icon' }),
+					DOM.create('div', {
+						class: 'content',
+						childs: [
+							DOM.text('No Account ? '),
+							DOM.create('a', {
+								textContent: 'Register',
+								href: 'https://kitsu.io/',
+								target: '_blank',
+								childs: [DOM.space(), DOM.icon('external-link-alt')],
+							}),
+						],
 					}),
 				],
 			})
@@ -197,8 +203,13 @@ class KitsuExport extends APIExportableModule {
 }
 
 export class Kitsu extends Service {
-	readonly name: ServiceName = ServiceName.Kitsu;
-	readonly key: ServiceKey = ServiceKey.Kitsu;
+	static readonly serviceName: ServiceName = ServiceName.Kitsu;
+	static readonly key: ServiceKey = ServiceKey.Kitsu;
+
+	static link(id: ServiceKeyType): string {
+		if (typeof id !== 'number') return '#';
+		return KitsuTitle.link(id);
+	}
 
 	activeModule: KitsuActive = new KitsuActive(this);
 	importModule: KitsuImport = new KitsuImport(this);

@@ -2,6 +2,12 @@ import { LocalStorage } from './Storage';
 import { Options, AvailableOptions } from './Options';
 import { RequestStatus } from './Runtime';
 
+export enum StaticName {
+	'MyMangaDex' = 'MyMangaDex',
+	'SyncDex' = 'SyncDex',
+	'MangaDex' = 'MangaDex',
+}
+
 export enum ActivableName {
 	'MyAnimeList' = 'MyAnimeList',
 	'MangaUpdates' = 'MangaUpdates',
@@ -10,17 +16,17 @@ export enum ActivableName {
 	'AnimePlanet' = 'AnimePlanet',
 }
 
-export enum StaticName {
-	'MangaDex' = 'MangaDex',
-	'MyMangaDex' = 'MyMangaDex',
-	'SyncDex' = 'SyncDex',
-}
-
 export const ServiceName = {
-	...ActivableName,
 	...StaticName,
+	...ActivableName,
 };
-export type ServiceName = ActivableName | StaticName;
+export type ServiceName = StaticName | ActivableName;
+
+export enum StaticKey {
+	'MyMangaDex' = 'mmd',
+	'SyncDex' = 'sc',
+	'MangaDex' = 'md',
+}
 
 export enum ActivableKey {
 	'MyAnimeList' = 'mal',
@@ -30,30 +36,33 @@ export enum ActivableKey {
 	'AnimePlanet' = 'ap',
 }
 
-export enum StaticKey {
-	'MangaDex' = 'md',
-	'MyMangaDex' = 'mmd',
-	'SyncDex' = 'sc',
-}
-
 export const ServiceKey = {
-	...ActivableKey,
 	...StaticKey,
+	...ActivableKey,
 };
-export type ServiceKey = ActivableKey | StaticKey;
+export type ServiceKey = StaticKey | ActivableKey;
 
 export interface ServiceKeyMap {
+	[ServiceKey.MyMangaDex]: number;
+	[ServiceKey.SyncDex]: number;
+	[ServiceKey.MangaDex]: number;
 	[ServiceKey.MyAnimeList]: number;
 	[ServiceKey.MangaUpdates]: number;
 	[ServiceKey.Anilist]: number;
 	[ServiceKey.Kitsu]: number;
 	[ServiceKey.AnimePlanet]: AnimePlanetReference;
-	[ServiceKey.MangaDex]: number;
-	[ServiceKey.MyMangaDex]: number;
-	[ServiceKey.SyncDex]: number;
 }
 
 export type ServiceList = { [key in ServiceKey]?: ServiceKeyMap[key] };
+export type ServiceKeyType = number | string | AnimePlanetReference;
+
+export const ReverseServiceName: { [key in ServiceKey]: ServiceName } = (() => {
+	const res: Partial<{ [key in ServiceKey]: ServiceName }> = {};
+	for (const key in ServiceKey) {
+		res[ServiceKey[key as ServiceName] as ServiceKey] = key as ServiceName;
+	}
+	return res as { [key in ServiceKey]: ServiceName };
+})();
 
 interface SaveProgress {
 	c: number;

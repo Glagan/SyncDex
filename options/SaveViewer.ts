@@ -1,12 +1,8 @@
-import { Title, TitleCollection, ServiceKey, ServiceKeyMap, ActivableName, ServiceName } from '../src/Title';
+import { Title, TitleCollection, ServiceKey, ActivableName, ServiceName, ReverseServiceName } from '../src/Title';
 import { DOM, AppendableElement } from '../src/DOM';
 import { LocalStorage } from '../src/Storage';
-import { MyAnimeListTitle } from '../src/Service/MyAnimeList';
-import { AnilistTitle } from '../src/Service/Anilist';
-import { KitsuTitle } from '../src/Service/Kitsu';
-import { AnimePlanetTitle } from '../src/Service/AnimePlanet';
-import { MangaUpdatesTitle } from '../src/Service/MangaUpdates';
 import { Modal } from './Modal';
+import { GetService } from './Manager/Service';
 
 export class SaveViewer {
 	paging: HTMLElement;
@@ -55,30 +51,15 @@ export class SaveViewer {
 		this.body.appendChild(fragment);
 	};
 
-	serviceLink = <K extends ServiceKey>(key: K, id: ServiceKeyMap[K]): string => {
-		switch (key) {
-			case ServiceKey.MyAnimeList:
-				return MyAnimeListTitle.link(id as number);
-			case ServiceKey.Anilist:
-				return AnilistTitle.link(id as number);
-			case ServiceKey.Kitsu:
-				return KitsuTitle.link(id as number);
-			case ServiceKey.AnimePlanet:
-				return AnimePlanetTitle.link(id as AnimePlanetReference);
-			case ServiceKey.MangaUpdates:
-				return MangaUpdatesTitle.link(id as number);
-		}
-		return '#';
-	};
-
 	titleServices = (title: Title): AppendableElement[] => {
 		const icons: AppendableElement[] = [];
 		for (const serviceKey in title.services) {
 			const key = serviceKey as ServiceKey;
+			const name = ReverseServiceName[key];
 			icons.push(
 				DOM.create('a', {
 					target: '_blank',
-					href: this.serviceLink(key, title.services[key]!),
+					href: GetService(name).link(title.services[key]!),
 					childs: [DOM.create('img', { src: `/icons/${serviceKey}.png` })],
 				})
 			);
@@ -149,39 +130,13 @@ export class SaveViewer {
 		for (const sn in ActivableName) {
 			const serviceName = sn as ServiceName;
 			const serviceKey = ServiceKey[serviceName];
-			const inputs: HTMLInputElement[] = [];
-			if (serviceKey === ServiceKey.AnimePlanet) {
-				inputs.push(
-					DOM.create('input', {
-						type: 'text',
-						name: `AnimePlanet_slug`,
-						value: `${title.services.ap ? title.services.ap.s : ''}`,
-						placeholder: 'AnimePlanet Slug',
-					}),
-					DOM.create('input', {
-						type: 'number',
-						name: `AnimePlanet_id`,
-						value: `${title.services.ap ? title.services.ap.i : ''}`,
-						placeholder: 'AnimePlanet ID',
-					})
-				);
-			} else {
-				inputs.push(
-					DOM.create('input', {
-						type: 'number',
-						name: serviceName,
-						placeholder: `${serviceName} ID`,
-						value: `${title.services[serviceKey]}`,
-					})
-				);
-			}
 			services.appendChild(
 				DOM.create('div', {
 					class: 'service',
 					childs: [
 						DOM.create('img', { src: `/icons/${serviceKey}.png`, title: serviceName }),
 						DOM.space(),
-						...inputs,
+						...GetService(serviceName).SaveInput(title.services[serviceKey]!),
 					],
 				})
 			);
@@ -300,19 +255,7 @@ export class SaveViewer {
 			} else delete title.end;
 			// Services
 			for (const sn in ActivableName) {
-				const serviceName = sn as ServiceName;
-				const serviceKey = ServiceKey[serviceName];
-				if (serviceKey === ServiceKey.AnimePlanet) {
-					if (form.AnimePlanet_slug.value != '' && form.AnimePlanet_id.value) {
-						const id = parseInt(form.AnimePlanet_id.value as string);
-						if (!isNaN(id)) title.services.ap = { s: form.AnimePlanet_slug.value, i: id };
-					} else delete title.services.ap;
-				} else {
-					if (form[serviceName].value != '') {
-						const id = parseInt(form[serviceName].value as string);
-						if (!isNaN(id)) title.services[serviceKey] = id;
-					} else delete title.services[serviceKey];
-				}
+				GetService(sn as ServiceName).HandleInput(title, form);
 			}
 			// Save and close Modal
 			await title.save();

@@ -1,7 +1,7 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
-import { TitleCollection, Title, ServiceTitle, ServiceName, ServiceKey } from '../../src/Title';
+import { TitleCollection, Title, ServiceTitle, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
 import { LocalStorage } from '../../src/Storage';
 import { Mochi } from '../../src/Mochi';
 import { RequestStatus } from '../../src/Runtime';
@@ -78,16 +78,58 @@ export class Checkbox {
 }
 
 export abstract class Service {
-	abstract readonly key: ServiceKey;
-	abstract readonly name: ServiceName;
+	static readonly serviceName: ServiceName;
+	static readonly key: ServiceKey;
 	manager: ServiceManager;
 
 	abstract activeModule?: ActivableModule;
 	abstract importModule?: ImportableModule;
 	abstract exportModule?: ExportableModule;
 
+	/**
+	 * Get a list of input elements used in the Save Viewer.
+	 */
+	static SaveInput(value?: ServiceKeyType): HTMLInputElement[] {
+		const serviceName = (<typeof Service>this.prototype.constructor).serviceName;
+		return [
+			DOM.create('input', {
+				type: 'number',
+				name: serviceName,
+				placeholder: `${serviceName} ID`,
+				value: `${value ? value : ''}`,
+			}),
+		];
+	}
+
+	/**
+	 * Handle Inputs created from SaveInput to update Title.services.
+	 */
+	static HandleInput(title: Title, form: HTMLFormElement): void {
+		const serviceName = (<typeof Service>this.prototype.constructor).serviceName;
+		const key = (<typeof Service>this.prototype.constructor).key;
+		if (form[serviceName].value != '') {
+			const id = parseInt(form[serviceName].value as string);
+			if (!isNaN(id)) (title.services[key] as number) = id;
+		} else delete title.services[key];
+	}
+
+	/**
+	 * Return a link to the Media identified by id on the Service.
+	 */
+	static link(id: ServiceKeyType): string {
+		return '#';
+	}
+
 	constructor(manager: ServiceManager) {
 		this.manager = manager;
+	}
+
+	get key(): ServiceKey {
+		return (<typeof Service>this.constructor).key;
+	}
+
+	get serviceName(): ServiceName {
+		return (<typeof Service>this.constructor).serviceName;
 	}
 
 	createCard = (withContent: boolean): HTMLElement => {
@@ -95,7 +137,7 @@ export abstract class Service {
 			class: 'card',
 		});
 		const header = DOM.create('div', {
-			class: `header ${this.name.toLowerCase()}`,
+			class: `header ${this.serviceName.toLowerCase()}`,
 			childs: [this.createTitle()],
 		});
 		DOM.append(card, header);
@@ -109,7 +151,7 @@ export abstract class Service {
 	};
 
 	createTitle = (): AppendableElement => {
-		return DOM.text(this.name);
+		return DOM.text(this.serviceName);
 	};
 }
 
@@ -221,9 +263,9 @@ export abstract class ActivableModule {
 		}
 		// Bind
 		this.activateButton.addEventListener('click', async () => {
-			Options.services.push(this.service.name);
+			Options.services.push(this.service.serviceName);
 			if (Options.services.length == 1) {
-				Options.mainService = this.service.name;
+				Options.mainService = this.service.serviceName;
 				const containerFirstChild = this.service.manager.activeContainer.firstElementChild;
 				if (this.activeCard != containerFirstChild) {
 					this.service.manager.activeContainer.insertBefore(this.activeCard, containerFirstChild);
@@ -240,9 +282,9 @@ export abstract class ActivableModule {
 		});
 		this.mainButton.addEventListener('click', () => {
 			// Make service the first in the list
-			const index = Options.services.indexOf(this.service.name);
+			const index = Options.services.indexOf(this.service.serviceName);
 			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
-			Options.mainService = this.service.name;
+			Options.mainService = this.service.serviceName;
 			Options.save();
 			// Remove main button and add the main button to the previous main
 			if (this.service.manager.mainService && this.service.manager.mainService.activeModule) {
@@ -281,10 +323,10 @@ export abstract class ActivableModule {
 		});
 		this.removeButton.addEventListener('click', async () => {
 			// Remove service from Service list and assign new main if possible
-			const index = Options.services.indexOf(this.service.name);
+			const index = Options.services.indexOf(this.service.serviceName);
 			if (index > -1) {
 				Options.services.splice(index, 1);
-				if (Options.mainService == this.service.name) {
+				if (Options.mainService == this.service.serviceName) {
 					Options.mainService = Options.services.length > 0 ? Options.services[0] : undefined;
 				}
 			}
@@ -295,7 +337,7 @@ export abstract class ActivableModule {
 			// Save
 			Options.save();
 			// Disable card
-			this.service.manager.removeActiveService(this.service.name);
+			this.service.manager.removeActiveService(this.service.serviceName);
 			this.desactivate();
 			// Move service card after the active cards
 			while (
@@ -310,7 +352,7 @@ export abstract class ActivableModule {
 			// Set the new main
 			if (Options.mainService) {
 				const mainService = this.service.manager.services.find(
-					(service: Service) => service.name == Options.mainService
+					(service: Service) => service.serviceName == Options.mainService
 				);
 				if (mainService && mainService.activeModule) {
 					mainService.activeModule.mainButton.classList.add('hidden');
@@ -326,8 +368,17 @@ export abstract class ActivableModule {
 				if (!this) return;
 				// Create modal
 				const modal = new Modal('small');
-				modal.header.classList.add(this.service.name.toLocaleLowerCase());
+				modal.header.classList.add(this.service.serviceName.toLocaleLowerCase());
 				modal.header.appendChild(this.service.createTitle());
+				const submitButton = DOM.create('button', {
+					class: 'primary puffy',
+					type: 'submit',
+					childs: [DOM.icon('sign-in-alt'), DOM.text('Login')],
+				});
+				const cancelButton = DOM.create('button', {
+					class: 'default center',
+					childs: [DOM.icon('times-circle'), DOM.text('Cancel')],
+				});
 				const form = DOM.create('form', {
 					class: 'body',
 					childs: [
@@ -350,16 +401,9 @@ export abstract class ActivableModule {
 								}),
 							],
 						}),
-						DOM.create('button', {
-							class: 'primary puffy',
-							type: 'submit',
-							childs: [DOM.icon('sign-in-alt'), DOM.text('Login')],
-						}),
+						submitButton,
+						cancelButton,
 					],
-				});
-				const cancelButton = DOM.create('button', {
-					class: 'default center',
-					childs: [DOM.icon('times-circle'), DOM.text('Cancel')],
 				});
 				if (this.preModalForm) this.preModalForm(modal);
 				DOM.append(modal.body, DOM.append(form, cancelButton));
@@ -373,9 +417,15 @@ export abstract class ActivableModule {
 					}
 					if (!busy && this.login) {
 						busy = true;
+						submitButton.disabled = true;
+						cancelButton.disabled = true;
+						modal.disableExit();
 						modal.content.classList.add('loading');
 						// Login call Options.save itself
 						const res = await this.login(form.identifier.value.trim(), form.password.value);
+						submitButton.disabled = false;
+						cancelButton.disabled = false;
+						modal.enableExit();
 						modal.content.classList.remove('loading');
 						if (res == RequestStatus.SUCCESS) {
 							this.loginButton.remove();
@@ -388,9 +438,7 @@ export abstract class ActivableModule {
 				});
 				cancelButton.addEventListener('click', (event) => {
 					event.preventDefault();
-					if (!busy) {
-						modal.remove();
-					}
+					if (!busy) modal.remove();
 				});
 				modal.show();
 			} // else LoginMethod.EXTERNAL just open a link
@@ -398,7 +446,7 @@ export abstract class ActivableModule {
 	};
 
 	updateStatus = (status: RequestStatus): void => {
-		this.activate(Options.mainService == this.service.name);
+		this.activate(Options.mainService == this.service.serviceName);
 		if (status == RequestStatus.SUCCESS) {
 			this.statusMessage.className = 'message success';
 			this.statusMessageContent.textContent = 'Active';
@@ -408,7 +456,7 @@ export abstract class ActivableModule {
 			this.statusMessageContent.textContent = 'Inactive';
 			this.activeCardContent.insertBefore(this.loginButton, this.checkStatusButton);
 		}
-		this.service.manager.updateServiceStatus(this.service.name, status);
+		this.service.manager.updateServiceStatus(this.service.serviceName, status);
 	};
 }
 
@@ -488,7 +536,7 @@ export abstract class SaveModule<T extends Summary = Summary> {
 	createModal = (): Modal => {
 		const modal = new Modal();
 		modal.modal.classList.add('ieport');
-		modal.header.classList.add(this.service.name.toLocaleLowerCase());
+		modal.header.classList.add(this.service.serviceName.toLocaleLowerCase());
 		modal.header.appendChild(this.service.createTitle());
 		return modal;
 	};
@@ -610,7 +658,7 @@ export abstract class ImportableModule extends SaveModule<ImportSummary> {
 	};
 
 	displaySummary = (): void => {
-		// this.notification('success', `Done Importing ${this.service.name} !`);
+		// this.notification('success', `Done Importing ${this.service.serviceName} !`);
 		if (this.summary.total != this.summary.valid) {
 			const content = DOM.create('p', {
 				textContent: `${
@@ -668,7 +716,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 
 	createForm = (): HTMLFormElement => {
 		const form = DOM.create('form', { class: 'body' });
-		const inputId = `file_${this.service.name}`;
+		const inputId = `file_${this.service.serviceName}`;
 		form.appendChild(DOM.create('h2', { textContent: 'Options' }));
 		const options = Checkbox.make('merge', 'Merge with current save');
 		Checkbox.make('checkServices', 'Check Services ID with Mochi after Import', options);
@@ -893,7 +941,7 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 			} else {
 				const connections = await Mochi.findMany(
 					titleList.map((t) => t.mochi),
-					this.service.name
+					this.service.serviceName
 				);
 				let found: (number | string)[] = [];
 				if (connections !== undefined) {

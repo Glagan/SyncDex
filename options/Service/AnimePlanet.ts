@@ -2,7 +2,7 @@ import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
 import { AnimePlanetTitle, AnimePlanetStatus } from '../../src/Service/AnimePlanet';
 import { DOM } from '../../src/DOM';
-import { Title, TitleCollection, ServiceName, ServiceKey } from '../../src/Title';
+import { Title, TitleCollection, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 
 class AnimePlanetActive extends ActivableModule {
@@ -106,7 +106,7 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 	convertTitles = async (titles: TitleCollection, titleList: AnimePlanetTitle[]): Promise<number> => {
 		const connections = await Mochi.findMany(
 			titleList.map((t) => t.id.i),
-			this.service.name
+			this.service.serviceName
 		);
 		const found: number[] = [];
 		if (connections !== undefined) {
@@ -145,8 +145,38 @@ class AnimePlanetExport extends APIExportableModule {
 }
 
 export class AnimePlanet extends Service {
-	readonly name: ServiceName = ServiceName.AnimePlanet;
-	readonly key: ServiceKey = ServiceKey.AnimePlanet;
+	static readonly serviceName: ServiceName = ServiceName.AnimePlanet;
+	static readonly key: ServiceKey = ServiceKey.AnimePlanet;
+
+	static SaveInput(value?: ServiceKeyType): HTMLInputElement[] {
+		const id = value as AnimePlanetReference | undefined;
+		return [
+			DOM.create('input', {
+				type: 'text',
+				name: `AnimePlanet_slug`,
+				value: `${id ? id.s : ''}`,
+				placeholder: 'AnimePlanet Slug',
+			}),
+			DOM.create('input', {
+				type: 'number',
+				name: `AnimePlanet_id`,
+				value: `${id ? id.i : ''}`,
+				placeholder: 'AnimePlanet ID',
+			}),
+		];
+	}
+
+	static HandleInput(title: Title, form: HTMLFormElement): void {
+		if (form.AnimePlanet_slug.value != '' && form.AnimePlanet_id.value) {
+			const id = parseInt(form.AnimePlanet_id.value as string);
+			if (!isNaN(id)) title.services.ap = { s: form.AnimePlanet_slug.value, i: id };
+		} else delete title.services.ap;
+	}
+
+	static link(id: ServiceKeyType): string {
+		if (typeof id !== 'object') return '#';
+		return AnimePlanetTitle.link(id);
+	}
 
 	activeModule: AnimePlanetActive = new AnimePlanetActive(this);
 	importModule: AnimePlanetImport = new AnimePlanetImport(this);

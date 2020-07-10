@@ -12,22 +12,29 @@ import { MangaUpdates } from '../Service/MangaUpdates';
 import { RequestStatus } from '../../src/Runtime';
 import { ServiceName } from '../../src/Title';
 
-export const enum SaveMethod {
-	IMPORT = 'IMPORT',
-	EXPORT = 'EXPORT',
+export function GetService(name: ServiceName): typeof Service {
+	switch (name) {
+		case ServiceName.MyAnimeList:
+			return MyAnimeList;
+		case ServiceName.Anilist:
+			return Anilist;
+		case ServiceName.Kitsu:
+			return Kitsu;
+		case ServiceName.AnimePlanet:
+			return AnimePlanet;
+		case ServiceName.MangaUpdates:
+			return MangaUpdates;
+		case ServiceName.MangaDex:
+			return MangaDex;
+		case ServiceName.MyMangaDex:
+			return MyMangaDex;
+		case ServiceName.SyncDex:
+			return SyncDex;
+	}
 }
 
 export class ServiceManager {
-	services: Service[] = [
-		new MyMangaDex(this),
-		new SyncDex(this),
-		new MangaDex(this),
-		new MyAnimeList(this),
-		new Anilist(this),
-		new Kitsu(this),
-		new AnimePlanet(this),
-		new MangaUpdates(this),
-	];
+	services: Service[] = [];
 	// Active
 	activeContainer: HTMLElement;
 	mainService?: Service;
@@ -47,11 +54,14 @@ export class ServiceManager {
 		// Import/Export
 		this.importContainer = document.getElementById('import-container')!;
 		this.exportContainer = document.getElementById('export-container')!;
-		// Bind
-		for (const manager of this.services) {
-			if (manager.activeModule) {
-				manager.activeModule.bind();
-			}
+		// Create Services and bind them
+		for (const serviceName in ServiceName) {
+			// `service` is *NOT* an abstract class
+			const ServiceConstructor = GetService(serviceName as ServiceName);
+			/// @ts-ignore
+			const service = new ServiceConstructor(this) as Service;
+			this.services.push(service);
+			if (service.activeModule) service.activeModule.bind();
 		}
 		// Default State
 		this.refreshActive();
@@ -64,12 +74,12 @@ export class ServiceManager {
 	 */
 	reloadManager = async (service: Service): Promise<void> => {
 		if (!service.activeModule || !service.activeModule.activable) return;
-		const index = Options.services.indexOf(service.name);
-		if (Options.mainService == service.name) {
+		const index = Options.services.indexOf(service.serviceName);
+		if (Options.mainService == service.serviceName) {
 			this.mainService = service;
 			this.activeContainer.insertBefore(service.activeModule.activeCard, this.activeContainer.firstElementChild);
 			service.activeModule.activeCard.classList.add('active');
-			this.addActiveService(service.name);
+			this.addActiveService(service.serviceName);
 		} else if (index >= 0) {
 			// Insert as the *index* child to follow the Options order
 			const activeCards = this.activeContainer.querySelectorAll('.card.active');
@@ -88,7 +98,7 @@ export class ServiceManager {
 				this.activeContainer.insertBefore(service.activeModule.activeCard, activeCards[index]);
 			}
 			service.activeModule.activeCard.classList.add('active');
-			this.addActiveService(service.name);
+			this.addActiveService(service.serviceName);
 		} else {
 			this.activeContainer.appendChild(service.activeModule.activeCard);
 		}
