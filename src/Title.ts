@@ -2,6 +2,59 @@ import { LocalStorage } from './Storage';
 import { Options, AvailableOptions } from './Options';
 import { RequestStatus } from './Runtime';
 
+export enum ActivableName {
+	'MyAnimeList' = 'MyAnimeList',
+	'MangaUpdates' = 'MangaUpdates',
+	'Anilist' = 'Anilist',
+	'Kitsu' = 'Kitsu',
+	'AnimePlanet' = 'AnimePlanet',
+}
+
+export enum StaticName {
+	'MangaDex' = 'MangaDex',
+	'MyMangaDex' = 'MyMangaDex',
+	'SyncDex' = 'SyncDex',
+}
+
+export const ServiceName = {
+	...ActivableName,
+	...StaticName,
+};
+export type ServiceName = ActivableName | StaticName;
+
+export enum ActivableKey {
+	'MyAnimeList' = 'mal',
+	'MangaUpdates' = 'mu',
+	'Anilist' = 'al',
+	'Kitsu' = 'ku',
+	'AnimePlanet' = 'ap',
+}
+
+export enum StaticKey {
+	'MangaDex' = 'md',
+	'MyMangaDex' = 'mmd',
+	'SyncDex' = 'sc',
+}
+
+export const ServiceKey = {
+	...ActivableKey,
+	...StaticKey,
+};
+export type ServiceKey = ActivableKey | StaticKey;
+
+export interface ServiceKeyMap {
+	[ServiceKey.MyAnimeList]: number;
+	[ServiceKey.MangaUpdates]: number;
+	[ServiceKey.Anilist]: number;
+	[ServiceKey.Kitsu]: number;
+	[ServiceKey.AnimePlanet]: AnimePlanetReference;
+	[ServiceKey.MangaDex]: number;
+	[ServiceKey.MyMangaDex]: number;
+	[ServiceKey.SyncDex]: number;
+}
+
+export type ServiceList = { [key in ServiceKey]?: ServiceKeyMap[key] };
+
 interface SaveProgress {
 	c: number;
 	v?: number;

@@ -1023,6 +1023,15 @@ form .row {
 form .row input[type] {
 	min-width: 200px;
 }
+.entry-edit .service {
+	display: flex;
+	align-items: center;
+	width: 50%;
+	margin-bottom: 8px;
+}
+.entry-edit .service img {
+	flex-shrink: 0;
+}
 
 /* Dark Theme */
 body:not(.light) {

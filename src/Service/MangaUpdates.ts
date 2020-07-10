@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title } from '../Title';
+import { ServiceTitle, Title, ServiceName, ServiceKey } from '../Title';
 
 export const enum MangaUpdatesStatus {
 	NONE = -1,
@@ -11,8 +11,8 @@ export const enum MangaUpdatesStatus {
 }
 
 export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
-	readonly serviceName: ServiceName = 'MangaUpdates';
-	readonly serviceKey: ServiceKey = 'mu';
+	readonly serviceName: ServiceName = ServiceName.MangaUpdates;
+	readonly serviceKey: ServiceKey = ServiceKey.MangaUpdates;
 
 	static link(id: number): string {
 		return `https://www.mangaupdates.com/series.html?id=${id}`;

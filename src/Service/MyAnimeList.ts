@@ -1,5 +1,5 @@
 import { RequestStatus, Runtime } from '../Runtime';
-import { ServiceTitle, Title } from '../Title';
+import { ServiceTitle, Title, ServiceName, ServiceKey } from '../Title';
 
 export enum MyAnimeListStatus {
 	NONE = 0,
@@ -11,8 +11,8 @@ export enum MyAnimeListStatus {
 }
 
 export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
-	readonly serviceName: ServiceName = 'MyAnimeList';
-	readonly serviceKey: ServiceKey = 'mal';
+	readonly serviceName: ServiceName = ServiceName.MyAnimeList;
+	readonly serviceKey: ServiceKey = ServiceKey.MyAnimeList;
 
 	static link(id: number): string {
 		return `https://myanimelist.net/manga/${id}`;

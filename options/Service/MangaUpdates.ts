@@ -1,7 +1,7 @@
 import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, ActivableModule, APIImportableModule, ImportStep, LoginMethod, APIExportableModule } from './Service';
 import { MangaUpdatesTitle, MangaUpdatesStatus } from '../../src/Service/MangaUpdates';
-import { Title } from '../../src/Title';
+import { Title, ServiceName, ServiceKey } from '../../src/Title';
 
 class MangaUpdatesActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
@@ -120,8 +120,8 @@ class MangaUpdatesExport extends APIExportableModule {
 }
 
 export class MangaUpdates extends Service {
-	readonly name: ServiceName = 'MangaUpdates';
-	readonly key: ServiceKey = 'mu';
+	readonly name: ServiceName = ServiceName.MangaUpdates;
+	readonly key: ServiceKey = ServiceKey.MangaUpdates;
 
 	activeModule: MangaUpdatesActive = new MangaUpdatesActive(this);
 	importModule: MangaUpdatesImport = new MangaUpdatesImport(this);

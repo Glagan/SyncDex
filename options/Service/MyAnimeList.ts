@@ -1,5 +1,5 @@
 import { DOM } from '../../src/DOM';
-import { TitleCollection, Title } from '../../src/Title';
+import { TitleCollection, Title, ServiceName, ServiceKey } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import {
 	Service,
@@ -345,8 +345,8 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 }
 
 export class MyAnimeList extends Service {
-	readonly name: ServiceName = 'MyAnimeList';
-	readonly key: ServiceKey = 'mal';
+	readonly name: ServiceName = ServiceName.MyAnimeList;
+	readonly key: ServiceKey = ServiceKey.MyAnimeList;
 
 	activeModule: MyAnimeListActive = new MyAnimeListActive(this);
 	importModule: MyAnimeListImport = new MyAnimeListImport(this);

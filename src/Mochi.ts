@@ -1,4 +1,5 @@
 import { Runtime } from './Runtime';
+import { ServiceList, ServiceName } from './Title';
 
 interface MochiResult {
 	data: ServiceList[];
@@ -16,7 +17,10 @@ export class Mochi {
 	/**
 	 * Create link to the `Connections` endpoint.
 	 */
-	static connections(id: (number | string) | (number | string)[], source: ServiceName = 'MangaDex'): string {
+	static connections(
+		id: (number | string) | (number | string)[],
+		source: ServiceName = ServiceName.MangaDex
+	): string {
 		if (Array.isArray(id)) return `${Mochi.server}/connections.php?id=${id.join(',')}&source=${source}`;
 		return `${Mochi.server}/connections.php?id=${id}&source=${source}`;
 	}
@@ -26,7 +30,10 @@ export class Mochi {
 	 * @param title ID of the Title on the service
 	 * @param source The service of the Title
 	 */
-	static async find(title: number | string, source: ServiceName = 'MangaDex'): Promise<ServiceList | undefined> {
+	static async find(
+		title: number | string,
+		source: ServiceName = ServiceName.MangaDex
+	): Promise<ServiceList | undefined> {
 		const response = await Runtime.jsonRequest<MochiResult>({
 			url: Mochi.connections(title, source),
 		});
@@ -42,7 +49,7 @@ export class Mochi {
 	 */
 	static async findMany(
 		title: (number | string)[],
-		source: ServiceName = 'MangaDex'
+		source: ServiceName = ServiceName.MangaDex
 	): Promise<ServiceList[] | undefined> {
 		const response = await Runtime.jsonRequest<MochiResult>({
 			url: Mochi.connections(title, source),

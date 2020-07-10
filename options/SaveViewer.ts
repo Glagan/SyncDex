@@ -1,4 +1,4 @@
-import { Title, TitleCollection } from '../src/Title';
+import { Title, TitleCollection, ServiceKey, ServiceKeyMap, ActivableName, ServiceName } from '../src/Title';
 import { DOM, AppendableElement } from '../src/DOM';
 import { LocalStorage } from '../src/Storage';
 import { MyAnimeListTitle } from '../src/Service/MyAnimeList';
@@ -55,17 +55,17 @@ export class SaveViewer {
 		this.body.appendChild(fragment);
 	};
 
-	serviceLink = (key: ServiceKey, id: number | AnimePlanetReference): string => {
+	serviceLink = <K extends ServiceKey>(key: K, id: ServiceKeyMap[K]): string => {
 		switch (key) {
-			case 'mal':
+			case ServiceKey.MyAnimeList:
 				return MyAnimeListTitle.link(id as number);
-			case 'al':
+			case ServiceKey.Anilist:
 				return AnilistTitle.link(id as number);
-			case 'ku':
+			case ServiceKey.Kitsu:
 				return KitsuTitle.link(id as number);
-			case 'ap':
+			case ServiceKey.AnimePlanet:
 				return AnimePlanetTitle.link(id as AnimePlanetReference);
-			case 'mu':
+			case ServiceKey.MangaUpdates:
 				return MangaUpdatesTitle.link(id as number);
 		}
 		return '#';
@@ -128,6 +128,8 @@ export class SaveViewer {
 		const modal = new Modal('medium');
 		modal.header.classList.add('title');
 		modal.header.textContent = 'Edit Entry';
+		modal.body.classList.add('entry-edit');
+		// Buttons to add classes later
 		const submitButton = DOM.create('button', {
 			class: 'primary puffy',
 			childs: [DOM.icon('save'), DOM.text('Save')],
@@ -142,6 +144,49 @@ export class SaveViewer {
 				},
 			},
 		});
+		// Active Service on the Title
+		const services = DOM.create('div', { class: 'services' });
+		for (const sn in ActivableName) {
+			const serviceName = sn as ServiceName;
+			const serviceKey = ServiceKey[serviceName];
+			const inputs: HTMLInputElement[] = [];
+			if (serviceKey === ServiceKey.AnimePlanet) {
+				inputs.push(
+					DOM.create('input', {
+						type: 'text',
+						name: `AnimePlanet_slug`,
+						value: `${title.services.ap ? title.services.ap.s : ''}`,
+						placeholder: 'AnimePlanet Slug',
+					}),
+					DOM.create('input', {
+						type: 'number',
+						name: `AnimePlanet_id`,
+						value: `${title.services.ap ? title.services.ap.i : ''}`,
+						placeholder: 'AnimePlanet ID',
+					})
+				);
+			} else {
+				inputs.push(
+					DOM.create('input', {
+						type: 'number',
+						name: serviceName,
+						placeholder: `${serviceName} ID`,
+						value: `${title.services[serviceKey]}`,
+					})
+				);
+			}
+			services.appendChild(
+				DOM.create('div', {
+					class: 'service',
+					childs: [
+						DOM.create('img', { src: `/icons/${serviceKey}.png`, title: serviceName }),
+						DOM.space(),
+						...inputs,
+					],
+				})
+			);
+		}
+		// Create form with every rows
 		const form = DOM.create('form', { class: 'save-entry' });
 		DOM.append(
 			form,
@@ -214,6 +259,8 @@ export class SaveViewer {
 					}),
 				]),
 			]),
+			DOM.create('label', { textContent: 'Services' }),
+			services,
 			DOM.create('div', {
 				childs: [submitButton, cancelButton],
 			})
@@ -232,10 +279,10 @@ export class SaveViewer {
 			if (form.volume.value != '') {
 				const volume = parseInt(form.volume.value);
 				if (!isNaN(volume) && volume >= -1) title.progress.volume = volume;
-			} else title.progress.volume = undefined;
+			} else delete title.progress.volume;
 			// Name
 			if (form.mediaName.value != '') title.name = (form.mediaName.value as string).trim();
-			else title.name = undefined;
+			else delete title.name;
 			// Score
 			if (form.score.value != '') {
 				const score = parseInt(form.score.value);
@@ -245,13 +292,29 @@ export class SaveViewer {
 			if (form.start.value != '') {
 				const parts: number[] = (form.start.value as string).split('-').map((p) => parseInt(p));
 				title.start = new Date(parts[0], parts[1] - 1, parts[2]).getTime();
-			} else title.start = undefined;
+			} else delete title.start;
 			// End - YYYY-MM-DD
 			if (form.end.value != '') {
 				const parts: number[] = (form.end.value as string).split('-').map((p) => parseInt(p));
 				title.end = new Date(parts[0], parts[1] - 1, parts[2]).getTime();
-			} else title.end = undefined;
-			console.log('Saving ', title);
+			} else delete title.end;
+			// Services
+			for (const sn in ActivableName) {
+				const serviceName = sn as ServiceName;
+				const serviceKey = ServiceKey[serviceName];
+				if (serviceKey === ServiceKey.AnimePlanet) {
+					if (form.AnimePlanet_slug.value != '' && form.AnimePlanet_id.value) {
+						const id = parseInt(form.AnimePlanet_id.value as string);
+						if (!isNaN(id)) title.services.ap = { s: form.AnimePlanet_slug.value, i: id };
+					} else delete title.services.ap;
+				} else {
+					if (form[serviceName].value != '') {
+						const id = parseInt(form[serviceName].value as string);
+						if (!isNaN(id)) title.services[serviceKey] = id;
+					} else delete title.services[serviceKey];
+				}
+			}
+			// Save and close Modal
 			await title.save();
 			submitButton.classList.remove('loading');
 			modal.enableExit();

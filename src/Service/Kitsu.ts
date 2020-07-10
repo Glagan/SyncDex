@@ -1,6 +1,6 @@
 import { Options } from '../Options';
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title } from '../Title';
+import { ServiceTitle, Title, ServiceName, ServiceKey } from '../Title';
 
 interface KitsuHeaders {
 	Accept: string;
@@ -90,8 +90,8 @@ export const KitsuHeaders = (): KitsuHeaders => {
 };
 
 export class KitsuTitle extends ServiceTitle<KitsuTitle> {
-	readonly serviceName: ServiceName = 'Kitsu';
-	readonly serviceKey: ServiceKey = 'ku';
+	readonly serviceName: ServiceName = ServiceName.Kitsu;
+	readonly serviceKey: ServiceKey = ServiceKey.Kitsu;
 
 	static link(id: number): string {
 		return `https://kitsu.io/manga/${id}`;

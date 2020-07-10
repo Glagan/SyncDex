@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title } from '../Title';
+import { ServiceTitle, Title, ServiceName, ServiceKey } from '../Title';
 import { Options } from '../Options';
 
 export const enum AnilistStatus {
@@ -77,8 +77,8 @@ export const AnilistHeaders = (): AnilistHeaders => {
  * Score are automatically converted in a 0-100 range.
  */
 export class AnilistTitle extends ServiceTitle<AnilistTitle> {
-	readonly serviceName: ServiceName = 'Anilist';
-	readonly serviceKey: ServiceKey = 'al';
+	readonly serviceName: ServiceName = ServiceName.Anilist;
+	readonly serviceKey: ServiceKey = ServiceKey.Anilist;
 
 	static link(id: number): string {
 		return `https://anilist.co/manga/${id}`;

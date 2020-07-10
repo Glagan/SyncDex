@@ -2,7 +2,7 @@ import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
 import { AnimePlanetTitle, AnimePlanetStatus } from '../../src/Service/AnimePlanet';
 import { DOM } from '../../src/DOM';
-import { Title, TitleCollection } from '../../src/Title';
+import { Title, TitleCollection, ServiceName, ServiceKey } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 
 class AnimePlanetActive extends ActivableModule {
@@ -145,8 +145,8 @@ class AnimePlanetExport extends APIExportableModule {
 }
 
 export class AnimePlanet extends Service {
-	readonly name: ServiceName = 'AnimePlanet';
-	readonly key: ServiceKey = 'ap';
+	readonly name: ServiceName = ServiceName.AnimePlanet;
+	readonly key: ServiceKey = ServiceKey.AnimePlanet;
 
 	activeModule: AnimePlanetActive = new AnimePlanetActive(this);
 	importModule: AnimePlanetImport = new AnimePlanetImport(this);

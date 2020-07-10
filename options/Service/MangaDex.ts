@@ -1,4 +1,4 @@
-import { TitleCollection, Title } from '../../src/Title';
+import { TitleCollection, Title, ServiceName, ServiceKey } from '../../src/Title';
 import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, APIImportableModule, APIExportableModule, ActivableModule, LoginMethod } from './Service';
 import { AppendableElement, DOM } from '../../src/DOM';
@@ -111,8 +111,8 @@ class MangaDexExport extends APIExportableModule {
 }
 
 export class MangaDex extends Service {
-	readonly name: ServiceName = 'MangaDex';
-	readonly key: ServiceKey = 'md';
+	readonly name: ServiceName = ServiceName.MangaDex;
+	readonly key: ServiceKey = ServiceKey.MangaDex;
 
 	createTitle = (): AppendableElement => {
 		return DOM.create('span', {

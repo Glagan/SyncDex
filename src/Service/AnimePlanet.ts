@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title } from '../Title';
+import { ServiceTitle, Title, ServiceName, ServiceKey } from '../Title';
 
 export const enum AnimePlanetStatus {
 	NONE = 0,
@@ -19,8 +19,8 @@ interface AnimePlanetAPIResponse {
 }
 
 export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
-	readonly serviceName: ServiceName = 'AnimePlanet';
-	readonly serviceKey: ServiceKey = 'ap';
+	readonly serviceName: ServiceName = ServiceName.AnimePlanet;
+	readonly serviceKey: ServiceKey = ServiceKey.AnimePlanet;
 
 	static link(id: string | AnimePlanetReference): string {
 		if (typeof id === 'string') return `https://www.anime-planet.com/manga/${id}`;

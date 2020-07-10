@@ -14,35 +14,10 @@ const enum Status {
 	WONT_READ,
 }
 
-type ServiceName =
-	| 'MangaDex'
-	| 'MyAnimeList'
-	| 'MangaUpdates'
-	| 'Anilist'
-	| 'Kitsu'
-	| 'AnimePlanet'
-	| 'MyMangaDex'
-	| 'SyncDex';
-
-type ServiceKey = 'md' | 'mal' | 'mu' | 'al' | 'ku' | 'ap' | 'mmd' | 'sc';
-
 interface AnimePlanetReference {
 	s: string;
 	i: number;
 }
-
-interface ServiceKeyMap {
-	md: number;
-	mal: number;
-	mu: number;
-	al: number;
-	ku: number;
-	ap: AnimePlanetReference;
-	mmd: number;
-	sc: number;
-}
-
-type ServiceList = { [key in keyof ServiceKeyMap]?: ServiceKeyMap[key] };
 
 interface Progress {
 	chapter: number;

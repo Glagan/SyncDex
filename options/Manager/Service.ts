@@ -10,6 +10,7 @@ import { Kitsu } from '../Service/Kitsu';
 import { AnimePlanet } from '../Service/AnimePlanet';
 import { MangaUpdates } from '../Service/MangaUpdates';
 import { RequestStatus } from '../../src/Runtime';
+import { ServiceName } from '../../src/Title';
 
 export const enum SaveMethod {
 	IMPORT = 'IMPORT',
