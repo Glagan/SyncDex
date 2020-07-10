@@ -3,7 +3,6 @@ const fs = require('fs');
 const exec = require('child_process');
 const rimraf = require('rimraf');
 const path = require('path');
-const loadConfigFile = require('rollup/dist/loadConfigFile');
 const rollup = require('rollup');
 const typescript = require('@rollup/plugin-typescript');
 const { terser } = require('rollup-plugin-terser');

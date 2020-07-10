@@ -67,7 +67,7 @@ export class HighlightsManager {
 	list: Highlights[] = [];
 
 	constructor() {
-		this.node = document.getElementById('highlights') as HTMLElement;
+		this.node = document.getElementById('highlights')!;
 		const addButton = DOM.create('button', {
 			class: 'primary',
 			events: {

@@ -32,9 +32,9 @@ export class SaveViewer {
 	};
 
 	constructor() {
-		this.paging = document.getElementById('save-paging') as HTMLElement;
-		this.pagingPages = document.getElementById('paging-pages') as HTMLElement;
-		this.body = document.getElementById('save-body') as HTMLElement;
+		this.paging = document.getElementById('save-paging')!;
+		this.pagingPages = document.getElementById('paging-pages')!;
+		this.body = document.getElementById('save-body')!;
 		this.reloadButton = document.getElementById('reload-save-viewer') as HTMLButtonElement;
 		this.previousPage = DOM.create('button');
 		this.reloadButton.addEventListener('click', (event) => {
@@ -101,10 +101,10 @@ export class SaveViewer {
 
 	statusOptions = (title: Title): HTMLSelectElement => {
 		const select = DOM.create('select', { id: 'ee_status', name: 'status', required: true });
-		const currentStatus = SaveViewer.statusMap[title.status];
+		let value = 0;
 		for (const status of Object.values(SaveViewer.statusMap)) {
-			const option = DOM.create('option', { textContent: status, value: status });
-			if (currentStatus == status) option.selected = true;
+			const option = DOM.create('option', { textContent: status, value: `${value}` });
+			if (title.status == value++) option.selected = true;
 			select.appendChild(option);
 		}
 		return select;
@@ -122,6 +122,144 @@ export class SaveViewer {
 				...(typeof content === 'string' ? [DOM.text(content)] : content),
 			],
 		});
+	};
+
+	createModal = (title: Title): Modal => {
+		const modal = new Modal('medium');
+		modal.header.classList.add('title');
+		modal.header.textContent = 'Edit Entry';
+		const submitButton = DOM.create('button', {
+			class: 'primary puffy',
+			childs: [DOM.icon('save'), DOM.text('Save')],
+		});
+		const cancelButton = DOM.create('button', {
+			class: 'default',
+			childs: [DOM.icon('times-circle'), DOM.text('Cancel')],
+			events: {
+				click: (event) => {
+					event.preventDefault();
+					modal.remove();
+				},
+			},
+		});
+		const form = DOM.create('form', { class: 'save-entry' });
+		DOM.append(
+			form,
+			this.modalRow([
+				this.modalGroup('MangaDex', '', [
+					DOM.create('span', { class: 'helper', textContent: `# ${title.id}` }),
+				]),
+				this.modalGroup('Name', 'ee_name', [
+					DOM.create('input', {
+						id: 'ee_name',
+						name: 'mediaName',
+						type: 'text',
+						placeholder: 'Name',
+						value: title.name ? title.name : '',
+					}),
+				]),
+			]),
+			this.modalRow([
+				this.modalGroup('Chapter', 'ee_chapter', [
+					DOM.create('input', {
+						id: 'ee_chapter',
+						name: 'chapter',
+						type: 'number',
+						placeholder: 'Chapter',
+						value: `${title.progress.chapter}`,
+						required: true,
+					}),
+				]),
+				this.modalGroup('Volume', 'ee_volume', [
+					DOM.create('input', {
+						id: 'ee_volume',
+						name: 'volume',
+						type: 'number',
+						placeholder: 'Volume',
+						value: title.progress.volume ? `${title.progress.volume}` : '',
+					}),
+				]),
+			]),
+			this.modalRow([
+				this.modalGroup('Status', 'status', [this.statusOptions(title)]),
+				this.modalGroup('Score (0-100)', 'ee_score', [
+					DOM.create('input', {
+						id: 'ee_score',
+						name: 'score',
+						type: 'number',
+						placeholder: 'Score (0-100)',
+						min: '0',
+						max: '100',
+						value: title.score > 0 ? `${title.score}` : '',
+					}),
+				]),
+			]),
+			this.modalRow([
+				this.modalGroup('Start', 'ee_start', [
+					DOM.create('input', {
+						id: 'ee_start',
+						name: 'start',
+						type: 'date',
+						placeholder: 'Start Date',
+						value: title.start ? this.dateFormat(title.start) : '',
+					}),
+				]),
+				this.modalGroup('End', 'ee_end', [
+					DOM.create('input', {
+						id: 'ee_end',
+						name: 'end',
+						type: 'date',
+						placeholder: 'End Date',
+						value: title.end ? this.dateFormat(title.end) : '',
+					}),
+				]),
+			]),
+			DOM.create('div', {
+				childs: [submitButton, cancelButton],
+			})
+		);
+		form.addEventListener('submit', async (event) => {
+			event.preventDefault();
+			modal.disableExit();
+			cancelButton.disabled = true;
+			submitButton.disabled = true;
+			submitButton.classList.add('loading');
+			// Chapter and Status always required
+			const chapter = parseFloat(form.chapter.value);
+			if (!isNaN(chapter) && chapter >= -1) title.progress.chapter = chapter;
+			title.status = parseInt(form.status.value);
+			// Volume
+			if (form.volume.value != '') {
+				const volume = parseInt(form.volume.value);
+				if (!isNaN(volume) && volume >= -1) title.progress.volume = volume;
+			} else title.progress.volume = undefined;
+			// Name
+			if (form.mediaName.value != '') title.name = (form.mediaName.value as string).trim();
+			else title.name = undefined;
+			// Score
+			if (form.score.value != '') {
+				const score = parseInt(form.score.value);
+				if (!isNaN(score) && score >= 0) title.score = score;
+			} else title.score = 0;
+			// Start - YYYY-MM-DD, convert month from 1-12 to 0-11
+			if (form.start.value != '') {
+				const parts: number[] = (form.start.value as string).split('-').map((p) => parseInt(p));
+				title.start = new Date(parts[0], parts[1] - 1, parts[2]).getTime();
+			} else title.start = undefined;
+			// End - YYYY-MM-DD
+			if (form.end.value != '') {
+				const parts: number[] = (form.end.value as string).split('-').map((p) => parseInt(p));
+				title.end = new Date(parts[0], parts[1] - 1, parts[2]).getTime();
+			} else title.end = undefined;
+			console.log('Saving ', title);
+			await title.save();
+			submitButton.classList.remove('loading');
+			modal.enableExit();
+			modal.remove();
+			this.loadPage(this.currentPage);
+		});
+		modal.body.appendChild(form);
+		return modal;
 	};
 
 	createRow = (title: Title): HTMLElement => {
@@ -162,106 +300,8 @@ export class SaveViewer {
 			],
 		});
 		editButton.addEventListener('click', async (event) => {
-			const modal = new Modal('medium');
-			modal.header.classList.add('title');
-			modal.header.textContent = 'Edit Entry';
-			const cancelButton = DOM.create('button', {
-				class: 'default',
-				childs: [DOM.icon('times-circle'), DOM.text('Cancel')],
-				events: {
-					click: (event) => {
-						event.preventDefault();
-						modal.remove();
-					},
-				},
-			});
-			const form = DOM.create('form', { class: 'save-entry' });
-			DOM.append(
-				form,
-				this.modalRow([
-					this.modalGroup('MangaDex', '', [
-						DOM.create('span', { class: 'helper', textContent: `# ${title.id}` }),
-					]),
-					this.modalGroup('Name', 'ee_name', [
-						DOM.create('input', {
-							id: 'ee_name',
-							name: 'name',
-							type: 'text',
-							placeholder: 'Name',
-							value: title.name ? title.name : '',
-						}),
-					]),
-				]),
-				this.modalRow([
-					this.modalGroup('Chapter', 'ee_chapter', [
-						DOM.create('input', {
-							id: 'ee_chapter',
-							name: 'chapter',
-							type: 'number',
-							placeholder: 'Chapter',
-							value: `${title.progress.chapter}`,
-							required: true,
-						}),
-					]),
-					this.modalGroup('Volume', 'ee_volume', [
-						DOM.create('input', {
-							id: 'ee_volume',
-							name: 'volume',
-							type: 'number',
-							placeholder: 'Volume',
-							value: title.progress.volume ? `${title.progress.volume}` : '',
-						}),
-					]),
-				]),
-				this.modalRow([
-					this.modalGroup('Status', 'status', [this.statusOptions(title)]),
-					this.modalGroup('Score (0-100)', 'ee_score', [
-						DOM.create('input', {
-							id: 'ee_score',
-							name: 'score',
-							type: 'number',
-							placeholder: 'Score (0-100)',
-							min: '0',
-							max: '100',
-							value: title.score > 0 ? `${title.score}` : '',
-						}),
-					]),
-				]),
-				this.modalRow([
-					this.modalGroup('Start', 'ee_start', [
-						DOM.create('input', {
-							id: 'ee_start',
-							name: 'start',
-							type: 'date',
-							placeholder: 'Start Date',
-							value: title.start ? this.dateFormat(title.start) : '',
-						}),
-					]),
-					this.modalGroup('End', 'ee_end', [
-						DOM.create('input', {
-							id: 'ee_end',
-							name: 'end',
-							type: 'date',
-							placeholder: 'End Date',
-							value: title.end ? this.dateFormat(title.end) : '',
-						}),
-					]),
-				]),
-				DOM.create('div', {
-					childs: [
-						DOM.create('button', {
-							class: 'primary puffy',
-							childs: [DOM.icon('save'), DOM.text('Save')],
-						}),
-						cancelButton,
-					],
-				})
-			);
-			form.addEventListener('submit', (event) => {
-				event.preventDefault();
-			});
-			modal.body.appendChild(form);
-			modal.show();
+			event.preventDefault();
+			this.createModal(title).show();
 		});
 		deleteButton.addEventListener('click', async (event) => {
 			event.preventDefault();

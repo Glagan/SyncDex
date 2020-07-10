@@ -388,10 +388,6 @@ label,
 	display: block;
 	line-height: 20px;
 }
-label + .helper,
-.label + .helper {
-	margin-left: 30px;
-}
 input[type] {
 	border-radius: 2px;
 	padding: 0 8px;
@@ -486,6 +482,10 @@ input[type='checkbox'][data-dependency] + label {
 }
 input[type='checkbox'][data-dependency] + label + .helper {
 	margin-left: 60px;
+}
+input[type='checkbox'] + label + .helper,
+input[type='checkbox'] + .label + .helper {
+	margin-left: 30px;
 }
 
 /* Messages */

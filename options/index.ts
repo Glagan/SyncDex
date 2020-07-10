@@ -57,8 +57,8 @@ class OptionsManager {
 		}
 		// Change theme button
 		const prefersColorScheme = window.matchMedia('(prefers-color-scheme: dark)');
-		const themeRow = document.getElementById('switch-theme') as HTMLElement;
-		const themeButton = themeRow.querySelector('i') as HTMLElement;
+		const themeRow = document.getElementById('switch-theme')!;
+		const themeButton = themeRow.querySelector('i')!;
 		if (prefersColorScheme.matches) {
 			document.body.classList.add('dark');
 			themeButton.className = 'fas fa-sun';

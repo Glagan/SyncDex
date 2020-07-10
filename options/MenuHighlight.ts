@@ -6,7 +6,7 @@ class Menu {
 	constructor(link: HTMLElement) {
 		this.link = link;
 		const name = link.dataset.link as string;
-		this.header = document.getElementById(name) as HTMLElement;
+		this.header = document.getElementById(name)!;
 		this.marginTop = parseInt(getComputedStyle(this.header).marginTop);
 	}
 
@@ -21,7 +21,7 @@ export class MenuHighlight {
 	activeMenu: number = 0;
 
 	constructor() {
-		this.node = document.getElementById('content') as HTMLElement;
+		this.node = document.getElementById('content')!;
 		document.querySelectorAll<HTMLElement>('[data-link]').forEach((link) => {
 			const menu = new Menu(link);
 			link.addEventListener('click', () => {

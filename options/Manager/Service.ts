@@ -39,13 +39,13 @@ export class ServiceManager {
 	exportContainer: HTMLElement;
 
 	constructor() {
-		this.activeContainer = document.getElementById('service-list') as HTMLElement;
+		this.activeContainer = document.getElementById('service-list')!;
 		// Warnings
-		this.noServices = document.getElementById('no-service') as HTMLElement;
-		this.inactiveWarning = document.getElementById('inactive-service') as HTMLElement;
+		this.noServices = document.getElementById('no-service')!;
+		this.inactiveWarning = document.getElementById('inactive-service')!;
 		// Import/Export
-		this.importContainer = document.getElementById('import-container') as HTMLElement;
-		this.exportContainer = document.getElementById('export-container') as HTMLElement;
+		this.importContainer = document.getElementById('import-container')!;
+		this.exportContainer = document.getElementById('export-container')!;
 		// Bind
 		for (const manager of this.services) {
 			if (manager.activeModule) {
