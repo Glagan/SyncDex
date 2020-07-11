@@ -12,7 +12,6 @@ export interface AvailableOptions {
 	thumbnail: boolean;
 	originalThumbnail: boolean;
 	thumbnailMaxHeight: number;
-	updateServicesInList: boolean;
 	// Reading
 	saveChapters: boolean;
 	chaptersSaved: number;
@@ -63,7 +62,6 @@ export const DefaultOptions: AvailableOptions = {
 	thumbnail: true,
 	originalThumbnail: false,
 	thumbnailMaxHeight: 80,
-	updateServicesInList: false,
 	// Reading
 	saveChapters: true,
 	chaptersSaved: 400,

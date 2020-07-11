@@ -105,6 +105,25 @@ let browser_manifests = {
 	},
 };
 
+//
+const Files = [
+	'dist:dist',
+	'icons:icons',
+	'options:options',
+	'background:background',
+	'src/css/SyncDex.css',
+	'build/scripts/SyncDex_background.js:background',
+	'build/scripts/SyncDex_options.js:options',
+	'build/scripts/SyncDex.js',
+	'build/scripts/SyncDex_Anilist.js:external',
+];
+const DevFiles = [
+	'build/scripts/SyncDex_background.js.map:background',
+	'build/scripts/SyncDex_options.js.map:options',
+	'build/scripts/SyncDex.js.map',
+	'build/scripts/SyncDex_Anilist.js.map:external',
+];
+
 // Startup
 // 91 red 92 green 93 orange 94 blue
 const optionColor = (option, content = undefined, theme = [92, 93]) =>
@@ -237,27 +256,11 @@ async function buildExtension(browser, nonVerbose) {
 	bundleManifestStream.cork();
 	bundleManifestStream.end();
 
-	const files = [
-		'dist:dist',
-		'icons:icons',
-		'options:options',
-		'background:background',
-		'src/SyncDex.css',
-		'build/scripts/SyncDex_background.js:background',
-		'build/scripts/SyncDex_options.js:options',
-		'build/scripts/SyncDex.js',
-		'build/scripts/SyncDex_Anilist.js:external',
-	];
 	if (options.mode == 'dev') {
-		files.unshift('src:src');
-		files.push(
-			'build/scripts/SyncDex_background.js.map:background',
-			'build/scripts/SyncDex_options.js.map:options',
-			'build/scripts/SyncDex.js.map',
-			'build/scripts/SyncDex_Anilist.js.map:external'
-		);
+		Files.unshift('src:src');
+		Files.push(...DevFiles);
 	}
-	deepFileCopy(files, folderName, ['chrome', 'firefox']);
+	deepFileCopy(Files, folderName, ['chrome', 'firefox']);
 
 	// Make web-ext
 	if (options.webExt) {

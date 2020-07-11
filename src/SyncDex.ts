@@ -4,7 +4,7 @@ import { MangaDex } from './MangaDex';
 import { DOM } from './DOM';
 import { TitleCollection } from './Title';
 
-console.log('SyncDex :: SyncDex');
+console.log('SyncDex :: Core');
 
 export class SyncDex {
 	router: Router = new Router();
@@ -12,22 +12,30 @@ export class SyncDex {
 	constructor() {
 		this.router.register(
 			[
-				'/follows(/chapters)?$',
-				'/group/(\\d+)(/chapters)?$',
-				'/user/(\\d+)(/chapters)?$',
-				'/follows(/manga)?$',
-				'/group/(\\d+)(/manga)?$',
-				'/user/(\\d+)(/manga)?$',
+				'/follows/?$',
+				'/follows/chapters(/?$|/\\d+(/\\d+/?)?)?',
+				'/group/\\d+(/[-A-Za-z0-9_]{0,}/?)?$',
+				'/group/\\d+/[-A-Za-z0-9_]{0,}/chapters(/?|/\\d+/?)$',
+				'/user/\\d+(/[-A-Za-z0-9_]{0,}/?)?$',
+				'/user/\\d+/[-A-Za-z0-9_]{0,}/chapters(/?|/\\d+/?)$',
 			],
 			this.chapterList
 		);
-		this.router.register('/chapter', this.chapterPage);
+		this.router.register('/chapter/\\d+$', this.chapterPage);
 		this.router.register(
-			['/genre', '/featured', '(/search|\\?page=search)', '(/titles|\\?page=titles)'],
+			[
+				'/follows/manga(/?|/\\d(/?|/\\d+(/?|/\\d+/?)))$',
+				'/group/\\d+/[-A-Za-z0-9_]{0,}/manga(/?|/\\d+/?)$',
+				'/user/\\d+/[-A-Za-z0-9_]{0,}/manga(/?|/\\d+/?)$',
+				'(/search|\\?page=search)',
+				'(/titles|\\?page=titles)',
+				'/genre(/\\d+)?$',
+				'/featured$',
+			],
 			this.titleList
 		);
-		this.router.register('/(manga|title)', this.titlePage);
-		this.router.register('/updates', this.updatesPage);
+		this.router.register('/(manga|title)(/?|/\\d+(/?|/[-A-Za-z0-9_]{0,}/?))$', this.titlePage);
+		this.router.register('/updates(/?$|/\\d+/?)$', this.updatesPage);
 	}
 
 	execute = (location: string): void => {
@@ -38,14 +46,7 @@ export class SyncDex {
 	chapterList = async (): Promise<any> => {
 		console.log('SyncDex :: Chapter List');
 
-		if (
-			!Options.hideHigher &&
-			!Options.hideLast &&
-			!Options.hideLower &&
-			!Options.thumbnail &&
-			!Options.updateServicesInList &&
-			!Options.highlight
-		)
+		if (!Options.hideHigher && !Options.hideLast && !Options.hideLower && !Options.thumbnail && !Options.highlight)
 			return;
 		const md = new MangaDex(document);
 		const groups = md.getChaptersGroups();

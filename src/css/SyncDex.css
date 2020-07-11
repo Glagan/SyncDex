@@ -63,8 +63,8 @@
 .sd-tooltip {
 	display: block;
 	position: absolute;
-	border: 1px solid rgba(0, 0, 0, 0.6);
-	border-radius: 4px;
+	border: 1px solid white;
+	border-radius: 2px;
 	overflow: hidden;
 	background-color: rgba(0, 0, 0, 0.8);
 	opacity: 0;
@@ -72,6 +72,8 @@
 	color: #fff;
 	z-index: 9999;
 	pointer-events: none;
+	max-height: 80vh;
+	box-shadow: 0 1px 2px 0 white;
 }
 .sd-tooltip.loading {
 	font-size: 1rem;
@@ -82,6 +84,7 @@
 }
 .sd-tooltip .thumbnail {
 	max-width: 100%;
+	max-height: inherit;
 	display: block;
 }
 .sd-tooltip .thumbnail.loading {
