@@ -1,5 +1,5 @@
 /***
- * Animations
+ * * Animations
  ***/
 
 @keyframes pulse {
@@ -39,7 +39,7 @@
 }
 
 /***
- * Meta
+ * * Meta
  ***/
 
 .loading {
@@ -55,9 +55,19 @@
 .has-fast-in-transition {
 	transition: all 400ms cubic-bezier(0.86, 0, 0.07, 1);
 }
+.hidden {
+	overflow: hidden;
+	max-height: 0;
+	transform: scaleY(0);
+	transform-origin: top;
+}
+.hidden.visible {
+	transform: scaleY(1);
+	max-height: 100px;
+}
 
 /***
- * Tooltips
+ * * Tooltips
  ***/
 
 .sd-tooltip {

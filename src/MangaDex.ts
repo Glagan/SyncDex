@@ -3,34 +3,37 @@ import { Options } from './Options';
 
 interface ChapterRow {
 	progress: Progress | undefined;
-	row: HTMLElement;
+	node: HTMLElement;
 	hidden: boolean;
 }
 
 class ChapterGroup {
 	titleId: number = 0;
 	name: string = '';
-	chapters: ChapterRow[] = [];
+	/**
+	 * List of all chapter rows in the group, starting from the top.
+	 */
+	rows: ChapterRow[] = [];
 	static currentColor: number = 0;
 
-	hide = (progres: Progress): void => {
+	hide = (progress: Progress): void => {
 		if (!Options.hideHigher && !Options.hideLower && !Options.hideLast) return;
-		let chapterCount = this.chapters.length;
-		for (const chapter of this.chapters) {
+		let chapterCount = this.rows.length;
+		for (const row of this.rows) {
+			if (!row.progress) continue;
 			if (
-				chapter.progress &&
-				((Options.hideHigher && progres.chapter > chapter.progress.chapter) ||
-					(Options.hideLower && progres.chapter < chapter.progress.chapter) ||
-					(Options.hideLast && progres.chapter == chapter.progress.chapter))
+				row.progress.chapter >= Math.floor(progress.chapter) + 2 ||
+				(Options.hideLower && row.progress.chapter < progress.chapter) ||
+				(Options.hideLast && progress.chapter == row.progress.chapter)
 			) {
-				chapter.row.classList.add('hidden');
-				chapter.hidden = true;
+				row.node.classList.add('hidden');
+				row.hidden = true;
 			}
 		}
-		if (this.chapters[0].hidden) {
-			// Display the title on the first not hidden chapter
+		// Display the title on the first not hidden chapter
+		if (this.rows[0].hidden) {
 			let j = 1;
-			while (j < chapterCount && this.chapters[j].hidden) j++;
+			while (j < chapterCount && this.rows[j].hidden) j++;
 			if (j < chapterCount) {
 				let link = DOM.create('a', {
 					textContent: this.name,
@@ -38,52 +41,51 @@ class ChapterGroup {
 					href: `/title/${this.titleId}`,
 					title: this.name,
 				});
-				this.chapters[j].row.firstElementChild?.appendChild(link);
+				this.rows[j].node.firstElementChild?.appendChild(link);
 			}
 		}
-
-		// TODO: Add button to show hidden
 	};
 
 	highlight = (progress: Progress): void => {
 		let lastColor = Options.colors.highlights.length,
-			selected = 0,
+			// index of the next or current chapter in the group
+			selected = -1,
+			foundNext = false,
 			outerColor = Options.colors.highlights[ChapterGroup.currentColor];
 		// If there is data
-		let chapterCount = this.chapters.length;
+		let chapterCount = this.rows.length;
 		for (let j = 0; j < chapterCount; j++) {
-			let chapter = this.chapters[j];
-			chapter.row.classList.add('has-fast-in-transition');
-			if (chapter.progress) {
+			let row = this.rows[j];
+			row.node.classList.add('has-fast-in-transition');
+			if (row.progress) {
 				if (
-					progress.chapter < chapter.progress.chapter &&
-					chapter.progress.chapter < Math.floor(progress.chapter) + 2
+					row.progress.chapter > progress.chapter &&
+					row.progress.chapter < Math.floor(progress.chapter) + 2
 				) {
-					chapter.row.style.backgroundColor = Options.colors.nextChapter;
+					// * Next Chapter
+					row.node.style.backgroundColor = Options.colors.nextChapter;
 					selected = j;
+					foundNext = true;
 					outerColor = Options.colors.nextChapter;
-				} else if (progress.chapter > chapter.progress.chapter) {
-					chapter.row.style.backgroundColor = Options.colors.higherChapter;
-				} else if (progress.chapter < chapter.progress.chapter) {
-					chapter.row.style.backgroundColor = Options.colors.lowerChapter;
-				} else if (progress.chapter == chapter.progress.chapter) {
-					chapter.row.style.backgroundColor = Options.colors.highlights[ChapterGroup.currentColor];
-					selected = j;
+				} else if (row.progress.chapter > progress.chapter) {
+					// * Higher Chapter
+					row.node.style.backgroundColor = Options.colors.higherChapter;
+				} else if (row.progress.chapter < progress.chapter) {
+					// * Lower Chapter
+					row.node.style.backgroundColor = Options.colors.lowerChapter;
+				} else if (progress.chapter == row.progress.chapter) {
+					// * Current Chapter
+					row.node.style.backgroundColor = Options.colors.highlights[ChapterGroup.currentColor];
+					if (!foundNext) selected = j;
 				}
 			}
 		}
-		if (selected > 0) {
+		if (selected >= 0) {
 			for (let j = 0; j < chapterCount; j++) {
-				if (
-					j == selected ||
-					this.chapters[j].hidden ||
-					(this.chapters[j].progress &&
-						this.chapters[j].progress?.chapter == this.chapters[selected].progress?.chapter)
-				)
+				if (j == selected) break;
+				if (this.rows[j].progress && this.rows[j].progress?.chapter == this.rows[selected].progress?.chapter)
 					continue;
-				if (this.chapters[j].row.firstElementChild) {
-					(this.chapters[j].row.firstElementChild as HTMLElement).style.backgroundColor = outerColor;
-				}
+				(this.rows[j].node.firstElementChild as HTMLElement).style.backgroundColor = outerColor;
 			}
 		}
 		ChapterGroup.currentColor = (ChapterGroup.currentColor + 1) % lastColor;
@@ -91,8 +93,8 @@ class ChapterGroup {
 
 	setThumbnail = (container: HTMLElement): void => {
 		// Add events
-		for (const group of this.chapters) {
-			this.setRowThumbnail(container, group.row);
+		for (const group of this.rows) {
+			this.setRowThumbnail(container, group.node);
 		}
 	};
 
@@ -259,13 +261,13 @@ export class MangaDex {
 			let currentGroup = new ChapterGroup();
 			for (const row of nodes) {
 				let chapterRow = row.querySelector<HTMLElement>('[data-chapter]');
-				const firstChild = row.firstElementChild;
+				const firstChild = row.firstElementChild!;
 				if (chapterRow && chapterRow.dataset.mangaId && firstChild) {
 					let titleId = Math.floor(parseInt(chapterRow.dataset.mangaId));
 					let isFirstRow = firstChild && firstChild.childElementCount > 0;
 					// Is this is a new entry push the current group and create a new one
 					if (isFirstRow) {
-						if (currentGroup.chapters.length > 0) {
+						if (currentGroup.rows.length > 0) {
 							groups.push(currentGroup);
 						}
 						currentGroup = new ChapterGroup();
@@ -285,25 +287,20 @@ export class MangaDex {
 							}
 							return undefined;
 						})(),
-						row: row as HTMLElement,
+						node: row as HTMLElement,
 						hidden: false,
 					};
 					// Don't add empty chapters
 					if (chapter.progress) {
-						currentGroup.chapters.push(chapter);
+						currentGroup.rows.push(chapter);
 					}
 				}
 			}
 			// Push last group
-			if (currentGroup.chapters.length > 0) {
+			if (currentGroup.rows.length > 0) {
 				groups.push(currentGroup);
 			}
 		}
 		return groups;
-	};
-
-	// TODO
-	loggedIn = (): Promise<boolean> => {
-		return new Promise((resolve) => resolve(true));
 	};
 }

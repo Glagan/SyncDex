@@ -126,12 +126,13 @@ const DevFiles = [
 
 // Startup
 // 91 red 92 green 93 orange 94 blue
-const optionColor = (option, content = undefined, theme = [92, 93]) =>
+const RED = 91, GREEN = 92, ORANGE = 93, BLUE = 94;
+const optionColor = (option, content = undefined, theme = [GREEN, ORANGE]) =>
 	`${option ? `\u001b[${theme[0]}m` : `\u001b[${theme[1]}m`}${content ? content : option}\u001b[0m`;
 console.log(
 	`\u001b[96mSyncDex ${mainManifest.version}\u001b[0m :: mode: ${optionColor(options.mode == 'prod', options.mode, [
-		92,
-		94,
+		GREEN,
+		BLUE,
 	])} | web-ext: ${optionColor(options.webExt)} | watch: ${optionColor(options.watch)} `
 );
 
