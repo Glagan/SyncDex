@@ -1,3 +1,25 @@
+:root {
+	--animation: cubic-bezier(0.455, 0.03, 0.515, 0.955);
+
+	--mymangadex: rgba(47, 82, 162);
+	--mymangadex-bg: white;
+	--syncdex-1: rgb(81, 165, 234);
+	--syncdex-2: rgb(247, 148, 33);
+	--syncdex-bg: #fefefe;
+	--mangadex: rgba(247, 148, 33);
+	--mangadex-bg: #2a2f34;
+	--myanimelist: rgba(47, 82, 162);
+	--myanimelist-bg: white;
+	--anilist: rgb(2, 169, 255);
+	--anilist-bg: rgb(31, 38, 49);
+	--kitsu: #ffffff;
+	--kitsu-bg: rgb(64, 47, 63);
+	--mangaupdates: rgb(82, 102, 124);
+	--mangaupdates-bg: rgb(240, 243, 247);
+	--animeplanet: rgb(252, 83, 66);
+	--animeplanet-bg: rgb(48, 48, 48);
+}
+
 /***
  * * Animations
  ***/
@@ -50,7 +72,7 @@
 	animation-iteration-count: infinite;
 }
 .has-transition {
-	transition: all 0.2s cubic-bezier(0.455, 0.03, 0.515, 0.955);
+	transition: all 200ms var(--animation);
 }
 .has-fast-in-transition {
 	transition: all 400ms cubic-bezier(0.86, 0, 0.07, 1);
@@ -109,4 +131,144 @@
 }
 .sd-tooltip.loading .sd-tooltip-content {
 	display: none;
+}
+
+/***
+ * * Overview
+ ***/
+
+.overview .tabs {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	position: relative;
+}
+.overview .alert {
+	margin-bottom: 0;
+}
+.overview .tabs::before {
+	z-index: 1;
+}
+.overview .tabs::after {
+	position: absolute;
+	content: '';
+	width: 100%;
+	bottom: 0;
+	left: 0;
+	border-bottom: 1px solid transparent;
+	z-index: 1;
+	transition: all 150ms var(--animation);
+}
+.overview .tabs .tab {
+	margin-right: 8px;
+	padding: 4px 8px;
+	border: 1px solid transparent;
+	display: inline-block;
+	position: relative;
+	z-index: 0;
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+	cursor: pointer;
+	transition: all 150ms var(--animation);
+}
+.overview .tabs .tab:last-child {
+	margin-right: 0;
+}
+.overview .tabs .tab.active {
+	z-index: 2;
+}
+.overview .body {
+	border: 1px solid transparent;
+	border-top: 0;
+	padding: 4px;
+	border-radius: 2px;
+	border-top-left-radius: 0;
+	background-color: white;
+	color: black;
+	transition: all 150ms var(--animation);
+}
+/** Services */
+.overview.mal .tabs::after {
+	border-color: var(--myanimelist);
+}
+.overview .tab.mal {
+	color: var(--myanimelist);
+	border-color: var(--myanimelist);
+	background-color: var(--myanimelist-bg);
+}
+.overview .tab.mal.active {
+	border-bottom-color: var(--myanimelist-bg);
+}
+.overview.mal .body {
+	color: black;
+	border-color: var(--myanimelist);
+	background-color: var(--myanimelist-bg);
+}
+
+.overview.al .tabs::after {
+	border-color: var(--anilist);
+}
+.overview .tab.al {
+	color: var(--anilist);
+	border-color: var(--anilist);
+	background-color: var(--anilist-bg);
+}
+.overview .tab.al.active {
+	border-bottom-color: var(--anilist-bg);
+}
+.overview.al .body {
+	color: white;
+	border-color: var(--anilist);
+	background-color: var(--anilist-bg);
+}
+
+.overview.ku .tabs::after {
+	border-color: var(--kitsu);
+}
+.overview .tab.ku {
+	color: var(--kitsu);
+	border-color: var(--kitsu);
+	background-color: var(--kitsu-bg);
+}
+.overview .tab.ku.active {
+	border-bottom-color: var(--kitsu-bg);
+}
+.overview.ku .body {
+	color: white;
+	border-color: var(--kitsu);
+	background-color: var(--kitsu-bg);
+}
+
+.overview.ap .tabs::after {
+	border-color: var(--animeplanet);
+}
+.overview .tab.ap {
+	color: var(--animeplanet);
+	border-color: var(--animeplanet);
+	background-color: var(--animeplanet-bg);
+}
+.overview .tab.ap.active {
+	border-bottom-color: var(--animeplanet-bg);
+}
+.overview.ap .body {
+	color: white;
+	border-color: var(--animeplanet);
+	background-color: var(--animeplanet-bg);
+}
+
+.overview.mu .tabs::after {
+	border-color: var(--mangaupdates);
+}
+.overview .tab.mu {
+	color: var(--mangaupdates);
+	border-color: var(--mangaupdates);
+	background-color: var(--mangaupdates-bg);
+}
+.overview .tab.mu.active {
+	border-bottom-color: var(--mangaupdates-bg);
+}
+.overview.mu .body {
+	color: var(--mangaupdates);
+	border-color: var(--mangaupdates);
+	background-color: var(--mangaupdates-bg);
 }

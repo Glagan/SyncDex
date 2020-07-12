@@ -85,6 +85,7 @@ declare const chrome: {
 				fnct: (message: Message, _sender: any, sendResponse: (response?: RequestResponse | void) => void) => any
 			) => void;
 		};
+		getURL: (path: string) => string;
 	};
 	storage: {
 		local: {
@@ -109,6 +110,7 @@ declare const browser: {
 		onMessage: {
 			addListener: (fnct: (message: Message) => Promise<RequestResponse | void>) => void;
 		};
+		getURL: (path: string) => string;
 	};
 	storage: {
 		local: {

@@ -64,4 +64,8 @@ export class Runtime {
 		else if (response.code >= 400) return RequestStatus.BAD_REQUEST;
 		return RequestStatus.SUCCESS;
 	}
+
+	static file(path: string): string {
+		return browser.runtime.getURL(path);
+	}
 }

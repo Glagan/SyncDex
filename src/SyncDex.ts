@@ -2,7 +2,8 @@ import { Router } from './Router';
 import { Options } from './Options';
 import { MangaDex } from './MangaDex';
 import { DOM } from './DOM';
-import { TitleCollection } from './Title';
+import { TitleCollection, Title } from './Title';
+import { Overview } from './Overview';
 
 console.log('SyncDex :: Core');
 
@@ -116,8 +117,19 @@ export class SyncDex {
 		console.log('SyncDex :: Title List');
 	};
 
-	titlePage = (): void => {
+	titlePage = async (): Promise<void> => {
 		console.log('SyncDex :: Title');
+
+		// Get Title
+		const id = parseInt(document.querySelector<HTMLElement>('.row .fas.fa-hashtag')!.parentElement!.textContent!);
+		const title = await Title.get(id);
+		console.log(title);
+		// Search for the progress row and add overview there
+		if (Options.showOverview) {
+			const row = document.querySelector<HTMLElement>('.reading_progress')!.parentElement!;
+			const overview = new Overview(title);
+			row.parentElement!.insertBefore(overview.row, row);
+		}
 	};
 
 	updatesPage = (): void => {
