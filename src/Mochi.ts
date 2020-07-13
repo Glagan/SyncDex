@@ -1,8 +1,12 @@
 import { Runtime } from './Runtime';
-import { ServiceList, ServiceName } from './Title';
+import { ServiceList, ServiceName, Title, ServiceKey, ActivableKey, StaticKey } from './Title';
+
+interface MochiService extends ServiceList {
+	[StaticKey.MangaDex]?: number;
+}
 
 interface MochiResult {
-	data: ServiceList[];
+	data: MochiService[];
 	meta: {
 		time: Record<string, number>;
 	} & Record<string, any>;
@@ -27,34 +31,46 @@ export class Mochi {
 
 	/**
 	 * Return all connections of a Media.
-	 * @param title ID of the Title on the service
+	 * @param id ID of the Title on the service
 	 * @param source The service of the Title
 	 */
 	static async find(
-		title: number | string,
+		id: number | string,
 		source: ServiceName = ServiceName.MangaDex
-	): Promise<ServiceList | undefined> {
+	): Promise<MochiService | undefined> {
 		const response = await Runtime.jsonRequest<MochiResult>({
-			url: Mochi.connections(title, source),
+			url: Mochi.connections(id, source),
 		});
 		if (!response.ok) return undefined;
 		if (response.body.data === undefined) return undefined;
-		return response.body.data[+title];
+		return response.body.data[+id];
 	}
 
 	/**
 	 * Return all connections for all listed Medias.
-	 * @param title ID of the Title on the service
+	 * @param ids IDs of the Title on the service
 	 * @param source The service of the Title
 	 */
 	static async findMany(
-		title: (number | string)[],
+		ids: (number | string)[],
 		source: ServiceName = ServiceName.MangaDex
-	): Promise<ServiceList[] | undefined> {
+	): Promise<MochiService[] | undefined> {
 		const response = await Runtime.jsonRequest<MochiResult>({
-			url: Mochi.connections(title, source),
+			url: Mochi.connections(ids, source),
 		});
 		if (!response.ok) return undefined;
 		return response.body.data;
+	}
+
+	/**
+	 * Assign connections found from Mochi to a Title.
+	 */
+	static assign(title: Title, connections: ServiceList): void {
+		for (const key in connections) {
+			const serviceKey = key as ActivableKey;
+			Object.assign(title.services, {
+				[serviceKey]: connections[serviceKey],
+			});
+		}
 	}
 }

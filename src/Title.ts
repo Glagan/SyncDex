@@ -53,8 +53,16 @@ export interface ServiceKeyMap {
 	[ServiceKey.AnimePlanet]: AnimePlanetReference;
 }
 
-export type ServiceList = { [key in ServiceKey]?: ServiceKeyMap[key] };
+export type ServiceList = { [key in ActivableKey]?: ServiceKeyMap[key] };
 export type ServiceKeyType = number | string | AnimePlanetReference;
+
+export const ReverseActivableName: { [key in ActivableKey]: ActivableName } = (() => {
+	const res: Partial<{ [key in ActivableKey]: ActivableName }> = {};
+	for (const key in ActivableKey) {
+		res[ActivableKey[key as ActivableName] as ActivableKey] = key as ActivableName;
+	}
+	return res as { [key in ActivableKey]: ActivableName };
+})();
 
 export const ReverseServiceName: { [key in ServiceKey]: ServiceName } = (() => {
 	const res: Partial<{ [key in ServiceKey]: ServiceName }> = {};
@@ -445,13 +453,13 @@ export class TitleCollection {
 }
 
 export abstract class ServiceTitle<T extends ServiceTitle<T>> {
-	abstract readonly serviceKey: ServiceKey;
 	abstract readonly serviceName: ServiceName;
+	abstract readonly serviceKey: ServiceKey;
 
 	/**
 	 * The key of the Media on the Service.
 	 */
-	abstract id: number | string | AnimePlanetReference;
+	abstract id: ServiceKeyType;
 	/**
 	 * The mapped MangaDex ID of the Media.
 	 */
@@ -506,7 +514,13 @@ export abstract class ServiceTitle<T extends ServiceTitle<T>> {
 	/**
 	 * Link to a single Media page.
 	 */
-	// static link(id: number | string | AnimePlanetReference): string;
+	static link = (id: ServiceKeyType): string => {
+		return '#';
+	};
+
+	link(): string {
+		return (<typeof ServiceTitle>this.constructor).link(this.id);
+	}
 
 	/**
 	 * Pull the current status of the Media identified by ID.

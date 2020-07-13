@@ -1,5 +1,6 @@
 import { DOM } from './DOM';
 import { Options } from './Options';
+import { ServiceKey, ActivableKey } from './Title';
 
 interface ChapterRow {
 	progress: Progress | undefined;
@@ -303,4 +304,19 @@ export class MangaDex {
 		}
 		return groups;
 	};
+
+	static iconToService(src: string): ActivableKey | undefined {
+		const key = /https:\/\/(?:www\.)?mangadex\.org\/images\/misc\/(.+)\.png/.exec(src);
+		if (key == null) return undefined;
+		switch (key[1]) {
+			case 'mal':
+			case 'al':
+			case 'ap':
+			case 'mu':
+				return key[1] as ActivableKey;
+			case 'kt':
+				return ActivableKey.Kitsu;
+		}
+		return undefined;
+	}
 }

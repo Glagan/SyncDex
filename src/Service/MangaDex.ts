@@ -1,11 +1,11 @@
-import { ServiceTitle, Title, ServiceName, ServiceKey } from '../Title';
+import { ServiceTitle, Title, ServiceName, ServiceKey, ServiceKeyType } from '../Title';
 import { RequestStatus, Runtime } from '../Runtime';
 
 export class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
 	readonly serviceName: ServiceName = ServiceName.MangaDex;
 	readonly serviceKey: ServiceKey = ServiceKey.MangaDex;
 
-	static link(id: number): string {
+	static link(id: ServiceKeyType): string {
 		return `https://mangadex.org/title/${id}`;
 	}
 

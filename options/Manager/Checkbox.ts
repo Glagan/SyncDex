@@ -20,7 +20,6 @@ export class Checkbox {
 	constructor(node: HTMLInputElement) {
 		this.node = node;
 		this.label = this.node.nextElementSibling as HTMLLabelElement;
-		if (!this.label) console.log(this.node);
 		this.optionName = this.node.dataset.name as keyof BooleanOptions;
 		if (this.node.dataset.dependency !== undefined) {
 			this.parent = this.node.dataset.dependency as keyof BooleanOptions;

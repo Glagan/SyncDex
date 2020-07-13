@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceName, ServiceKey } from '../Title';
+import { ServiceTitle, Title, ServiceName, ServiceKey, ServiceKeyType } from '../Title';
 
 export const enum AnimePlanetStatus {
 	NONE = 0,
@@ -22,8 +22,9 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 	readonly serviceName: ServiceName = ServiceName.AnimePlanet;
 	readonly serviceKey: ServiceKey = ServiceKey.AnimePlanet;
 
-	static link(id: string | AnimePlanetReference): string {
+	static link(id: ServiceKeyType): string {
 		if (typeof id === 'string') return `https://www.anime-planet.com/manga/${id}`;
+		else if (typeof id === 'number') return '#';
 		return `https://www.anime-planet.com/manga/${id.s}`;
 	}
 
@@ -172,6 +173,16 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 			score: title.score ? title.score : undefined,
 			name: title.name,
 		});
+	};
+
+	static idFromLink = (href: string): AnimePlanetReference => {
+		const regexp = /https:\/\/(?:www\.)?anime-planet\.com\/manga\/(.+)\/?/.exec(href);
+		if (regexp !== null)
+			return {
+				s: regexp[1],
+				i: 0,
+			};
+		return { s: '', i: 0 };
 	};
 
 	get mochi(): number {

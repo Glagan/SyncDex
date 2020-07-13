@@ -127,7 +127,7 @@ class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTi
 			total += this.assignValidOption('hideLast', old.hideLastRead);
 			total += this.assignValidOption('saveOnlyHigher', old.saveOnlyHigher);
 			total += this.assignValidOption('biggerHistory', old.updateHistoryPage);
-			total += this.assignValidOption('saveChapters', old.saveAllOpened);
+			total += this.assignValidOption('saveOpenedChapters', old.saveAllOpened);
 			total += this.assignValidOption('chaptersSaved', old.maxChapterSaved);
 			total += this.assignValidOption('highlight', old.highlightChapters);
 			total += this.assignValidOption('saveOnlyNext', old.saveOnlyNext);

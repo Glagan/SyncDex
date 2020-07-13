@@ -1,7 +1,15 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
-import { TitleCollection, Title, ServiceTitle, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
+import {
+	TitleCollection,
+	Title,
+	ServiceTitle,
+	ServiceName,
+	ServiceKey,
+	ServiceKeyType,
+	ActivableKey,
+} from '../../src/Title';
 import { LocalStorage } from '../../src/Storage';
 import { Mochi } from '../../src/Mochi';
 import { RequestStatus } from '../../src/Runtime';
@@ -106,7 +114,7 @@ export abstract class Service {
 	 */
 	static HandleInput(title: Title, form: HTMLFormElement): void {
 		const serviceName = (<typeof Service>this.prototype.constructor).serviceName;
-		const key = (<typeof Service>this.prototype.constructor).key;
+		const key = (<typeof Service>this.prototype.constructor).key as ActivableKey;
 		if (form[serviceName].value != '') {
 			const id = parseInt(form[serviceName].value as string);
 			if (!isNaN(id)) (title.services[key] as number) = id;
@@ -626,13 +634,7 @@ export abstract class SaveModule<T extends Summary = Summary> {
 					const id = parseInt(titleId);
 					const title = titleList.find((t) => t.id == id);
 					if (title) {
-						const connection = connections[titleId];
-						for (const key in connection) {
-							const serviceKey = key as ServiceKey;
-							Object.assign(title.services, {
-								[serviceKey]: connection[serviceKey],
-							});
-						}
+						Mochi.assign(title, connections[titleId]);
 					}
 				}
 			}
@@ -1002,7 +1004,7 @@ export abstract class ExportableModule extends SaveModule {
 	 */
 	selectTitles = async (titleCollection: TitleCollection): Promise<Title[]> => {
 		return titleCollection.collection.filter((title) => {
-			const id = title.services[this.service.key];
+			const id = title.services[this.service.key as ActivableKey];
 			return id !== undefined && id > 0 && title.status !== Status.NONE;
 		});
 	};

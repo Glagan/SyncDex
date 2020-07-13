@@ -4,21 +4,24 @@ import { Runtime } from './Runtime';
 import { Options } from './Options';
 
 export class Overview {
-	title: Title;
 	row: HTMLElement;
 	serviceList: HTMLUListElement;
 	column: HTMLElement;
 	body: HTMLElement;
 
-	constructor(title: Title) {
-		this.title = title;
-		this.column = DOM.create('div', { class: 'overview col-lg-9 col-xl-10' });
-		this.serviceList = DOM.create('ul', { class: 'tabs' });
-		this.body = DOM.create('div', { class: 'body' });
+	constructor() {
+		this.column = DOM.create('div', { class: 'overview col-lg-9 col-xl-10', textContent: 'Loading...' });
 		this.row = DOM.create('div', {
-			class: 'row m-0 py-1 px-0 border-top',
+			class: 'row m-0 py-1 px-0 border-top loading',
 			childs: [DOM.create('div', { class: 'col-lg-3 col-xl-2 strong', textContent: 'SyncDex:' }), this.column],
 		});
+		const row = document.querySelector<HTMLElement>('.reading_progress')!.parentElement!;
+		row.parentElement!.insertBefore(this.row, row);
+		this.serviceList = DOM.create('ul', { class: 'tabs' });
+		this.body = DOM.create('div', { class: 'body' });
+	}
+
+	load = (title: Title): void => {
 		if (Options.services.length == 0) {
 			this.column.appendChild(
 				DOM.create('div', {
@@ -76,5 +79,5 @@ export class Overview {
 			this.serviceList.append(serviceButton);
 		}
 		DOM.append(this.column, this.serviceList, this.body);
-	}
+	};
 }

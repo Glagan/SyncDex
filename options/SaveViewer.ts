@@ -1,4 +1,12 @@
-import { Title, TitleCollection, ServiceKey, ActivableName, ServiceName, ReverseServiceName } from '../src/Title';
+import {
+	Title,
+	TitleCollection,
+	ServiceKey,
+	ActivableName,
+	ServiceName,
+	ReverseServiceName,
+	ActivableKey,
+} from '../src/Title';
 import { DOM, AppendableElement } from '../src/DOM';
 import { LocalStorage } from '../src/Storage';
 import { Modal } from './Modal';
@@ -74,7 +82,7 @@ export class SaveViewer {
 	titleServices = (title: Title): AppendableElement[] => {
 		const icons: AppendableElement[] = [];
 		for (const serviceKey in title.services) {
-			const key = serviceKey as ServiceKey;
+			const key = serviceKey as ActivableKey;
 			const name = ReverseServiceName[key];
 			icons.push(
 				DOM.create('a', {
@@ -148,7 +156,7 @@ export class SaveViewer {
 		// Active Service on the Title
 		const services = DOM.create('div', { class: 'services' });
 		for (const sn in ActivableName) {
-			const serviceName = sn as ServiceName;
+			const serviceName = sn as ActivableName;
 			const serviceKey = ServiceKey[serviceName];
 			services.appendChild(
 				DOM.create('div', {

@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceName, ServiceKey } from '../Title';
+import { ServiceTitle, Title, ServiceName, ServiceKey, ServiceKeyType } from '../Title';
 
 export const enum MangaUpdatesStatus {
 	NONE = -1,
@@ -14,7 +14,7 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 	readonly serviceName: ServiceName = ServiceName.MangaUpdates;
 	readonly serviceKey: ServiceKey = ServiceKey.MangaUpdates;
 
-	static link(id: number): string {
+	static link(id: ServiceKeyType): string {
 		return `https://www.mangaupdates.com/series.html?id=${id}`;
 	}
 
@@ -246,6 +246,12 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 			score: title.score ? title.score : undefined,
 			name: title.name,
 		});
+	};
+
+	static idFromLink = (href: string): number => {
+		const regexp = /https:\/\/(?:www\.)?mangaupdates\.com\/series.html\?id=(\d+)/.exec(href);
+		if (regexp !== null) return parseInt(regexp[1]);
+		return 0;
 	};
 
 	get mochi(): number {

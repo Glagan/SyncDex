@@ -1,6 +1,6 @@
 import { Options } from '../Options';
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceName, ServiceKey } from '../Title';
+import { ServiceTitle, Title, ServiceName, ServiceKey, ServiceKeyType, ActivableName, ActivableKey } from '../Title';
 
 interface KitsuHeaders {
 	Accept: string;
@@ -90,10 +90,10 @@ export const KitsuHeaders = (): KitsuHeaders => {
 };
 
 export class KitsuTitle extends ServiceTitle<KitsuTitle> {
-	readonly serviceName: ServiceName = ServiceName.Kitsu;
-	readonly serviceKey: ServiceKey = ServiceKey.Kitsu;
+	readonly serviceName: ActivableName = ActivableName.Kitsu;
+	readonly serviceKey: ActivableKey = ActivableKey.Kitsu;
 
-	static link(id: number): string {
+	static link(id: ServiceKeyType): string {
 		return `https://kitsu.io/manga/${id}`;
 	}
 
@@ -250,6 +250,12 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 			end: title.end ? new Date(title.end) : undefined,
 			name: title.name,
 		});
+	};
+
+	static idFromLink = (href: string): number => {
+		const regexp = /https:\/\/(?:www\.)?kitsu\.io\/manga\/(\d+)\/?/.exec(href);
+		if (regexp !== null) return parseInt(regexp[1]);
+		return 0;
 	};
 
 	get mochi(): number {

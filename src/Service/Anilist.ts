@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceName, ServiceKey } from '../Title';
+import { ServiceTitle, Title, ServiceName, ServiceKey, ServiceKeyType } from '../Title';
 import { Options } from '../Options';
 
 export const enum AnilistStatus {
@@ -80,7 +80,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 	readonly serviceName: ServiceName = ServiceName.Anilist;
 	readonly serviceKey: ServiceKey = ServiceKey.Anilist;
 
-	static link(id: number): string {
+	static link(id: ServiceKeyType): string {
 		return `https://anilist.co/manga/${id}`;
 	}
 
@@ -299,6 +299,12 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 			end: title.end ? new Date(title.end) : undefined,
 			name: title.name,
 		});
+	};
+
+	static idFromLink = (href: string): number => {
+		const regexp = /https:\/\/(?:www\.)?anilist\.co\/manga\/(\d+)\/?/.exec(href);
+		if (regexp !== null) return parseInt(regexp[1]);
+		return 0;
 	};
 
 	get mochi(): number {
