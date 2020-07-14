@@ -36,7 +36,7 @@ class MangaDexActive extends ActivableModule {
 	};
 }
 
-class MangaDexImport extends APIImportableModule<MangaDexTitle> {
+class MangaDexImport extends APIImportableModule {
 	parser: DOMParser = new DOMParser();
 
 	handlePage = async (): Promise<MangaDexTitle[] | false> => {

@@ -76,7 +76,7 @@ export const AnilistHeaders = (): AnilistHeaders => {
  * An Anilist MediaEntry.
  * Score are automatically converted in a 0-100 range.
  */
-export class AnilistTitle extends ServiceTitle<AnilistTitle> {
+export class AnilistTitle extends ServiceTitle {
 	readonly serviceName: ServiceName = ServiceName.Anilist;
 	readonly serviceKey: ServiceKey = ServiceKey.Anilist;
 
@@ -85,7 +85,6 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 	}
 
 	id: number;
-	status: AnilistStatus;
 	mediaEntryId: number;
 
 	static readonly getQuery = `
@@ -144,7 +143,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 	constructor(id: number, title?: Partial<AnilistTitle>) {
 		super(title);
 		this.id = id;
-		this.status = title && title.status !== undefined ? title.status : AnilistStatus.NONE;
+		this.status = title && title.status !== undefined ? title.status : Status.NONE;
 		this.mediaEntryId = title && title.mediaEntryId !== undefined ? title.mediaEntryId : 0;
 	}
 
@@ -155,7 +154,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 		return undefined;
 	};
 
-	static get = async (id: number): Promise<AnilistTitle | RequestStatus> => {
+	static get = async (id: ServiceKeyType): Promise<ServiceTitle | RequestStatus> => {
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<AnilistGetResponse>({
 			url: AnilistAPI,
@@ -181,12 +180,12 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 				chapter: mediaEntry.progress,
 				volume: mediaEntry.progressVolumes,
 			};
-			values.status = mediaEntry.status;
+			values.status = AnilistTitle.toStatus(mediaEntry.status);
 			values.score = mediaEntry.score ? mediaEntry.score : 0;
 			values.start = AnilistTitle.dateFromAnilist(mediaEntry.startedAt);
 			values.end = AnilistTitle.dateFromAnilist(mediaEntry.completedAt);
 		}
-		return new AnilistTitle(id, values);
+		return new AnilistTitle(id as number, values);
 	};
 
 	static dateToAnilist = (date?: Date): AnilistDate | undefined => {
@@ -198,7 +197,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 
 	persist = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
-		if (this.status === AnilistStatus.NONE) return RequestStatus.FAIL;
+		if (this.status === Status.NONE) return RequestStatus.FAIL;
 		const response = await Runtime.jsonRequest<AnilistPersistResponse>({
 			url: AnilistAPI,
 			method: 'POST',
@@ -207,7 +206,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 				query: AnilistTitle.persistQuery,
 				variables: <SaveMediaListEntry>{
 					mediaId: this.id,
-					status: this.status,
+					status: AnilistTitle.fromStatus(this.status),
 					score: this.score !== undefined && this.score > 0 ? this.score : undefined,
 					progress: this.progress.chapter,
 					progressVolumes: this.progress.volume,
@@ -263,7 +262,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 		return new Title(this.mangaDex, {
 			services: { al: this.id },
 			progress: this.progress,
-			status: AnilistTitle.toStatus(this.status),
+			status: this.status,
 			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
 			start: this.start ? this.start.getTime() : undefined,
 			end: this.end ? this.end.getTime() : undefined,
@@ -293,7 +292,7 @@ export class AnilistTitle extends ServiceTitle<AnilistTitle> {
 		if (!title.services.al) return undefined;
 		return new AnilistTitle(title.services.al, {
 			progress: title.progress,
-			status: AnilistTitle.fromStatus(title.status),
+			status: title.status,
 			score: title.score ? title.score : undefined,
 			start: title.start ? new Date(title.start) : undefined,
 			end: title.end ? new Date(title.end) : undefined,

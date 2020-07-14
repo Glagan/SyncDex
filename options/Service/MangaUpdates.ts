@@ -18,7 +18,7 @@ class MangaUpdatesActive extends ActivableModule {
 	};
 }
 
-class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
+class MangaUpdatesImport extends APIImportableModule {
 	parser: DOMParser = new DOMParser();
 	currentPage: string = '';
 	currentList: number = 0;
@@ -67,7 +67,7 @@ class MangaUpdatesImport extends APIImportableModule<MangaUpdatesTitle> {
 							chapter: this.progressFromNode(row.querySelector(`a[title='Increment Chapter']`)),
 							volume: this.progressFromNode(row.querySelector(`a[title='Increment Volume']`)),
 						},
-						status: status,
+						status: MangaUpdatesTitle.toStatus(status),
 						score: score,
 						name: name.textContent as string,
 					})
@@ -103,7 +103,7 @@ class MangaUpdatesExport extends APIExportableModule {
 
 	exportTitle = async (title: Title): Promise<boolean> => {
 		const exportTitle = MangaUpdatesTitle.fromTitle(title);
-		if (exportTitle && exportTitle.status !== MangaUpdatesStatus.NONE) {
+		if (exportTitle && exportTitle.status !== Status.NONE) {
 			const onlineTitle = this.onlineList[exportTitle.id];
 			if (onlineTitle) {
 				exportTitle.current = {

@@ -171,11 +171,17 @@
 	cursor: pointer;
 	transition: all 150ms var(--animation);
 }
+.overview .tabs .tab.main {
+	font-weight: bold;
+}
 .overview .tabs .tab:last-child {
 	margin-right: 0;
 }
 .overview .tabs .tab.active {
 	z-index: 2;
+}
+.overview .bodies {
+	position: relative;
 }
 .overview .body {
 	border: 1px solid transparent;
@@ -185,7 +191,14 @@
 	border-top-left-radius: 0;
 	background-color: white;
 	color: black;
+	opacity: 1;
 	transition: all 150ms var(--animation);
+}
+.overview .body.hidden {
+	animation-name: unset;
+	opacity: 0;
+	padding: 0;
+	border: 0;
 }
 /** Services */
 .overview.mal .tabs::after {

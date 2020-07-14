@@ -95,7 +95,7 @@ class KitsuActive extends ActivableModule {
 	};
 }
 
-class KitsuImport extends APIImportableModule<KitsuTitle> {
+class KitsuImport extends APIImportableModule {
 	findManga = (included: KitsuManga[], id: string): KitsuManga => {
 		for (const manga of included) {
 			if (manga.id == id) return manga;
@@ -139,7 +139,7 @@ class KitsuImport extends APIImportableModule<KitsuTitle> {
 						chapter: title.attributes.progress,
 						volume: title.attributes.volumesOwned,
 					},
-					status: title.attributes.status,
+					status: KitsuTitle.toStatus(title.attributes.status),
 					score: title.attributes.ratingTwenty !== null ? title.attributes.ratingTwenty * 5 : 0,
 					start: title.attributes.startedAt ? new Date(title.attributes.startedAt) : undefined,
 					end: title.attributes.finishedAt ? new Date(title.attributes.finishedAt) : undefined,
@@ -190,7 +190,7 @@ class KitsuExport extends APIExportableModule {
 
 	exportTitle = async (title: Title): Promise<boolean> => {
 		const exportTitle = KitsuTitle.fromTitle(title);
-		if (exportTitle && exportTitle.status !== KitsuStatus.NONE) {
+		if (exportTitle && exportTitle.status !== Status.NONE) {
 			const libraryEntryId = this.onlineList[exportTitle.id];
 			if (libraryEntryId) {
 				exportTitle.libraryEntryId = libraryEntryId;

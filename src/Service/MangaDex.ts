@@ -1,7 +1,7 @@
 import { ServiceTitle, Title, ServiceName, ServiceKey, ServiceKeyType } from '../Title';
 import { RequestStatus, Runtime } from '../Runtime';
 
-export class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
+export class MangaDexTitle extends ServiceTitle {
 	readonly serviceName: ServiceName = ServiceName.MangaDex;
 	readonly serviceKey: ServiceKey = ServiceKey.MangaDex;
 
@@ -10,7 +10,6 @@ export class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
 	}
 
 	id: number;
-	status: Status;
 	// TODO: Add Services
 
 	constructor(id: number, title?: Partial<MangaDexTitle>) {
@@ -19,7 +18,7 @@ export class MangaDexTitle extends ServiceTitle<MangaDexTitle> {
 		this.status = title && title.status !== undefined ? title.status : Status.NONE;
 	}
 
-	static get = async (id: number): Promise<RequestStatus> => {
+	static get = async (id: ServiceKeyType): Promise<ServiceTitle | RequestStatus> => {
 		// TODO
 		return RequestStatus.FAIL;
 	};

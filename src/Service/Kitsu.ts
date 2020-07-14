@@ -89,7 +89,7 @@ export const KitsuHeaders = (): KitsuHeaders => {
 	};
 };
 
-export class KitsuTitle extends ServiceTitle<KitsuTitle> {
+export class KitsuTitle extends ServiceTitle {
 	readonly serviceName: ActivableName = ActivableName.Kitsu;
 	readonly serviceKey: ActivableKey = ActivableKey.Kitsu;
 
@@ -98,18 +98,17 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 	}
 
 	id: number;
-	status: KitsuStatus;
 	libraryEntryId: number;
 
 	constructor(id: number, title?: Partial<KitsuTitle>) {
 		super(title);
 		this.id = id;
-		this.status = title && title.status !== undefined ? title.status : KitsuStatus.NONE;
+		this.status = title && title.status !== undefined ? title.status : Status.NONE;
 		this.libraryEntryId = title && title.libraryEntryId !== undefined ? title.libraryEntryId : 0;
 	}
 
 	// abstract static get(id): RequestStatus
-	static get = async (id: number): Promise<KitsuTitle | RequestStatus> => {
+	static get = async (id: ServiceKeyType): Promise<ServiceTitle | RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<KitsuResponse>({
 			url: `${KitsuAPI}?filter[manga_id]=${id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=canonicalTitle`,
@@ -127,14 +126,14 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 				chapter: attributes.progress,
 				volume: attributes.volumesOwned,
 			};
-			status = attributes.status;
+			values.status = KitsuTitle.toStatus(attributes.status);
 			// Kitsu have a 0-20 range
 			if (attributes.ratingTwenty !== null) values.score = attributes.ratingTwenty * 5;
 			if (attributes.startedAt !== null) values.start = new Date(attributes.startedAt);
 			if (attributes.finishedAt !== null) values.end = new Date(attributes.finishedAt);
 			values.name = body.included[0].attributes.canonicalTitle;
 		}
-		return new KitsuTitle(id, values);
+		return new KitsuTitle(id as number, values);
 	};
 
 	persist = async (): Promise<RequestStatus> => {
@@ -151,7 +150,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 				data: {
 					id: this.libraryEntryId,
 					attributes: {
-						status: this.status,
+						status: KitsuTitle.fromStatus(this.status),
 						progress: this.progress.chapter,
 						volumesOwned: this.progress.volume,
 						ratingTwenty: kuScore,
@@ -216,7 +215,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 		return new Title(this.mangaDex, {
 			services: { al: this.id },
 			progress: this.progress,
-			status: KitsuTitle.toStatus(this.status),
+			status: this.status,
 			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
 			start: this.start ? this.start.getTime() : undefined,
 			end: this.end ? this.end.getTime() : undefined,
@@ -244,7 +243,7 @@ export class KitsuTitle extends ServiceTitle<KitsuTitle> {
 		if (!title.services.ku) return undefined;
 		return new KitsuTitle(title.services.ku, {
 			progress: title.progress,
-			status: KitsuTitle.fromStatus(title.status),
+			status: title.status,
 			score: title.score ? title.score : undefined,
 			start: title.start ? new Date(title.start) : undefined,
 			end: title.end ? new Date(title.end) : undefined,

@@ -452,7 +452,7 @@ export class TitleCollection {
 	};
 }
 
-export abstract class ServiceTitle<T extends ServiceTitle<T>> {
+export abstract class ServiceTitle {
 	abstract readonly serviceName: ServiceName;
 	abstract readonly serviceKey: ServiceKey;
 
@@ -460,6 +460,10 @@ export abstract class ServiceTitle<T extends ServiceTitle<T>> {
 	 * The key of the Media on the Service.
 	 */
 	abstract id: ServiceKeyType;
+	/**
+	 * The stauts of the Media on the Service.
+	 */
+	status: Status;
 	/**
 	 * The mapped MangaDex ID of the Media.
 	 */
@@ -488,7 +492,8 @@ export abstract class ServiceTitle<T extends ServiceTitle<T>> {
 	 */
 	name?: string;
 
-	constructor(title?: Partial<T>) {
+	constructor(title?: Partial<ServiceTitle>) {
+		this.status = Status.NONE;
 		if (title !== undefined) {
 			Object.assign(this, title);
 		}
@@ -526,10 +531,14 @@ export abstract class ServiceTitle<T extends ServiceTitle<T>> {
 	 * Pull the current status of the Media identified by ID.
 	 * Return a `RequestStatus` on error.
 	 */
-	// static async get(id: number | string | AnimePlanetReference): Promise<ServiceTitle<T> | RequestStatus>;
+	static get = async (id: ServiceKeyType): Promise<ServiceTitle | RequestStatus> => {
+		return RequestStatus.FAIL;
+	};
 
 	/**
 	 * Convert a Title for the Media if possible (Service ID available), or undefined.
 	 */
-	// static fromTitle(title: Title): ServiceTitle<T> | undefined;
+	static fromTitle = (title: Title): ServiceTitle | undefined => {
+		return undefined;
+	};
 }

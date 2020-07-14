@@ -10,7 +10,7 @@ export const enum MangaUpdatesStatus {
 	PAUSED = 4,
 }
 
-export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
+export class MangaUpdatesTitle extends ServiceTitle {
 	readonly serviceName: ServiceName = ServiceName.MangaUpdates;
 	readonly serviceKey: ServiceKey = ServiceKey.MangaUpdates;
 
@@ -19,17 +19,17 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 	}
 
 	id: number;
-	status: MangaUpdatesStatus = MangaUpdatesStatus.NONE;
 	current?: {
 		progress: Progress;
-		status: MangaUpdatesStatus;
+		status: Status;
 		score?: number;
 	};
+	loggedin: boolean = false;
 
 	constructor(id: number, title?: Partial<MangaUpdatesTitle>) {
 		super(title);
 		this.id = id;
-		this.status = title && title.status !== undefined ? title.status : MangaUpdatesStatus.NONE;
+		this.status = title && title.status !== undefined ? title.status : Status.NONE;
 	}
 
 	static listToStatus = (list: string): MangaUpdatesStatus => {
@@ -48,7 +48,7 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		return MangaUpdatesStatus.NONE;
 	};
 
-	static get = async (id: number): Promise<MangaUpdatesTitle | RequestStatus> => {
+	static get = async (id: ServiceKeyType): Promise<ServiceTitle | RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: MangaUpdatesTitle.link(id),
 			method: 'GET',
@@ -62,10 +62,10 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		if (showList !== null) {
 			const listType = /mylist\.html(?:\?list=(.+))?/.exec(showList.querySelector<HTMLAnchorElement>('a')!.href);
 			if (listType !== null) {
-				values.status = MangaUpdatesTitle.listToStatus(listType[1]);
+				values.status = MangaUpdatesTitle.toStatus(MangaUpdatesTitle.listToStatus(listType[1]));
 				values.current = { progress: { chapter: 0 }, status: values.status };
 				// The state in list is only displayed if the title is in the READING list
-				if (values.status == MangaUpdatesStatus.READING) {
+				if (values.status == Status.READING) {
 					const chapter = showList.querySelector<HTMLAnchorElement>(`a[title='Increment Chapter']`)!;
 					const volume = showList.querySelector<HTMLAnchorElement>(`a[title='Increment Volume']`)!;
 					values.progress = {
@@ -85,15 +85,16 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		}
 		const title = body.querySelector('span.releasestitle');
 		values.name = title ? title.textContent! : undefined;
-		return new MangaUpdatesTitle(id, values);
+		// TODO: Find if loggedIn
+		return new MangaUpdatesTitle(id as number, values);
 	};
 
 	// Get a list of status to go through to be able to update to the wanted status
 	pathToStatus = (): MangaUpdatesStatus[] => {
 		let list: MangaUpdatesStatus[] = [];
 		const newEntry = this.current === undefined;
-		const from = newEntry ? MangaUpdatesStatus.NONE : this.current?.status;
-		const to = this.status;
+		const from = newEntry ? MangaUpdatesStatus.NONE : MangaUpdatesTitle.fromStatus(this.current!.status);
+		const to = MangaUpdatesTitle.fromStatus(this.status);
 		// PAUSED requirements
 		if (to == MangaUpdatesStatus.PAUSED) {
 			if (newEntry) {
@@ -146,7 +147,7 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 			}
 		}
 		// Real status
-		const response = await this.updateStatus(this.status);
+		const response = await this.updateStatus(MangaUpdatesTitle.fromStatus(this.status));
 		if (!response.ok) return Runtime.responseStatus(response);
 		// Update progress -- only if chapter or volume is different
 		if (
@@ -216,7 +217,7 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		return new Title(this.mangaDex, {
 			services: { mu: this.id },
 			progress: this.progress,
-			status: MangaUpdatesTitle.toStatus(this.status),
+			status: this.status,
 			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
 			name: this.name,
 		});
@@ -242,7 +243,7 @@ export class MangaUpdatesTitle extends ServiceTitle<MangaUpdatesTitle> {
 		if (!title.services.mu) return undefined;
 		return new MangaUpdatesTitle(title.services.mu, {
 			progress: title.progress,
-			status: MangaUpdatesTitle.fromStatus(title.status),
+			status: title.status,
 			score: title.score ? title.score : undefined,
 			name: title.name,
 		});

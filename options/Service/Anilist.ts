@@ -63,7 +63,7 @@ class AnilistActive extends ActivableModule {
 	};
 }
 
-class AnilistImport extends APIImportableModule<AnilistTitle> {
+class AnilistImport extends APIImportableModule {
 	currentPage: number = 0;
 
 	static viewerQuery = `
@@ -165,7 +165,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 							volume: entry.progressVolumes,
 						},
 						name: entry.media.title.userPreferred,
-						status: entry.status,
+						status: AnilistTitle.toStatus(entry.status),
 						start: AnilistTitle.dateFromAnilist(entry.startedAt),
 						end: AnilistTitle.dateFromAnilist(entry.completedAt),
 						score: entry.score ? entry.score : 0,
@@ -180,7 +180,7 @@ class AnilistImport extends APIImportableModule<AnilistTitle> {
 class AnilistExport extends APIExportableModule {
 	exportTitle = async (title: Title): Promise<boolean> => {
 		const exportTitle = AnilistTitle.fromTitle(title);
-		if (exportTitle && exportTitle.status !== AnilistStatus.NONE) {
+		if (exportTitle && exportTitle.status !== Status.NONE) {
 			const responseStatus = await exportTitle.persist();
 			return responseStatus == RequestStatus.SUCCESS;
 		}

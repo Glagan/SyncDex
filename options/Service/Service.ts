@@ -271,9 +271,9 @@ export abstract class ActivableModule {
 		}
 		// Bind
 		this.activateButton.addEventListener('click', async () => {
-			Options.services.push(this.service.serviceName);
+			Options.services.push(this.service.key as ActivableKey);
 			if (Options.services.length == 1) {
-				Options.mainService = this.service.serviceName;
+				Options.mainService = this.service.key as ActivableKey;
 				const containerFirstChild = this.service.manager.activeContainer.firstElementChild;
 				if (this.activeCard != containerFirstChild) {
 					this.service.manager.activeContainer.insertBefore(this.activeCard, containerFirstChild);
@@ -290,9 +290,9 @@ export abstract class ActivableModule {
 		});
 		this.mainButton.addEventListener('click', () => {
 			// Make service the first in the list
-			const index = Options.services.indexOf(this.service.serviceName);
+			const index = Options.services.indexOf(this.service.key as ActivableKey);
 			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
-			Options.mainService = this.service.serviceName;
+			Options.mainService = this.service.key as ActivableKey;
 			Options.save();
 			// Remove main button and add the main button to the previous main
 			if (this.service.manager.mainService && this.service.manager.mainService.activeModule) {
@@ -331,10 +331,10 @@ export abstract class ActivableModule {
 		});
 		this.removeButton.addEventListener('click', async () => {
 			// Remove service from Service list and assign new main if possible
-			const index = Options.services.indexOf(this.service.serviceName);
+			const index = Options.services.indexOf(this.service.key as ActivableKey);
 			if (index > -1) {
 				Options.services.splice(index, 1);
-				if (Options.mainService == this.service.serviceName) {
+				if (Options.mainService == this.service.key) {
 					Options.mainService = Options.services.length > 0 ? Options.services[0] : undefined;
 				}
 			}
@@ -345,7 +345,7 @@ export abstract class ActivableModule {
 			// Save
 			Options.save();
 			// Disable card
-			this.service.manager.removeActiveService(this.service.serviceName);
+			this.service.manager.removeActiveService(this.service.key as ActivableKey);
 			this.desactivate();
 			// Move service card after the active cards
 			while (
@@ -360,7 +360,7 @@ export abstract class ActivableModule {
 			// Set the new main
 			if (Options.mainService) {
 				const mainService = this.service.manager.services.find(
-					(service: Service) => service.serviceName == Options.mainService
+					(service: Service) => service.key == Options.mainService
 				);
 				if (mainService && mainService.activeModule) {
 					mainService.activeModule.mainButton.classList.add('hidden');
@@ -454,7 +454,7 @@ export abstract class ActivableModule {
 	};
 
 	updateStatus = (status: RequestStatus): void => {
-		this.activate(Options.mainService == this.service.serviceName);
+		this.activate(Options.mainService == this.service.key);
 		if (status == RequestStatus.SUCCESS) {
 			this.statusMessage.className = 'message success';
 			this.statusMessageContent.textContent = 'Active';
@@ -464,7 +464,7 @@ export abstract class ActivableModule {
 			this.statusMessageContent.textContent = 'Inactive';
 			this.activeCardContent.insertBefore(this.loginButton, this.checkStatusButton);
 		}
-		this.service.manager.updateServiceStatus(this.service.serviceName, status);
+		this.service.manager.updateServiceStatus(this.service.key as ActivableKey, status);
 	};
 }
 
@@ -849,10 +849,10 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 	};
 }
 
-export abstract class APIImportableModule<T extends ServiceTitle<T>> extends ImportableModule {
+export abstract class APIImportableModule extends ImportableModule {
 	state: ImportState = { current: 0, max: 1 };
-	convertTitles?(titles: TitleCollection, titleList: T[]): Promise<number>;
-	abstract handlePage(): Promise<T[] | false>;
+	convertTitles?(titles: TitleCollection, titleList: ServiceTitle[]): Promise<number>;
+	abstract handlePage(): Promise<ServiceTitle[] | false>;
 	perConvert: number = 250;
 	preMain?(): Promise<boolean>;
 
@@ -900,7 +900,7 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 		notification.classList.remove('loading');
 		DOM.append(loginProgress, DOM.space(), DOM.text('logged in !'));
 		if (this.doStop) return this.cancel();
-		let titles: T[] = [];
+		let titles: ServiceTitle[] = [];
 		if (this.preMain) {
 			if (!(await this.preMain())) {
 				return this.cancel(true);
@@ -912,7 +912,7 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 		// Fetch each pages to get a list of titles in the Service format
 		while (!this.doStop && this.getNextPage() !== false) {
 			progress.textContent = this.importProgress();
-			let tmp: T[] | false = await this.handlePage();
+			let tmp: ServiceTitle[] | false = await this.handlePage();
 			if (tmp === false) {
 				notification.classList.remove('loading');
 				return this.cancel(true);
@@ -951,7 +951,7 @@ export abstract class APIImportableModule<T extends ServiceTitle<T>> extends Imp
 						const connection = connections[key];
 						if (connection['md'] !== undefined) {
 							const id = parseInt(key);
-							const title = titleList.find((t) => t.id == id) as T;
+							const title = titleList.find((t) => t.id == id) as ServiceTitle;
 							if (title) {
 								title.mangaDex = connection['md'];
 								const convertedTitle = title.toTitle();

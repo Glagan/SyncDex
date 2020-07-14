@@ -126,6 +126,27 @@ export class SyncDex {
 		// Get Title
 		const id = parseInt(document.querySelector<HTMLElement>('.row .fas.fa-hashtag')!.parentElement!.textContent!);
 		const title = await Title.get(id);
+		// Highlight read chapters and next chapter
+		if (Options.saveOpenedChapters) {
+			const rows = document.querySelectorAll<HTMLElement>('.chapter-row');
+			for (const row of rows) {
+				const chapter = parseInt(row.dataset.chapter!);
+				if (!isNaN(chapter)) {
+					if (chapter > title.progress.chapter && chapter < Math.floor(title.progress.chapter) + 2) {
+						row.classList.add('has-transition');
+						row.style.backgroundColor = Options.colors.nextChapter;
+					} else if (title.chapters.indexOf(chapter) >= 0) {
+						row.classList.add('has-transition');
+						row.style.backgroundColor = Options.colors.openedChapter;
+					}
+				}
+			}
+		}
+		// Search for the progress row and add overview there
+		let overview: Overview | undefined;
+		if (Options.showOverview) {
+			overview = new Overview();
+		}
 		// Always Find Services
 		let fallback = false;
 		if (Options.useMochi) {
@@ -159,26 +180,8 @@ export class SyncDex {
 				} // Nothing to do if there is no row
 			}
 		}
-		// Search for the progress row and add overview there
-		if (Options.showOverview) {
-			const overview = new Overview();
-		}
-		// Highlight read chapters and next chapter
-		if (Options.saveOpenedChapters) {
-			const rows = document.querySelectorAll<HTMLElement>('.chapter-row');
-			for (const row of rows) {
-				const chapter = parseInt(row.dataset.chapter!);
-				if (!isNaN(chapter)) {
-					if (chapter > title.progress.chapter && chapter < Math.floor(title.progress.chapter) + 2) {
-						row.classList.add('has-transition');
-						row.style.backgroundColor = Options.colors.nextChapter;
-					} else if (title.chapters.indexOf(chapter) >= 0) {
-						row.classList.add('has-transition');
-						row.style.backgroundColor = Options.colors.openedChapter;
-					}
-				}
-			}
-		}
+		// Load the Overview with now available Service IDs
+		if (overview) overview.load(title);
 	};
 
 	updatesPage = (): void => {

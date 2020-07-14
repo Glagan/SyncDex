@@ -31,7 +31,7 @@ class AnimePlanetActive extends ActivableModule {
 	};
 }
 
-class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
+class AnimePlanetImport extends APIImportableModule {
 	parser: DOMParser = new DOMParser();
 
 	// Set the list type to 'list'
@@ -85,7 +85,7 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 								chapter: parseInt(chapter.value as string),
 								volume: parseInt(volume.value as string),
 							},
-							status: parseInt(status.value),
+							status: AnimePlanetTitle.toStatus(parseInt(status.value)),
 							score: parseFloat(score.getAttribute('name') as string) * 20,
 							name: name.textContent as string,
 						}
@@ -135,7 +135,7 @@ class AnimePlanetImport extends APIImportableModule<AnimePlanetTitle> {
 class AnimePlanetExport extends APIExportableModule {
 	exportTitle = async (title: Title): Promise<boolean> => {
 		const exportTitle = AnimePlanetTitle.fromTitle(title);
-		if (exportTitle && exportTitle.status !== AnimePlanetStatus.NONE) {
+		if (exportTitle && exportTitle.status !== Status.NONE) {
 			exportTitle.token = (this.service as AnimePlanet).activeModule.token;
 			const responseStatus = await exportTitle.persist();
 			return responseStatus == RequestStatus.SUCCESS;

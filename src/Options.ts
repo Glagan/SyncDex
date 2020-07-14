@@ -1,5 +1,5 @@
 import { LocalStorage } from './Storage';
-import { ServiceName } from './Title';
+import { ServiceName, ActivableKey } from './Title';
 
 console.log('SyncDex :: Options');
 
@@ -34,8 +34,8 @@ export interface AvailableOptions {
 	acceptLowScore: boolean;
 	updateMD: boolean;
 	// Services
-	services: ServiceName[];
-	mainService: ServiceName | undefined;
+	services: ActivableKey[];
+	mainService: ActivableKey | undefined;
 	noReloadStatus: boolean;
 	tokens: Partial<{
 		anilistToken: string | undefined;

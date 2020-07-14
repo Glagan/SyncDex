@@ -10,7 +10,7 @@ import { Kitsu } from '../Service/Kitsu';
 import { AnimePlanet } from '../Service/AnimePlanet';
 import { MangaUpdates } from '../Service/MangaUpdates';
 import { RequestStatus } from '../../src/Runtime';
-import { ServiceName } from '../../src/Title';
+import { ServiceName, ActivableKey } from '../../src/Title';
 
 export function GetService(name: ServiceName): typeof Service {
 	switch (name) {
@@ -39,8 +39,8 @@ export class ServiceManager {
 	activeContainer: HTMLElement;
 	mainService?: Service;
 	noServices: HTMLElement;
-	activeServices: ServiceName[] = [];
-	inactiveServices: ServiceName[] = [];
+	activeServices: ActivableKey[] = [];
+	inactiveServices: ActivableKey[] = [];
 	inactiveWarning: HTMLElement;
 	// Import/Export
 	importContainer: HTMLElement;
@@ -74,12 +74,12 @@ export class ServiceManager {
 	 */
 	reloadManager = async (service: Service): Promise<void> => {
 		if (!service.activeModule || !service.activeModule.activable) return;
-		const index = Options.services.indexOf(service.serviceName);
-		if (Options.mainService == service.serviceName) {
+		const index = Options.services.indexOf(service.key as ActivableKey);
+		if (Options.mainService == service.key) {
 			this.mainService = service;
 			this.activeContainer.insertBefore(service.activeModule.activeCard, this.activeContainer.firstElementChild);
 			service.activeModule.activeCard.classList.add('active');
-			this.addActiveService(service.serviceName);
+			this.addActiveService(service.key);
 		} else if (index >= 0) {
 			// Insert as the *index* child to follow the Options order
 			const activeCards = this.activeContainer.querySelectorAll('.card.active');
@@ -98,7 +98,7 @@ export class ServiceManager {
 				this.activeContainer.insertBefore(service.activeModule.activeCard, activeCards[index]);
 			}
 			service.activeModule.activeCard.classList.add('active');
-			this.addActiveService(service.serviceName);
+			this.addActiveService(service.key as ActivableKey);
 		} else {
 			this.activeContainer.appendChild(service.activeModule.activeCard);
 		}
@@ -116,8 +116,8 @@ export class ServiceManager {
 	/**
 	 * Update the inactiveServices list and display warnings if the status isn't SUCCESS
 	 */
-	updateServiceStatus = (name: ServiceName, status: RequestStatus): void => {
-		const index = this.inactiveServices.indexOf(name);
+	updateServiceStatus = (key: ActivableKey, status: RequestStatus): void => {
+		const index = this.inactiveServices.indexOf(key);
 		if (index > -1) {
 			if (status == RequestStatus.SUCCESS) {
 				this.inactiveServices.splice(index, 1);
@@ -126,7 +126,7 @@ export class ServiceManager {
 				}
 			}
 		} else if (status != RequestStatus.SUCCESS) {
-			this.inactiveServices.push(name);
+			this.inactiveServices.push(key);
 			this.inactiveWarning.classList.remove('hidden');
 		}
 	};
@@ -134,23 +134,23 @@ export class ServiceManager {
 	/**
 	 * Update active Services list and remove warning notifications if necessary
 	 */
-	addActiveService = (name: ServiceName): void => {
-		this.activeServices.push(name);
+	addActiveService = (key: ActivableKey): void => {
+		this.activeServices.push(key);
 		this.noServices.classList.add('hidden');
 	};
 
 	/**
 	 * Update active and inactive Services list and remove warning notifications if necessary
 	 */
-	removeActiveService = (name: ServiceName): void => {
-		let index = this.inactiveServices.indexOf(name);
+	removeActiveService = (key: ActivableKey): void => {
+		let index = this.inactiveServices.indexOf(key);
 		if (index > -1) {
 			this.inactiveServices.splice(index, 1);
 			if (this.inactiveServices.length == 0) {
 				this.inactiveWarning.classList.add('hidden');
 			}
 		}
-		index = this.activeServices.indexOf(name);
+		index = this.activeServices.indexOf(key);
 		if (index > -1) {
 			this.activeServices.splice(index, 1);
 			if (this.activeServices.length == 0) {

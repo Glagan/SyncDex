@@ -10,7 +10,7 @@ export enum MyAnimeListStatus {
 	PLAN_TO_READ = 6,
 }
 
-export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
+export class MyAnimeListTitle extends ServiceTitle {
 	readonly serviceName: ServiceName = ServiceName.MyAnimeList;
 	readonly serviceKey: ServiceKey = ServiceKey.MyAnimeList;
 
@@ -19,14 +19,14 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 	}
 
 	id: number;
-	status: MyAnimeListStatus;
 	newEntry: boolean;
 	csrf: string;
+	loggedIn: boolean = false;
 
 	constructor(id: number, title?: Partial<MyAnimeListTitle>) {
 		super(title);
 		this.id = id;
-		this.status = title && title.status !== undefined ? title.status : MyAnimeListStatus.NONE;
+		this.status = title && title.status !== undefined ? title.status : Status.NONE;
 		this.csrf = title && title.csrf !== undefined ? title.csrf : '';
 		this.newEntry = title && title.newEntry !== undefined ? title.newEntry : false;
 	}
@@ -39,7 +39,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 		return new Date(parseInt(year.value), parseInt(month.value), parseInt(day.value));
 	};
 
-	static get = async (id: number): Promise<MyAnimeListTitle | RequestStatus> => {
+	static get = async (id: ServiceKeyType): Promise<ServiceTitle | RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: `https://myanimelist.net/ownlist/manga/${id}/edit?hideLayout`,
 			method: 'GET',
@@ -57,7 +57,9 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 		if (!response.redirected) {
 			if (title !== null) {
 				values.name = title.textContent!;
-				values.status = parseInt((body.getElementById('add_manga_status') as HTMLSelectElement).value);
+				values.status = MyAnimeListTitle.toStatus(
+					parseInt((body.getElementById('add_manga_status') as HTMLSelectElement).value)
+				);
 				values.progress = {
 					chapter:
 						parseInt((body.getElementById('add_manga_num_read_chapters') as HTMLInputElement).value) || 0,
@@ -71,7 +73,8 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 			}
 		}
 		values.newEntry = response.redirected && title !== null;
-		return new MyAnimeListTitle(id, values);
+		// TODO: Find if loggedIn
+		return new MyAnimeListTitle(id as number, values);
 	};
 
 	persist = async (): Promise<RequestStatus> => {
@@ -79,7 +82,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 		if (this.newEntry) url = `https://myanimelist.net/ownlist/manga/add?selected_manga_id=${this.id}&hideLayout`;
 		const body: FormDataProxy = {
 			manga_id: this.id,
-			'add_manga[status]': this.status,
+			'add_manga[status]': MyAnimeListTitle.fromStatus(this.status),
 			'add_manga[num_read_chapters]': this.progress.chapter,
 			csrf_token: this.csrf,
 		};
@@ -157,7 +160,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 		return new Title(this.mangaDex, {
 			services: { mal: this.id },
 			progress: this.progress,
-			status: MyAnimeListTitle.toStatus(this.status),
+			status: this.status,
 			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
 			start: this.start ? this.start.getTime() : undefined,
 			end: this.end ? this.end.getTime() : undefined,
@@ -185,7 +188,7 @@ export class MyAnimeListTitle extends ServiceTitle<MyAnimeListTitle> {
 		if (!title.services.mal) return undefined;
 		return new MyAnimeListTitle(title.services.mal, {
 			progress: title.progress,
-			status: MyAnimeListTitle.fromStatus(title.status),
+			status: title.status,
 			score: title.score ? title.score : undefined,
 			start: title.start ? new Date(title.start) : undefined,
 			end: title.end ? new Date(title.end) : undefined,

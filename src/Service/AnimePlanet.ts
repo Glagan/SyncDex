@@ -18,7 +18,7 @@ interface AnimePlanetAPIResponse {
 	[key: string]: any;
 }
 
-export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
+export class AnimePlanetTitle extends ServiceTitle {
 	readonly serviceName: ServiceName = ServiceName.AnimePlanet;
 	readonly serviceKey: ServiceKey = ServiceKey.AnimePlanet;
 
@@ -29,18 +29,18 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 	}
 
 	id: AnimePlanetReference;
-	status: AnimePlanetStatus;
 	token: string;
+	loggedIn: boolean = false;
 
 	constructor(id: AnimePlanetReference, title?: Partial<AnimePlanetTitle>) {
 		super(title);
 		this.id = id;
-		this.status = title && title.status !== undefined ? title.status : AnimePlanetStatus.NONE;
+		this.status = title && title.status !== undefined ? title.status : Status.NONE;
 		this.token = title && title.token !== undefined ? title.token : '';
 	}
 
-	static get = async (id: string | AnimePlanetReference): Promise<AnimePlanetTitle | RequestStatus> => {
-		const slug = typeof id === 'string' ? id : id.s;
+	static get = async (id: ServiceKeyType): Promise<ServiceTitle | RequestStatus> => {
+		const slug = typeof id === 'string' ? id : (id as AnimePlanetReference).s;
 		const response = await Runtime.request<RawResponse>({
 			url: AnimePlanetTitle.link(id),
 			method: 'GET',
@@ -57,7 +57,7 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 		const mediaEntryForm = body.querySelector<HTMLFormElement>('form[id^=manga]')!;
 		const api = parseInt(mediaEntryForm.dataset.id!);
 		const statusSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.changeStatus [selected]');
-		if (statusSelector) values.status = parseInt(statusSelector.value);
+		if (statusSelector) values.status = AnimePlanetTitle.toStatus(parseInt(statusSelector.value));
 		// Chapter
 		const chapterSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.chapters [selected]');
 		values.progress = { chapter: 0 };
@@ -69,6 +69,7 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 		const score = mediaEntryForm.querySelector<HTMLElement>('div.starrating > div[name]');
 		if (score) values.score = parseFloat(score.getAttribute('name')!) * 20;
 		values.name = body.querySelector(`h1[itemprop='name']`)!.textContent!;
+		// TODO: Find if loggedIn
 		return new AnimePlanetTitle(
 			{
 				s: slug,
@@ -81,7 +82,9 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 	persist = async (): Promise<RequestStatus> => {
 		const id = this.id.i;
 		let response = await Runtime.jsonRequest({
-			url: `https://www.anime-planet.com/api/list/status/manga/${id}/${this.status}/${this.token}`,
+			url: `https://www.anime-planet.com/api/list/status/manga/${id}/${AnimePlanetTitle.fromStatus(
+				this.status
+			)}/${this.token}`,
 			credentials: 'include',
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
@@ -141,7 +144,7 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 		return new Title(this.mangaDex, {
 			services: { ap: this.id },
 			progress: this.progress,
-			status: AnimePlanetTitle.toStatus(this.status),
+			status: this.status,
 			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
 			name: this.name,
 		});
@@ -169,7 +172,7 @@ export class AnimePlanetTitle extends ServiceTitle<AnimePlanetTitle> {
 		if (!title.services.ap) return undefined;
 		return new AnimePlanetTitle(title.services.ap, {
 			progress: title.progress,
-			status: AnimePlanetTitle.fromStatus(title.status),
+			status: title.status,
 			score: title.score ? title.score : undefined,
 			name: title.name,
 		});
