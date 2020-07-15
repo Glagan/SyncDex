@@ -1,13 +1,13 @@
 import { Runtime, RequestStatus } from '../../src/Runtime';
-import { Service, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
-import { AnimePlanetTitle, AnimePlanetStatus } from '../../src/Service/AnimePlanet';
+import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } from './Service';
+import { AnimePlanetTitle } from '../../src/Service/AnimePlanet';
 import { DOM } from '../../src/DOM';
 import { Title, TitleCollection, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
+import { APIImportableModule } from './Import';
+import { APIExportableModule } from './Export';
 
-class AnimePlanetActive extends ActivableModule {
-	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
-	loginUrl: string = 'https://www.anime-planet.com/login';
+class AnimePlanetLogin extends LoginModule {
 	username: string = '';
 	token: string = '';
 
@@ -31,6 +31,11 @@ class AnimePlanetActive extends ActivableModule {
 	};
 }
 
+class AnimePlanetActive extends ActivableModule {
+	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
+	loginUrl: string = 'https://www.anime-planet.com/login';
+}
+
 class AnimePlanetImport extends APIImportableModule {
 	parser: DOMParser = new DOMParser();
 
@@ -38,7 +43,7 @@ class AnimePlanetImport extends APIImportableModule {
 	preMain = async (): Promise<boolean> => {
 		const progress = DOM.create('p', { textContent: 'Setting list type...' });
 		const notification = this.notification('loading', [progress]);
-		const username = (this.service as AnimePlanet).activeModule.username;
+		const username = (this.service as AnimePlanet).loginModule.username;
 		const response = await Runtime.request<RawResponse>({
 			url: `https://www.anime-planet.com/users/${username}/manga/reading?sort=title&mylist_view=list`,
 			credentials: 'include',
@@ -52,7 +57,7 @@ class AnimePlanetImport extends APIImportableModule {
 	 * Adding `per_page=560` result in a 302, we can't use that
 	 */
 	handlePage = async (): Promise<AnimePlanetTitle[] | false> => {
-		const username = (this.service as AnimePlanet).activeModule.username;
+		const username = (this.service as AnimePlanet).loginModule.username;
 		const response = await Runtime.request<RawResponse>({
 			url: `https://www.anime-planet.com/users/${username}/manga?sort=title&page=${this.state.current}`,
 			credentials: 'include',
@@ -136,7 +141,7 @@ class AnimePlanetExport extends APIExportableModule {
 	exportTitle = async (title: Title): Promise<boolean> => {
 		const exportTitle = AnimePlanetTitle.fromTitle(title);
 		if (exportTitle && exportTitle.status !== Status.NONE) {
-			exportTitle.token = (this.service as AnimePlanet).activeModule.token;
+			exportTitle.token = (this.service as AnimePlanet).loginModule.token;
 			const responseStatus = await exportTitle.persist();
 			return responseStatus == RequestStatus.SUCCESS;
 		}
@@ -144,7 +149,7 @@ class AnimePlanetExport extends APIExportableModule {
 	};
 }
 
-export class AnimePlanet extends Service {
+export class AnimePlanet extends Service implements ActivableService {
 	static readonly serviceName: ServiceName = ServiceName.AnimePlanet;
 	static readonly key: ServiceKey = ServiceKey.AnimePlanet;
 
@@ -178,6 +183,7 @@ export class AnimePlanet extends Service {
 		return AnimePlanetTitle.link(id);
 	}
 
+	loginModule: AnimePlanetLogin = new AnimePlanetLogin();
 	activeModule: AnimePlanetActive = new AnimePlanetActive(this);
 	importModule: AnimePlanetImport = new AnimePlanetImport(this);
 	exportModule: AnimePlanetExport = new AnimePlanetExport(this);

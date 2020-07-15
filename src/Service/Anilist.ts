@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceName, ServiceKey, ServiceKeyType } from '../Title';
+import { ServiceTitle, Title, ServiceKeyType, ActivableName, ActivableKey } from '../Title';
 import { Options } from '../Options';
 
 export const enum AnilistStatus {
@@ -77,8 +77,8 @@ export const AnilistHeaders = (): AnilistHeaders => {
  * Score are automatically converted in a 0-100 range.
  */
 export class AnilistTitle extends ServiceTitle {
-	readonly serviceName: ServiceName = ServiceName.Anilist;
-	readonly serviceKey: ServiceKey = ServiceKey.Anilist;
+	readonly serviceName: ActivableName = ActivableName.Anilist;
+	readonly serviceKey: ActivableKey = ActivableKey.Anilist;
 
 	static link(id: ServiceKeyType): string {
 		return `https://anilist.co/manga/${id}`;
@@ -255,19 +255,6 @@ export class AnilistTitle extends ServiceTitle {
 				return Status.REREADING;
 		}
 		return Status.NONE;
-	};
-
-	toTitle = (): Title | undefined => {
-		if (!this.mangaDex) return undefined;
-		return new Title(this.mangaDex, {
-			services: { al: this.id },
-			progress: this.progress,
-			status: this.status,
-			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
-			start: this.start ? this.start.getTime() : undefined,
-			end: this.end ? this.end.getTime() : undefined,
-			name: this.name,
-		});
 	};
 
 	static fromStatus = (status: Status): AnilistStatus => {

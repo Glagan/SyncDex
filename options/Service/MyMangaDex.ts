@@ -1,6 +1,7 @@
 import { Options } from '../../src/Options';
 import { Title, TitleCollection, ServiceName, ServiceKey, ActivableKey } from '../../src/Title';
-import { ImportSummary, Service, FileImportFormat, FileImportableModule } from './Service';
+import { Service } from './Service';
+import { ImportSummary, FileImportFormat, FileImportableModule } from './Import';
 
 interface MyMangaDexTitle {
 	id: number;
@@ -166,7 +167,5 @@ export class MyMangaDex extends Service {
 	static readonly serviceName: ServiceName = ServiceName.MyMangaDex;
 	static readonly key: ServiceKey = ServiceKey.MyMangaDex;
 
-	activeModule = undefined;
 	importModule: MyMangaDexImport = new MyMangaDexImport(this);
-	exportModule = undefined;
 }

@@ -1,10 +1,12 @@
 import { Options } from '../../src/Options';
 import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Title, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
-import { Service, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
-import { KitsuStatus, KitsuTitle, KitsuManga, KitsuResponse, KitsuHeaders, KitsuAPI } from '../../src/Service/Kitsu';
+import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } from './Service';
+import { KitsuTitle, KitsuManga, KitsuResponse, KitsuHeaders, KitsuAPI } from '../../src/Service/Kitsu';
 import { DOM } from '../../src/DOM';
 import { Modal } from '../Modal';
+import { APIImportableModule } from './Import';
+import { APIExportableModule } from './Export';
 
 interface KitsuUserResponse {
 	data: {
@@ -18,32 +20,7 @@ interface KitsuUserResponse {
 	links: {};
 }
 
-class KitsuActive extends ActivableModule {
-	loginMethod: LoginMethod = LoginMethod.FORM;
-
-	preModalForm = (modal: Modal): void => {
-		modal.body.appendChild(
-			DOM.create('div', {
-				class: 'message',
-				childs: [
-					DOM.create('div', { class: 'icon' }),
-					DOM.create('div', {
-						class: 'content',
-						childs: [
-							DOM.text('No Account ? '),
-							DOM.create('a', {
-								textContent: 'Register',
-								href: 'https://kitsu.io/',
-								target: '_blank',
-								childs: [DOM.space(), DOM.icon('external-link-alt')],
-							}),
-						],
-					}),
-				],
-			})
-		);
-	};
-
+class KitsuLogin extends LoginModule {
 	loggedIn = async (): Promise<RequestStatus> => {
 		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<KitsuUserResponse>({
@@ -92,6 +69,33 @@ class KitsuActive extends ActivableModule {
 		delete Options.tokens.kitsuToken;
 		delete Options.tokens.kitsuUser;
 		return await Options.save();
+	};
+}
+
+class KitsuActive extends ActivableModule {
+	loginMethod: LoginMethod = LoginMethod.FORM;
+
+	preModalForm = (modal: Modal): void => {
+		modal.body.appendChild(
+			DOM.create('div', {
+				class: 'message',
+				childs: [
+					DOM.create('div', { class: 'icon' }),
+					DOM.create('div', {
+						class: 'content',
+						childs: [
+							DOM.text('No Account ? '),
+							DOM.create('a', {
+								textContent: 'Register',
+								href: 'https://kitsu.io/',
+								target: '_blank',
+								childs: [DOM.space(), DOM.icon('external-link-alt')],
+							}),
+						],
+					}),
+				],
+			})
+		);
 	};
 }
 
@@ -202,7 +206,7 @@ class KitsuExport extends APIExportableModule {
 	};
 }
 
-export class Kitsu extends Service {
+export class Kitsu extends Service implements ActivableService {
 	static readonly serviceName: ServiceName = ServiceName.Kitsu;
 	static readonly key: ServiceKey = ServiceKey.Kitsu;
 
@@ -211,6 +215,7 @@ export class Kitsu extends Service {
 		return KitsuTitle.link(id);
 	}
 
+	loginModule: KitsuLogin = new KitsuLogin();
 	activeModule: KitsuActive = new KitsuActive(this);
 	importModule: KitsuImport = new KitsuImport(this);
 	exportModule: KitsuExport = new KitsuExport(this);

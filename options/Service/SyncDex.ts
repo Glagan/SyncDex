@@ -1,8 +1,10 @@
 import { AvailableOptions } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
 import { SaveTitle, Title, TitleCollection, ExportedSave, ServiceName, ServiceKey } from '../../src/Title';
-import { ImportSummary, Service, FileImportableModule, FileImportFormat, FileExportableModule } from './Service';
+import { Service } from './Service';
 import { AppendableElement, DOM } from '../../src/DOM';
+import { ImportSummary, FileImportFormat, FileImportableModule } from './Import';
+import { FileExportableModule } from './Export';
 
 class SyncDexImport extends FileImportableModule<ExportedSave, Title> {
 	fileType: FileImportFormat = 'JSON';
@@ -72,7 +74,6 @@ export class SyncDex extends Service {
 		});
 	};
 
-	activeModule = undefined;
 	importModule: SyncDexImport = new SyncDexImport(this);
 	exportModule: SyncDexExport = new SyncDexExport(this);
 }

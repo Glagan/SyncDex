@@ -73,7 +73,7 @@ export class ServiceManager {
 	 * Check if the user is logged in on the Service and calls updateStatus to display warnings.
 	 */
 	reloadManager = async (service: Service): Promise<void> => {
-		if (!service.activeModule || !service.activeModule.activable) return;
+		if (!service.activeModule) return;
 		const index = Options.services.indexOf(service.key as ActivableKey);
 		if (Options.mainService == service.key) {
 			this.mainService = service;
@@ -105,9 +105,7 @@ export class ServiceManager {
 		// Update displayed state (buttons)
 		if (index >= 0) {
 			service.activeModule.loading();
-			service.activeModule.loggedIn().then((status) => {
-				(service.activeModule as ActivableModule).updateStatus(status);
-			});
+			service.loginModule!.loggedIn().then((status) => service.activeModule!.updateStatus(status));
 		} else {
 			service.activeModule.desactivate();
 		}

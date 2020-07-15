@@ -1,5 +1,5 @@
 import { RequestStatus, Runtime } from '../Runtime';
-import { ServiceTitle, Title, ServiceName, ServiceKey, ServiceKeyType } from '../Title';
+import { ServiceTitle, Title, ServiceName, ServiceKey, ServiceKeyType, ActivableName, ActivableKey } from '../Title';
 
 export enum MyAnimeListStatus {
 	NONE = 0,
@@ -11,8 +11,8 @@ export enum MyAnimeListStatus {
 }
 
 export class MyAnimeListTitle extends ServiceTitle {
-	readonly serviceName: ServiceName = ServiceName.MyAnimeList;
-	readonly serviceKey: ServiceKey = ServiceKey.MyAnimeList;
+	readonly serviceName: ActivableName = ActivableName.MyAnimeList;
+	readonly serviceKey: ActivableKey = ActivableKey.MyAnimeList;
 
 	static link(id: ServiceKeyType): string {
 		return `https://myanimelist.net/manga/${id}`;
@@ -153,19 +153,6 @@ export class MyAnimeListTitle extends ServiceTitle {
 			case MyAnimeListStatus.PAUSED:
 				return Status.PAUSED;
 		}
-	};
-
-	toTitle = (): Title | undefined => {
-		if (!this.mangaDex) return undefined;
-		return new Title(this.mangaDex, {
-			services: { mal: this.id },
-			progress: this.progress,
-			status: this.status,
-			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
-			start: this.start ? this.start.getTime() : undefined,
-			end: this.end ? this.end.getTime() : undefined,
-			name: this.name,
-		});
 	};
 
 	static fromStatus = (status: Status): MyAnimeListStatus => {

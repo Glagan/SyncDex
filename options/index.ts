@@ -10,16 +10,15 @@ import { LocalStorage } from '../src/Storage';
 import { SaveViewer } from './SaveViewer';
 
 class OptionsManager {
-	highlightsManager?: HighlightsManager;
-	colorManager?: ColorManager;
-	checkboxManager?: CheckboxManager;
-	inputManager?: InputManager;
-	menuHighlight?: MenuHighlight;
-	serviceManager?: ServiceManager;
-	saveViewer?: SaveViewer;
+	highlightsManager: HighlightsManager;
+	colorManager: ColorManager;
+	checkboxManager: CheckboxManager;
+	inputManager: InputManager;
+	menuHighlight: MenuHighlight;
+	serviceManager: ServiceManager;
+	saveViewer: SaveViewer;
 
-	execute = async (): Promise<void> => {
-		await Options.load();
+	constructor() {
 		this.highlightsManager = new HighlightsManager();
 		this.colorManager = new ColorManager();
 		this.checkboxManager = new CheckboxManager();
@@ -71,18 +70,20 @@ class OptionsManager {
 		};
 		themeRow.addEventListener('click', toggleTheme);
 		prefersColorScheme.addEventListener('change', toggleTheme);
-	};
+	}
 
 	reload = (): void => {
-		this.highlightsManager?.updateAll();
-		this.colorManager?.updateAll();
-		this.checkboxManager?.updateAll();
-		this.inputManager?.updateAll();
-		this.serviceManager?.refreshActive();
-		this.saveViewer?.updateAll();
+		this.highlightsManager.updateAll();
+		this.colorManager.updateAll();
+		this.checkboxManager.updateAll();
+		this.inputManager.updateAll();
+		this.serviceManager.refreshActive();
+		this.saveViewer.updateAll();
 	};
 }
 
 setBrowser();
-const manager = new OptionsManager();
-manager.execute();
+(async () => {
+	await Options.load();
+	new OptionsManager();
+})();

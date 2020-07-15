@@ -1,12 +1,11 @@
 import { Runtime, RequestStatus } from '../../src/Runtime';
-import { Service, ActivableModule, APIImportableModule, LoginMethod, APIExportableModule } from './Service';
-import { MangaUpdatesTitle, MangaUpdatesStatus } from '../../src/Service/MangaUpdates';
+import { Service, ActivableModule, LoginMethod, LoginModule, ActivableService } from './Service';
+import { MangaUpdatesTitle } from '../../src/Service/MangaUpdates';
 import { Title, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
+import { APIImportableModule } from './Import';
+import { APIExportableModule } from './Export';
 
-class MangaUpdatesActive extends ActivableModule {
-	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
-	loginUrl: string = 'https://www.mangaupdates.com/login.html';
-
+class MangaUpdatesLogin extends LoginModule {
 	loggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: 'https://www.mangaupdates.com/aboutus.html',
@@ -16,6 +15,11 @@ class MangaUpdatesActive extends ActivableModule {
 		if (response.body && response.body.indexOf(`You are currently logged in as`) >= 0) return RequestStatus.SUCCESS;
 		return RequestStatus.FAIL;
 	};
+}
+
+class MangaUpdatesActive extends ActivableModule {
+	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
+	loginUrl: string = 'https://www.mangaupdates.com/login.html';
 }
 
 class MangaUpdatesImport extends APIImportableModule {
@@ -119,7 +123,7 @@ class MangaUpdatesExport extends APIExportableModule {
 	};
 }
 
-export class MangaUpdates extends Service {
+export class MangaUpdates extends Service implements ActivableService {
 	static readonly serviceName: ServiceName = ServiceName.MangaUpdates;
 	static readonly key: ServiceKey = ServiceKey.MangaUpdates;
 
@@ -128,6 +132,7 @@ export class MangaUpdates extends Service {
 		return MangaUpdatesTitle.link(id);
 	}
 
+	loginModule: MangaUpdatesLogin = new MangaUpdatesLogin();
 	activeModule: MangaUpdatesActive = new MangaUpdatesActive(this);
 	importModule: MangaUpdatesImport = new MangaUpdatesImport(this);
 	exportModule: MangaUpdatesExport = new MangaUpdatesExport(this);

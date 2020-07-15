@@ -2,8 +2,10 @@ import { DOM, AppendableElement } from '../../src/DOM';
 import { Options } from '../../src/Options';
 import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Title, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
-import { Service, ActivableModule, APIImportableModule, APIExportableModule, LoginMethod } from './Service';
+import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } from './Service';
 import { AnilistStatus, AnilistTitle, AnilistDate, AnilistAPI, AnilistHeaders } from '../../src/Service/Anilist';
+import { APIImportableModule } from './Import';
+import { APIExportableModule } from './Export';
 
 interface AnilistViewerResponse {
 	data: {
@@ -39,13 +41,7 @@ interface AnilistListResponse {
 	};
 }
 
-class AnilistActive extends ActivableModule {
-	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
-	loginUrl: string = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
-	static LoginQuery: string = `query { Viewer { id } }`;
-	form?: HTMLFormElement;
-	login = undefined;
-
+class AnilistLogin extends LoginModule {
 	loggedIn = async (): Promise<RequestStatus> => {
 		if (Options.tokens.anilistToken === undefined) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest({
@@ -61,6 +57,13 @@ class AnilistActive extends ActivableModule {
 		delete Options.tokens.anilistToken;
 		return await Options.save();
 	};
+}
+
+class AnilistActive extends ActivableModule {
+	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
+	loginUrl: string = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
+	static LoginQuery: string = `query { Viewer { id } }`;
+	form?: HTMLFormElement;
 }
 
 class AnilistImport extends APIImportableModule {
@@ -188,7 +191,7 @@ class AnilistExport extends APIExportableModule {
 	};
 }
 
-export class Anilist extends Service {
+export class Anilist extends Service implements ActivableService {
 	static readonly serviceName: ServiceName = ServiceName.Anilist;
 	static readonly key: ServiceKey = ServiceKey.Anilist;
 
@@ -210,6 +213,7 @@ export class Anilist extends Service {
 		});
 	};
 
+	loginModule: LoginModule = new AnilistLogin();
 	activeModule: AnilistActive = new AnilistActive(this);
 	importModule: AnilistImport = new AnilistImport(this);
 	exportModule: AnilistExport = new AnilistExport(this);

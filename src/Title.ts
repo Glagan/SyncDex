@@ -453,8 +453,8 @@ export class TitleCollection {
 }
 
 export abstract class ServiceTitle {
-	abstract readonly serviceName: ServiceName;
-	abstract readonly serviceKey: ServiceKey;
+	abstract readonly serviceName: ActivableName;
+	abstract readonly serviceKey: ActivableKey;
 
 	/**
 	 * The key of the Media on the Service.
@@ -503,14 +503,28 @@ export abstract class ServiceTitle {
 	 * Send any necessary requests to save the Media on the Service.
 	 */
 	abstract persist(): Promise<RequestStatus>;
+
 	/**
 	 * Send any necessary requests to delete the Media on the Service.
 	 */
 	abstract delete(): Promise<RequestStatus>;
+
 	/**
 	 * Convert the Media to a Title if possible (MangaDex ID available), or undefined.
 	 */
-	abstract toTitle(): Title | undefined;
+	toTitle(): Title | undefined {
+		if (!this.mangaDex) return undefined;
+		return new Title(this.mangaDex, {
+			services: { [(<typeof ServiceTitle>this.constructor).prototype.serviceKey]: this.id },
+			progress: this.progress,
+			status: this.status,
+			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
+			start: this.start ? this.start.getTime() : undefined,
+			end: this.end ? this.end.getTime() : undefined,
+			name: this.name,
+		});
+	}
+
 	/**
 	 * Get the ID used by Mochi that can only be a number or a string.
 	 */

@@ -1,17 +1,11 @@
 import { DOM } from '../../src/DOM';
 import { TitleCollection, Title, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
-import {
-	Service,
-	FileImportableModule,
-	FileImportFormat,
-	BatchExportableModule,
-	Summary,
-	LoginMethod,
-	ActivableModule,
-} from './Service';
+import { Service, Summary, LoginMethod, ActivableModule, LoginModule, ActivableService } from './Service';
 import { Runtime, RequestStatus } from '../../src/Runtime';
 import { MyAnimeListTitle } from '../../src/Service/MyAnimeList';
+import { FileImportFormat, FileImportableModule } from './Import';
+import { BatchExportableModule } from './Export';
 
 enum MyAnimeListExportStatus {
 	COMPLETED = 'Completed',
@@ -33,10 +27,7 @@ interface MyAnimeListXMLTitle {
 	name?: string;
 }
 
-class MyAnimeListActive extends ActivableModule {
-	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
-	loginUrl: string = 'https://myanimelist.net/login.php';
-
+class MyAnimeListLogin extends LoginModule {
 	loggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: 'https://myanimelist.net/login.php',
@@ -47,6 +38,11 @@ class MyAnimeListActive extends ActivableModule {
 		if (response.body && response.url.indexOf('login.php') < 0) return RequestStatus.SUCCESS;
 		return RequestStatus.FAIL;
 	};
+}
+
+class MyAnimeListActive extends ActivableModule {
+	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
+	loginUrl: string = 'https://myanimelist.net/login.php';
 }
 
 /**
@@ -345,7 +341,7 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 	};
 }
 
-export class MyAnimeList extends Service {
+export class MyAnimeList extends Service implements ActivableService {
 	static readonly serviceName: ServiceName = ServiceName.MyAnimeList;
 	static readonly key: ServiceKey = ServiceKey.MyAnimeList;
 
@@ -354,6 +350,7 @@ export class MyAnimeList extends Service {
 		return MyAnimeListTitle.link(id);
 	}
 
+	loginModule: MyAnimeListLogin = new MyAnimeListLogin();
 	activeModule: MyAnimeListActive = new MyAnimeListActive(this);
 	importModule: MyAnimeListImport = new MyAnimeListImport(this);
 	exportModule: MyAnimeListExport = new MyAnimeListExport(this);

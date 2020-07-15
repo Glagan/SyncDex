@@ -1,6 +1,6 @@
 import { Options } from '../Options';
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceName, ServiceKey, ServiceKeyType, ActivableName, ActivableKey } from '../Title';
+import { ServiceTitle, Title, ServiceKeyType, ActivableName, ActivableKey } from '../Title';
 
 interface KitsuHeaders {
 	Accept: string;
@@ -208,19 +208,6 @@ export class KitsuTitle extends ServiceTitle {
 			case KitsuStatus.PLAN_TO_READ:
 				return Status.PLAN_TO_READ;
 		}
-	};
-
-	toTitle = (): Title | undefined => {
-		if (!this.mangaDex) return undefined;
-		return new Title(this.mangaDex, {
-			services: { al: this.id },
-			progress: this.progress,
-			status: this.status,
-			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
-			start: this.start ? this.start.getTime() : undefined,
-			end: this.end ? this.end.getTime() : undefined,
-			name: this.name,
-		});
 	};
 
 	static fromStatus = (status: Status): KitsuStatus => {

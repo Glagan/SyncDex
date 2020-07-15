@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceName, ServiceKey, ServiceKeyType } from '../Title';
+import { ServiceTitle, Title, ServiceName, ServiceKey, ServiceKeyType, ActivableName, ActivableKey } from '../Title';
 
 export const enum MangaUpdatesStatus {
 	NONE = -1,
@@ -11,8 +11,8 @@ export const enum MangaUpdatesStatus {
 }
 
 export class MangaUpdatesTitle extends ServiceTitle {
-	readonly serviceName: ServiceName = ServiceName.MangaUpdates;
-	readonly serviceKey: ServiceKey = ServiceKey.MangaUpdates;
+	readonly serviceName: ActivableName = ActivableName.MangaUpdates;
+	readonly serviceKey: ActivableKey = ActivableKey.MangaUpdates;
 
 	static link(id: ServiceKeyType): string {
 		return `https://www.mangaupdates.com/series.html?id=${id}`;
@@ -210,17 +210,6 @@ export class MangaUpdatesTitle extends ServiceTitle {
 			case MangaUpdatesStatus.PAUSED:
 				return Status.PAUSED;
 		}
-	};
-
-	toTitle = (): Title | undefined => {
-		if (!this.mangaDex) return undefined;
-		return new Title(this.mangaDex, {
-			services: { mu: this.id },
-			progress: this.progress,
-			status: this.status,
-			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
-			name: this.name,
-		});
 	};
 
 	static fromStatus = (status: Status): MangaUpdatesStatus => {

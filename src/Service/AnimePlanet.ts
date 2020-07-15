@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceName, ServiceKey, ServiceKeyType } from '../Title';
+import { ServiceTitle, Title, ServiceKeyType, ActivableName, ActivableKey } from '../Title';
 
 export const enum AnimePlanetStatus {
 	NONE = 0,
@@ -19,8 +19,8 @@ interface AnimePlanetAPIResponse {
 }
 
 export class AnimePlanetTitle extends ServiceTitle {
-	readonly serviceName: ServiceName = ServiceName.AnimePlanet;
-	readonly serviceKey: ServiceKey = ServiceKey.AnimePlanet;
+	readonly serviceName: ActivableName = ActivableName.AnimePlanet;
+	readonly serviceKey: ActivableKey = ActivableKey.AnimePlanet;
 
 	static link(id: ServiceKeyType): string {
 		if (typeof id === 'string') return `https://www.anime-planet.com/manga/${id}`;
@@ -137,17 +137,6 @@ export class AnimePlanetTitle extends ServiceTitle {
 			case AnimePlanetStatus.WONT_READ:
 				return Status.WONT_READ;
 		}
-	};
-
-	toTitle = (): Title | undefined => {
-		if (!this.mangaDex) return undefined;
-		return new Title(this.mangaDex, {
-			services: { ap: this.id },
-			progress: this.progress,
-			status: this.status,
-			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
-			name: this.name,
-		});
 	};
 
 	static fromStatus = (status: Status): AnimePlanetStatus => {
