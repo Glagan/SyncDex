@@ -1,6 +1,19 @@
 import { LocalStorage } from './Storage';
 import { Options, AvailableOptions } from './Options';
 import { RequestStatus } from './Runtime';
+import { DOM, AppendableElement } from './DOM';
+import { dateFormat } from './Utility';
+
+export const StatusMap: { [key in Status]: string } = {
+	[Status.NONE]: 'None',
+	[Status.READING]: 'Reading',
+	[Status.COMPLETED]: 'Completed',
+	[Status.PAUSED]: 'Paused',
+	[Status.PLAN_TO_READ]: 'Plan to Read',
+	[Status.DROPPED]: 'Dropped',
+	[Status.REREADING]: 'Re-reading',
+	[Status.WONT_READ]: "Won't Read",
+};
 
 export enum StaticName {
 	'MyMangaDex' = 'MyMangaDex',
@@ -457,9 +470,17 @@ export abstract class ServiceTitle {
 	abstract readonly serviceKey: ActivableKey;
 
 	/**
+	 * Is the Media existing on the Service.
+	 */
+	loggedIn: boolean = false;
+	/**
 	 * The key of the Media on the Service.
 	 */
 	abstract id: ServiceKeyType;
+	/**
+	 * Is the Media existing on the Service.
+	 */
+	inList: boolean = false;
 	/**
 	 * The stauts of the Media on the Service.
 	 */
@@ -554,5 +575,61 @@ export abstract class ServiceTitle {
 	 */
 	static fromTitle = (title: Title): ServiceTitle | undefined => {
 		return undefined;
+	};
+
+	overviewRow = (icon: string, content: string): HTMLElement => {
+		return DOM.create('div', {
+			childs: [
+				DOM.create('i', { class: `fas fa-${icon}` }),
+				DOM.space(),
+				DOM.create('span', { textContent: content }),
+			],
+		});
+	};
+
+	/**
+	 * Create a list of all values for the Media.
+	 */
+	overview = (parent: HTMLElement): void => {
+		if (!this.loggedIn) {
+			parent.appendChild(
+				DOM.create('div', {
+					class: 'alert alert-danger',
+					textContent: 'You are not Logged In.',
+				})
+			);
+			return;
+		}
+		if (this.inList) {
+			console.log(this);
+			const rows: HTMLElement[] = [
+				DOM.create('div', { class: `status st${this.status}`, textContent: StatusMap[this.status] }),
+			];
+			if (this.progress.volume) rows.push(this.overviewRow('book', `Volume ${this.progress.volume}`));
+			rows.push(this.overviewRow('bookmark', `Chapter ${this.progress.chapter}`));
+			if (this.start) {
+				rows.push(
+					this.overviewRow(
+						'calendar-plus',
+						`${this.start.getUTCFullYear()}-${dateFormat(this.start.getUTCMonth() + 1)}-${dateFormat(
+							this.start.getUTCDate()
+						)}`
+					)
+				);
+			} else rows.push(this.overviewRow('calendar-plus', 'No Start Date'));
+			if (this.end) {
+				rows.push(
+					this.overviewRow(
+						'calendar-check',
+						`${this.end.getUTCFullYear()}-${dateFormat(this.end.getUTCMonth() + 1)}-${dateFormat(
+							this.end.getUTCDate()
+						)}`
+					)
+				);
+			} else rows.push(this.overviewRow('calendar-check', 'No Finish Date'));
+			if (this.score) rows.push(this.overviewRow('star', `Scored ${this.score} out of 100`));
+			else rows.push(this.overviewRow('star', `Not Scored yet`));
+			DOM.append(parent, ...rows);
+		} else DOM.append(parent, DOM.text('Not in List.'));
 	};
 }

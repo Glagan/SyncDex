@@ -173,9 +173,11 @@ export class AnilistTitle extends ServiceTitle {
 		const mediaEntry = body.data.Media.mediaListEntry;
 		const values: Partial<AnilistTitle> = {
 			name: body.data.Media.title.userPreferred,
+			loggedIn: true,
 		};
 		if (mediaEntry) {
 			values.mediaEntryId = mediaEntry.id;
+			values.inList = true;
 			values.progress = {
 				chapter: mediaEntry.progress,
 				volume: mediaEntry.progressVolumes,
@@ -184,7 +186,7 @@ export class AnilistTitle extends ServiceTitle {
 			values.score = mediaEntry.score ? mediaEntry.score : 0;
 			values.start = AnilistTitle.dateFromAnilist(mediaEntry.startedAt);
 			values.end = AnilistTitle.dateFromAnilist(mediaEntry.completedAt);
-		}
+		} else values.inList = false;
 		return new AnilistTitle(id as number, values);
 	};
 
@@ -217,6 +219,10 @@ export class AnilistTitle extends ServiceTitle {
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		this.mediaEntryId = response.body.data.SaveMediaListEntry.id;
+		if (!this.inList) {
+			this.inList = true;
+			return RequestStatus.CREATED;
+		}
 		return RequestStatus.SUCCESS;
 	};
 
@@ -236,6 +242,7 @@ export class AnilistTitle extends ServiceTitle {
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		this.mediaEntryId = 0;
+		this.inList = false;
 		return RequestStatus.SUCCESS;
 	};
 

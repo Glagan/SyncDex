@@ -117,8 +117,9 @@ export class KitsuTitle extends ServiceTitle {
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		const body = response.body;
-		const values: Partial<KitsuTitle> = {};
+		const values: Partial<KitsuTitle> = { loggedIn: true };
 		if (body.data.length == 1) {
+			values.inList = true;
 			const libraryEntry = body.data[0];
 			values.libraryEntryId = parseInt(libraryEntry.id);
 			const attributes = libraryEntry.attributes;
@@ -132,7 +133,7 @@ export class KitsuTitle extends ServiceTitle {
 			if (attributes.startedAt !== null) values.start = new Date(attributes.startedAt);
 			if (attributes.finishedAt !== null) values.end = new Date(attributes.finishedAt);
 			values.name = body.included[0].attributes.canonicalTitle;
-		}
+		} else values.inList = false;
 		return new KitsuTitle(id as number, values);
 	};
 
@@ -177,6 +178,10 @@ export class KitsuTitle extends ServiceTitle {
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		this.libraryEntryId = parseInt(response.body.data.id);
+		if (!this.inList) {
+			this.inList = true;
+			return RequestStatus.CREATED;
+		}
 		return RequestStatus.SUCCESS;
 	};
 
@@ -190,6 +195,7 @@ export class KitsuTitle extends ServiceTitle {
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		this.libraryEntryId = 0;
+		this.inList = false;
 		return RequestStatus.SUCCESS;
 	};
 

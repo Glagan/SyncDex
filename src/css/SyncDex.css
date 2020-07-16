@@ -285,3 +285,39 @@
 	border-color: var(--mangaupdates);
 	background-color: var(--mangaupdates-bg);
 }
+/** Status */
+.status {
+	font-size: 1.5rem;
+}
+/** None */
+.st0 {
+	color: blueviolet;
+}
+/** Reading */
+.st1 {
+	color: cornflowerblue;
+}
+/** Completed */
+.st2 {
+	color: darkseagreen;
+}
+/** Paused */
+.st3 {
+	color: orange;
+}
+/** Plan to Read */
+.st4 {
+	color: violet;
+}
+/** Dropped */
+.st5 {
+	color: firebrick;
+}
+/** Re-reading */
+.st6 {
+	color: #3297b6;
+}
+/** Won't Read */
+.st7 {
+	color: rgb(209, 32, 32);
+}

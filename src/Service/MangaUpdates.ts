@@ -24,7 +24,6 @@ export class MangaUpdatesTitle extends ServiceTitle {
 		status: Status;
 		score?: number;
 	};
-	loggedin: boolean = false;
 
 	constructor(id: number, title?: Partial<MangaUpdatesTitle>) {
 		super(title);
@@ -60,8 +59,10 @@ export class MangaUpdatesTitle extends ServiceTitle {
 		const values: Partial<MangaUpdatesTitle> = {};
 		const showList = body.getElementById('showList');
 		if (showList !== null) {
+			values.loggedIn = true;
 			const listType = /mylist\.html(?:\?list=(.+))?/.exec(showList.querySelector<HTMLAnchorElement>('a')!.href);
 			if (listType !== null) {
+				values.inList = true;
 				values.status = MangaUpdatesTitle.toStatus(MangaUpdatesTitle.listToStatus(listType[1]));
 				values.current = { progress: { chapter: 0 }, status: values.status };
 				// The state in list is only displayed if the title is in the READING list
@@ -74,7 +75,7 @@ export class MangaUpdatesTitle extends ServiceTitle {
 					};
 					values.current.progress = Object.assign({}, values.progress); // Avoid reference
 				}
-			}
+			} else values.inList = false;
 			// We only get the rating if it's in the list - even if it's not required
 			const scoreNode = body.querySelector<HTMLInputElement>(`input[type='radio'][name='rating'][checked]`);
 			if (scoreNode) {
@@ -82,10 +83,9 @@ export class MangaUpdatesTitle extends ServiceTitle {
 				values.score = parseInt(scoreNode.value) * 10;
 				if (values.current) values.current.score = values.score;
 			}
-		}
+		} else values.loggedIn = false;
 		const title = body.querySelector('span.releasestitle');
 		values.name = title ? title.textContent! : undefined;
-		// TODO: Find if loggedIn
 		return new MangaUpdatesTitle(id as number, values);
 	};
 
@@ -136,7 +136,6 @@ export class MangaUpdatesTitle extends ServiceTitle {
 
 	persist = async (): Promise<RequestStatus> => {
 		// Status requirements
-		const newEntry = this.current === undefined;
 		let list = this.pathToStatus();
 		for (const status of list) {
 			if (status == MangaUpdatesStatus.NONE) {
@@ -183,7 +182,10 @@ export class MangaUpdatesTitle extends ServiceTitle {
 			});
 			if (!response.ok) return Runtime.responseStatus(response);
 		}
-		if (newEntry) return RequestStatus.CREATED;
+		if (!this.inList) {
+			this.inList = true;
+			return RequestStatus.CREATED;
+		}
 		return RequestStatus.SUCCESS;
 	};
 
@@ -192,6 +194,7 @@ export class MangaUpdatesTitle extends ServiceTitle {
 			url: `https://www.mangaupdates.com/ajax/list_update.php?s=${this.id}&r=1`,
 			credentials: 'include',
 		});
+		this.inList = false;
 		return Runtime.responseStatus(response);
 	};
 

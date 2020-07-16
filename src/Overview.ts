@@ -131,7 +131,7 @@ export class Overview {
 				}),
 				body: DOM.create('div', { class: 'body hidden', textContent: 'Loading...' }),
 			};
-			if (Options.mainService == serviceKey) serviceOverview.tab.classList.add('bold');
+			if (Options.mainService == serviceKey) serviceOverview.tab.classList.add('main');
 			this.overviews.push(serviceOverview);
 			if (this.overviews.length == 1) {
 				this.activateOverview(serviceOverview);
@@ -143,7 +143,8 @@ export class Overview {
 				.get(title.services[serviceKey]!)
 				.then((res) => {
 					if (res instanceof ServiceTitle) {
-						serviceOverview.body.textContent = 'Loaded';
+						DOM.clear(serviceOverview.body);
+						res.overview(serviceOverview.body);
 					} else this.errorMessage(res, serviceOverview);
 				});
 		}

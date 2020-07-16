@@ -30,7 +30,6 @@ export class AnimePlanetTitle extends ServiceTitle {
 
 	id: AnimePlanetReference;
 	token: string;
-	loggedIn: boolean = false;
 
 	constructor(id: AnimePlanetReference, title?: Partial<AnimePlanetTitle>) {
 		super(title);
@@ -52,12 +51,18 @@ export class AnimePlanetTitle extends ServiceTitle {
 		const tokenArr = /TOKEN\s*=\s*'(.{40})';/.exec(response.body);
 		const parser = new DOMParser();
 		const body = parser.parseFromString(response.body, 'text/html');
-		if (tokenArr !== null) values.token = tokenArr[1];
+		if (tokenArr !== null) {
+			values.loggedIn = true;
+			values.token = tokenArr[1];
+		} else values.loggedIn = false;
 		// No need to be logged in to have api ID
 		const mediaEntryForm = body.querySelector<HTMLFormElement>('form[id^=manga]')!;
 		const api = parseInt(mediaEntryForm.dataset.id!);
 		const statusSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.changeStatus [selected]');
-		if (statusSelector) values.status = AnimePlanetTitle.toStatus(parseInt(statusSelector.value));
+		if (statusSelector) {
+			values.inList = true;
+			values.status = AnimePlanetTitle.toStatus(parseInt(statusSelector.value));
+		} else values.inList = false;
 		// Chapter
 		const chapterSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.chapters [selected]');
 		values.progress = { chapter: 0 };
@@ -69,7 +74,6 @@ export class AnimePlanetTitle extends ServiceTitle {
 		const score = mediaEntryForm.querySelector<HTMLElement>('div.starrating > div[name]');
 		if (score) values.score = parseFloat(score.getAttribute('name')!) * 20;
 		values.name = body.querySelector(`h1[itemprop='name']`)!.textContent!;
-		// TODO: Find if loggedIn
 		return new AnimePlanetTitle(
 			{
 				s: slug,
@@ -106,6 +110,10 @@ export class AnimePlanetTitle extends ServiceTitle {
 			});
 			if (!response.ok) return Runtime.responseStatus(response);
 		}
+		if (!this.inList) {
+			this.inList = true;
+			return RequestStatus.CREATED;
+		}
 		return RequestStatus.SUCCESS;
 	};
 
@@ -117,6 +125,7 @@ export class AnimePlanetTitle extends ServiceTitle {
 			method: 'GET',
 			credentials: 'include',
 		});
+		this.inList = false;
 		return Runtime.responseStatus(response);
 	};
 

@@ -19,16 +19,13 @@ export class MyAnimeListTitle extends ServiceTitle {
 	}
 
 	id: number;
-	newEntry: boolean;
 	csrf: string;
-	loggedIn: boolean = false;
 
 	constructor(id: number, title?: Partial<MyAnimeListTitle>) {
 		super(title);
 		this.id = id;
 		this.status = title && title.status !== undefined ? title.status : Status.NONE;
 		this.csrf = title && title.csrf !== undefined ? title.csrf : '';
-		this.newEntry = title && title.newEntry !== undefined ? title.newEntry : false;
 	}
 
 	static dateRowToDate = (body: Document, row: 'start' | 'finish'): Date | undefined => {
@@ -36,6 +33,8 @@ export class MyAnimeListTitle extends ServiceTitle {
 			month = body.getElementById(`add_manga_${row}_date_month`) as HTMLSelectElement,
 			day = body.getElementById(`add_manga_${row}_date_day`) as HTMLSelectElement;
 		if (month == null || day == null || year == null) return undefined;
+		const parts: number[] = [parseInt(year.value), parseInt(month.value), parseInt(day.value)];
+		if (parts.some((part) => isNaN(part))) return undefined;
 		return new Date(parseInt(year.value), parseInt(month.value), parseInt(day.value));
 	};
 
@@ -50,12 +49,16 @@ export class MyAnimeListTitle extends ServiceTitle {
 		if (!response.ok) return Runtime.responseStatus(response);
 		const values: Partial<MyAnimeListTitle> = {};
 		const csrf = /'csrf_token'\scontent='(.{40})'/.exec(response.body);
-		if (csrf !== null) values.csrf = csrf[1];
+		if (csrf !== null) {
+			values.loggedIn = true;
+			values.csrf = csrf[1];
+		} else values.loggedIn = false;
 		const parser = new DOMParser();
 		const body = parser.parseFromString(response.body, 'text/html');
 		const title = body.querySelector<HTMLElement>(`a[href^='/manga/']`);
 		if (!response.redirected) {
 			if (title !== null) {
+				values.inList = true;
 				values.name = title.textContent!;
 				values.status = MyAnimeListTitle.toStatus(
 					parseInt((body.getElementById('add_manga_status') as HTMLSelectElement).value)
@@ -71,15 +74,13 @@ export class MyAnimeListTitle extends ServiceTitle {
 				values.start = MyAnimeListTitle.dateRowToDate(body, 'start');
 				values.end = MyAnimeListTitle.dateRowToDate(body, 'finish');
 			}
-		}
-		values.newEntry = response.redirected && title !== null;
-		// TODO: Find if loggedIn
+		} else values.inList = false;
 		return new MyAnimeListTitle(id as number, values);
 	};
 
 	persist = async (): Promise<RequestStatus> => {
 		let url = `https://myanimelist.net/ownlist/manga/${this.id}/edit?hideLayout`;
-		if (this.newEntry) url = `https://myanimelist.net/ownlist/manga/add?selected_manga_id=${this.id}&hideLayout`;
+		if (!this.inList) url = `https://myanimelist.net/ownlist/manga/add?selected_manga_id=${this.id}&hideLayout`;
 		const body: FormDataProxy = {
 			manga_id: this.id,
 			'add_manga[status]': MyAnimeListTitle.fromStatus(this.status),
@@ -108,8 +109,8 @@ export class MyAnimeListTitle extends ServiceTitle {
 			body: body,
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
-		if (this.newEntry) {
-			this.newEntry = false;
+		if (!this.inList) {
+			this.inList = true;
 			return RequestStatus.CREATED;
 		}
 		return RequestStatus.SUCCESS;
@@ -126,7 +127,7 @@ export class MyAnimeListTitle extends ServiceTitle {
 			body: `csrf_token=${this.csrf}`,
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
-		this.newEntry = true;
+		this.inList = true;
 		return RequestStatus.SUCCESS;
 	};
 

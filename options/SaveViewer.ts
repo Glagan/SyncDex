@@ -6,11 +6,13 @@ import {
 	ServiceName,
 	ReverseServiceName,
 	ActivableKey,
+	StatusMap,
 } from '../src/Title';
 import { DOM, AppendableElement } from '../src/DOM';
 import { LocalStorage } from '../src/Storage';
 import { Modal } from './Modal';
 import { GetService } from './Manager/Service';
+import { dateFormat } from '../src/Utility';
 
 export class SaveViewer {
 	paging: HTMLElement;
@@ -24,17 +26,6 @@ export class SaveViewer {
 	pages: { [key: number]: HTMLButtonElement } = {};
 	static perPage = 10;
 	emptySave: HTMLElement;
-
-	static statusMap: { [key in Status]: string } = {
-		[Status.NONE]: 'NONE',
-		[Status.READING]: 'READING',
-		[Status.COMPLETED]: 'COMPLETED',
-		[Status.PAUSED]: 'PAUSED',
-		[Status.PLAN_TO_READ]: 'PLAN_TO_READ',
-		[Status.DROPPED]: 'DROPPED',
-		[Status.REREADING]: 'REREADING',
-		[Status.WONT_READ]: 'WONT_READ',
-	};
 
 	constructor() {
 		this.paging = document.getElementById('save-paging')!;
@@ -98,20 +89,10 @@ export class SaveViewer {
 		return icons;
 	};
 
-	zeroPad = (n: number): string => {
-		return ('00' + n).slice(-2);
-	};
-
-	dateFormat = (timestamp: number): string => {
-		const d = new Date(timestamp);
-		return `${d.getFullYear()}-${this.zeroPad(d.getMonth() + 1)}-${this.zeroPad(d.getDate())}`;
-		// `${this.zeroPad(d.getHours())}:${this.zeroPad(d.getMinutes())}:${this.zeroPad(d.getSeconds())}`;
-	};
-
 	statusOptions = (title: Title): HTMLSelectElement => {
 		const select = DOM.create('select', { id: 'ee_status', name: 'status', required: true });
 		let value = 0;
-		for (const status of Object.values(SaveViewer.statusMap)) {
+		for (const status of Object.values(StatusMap)) {
 			const option = DOM.create('option', { textContent: status, value: `${value}` });
 			if (title.status == value++) option.selected = true;
 			select.appendChild(option);
@@ -229,7 +210,7 @@ export class SaveViewer {
 						name: 'start',
 						type: 'date',
 						placeholder: 'Start Date',
-						value: title.start ? this.dateFormat(title.start) : '',
+						value: title.start ? dateFormat(title.start) : '',
 					}),
 				]),
 				this.modalGroup('End', 'ee_end', [
@@ -238,7 +219,7 @@ export class SaveViewer {
 						name: 'end',
 						type: 'date',
 						placeholder: 'End Date',
-						value: title.end ? this.dateFormat(title.end) : '',
+						value: title.end ? dateFormat(title.end) : '',
 					}),
 				]),
 			]),
@@ -319,15 +300,15 @@ export class SaveViewer {
 					title: title.name ? title.name : '-',
 				}),
 				DOM.create('td', { childs: this.titleServices(title) }),
-				DOM.create('td', { textContent: SaveViewer.statusMap[title.status] }),
+				DOM.create('td', { textContent: StatusMap[title.status] }),
 				DOM.create('td', { textContent: title.score ? title.score.toString() : '-' }),
 				DOM.create('td', {
 					textContent: `Ch. ${title.progress.chapter}${
 						title.progress.volume ? ` Vol. ${title.progress.volume}` : ''
 					}`,
 				}),
-				DOM.create('td', { textContent: title.start ? this.dateFormat(title.start) : '-' }),
-				DOM.create('td', { textContent: title.end ? this.dateFormat(title.end) : '-' }),
+				DOM.create('td', { textContent: title.start ? dateFormat(title.start) : '-' }),
+				DOM.create('td', { textContent: title.end ? dateFormat(title.end) : '-' }),
 				DOM.create('td', {
 					class: 'actions',
 					childs: [editButton, deleteButton],
