@@ -465,9 +465,11 @@ export class TitleCollection {
 	};
 }
 
+export type MissableField = 'score' | 'start' | 'end';
+
 export abstract class ServiceTitle {
-	abstract readonly serviceName: ActivableName;
-	abstract readonly serviceKey: ActivableKey;
+	static readonly serviceName: ActivableName;
+	static readonly serviceKey: ActivableKey;
 
 	/**
 	 * Is the Media existing on the Service.
@@ -512,6 +514,15 @@ export abstract class ServiceTitle {
 	 * Name of the Media on the Service.
 	 */
 	name?: string;
+	/**
+	 * List of fields not supported by the Service.
+	 */
+	static readonly missingFields: MissableField[] = [];
+	static readonly missingFieldsMap: { [key in MissableField]: string } = {
+		start: 'Start Date',
+		end: 'Finish Date',
+		score: 'Score',
+	};
 
 	constructor(title?: Partial<ServiceTitle>) {
 		this.status = Status.NONE;
@@ -536,7 +547,7 @@ export abstract class ServiceTitle {
 	toTitle(): Title | undefined {
 		if (!this.mangaDex) return undefined;
 		return new Title(this.mangaDex, {
-			services: { [(<typeof ServiceTitle>this.constructor).prototype.serviceKey]: this.id },
+			services: { [(<typeof ServiceTitle>this.constructor).serviceKey]: this.id },
 			progress: this.progress,
 			status: this.status,
 			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
@@ -579,6 +590,7 @@ export abstract class ServiceTitle {
 
 	overviewRow = (icon: string, content: string): HTMLElement => {
 		return DOM.create('div', {
+			class: icon == 'ban' ? 'helper' : undefined,
 			childs: [
 				DOM.create('i', { class: `fas fa-${icon}` }),
 				DOM.space(),
@@ -601,34 +613,34 @@ export abstract class ServiceTitle {
 			return;
 		}
 		if (this.inList) {
-			console.log(this);
+			const missingFields = (<typeof ServiceTitle>this.constructor).missingFields;
 			const rows: HTMLElement[] = [
 				DOM.create('div', { class: `status st${this.status}`, textContent: StatusMap[this.status] }),
 			];
 			if (this.progress.volume) rows.push(this.overviewRow('book', `Volume ${this.progress.volume}`));
 			rows.push(this.overviewRow('bookmark', `Chapter ${this.progress.chapter}`));
 			if (this.start) {
-				rows.push(
-					this.overviewRow(
-						'calendar-plus',
-						`${this.start.getUTCFullYear()}-${dateFormat(this.start.getUTCMonth() + 1)}-${dateFormat(
-							this.start.getUTCDate()
-						)}`
-					)
-				);
-			} else rows.push(this.overviewRow('calendar-plus', 'No Start Date'));
+				rows.push(this.overviewRow('calendar-plus', dateFormat(this.start)));
+			} else if (missingFields.indexOf('start') < 0) {
+				rows.push(this.overviewRow('calendar-plus', 'No Start Date'));
+			}
 			if (this.end) {
+				rows.push(this.overviewRow('calendar-check', dateFormat(this.end)));
+			} else if (missingFields.indexOf('end') < 0) {
+				rows.push(this.overviewRow('calendar-check', 'No Finish Date'));
+			}
+			if (this.score) rows.push(this.overviewRow('star', `Scored ${this.score} out of 100`));
+			else if (missingFields.indexOf('score') < 0) rows.push(this.overviewRow('star', `Not Scored yet`));
+			for (const missingField of missingFields) {
 				rows.push(
 					this.overviewRow(
-						'calendar-check',
-						`${this.end.getUTCFullYear()}-${dateFormat(this.end.getUTCMonth() + 1)}-${dateFormat(
-							this.end.getUTCDate()
-						)}`
+						'ban',
+						`No ${ServiceTitle.missingFieldsMap[missingField]} available on ${
+							(<typeof ServiceTitle>this.constructor).serviceName
+						}`
 					)
 				);
-			} else rows.push(this.overviewRow('calendar-check', 'No Finish Date'));
-			if (this.score) rows.push(this.overviewRow('star', `Scored ${this.score} out of 100`));
-			else rows.push(this.overviewRow('star', `Not Scored yet`));
+			}
 			DOM.append(parent, ...rows);
 		} else DOM.append(parent, DOM.text('Not in List.'));
 	};

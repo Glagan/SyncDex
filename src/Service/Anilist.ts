@@ -77,8 +77,8 @@ export const AnilistHeaders = (): AnilistHeaders => {
  * Score are automatically converted in a 0-100 range.
  */
 export class AnilistTitle extends ServiceTitle {
-	readonly serviceName: ActivableName = ActivableName.Anilist;
-	readonly serviceKey: ActivableKey = ActivableKey.Anilist;
+	static readonly serviceName: ActivableName = ActivableName.Anilist;
+	static readonly serviceKey: ActivableKey = ActivableKey.Anilist;
 
 	static link(id: ServiceKeyType): string {
 		return `https://anilist.co/manga/${id}`;

@@ -195,7 +195,6 @@
 	transition: all 150ms var(--animation);
 }
 .overview .body.hidden {
-	animation-name: unset;
 	opacity: 0;
 	padding: 0;
 	border: 0;
@@ -284,6 +283,11 @@
 	color: var(--mangaupdates);
 	border-color: var(--mangaupdates);
 	background-color: var(--mangaupdates-bg);
+}
+.helper {
+	font-size: 0.75rem;
+	font-weight: lighter;
+	opacity: 0.6;
 }
 /** Status */
 .status {

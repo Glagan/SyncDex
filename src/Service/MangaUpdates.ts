@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceName, ServiceKey, ServiceKeyType, ActivableName, ActivableKey } from '../Title';
+import { ServiceTitle, Title, ServiceKeyType, ActivableName, ActivableKey, MissableField } from '../Title';
 
 export const enum MangaUpdatesStatus {
 	NONE = -1,
@@ -11,8 +11,9 @@ export const enum MangaUpdatesStatus {
 }
 
 export class MangaUpdatesTitle extends ServiceTitle {
-	readonly serviceName: ActivableName = ActivableName.MangaUpdates;
-	readonly serviceKey: ActivableKey = ActivableKey.MangaUpdates;
+	static readonly serviceName: ActivableName = ActivableName.MangaUpdates;
+	static readonly serviceKey: ActivableKey = ActivableKey.MangaUpdates;
+	static readonly missingFields: MissableField[] = ['start', 'end'];
 
 	static link(id: ServiceKeyType): string {
 		return `https://www.mangaupdates.com/series.html?id=${id}`;
@@ -31,7 +32,8 @@ export class MangaUpdatesTitle extends ServiceTitle {
 		this.status = title && title.status !== undefined ? title.status : Status.NONE;
 	}
 
-	static listToStatus = (list: string): MangaUpdatesStatus => {
+	static listToStatus = (list?: string): MangaUpdatesStatus => {
+		if (!list) return MangaUpdatesStatus.READING;
 		switch (list) {
 			case 'read':
 				return MangaUpdatesStatus.READING;

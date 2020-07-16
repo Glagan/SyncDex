@@ -19,8 +19,8 @@ interface AnimePlanetAPIResponse {
 }
 
 export class AnimePlanetTitle extends ServiceTitle {
-	readonly serviceName: ActivableName = ActivableName.AnimePlanet;
-	readonly serviceKey: ActivableKey = ActivableKey.AnimePlanet;
+	static readonly serviceName: ActivableName = ActivableName.AnimePlanet;
+	static readonly serviceKey: ActivableKey = ActivableKey.AnimePlanet;
 
 	static link(id: ServiceKeyType): string {
 		if (typeof id === 'string') return `https://www.anime-planet.com/manga/${id}`;

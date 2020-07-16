@@ -11,8 +11,8 @@ export enum MyAnimeListStatus {
 }
 
 export class MyAnimeListTitle extends ServiceTitle {
-	readonly serviceName: ActivableName = ActivableName.MyAnimeList;
-	readonly serviceKey: ActivableKey = ActivableKey.MyAnimeList;
+	static readonly serviceName: ActivableName = ActivableName.MyAnimeList;
+	static readonly serviceKey: ActivableKey = ActivableKey.MyAnimeList;
 
 	static link(id: ServiceKeyType): string {
 		return `https://myanimelist.net/manga/${id}`;

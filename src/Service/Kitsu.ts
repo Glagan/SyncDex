@@ -90,8 +90,8 @@ export const KitsuHeaders = (): KitsuHeaders => {
 };
 
 export class KitsuTitle extends ServiceTitle {
-	readonly serviceName: ActivableName = ActivableName.Kitsu;
-	readonly serviceKey: ActivableKey = ActivableKey.Kitsu;
+	static readonly serviceName: ActivableName = ActivableName.Kitsu;
+	static readonly serviceKey: ActivableKey = ActivableKey.Kitsu;
 
 	static link(id: ServiceKeyType): string {
 		return `https://kitsu.io/manga/${id}`;
