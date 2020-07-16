@@ -1,6 +1,6 @@
 import { Options } from '../../src/Options';
 import { Runtime, RequestStatus } from '../../src/Runtime';
-import { Title, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
+import { Title, ServiceKeyType, ActivableName, ActivableKey } from '../../src/Title';
 import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } from './Service';
 import { KitsuTitle, KitsuManga, KitsuResponse, KitsuHeaders, KitsuAPI } from '../../src/Service/Kitsu';
 import { DOM } from '../../src/DOM';
@@ -207,8 +207,8 @@ class KitsuExport extends APIExportableModule {
 }
 
 export class Kitsu extends Service implements ActivableService {
-	static readonly serviceName: ServiceName = ServiceName.Kitsu;
-	static readonly key: ServiceKey = ServiceKey.Kitsu;
+	static readonly serviceName: ActivableName = ActivableName.Kitsu;
+	static readonly key: ActivableKey = ActivableKey.Kitsu;
 
 	static link(id: ServiceKeyType): string {
 		if (typeof id !== 'number') return '#';

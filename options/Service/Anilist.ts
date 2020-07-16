@@ -1,7 +1,7 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { Options } from '../../src/Options';
 import { Runtime, RequestStatus } from '../../src/Runtime';
-import { Title, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
+import { Title, ServiceName, ServiceKey, ServiceKeyType, ActivableName, ActivableKey } from '../../src/Title';
 import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } from './Service';
 import { AnilistStatus, AnilistTitle, AnilistDate, AnilistAPI, AnilistHeaders } from '../../src/Service/Anilist';
 import { APIImportableModule } from './Import';
@@ -192,8 +192,8 @@ class AnilistExport extends APIExportableModule {
 }
 
 export class Anilist extends Service implements ActivableService {
-	static readonly serviceName: ServiceName = ServiceName.Anilist;
-	static readonly key: ServiceKey = ServiceKey.Anilist;
+	static readonly serviceName: ActivableName = ActivableName.Anilist;
+	static readonly key: ActivableKey = ActivableKey.Anilist;
 
 	static link(id: ServiceKeyType): string {
 		if (typeof id !== 'number') return '#';

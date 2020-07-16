@@ -8,6 +8,7 @@ import { InputManager } from './Manager/Input';
 import { ServiceManager } from './Manager/Service';
 import { LocalStorage } from '../src/Storage';
 import { SaveViewer } from './SaveViewer';
+import { ImportExportManager } from './Manager/ImportExport';
 
 class OptionsManager {
 	highlightsManager: HighlightsManager;
@@ -16,6 +17,7 @@ class OptionsManager {
 	inputManager: InputManager;
 	menuHighlight: MenuHighlight;
 	serviceManager: ServiceManager;
+	importExport: ImportExportManager;
 	saveViewer: SaveViewer;
 
 	constructor() {
@@ -25,6 +27,7 @@ class OptionsManager {
 		this.inputManager = new InputManager();
 		this.menuHighlight = new MenuHighlight();
 		this.serviceManager = new ServiceManager();
+		this.importExport = new ImportExportManager();
 		this.saveViewer = new SaveViewer();
 		// Delete save event
 		const deleteSave = document.getElementById('delete-save');

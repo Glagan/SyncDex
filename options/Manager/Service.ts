@@ -1,6 +1,6 @@
 import { Options } from '../../src/Options';
 import { DOM } from '../../src/DOM';
-import { Service, ActivableModule } from '../Service/Service';
+import { Service, ActivableModule, isActivable, ActivableService } from '../Service/Service';
 import { MyMangaDex } from '../Service/MyMangaDex';
 import { SyncDex } from '../Service/SyncDex';
 import { MangaDex } from '../Service/MangaDex';
@@ -10,7 +10,7 @@ import { Kitsu } from '../Service/Kitsu';
 import { AnimePlanet } from '../Service/AnimePlanet';
 import { MangaUpdates } from '../Service/MangaUpdates';
 import { RequestStatus } from '../../src/Runtime';
-import { ServiceName, ActivableKey } from '../../src/Title';
+import { ServiceName, ActivableKey, ActivableName } from '../../src/Title';
 
 export function GetService(name: ServiceName): typeof Service {
 	switch (name) {
@@ -34,46 +34,40 @@ export function GetService(name: ServiceName): typeof Service {
 }
 
 export class ServiceManager {
-	services: Service[] = [];
+	services: ActivableService[] = [];
 	// Active
 	activeContainer: HTMLElement;
-	mainService?: Service;
+	mainService?: ActivableService;
 	noServices: HTMLElement;
 	activeServices: ActivableKey[] = [];
 	inactiveServices: ActivableKey[] = [];
 	inactiveWarning: HTMLElement;
-	// Import/Export
-	importContainer: HTMLElement;
-	exportContainer: HTMLElement;
 
 	constructor() {
 		this.activeContainer = document.getElementById('service-list')!;
 		// Warnings
 		this.noServices = document.getElementById('no-service')!;
 		this.inactiveWarning = document.getElementById('inactive-service')!;
-		// Import/Export
-		this.importContainer = document.getElementById('import-container')!;
-		this.exportContainer = document.getElementById('export-container')!;
 		// Create Services and bind them
-		for (const serviceName in ServiceName) {
+		for (const serviceName in ActivableName) {
 			// `service` is *NOT* an abstract class
-			const ServiceConstructor = GetService(serviceName as ServiceName);
+			const ServiceConstructor = GetService(serviceName as ActivableName);
 			/// @ts-ignore
 			const service = new ServiceConstructor(this) as Service;
-			this.services.push(service);
-			if (service.activeModule) service.activeModule.bind();
+			if (isActivable(service)) {
+				this.services.push(service);
+				service.activeModule.bind();
+			} else console.error(`${service.serviceName} is set as Activable but has missing modules.`);
 		}
 		// Default State
 		this.refreshActive();
-		this.fillSaveContainers();
 	}
 
 	/**
 	 * Activate or desactivate all buttons in a Service card.
 	 * Check if the user is logged in on the Service and calls updateStatus to display warnings.
 	 */
-	reloadManager = async (service: Service): Promise<void> => {
-		if (!service.activeModule) return;
+	reloadManager = async (service: ActivableService): Promise<void> => {
 		const index = Options.services.indexOf(service.key as ActivableKey);
 		if (Options.mainService == service.key) {
 			this.mainService = service;
@@ -176,19 +170,6 @@ export class ServiceManager {
 			this.noServices.classList.remove('hidden');
 		} else {
 			this.noServices.classList.add('hidden');
-		}
-	};
-
-	// Import/Export
-
-	fillSaveContainers = (): void => {
-		for (const service of this.services) {
-			if (service.importModule) {
-				DOM.append(this.importContainer, service.importModule.card);
-			}
-			if (service.exportModule) {
-				DOM.append(this.exportContainer, service.exportModule.card);
-			}
 		}
 	};
 

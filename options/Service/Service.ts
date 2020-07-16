@@ -1,7 +1,15 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { ServiceManager } from '../Manager/Service';
 import { Options, AvailableOptions } from '../../src/Options';
-import { TitleCollection, Title, ServiceName, ServiceKey, ServiceKeyType, ActivableKey } from '../../src/Title';
+import {
+	TitleCollection,
+	Title,
+	ServiceName,
+	ServiceKey,
+	ServiceKeyType,
+	ActivableKey,
+	ActivableName,
+} from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { RequestStatus } from '../../src/Runtime';
 import { Modal } from '../Modal';
@@ -148,9 +156,16 @@ export abstract class LoginModule {
 	logout?(): Promise<void>;
 }
 
-export interface ActivableService extends Service {
-	loginModule: LoginModule;
-	activeModule: ActivableModule;
+export abstract class ActivableService extends Service {
+	static readonly serviceName: ActivableName;
+	static readonly key: ActivableKey;
+
+	abstract loginModule: LoginModule;
+	abstract activeModule: ActivableModule;
+}
+
+export function isActivable(service: Service): service is ActivableService {
+	return service.loginModule !== undefined && service.activeModule !== undefined;
 }
 
 export abstract class ActivableModule {

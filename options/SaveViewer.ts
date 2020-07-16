@@ -256,12 +256,13 @@ export class SaveViewer {
 			submitButton.classList.add('loading');
 			// Chapter and Status always required
 			const chapter = parseFloat(form.chapter.value);
-			if (!isNaN(chapter) && chapter >= -1) title.progress.chapter = chapter;
+			if (!isNaN(chapter) && chapter > -1) title.progress.chapter = chapter;
+			else title.progress.chapter = 0;
 			title.status = parseInt(form.status.value);
 			// Volume
 			if (form.volume.value != '') {
 				const volume = parseInt(form.volume.value);
-				if (!isNaN(volume) && volume >= -1) title.progress.volume = volume;
+				if (!isNaN(volume) && volume > -1) title.progress.volume = volume;
 			} else delete title.progress.volume;
 			// Name
 			if (form.mediaName.value != '') title.name = (form.mediaName.value as string).trim();

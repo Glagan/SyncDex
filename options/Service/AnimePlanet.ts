@@ -2,7 +2,7 @@ import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } from './Service';
 import { AnimePlanetTitle } from '../../src/Service/AnimePlanet';
 import { DOM } from '../../src/DOM';
-import { Title, TitleCollection, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
+import { Title, TitleCollection, ServiceKeyType, ActivableName, ActivableKey } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { APIImportableModule } from './Import';
 import { APIExportableModule } from './Export';
@@ -150,8 +150,8 @@ class AnimePlanetExport extends APIExportableModule {
 }
 
 export class AnimePlanet extends Service implements ActivableService {
-	static readonly serviceName: ServiceName = ServiceName.AnimePlanet;
-	static readonly key: ServiceKey = ServiceKey.AnimePlanet;
+	static readonly serviceName: ActivableName = ActivableName.AnimePlanet;
+	static readonly key: ActivableKey = ActivableKey.AnimePlanet;
 
 	static SaveInput(value?: ServiceKeyType): HTMLInputElement[] {
 		const id = value as AnimePlanetReference | undefined;

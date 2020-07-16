@@ -168,7 +168,7 @@ export class Title implements FullTitle {
 	/**
 	 * Current Chapter/Volume that should be synced with External Services.
 	 */
-	progress: Progress = { chapter: -1, volume: 0 };
+	progress: Progress = { chapter: 0, volume: 0 };
 	/**
 	 * Status of the Title.
 	 */
