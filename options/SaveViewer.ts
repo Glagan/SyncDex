@@ -256,12 +256,12 @@ export class SaveViewer {
 			// Start - YYYY-MM-DD, convert month from 1-12 to 0-11
 			if (form.start.value != '') {
 				const parts: number[] = (form.start.value as string).split('-').map((p) => parseInt(p));
-				title.start = new Date(parts[0], parts[1] - 1, parts[2]).getTime();
+				title.start = new Date(parts[0], parts[1] - 1, parts[2]);
 			} else delete title.start;
 			// End - YYYY-MM-DD
 			if (form.end.value != '') {
 				const parts: number[] = (form.end.value as string).split('-').map((p) => parseInt(p));
-				title.end = new Date(parts[0], parts[1] - 1, parts[2]).getTime();
+				title.end = new Date(parts[0], parts[1] - 1, parts[2]);
 			} else delete title.end;
 			// Services
 			for (const sn in ActivableName) {

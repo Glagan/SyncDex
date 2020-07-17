@@ -7,3 +7,11 @@ export function dateFormat(timestamp: number | Date): string {
 	return `${d.getFullYear()}-${zeroPad(d.getMonth() + 1)}-${zeroPad(d.getDate())}`;
 	// `${zeroPad(d.getHours())}:${zeroPad(d.getMinutes())}:${zeroPad(d.getSeconds())}`;
 }
+
+export function dateCompare(d1: Date, d2: Date): boolean {
+	return (
+		d1.getUTCFullYear() == d2.getUTCFullYear() &&
+		d1.getUTCMonth() == d2.getUTCMonth() &&
+		d1.getUTCDate() == d2.getUTCDate()
+	);
+}

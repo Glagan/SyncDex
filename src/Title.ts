@@ -2,7 +2,7 @@ import { LocalStorage } from './Storage';
 import { Options, AvailableOptions } from './Options';
 import { RequestStatus } from './Runtime';
 import { DOM, AppendableElement } from './DOM';
-import { dateFormat } from './Utility';
+import { dateFormat, dateCompare } from './Utility';
 
 export const StatusMap: { [key in Status]: string } = {
 	[Status.NONE]: 'None',
@@ -114,8 +114,8 @@ export interface FullTitle {
 	score: number;
 	progress: Progress;
 	chapters: number[];
-	start?: number;
-	end?: number;
+	start?: Date;
+	end?: Date;
 	lastTitle?: number;
 	lastCheck?: number;
 	// History
@@ -197,11 +197,11 @@ export class Title implements FullTitle {
 	/**
 	 * Start Date of the Title.
 	 */
-	start?: number;
+	start?: Date;
 	/**
 	 * End Date of the Title.
 	 */
-	end?: number;
+	end?: Date;
 	/**
 	 * Last time the Title page of the Title was visited.
 	 */
@@ -256,8 +256,8 @@ export class Title implements FullTitle {
 			status: title.st,
 			score: title.sc || 0,
 			chapters: title.c || [],
-			start: title.sd,
-			end: title.ed,
+			start: title.sd ? new Date(title.sd) : undefined,
+			end: title.ed ? new Date(title.ed) : undefined,
 			lastTitle: title.lt,
 			lastCheck: title.lc,
 			lastChapter: title.id,
@@ -294,10 +294,11 @@ export class Title implements FullTitle {
 		for (let k in this) {
 			const key = k as keyof Title;
 			if (this[key] && other[key] && typeof this[key] === 'number' && typeof other[key] === 'number') {
-				const order = key == 'start' || key == 'end' ? Math.min : Math.max;
-				Object.assign(this, { [key]: order(this[key] as number, other[key] as number) });
+				Object.assign(this, { [key]: Math.max(this[key] as number, other[key] as number) });
 			}
 		}
+		// Dates
+
 		// Update *this* Status if it's NONE or/and if other is not NONE
 		if (other.status != Status.NONE || this.status == Status.NONE) {
 			this.status = other.status;
@@ -333,8 +334,6 @@ export class Title implements FullTitle {
 				c: this.progress.chapter,
 				v: this.progress.volume && this.progress.volume > 0 ? this.progress.volume : undefined,
 			},
-			sd: this.start,
-			ed: this.end,
 			lt: this.lastTitle,
 			lc: this.lastCheck,
 			id: this.lastChapter,
@@ -342,6 +341,8 @@ export class Title implements FullTitle {
 			n: this.name,
 			lr: this.lastRead,
 		};
+		if (this.start) mapped.sd = this.start.getTime();
+		if (this.end) mapped.ed = this.end.getTime();
 		if (this.chapters.length > 0) {
 			mapped.c = this.chapters;
 		}
@@ -551,8 +552,8 @@ export abstract class ServiceTitle {
 			progress: this.progress,
 			status: this.status,
 			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
-			start: this.start ? this.start.getTime() : undefined,
-			end: this.end ? this.end.getTime() : undefined,
+			start: this.start ? this.start : undefined,
+			end: this.end ? this.end : undefined,
 			name: this.name,
 		});
 	}
@@ -643,5 +644,25 @@ export abstract class ServiceTitle {
 			}
 			DOM.append(parent, ...rows);
 		} else DOM.append(parent, DOM.text('Not in List.'));
+	};
+
+	/**
+	 * Compare the Media on the Service to a Title to check if it has the same progress.
+	 * Avoid checking fields that cannot exist on the Service.
+	 */
+	isSynced = (title: Title): boolean => {
+		const missingFields = (<typeof ServiceTitle>this.constructor).missingFields;
+		return (
+			title.status === this.status &&
+			title.progress.chapter === this.progress.chapter &&
+			title.progress.volume === this.progress.volume &&
+			(missingFields.indexOf('score') < 0 || title.score === this.score) &&
+			(missingFields.indexOf('start') < 0 ||
+				(title.start === undefined && this.start === undefined) ||
+				(title.start !== undefined && this.start !== undefined && dateCompare(title.start, this.start))) &&
+			(missingFields.indexOf('end') < 0 ||
+				(title.end === undefined && this.end === undefined) ||
+				(title.end !== undefined && this.end !== undefined && dateCompare(title.end, this.end)))
+		);
 	};
 }

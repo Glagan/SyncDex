@@ -6,6 +6,7 @@ import { Runtime, RequestStatus } from '../../src/Runtime';
 import { MyAnimeListTitle } from '../../src/Service/MyAnimeList';
 import { FileImportFormat, FileImportableModule } from './Import';
 import { BatchExportableModule } from './Export';
+import { dateFormat } from '../../src/Utility';
 
 enum MyAnimeListExportStatus {
 	COMPLETED = 'Completed',
@@ -149,11 +150,11 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListXMLTit
 	};
 
 	// Convert a YYYY-MM-DD MyAnimeList date to a Date timestamp
-	dateToTime = (date?: string): number | undefined => {
+	dateToTime = (date?: string): Date | undefined => {
 		if (date === undefined) return undefined;
 		const d = new Date(date);
 		if (isNaN(d.getFullYear()) || d.getFullYear() === 0) return undefined;
-		return d.getTime();
+		return d;
 	};
 
 	handleTitles = async (save: Document): Promise<MyAnimeListXMLTitle[]> => {
@@ -244,12 +245,6 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 		return node;
 	};
 
-	// Convert to YYYY-MM-DD MyAnimeList use
-	timeToDate = (time: number): string => {
-		const d = new Date(time);
-		return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-	};
-
 	fromStatus = (status: Status): MyAnimeListExportStatus => {
 		switch (status) {
 			case Status.COMPLETED:
@@ -283,10 +278,10 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 			node.appendChild(this.node(document, 'my_read_volumes', title.progress.volume));
 		}
 		if (title.start) {
-			node.appendChild(this.node(document, 'my_start_date', this.timeToDate(title.start)));
+			node.appendChild(this.node(document, 'my_start_date', dateFormat(title.start)));
 		}
 		if (title.end) {
-			node.appendChild(this.node(document, 'my_finish_date', this.timeToDate(title.end)));
+			node.appendChild(this.node(document, 'my_finish_date', dateFormat(title.end)));
 		}
 		return node;
 	};

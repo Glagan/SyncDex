@@ -5,6 +5,7 @@ import { Options } from './Options';
 import { GetService } from './Service';
 
 interface ServiceOverview {
+	service: Promise<ServiceTitle | RequestStatus>;
 	key: ActivableKey;
 	tab: HTMLLIElement;
 	body: HTMLElement;
@@ -113,7 +114,7 @@ export class Overview {
 		for (const key of displayServices) {
 			const serviceKey = key as ActivableKey;
 			const serviceName = ReverseActivableName[serviceKey];
-			const serviceOverview = {
+			const serviceOverview: ServiceOverview = {
 				key: serviceKey,
 				tab: DOM.create('li', {
 					class: `tab ${serviceKey}`,
@@ -130,6 +131,18 @@ export class Overview {
 					},
 				}),
 				body: DOM.create('div', { class: 'body hidden', textContent: 'Loading...' }),
+				service: GetService(serviceName)
+					.get(title.services[serviceKey]!)
+					.then((res) => {
+						if (res instanceof ServiceTitle) {
+							DOM.clear(serviceOverview.body);
+							res.overview(serviceOverview.body);
+							if (!res.isSynced(title)) {
+								serviceOverview.body.appendChild(DOM.text('Not Synced'));
+							}
+						} else this.errorMessage(res, serviceOverview);
+						return res;
+					}),
 			};
 			if (Options.mainService == serviceKey) serviceOverview.tab.classList.add('main');
 			this.overviews.push(serviceOverview);
@@ -138,15 +151,6 @@ export class Overview {
 			}
 			this.serviceList.appendChild(serviceOverview.tab);
 			this.bodies.appendChild(serviceOverview.body);
-			// Load ServiceTitle
-			const serviceTitle = GetService(serviceName)
-				.get(title.services[serviceKey]!)
-				.then((res) => {
-					if (res instanceof ServiceTitle) {
-						DOM.clear(serviceOverview.body);
-						res.overview(serviceOverview.body);
-					} else this.errorMessage(res, serviceOverview);
-				});
 		}
 		this.finish();
 	};
