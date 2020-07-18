@@ -1,7 +1,7 @@
 export const enum RequestStatus {
-	MISSING_TOKEN,
 	SUCCESS,
 	CREATED,
+	MISSING_TOKEN,
 	FAIL,
 	SERVER_ERROR,
 	BAD_REQUEST,

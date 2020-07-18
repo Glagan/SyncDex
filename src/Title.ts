@@ -477,6 +477,10 @@ export abstract class ServiceTitle {
 	 */
 	loggedIn: boolean = false;
 	/**
+	 * Is the Media synced with the local SyncDex Title.
+	 */
+	synced: boolean = false;
+	/**
 	 * The key of the Media on the Service.
 	 */
 	abstract id: ServiceKeyType;
@@ -652,7 +656,7 @@ export abstract class ServiceTitle {
 	 */
 	isSynced = (title: Title): boolean => {
 		const missingFields = (<typeof ServiceTitle>this.constructor).missingFields;
-		return (
+		return (this.synced =
 			title.status === this.status &&
 			title.progress.chapter === this.progress.chapter &&
 			title.progress.volume === this.progress.volume &&
@@ -662,7 +666,44 @@ export abstract class ServiceTitle {
 				(title.start !== undefined && this.start !== undefined && dateCompare(title.start, this.start))) &&
 			(missingFields.indexOf('end') < 0 ||
 				(title.end === undefined && this.end === undefined) ||
-				(title.end !== undefined && this.end !== undefined && dateCompare(title.end, this.end)))
-		);
+				(title.end !== undefined && this.end !== undefined && dateCompare(title.end, this.end))));
+	};
+
+	import = (title: Title): void => {
+		this.synced = true;
+		this.status = title.status;
+		this.progress.chapter = title.progress.chapter;
+		if (title.progress.volume) {
+			this.progress.volume = title.progress.volume;
+		} else delete this.progress.volume;
+		const missingFields = (<typeof ServiceTitle>this.constructor).missingFields;
+		if (missingFields.indexOf('score') < 0) this.score = title.score;
+		if (missingFields.indexOf('start') < 0 && title.start) {
+			this.start = new Date(title.start);
+		} else delete this.start;
+		if (missingFields.indexOf('end') < 0 && title.end) {
+			this.end = new Date(title.end);
+		} else delete this.end;
+	};
+
+	export = (title: Title): void => {
+		this.synced = true;
+		title.status = this.status;
+		title.progress.chapter = this.progress.chapter;
+		if (this.progress.volume) {
+			title.progress.volume = this.progress.volume;
+		} else delete title.progress.volume;
+		const missingFields = (<typeof ServiceTitle>this.constructor).missingFields;
+		if (missingFields.indexOf('score') < 0 && this.score !== undefined) {
+			title.score = this.score;
+		} else title.score = 0;
+		if (missingFields.indexOf('start') < 0 && this.start) {
+			title.start = new Date(this.start);
+		} else delete title.start;
+		if (missingFields.indexOf('end') < 0 && this.end) {
+			title.end = new Date(this.end);
+		} else delete title.end;
 	};
 }
+
+export type ServiceTitleList = Partial<{ [key in ActivableKey]: Promise<ServiceTitle | RequestStatus> }>;

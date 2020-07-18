@@ -314,11 +314,11 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 			url: `https://myanimelist.net/import.php`,
 			method: 'POST',
 			credentials: 'include',
-			body: {
+			body: <FormDataProxy>{
 				importtype: '3',
 				subimport: 'Import Data',
 				csrf_token: csrfTokenArr[1],
-				mal: {
+				mal: <FormDataFile>{
 					content: [batch],
 					name: 'mal_export.xml',
 					options: {

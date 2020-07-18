@@ -25,9 +25,9 @@ let mainManifest = {
 	permissions: [
 		'http://127.0.0.1/*', // !
 		'http://localhost/mochi-v2/api/*', // !
-		'https://*.myanimelist.net/manga/*',
-		'https://*.myanimelist.net/ownlist/manga/*',
-		'https://*.mangadex.org/*',
+		'https://myanimelist.net/manga/*',
+		'https://myanimelist.net/ownlist/manga/*',
+		'https://mangadex.org/*',
 		'https://graphql.anilist.co/',
 		'https://kitsu.io/api/*',
 		'https://*.mangaupdates.com/series.html?id=*',
@@ -125,7 +125,7 @@ const DevFiles = [
 ];
 
 // Startup
-// 91 red 92 green 93 orange 94 blue
+// prettier-ignore
 const RED = 91, GREEN = 92, ORANGE = 93, BLUE = 94;
 const optionColor = (option, content = undefined, theme = [GREEN, ORANGE]) =>
 	`${option ? `\u001b[${theme[0]}m` : `\u001b[${theme[1]}m`}${content ? content : option}\u001b[0m`;

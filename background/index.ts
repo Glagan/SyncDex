@@ -39,6 +39,7 @@ browser.runtime.onMessage.addListener(
 			msg.body = msg.body !== undefined ? msg.body : null;
 			msg.redirect = msg.redirect !== undefined ? msg.redirect : 'follow';
 			msg.cache = msg.cache !== undefined ? msg.cache : 'default';
+			msg.mode = msg.mode !== undefined ? msg.mode : 'no-cors';
 			msg.credentials = msg.credentials !== undefined ? msg.credentials : 'same-origin';
 			msg.headers = msg.headers !== undefined ? msg.headers : {};
 			let body: FormData | string | undefined;
@@ -48,11 +49,11 @@ browser.runtime.onMessage.addListener(
 					if (msg.body.hasOwnProperty(key)) {
 						const element = (msg.body as FormDataProxy)[key] as string | number | FormDataFile;
 						if (typeof element === 'string') {
-							data.append(key, element);
+							data.set(key, element);
 						} else if (typeof element === 'number') {
-							data.append(key, element.toString());
+							data.set(key, element.toString());
 						} else if (typeof element === 'object') {
-							data.append(key, new File(element.content, element.name, element.options));
+							data.set(key, new File(element.content, element.name, element.options));
 						}
 					}
 				}

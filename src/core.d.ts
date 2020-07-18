@@ -41,6 +41,7 @@ interface RequestMessage {
 	isJson?: boolean;
 	body?: FormDataProxy | FormData | string | null;
 	cache?: RequestCache;
+	mode?: RequestMode;
 	headers?: HeadersInit;
 	redirect?: RequestRedirect;
 	credentials?: RequestCredentials;

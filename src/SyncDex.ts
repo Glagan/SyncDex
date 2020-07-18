@@ -2,10 +2,20 @@ import { Router } from './Router';
 import { Options } from './Options';
 import { MangaDex } from './MangaDex';
 import { DOM } from './DOM';
-import { TitleCollection, Title, ReverseServiceName, ServiceKeyType, ReverseActivableName } from './Title';
+import {
+	TitleCollection,
+	Title,
+	ReverseServiceName,
+	ServiceKeyType,
+	ReverseActivableName,
+	ServiceTitle,
+	ActivableKey,
+	ServiceTitleList,
+} from './Title';
 import { Overview } from './Overview';
 import { Mochi } from './Mochi';
 import { GetService } from './Service';
+import { RequestStatus } from './Runtime';
 
 console.log('SyncDex :: Core');
 
@@ -142,11 +152,6 @@ export class SyncDex {
 				}
 			}
 		}
-		// Search for the progress row and add overview there
-		let overview: Overview | undefined;
-		if (Options.showOverview) {
-			overview = new Overview();
-		}
 		// Always Find Services
 		let fallback = false;
 		if (Options.useMochi) {
@@ -180,8 +185,67 @@ export class SyncDex {
 				} // Nothing to do if there is no row
 			}
 		}
-		// Load the Overview with now available Service IDs
-		if (overview) overview.load(title);
+		// Load each Services to Sync
+		const services: ServiceTitleList = {};
+		if (Options.services.length > 0) {
+			let activeServices = Object.keys(title.services).filter(
+				(key) => Options.services.indexOf(key as ActivableKey) >= 0
+			);
+			// Add Services ordered by Options.services to check Main Service first
+			for (const service of Options.services) {
+				if (activeServices.indexOf(service) >= 0) {
+					services[service] = GetService(ReverseActivableName[service]).get(title.services[service]!);
+				}
+			}
+		}
+		// Search for the progress row and add overview there
+		let overview: Overview | undefined;
+		if (Options.showOverview) {
+			overview = new Overview(title);
+			overview.displayServices(services);
+		}
+		// Sync Services
+		(async (): Promise<void> => {
+			if (Options.mainService !== undefined) {
+				// Sync Title with the first available ServiceTitle ordered by User choice
+				let mainCheck = false;
+				for (const serviceKey of Options.services) {
+					if (services[serviceKey] === undefined) continue;
+					const response: ServiceTitle | RequestStatus = await services[serviceKey]!;
+					if (response instanceof ServiceTitle && response.loggedIn) {
+						// Sync Title with the first available ServiceTitle
+						if (!mainCheck && response.inList) {
+							// Sync Title to the ServiceTitle if it's more recent
+							if (title.new || response.progress.chapter > title.progress.chapter) {
+								response.export(title);
+								await title.save();
+							}
+							mainCheck = true;
+						}
+						if (!Options.autoSync && overview) {
+							overview.updateOverview(serviceKey, response);
+						}
+					}
+				}
+				// When the Title is synced, all remaining ServiceTitle are synced with it
+				if (!Options.autoSync) return;
+				for (const serviceKey of Options.services) {
+					if (services[serviceKey] === undefined) continue;
+					const response: ServiceTitle | RequestStatus = await services[serviceKey]!;
+					if (response instanceof ServiceTitle && response.loggedIn) {
+						if (!response.inList || !response.isSynced(title)) {
+							response.import(title);
+							response.persist().then((res) => {
+								if (overview) {
+									if (res > RequestStatus.CREATED) overview.updateOverview(serviceKey, res);
+									else overview.updateOverview(serviceKey, response);
+								}
+							});
+						}
+					}
+				}
+			}
+		})();
 	};
 
 	updatesPage = (): void => {

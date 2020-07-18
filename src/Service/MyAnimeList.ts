@@ -50,13 +50,13 @@ export class MyAnimeListTitle extends ServiceTitle {
 		const values: Partial<MyAnimeListTitle> = {};
 		const csrf = /'csrf_token'\scontent='(.{40})'/.exec(response.body);
 		if (csrf !== null) {
-			values.loggedIn = true;
 			values.csrf = csrf[1];
-		} else values.loggedIn = false;
+		}
 		const parser = new DOMParser();
 		const body = parser.parseFromString(response.body, 'text/html');
 		const title = body.querySelector<HTMLElement>(`a[href^='/manga/']`);
 		if (!response.redirected) {
+			values.loggedIn = true;
 			if (title !== null) {
 				values.inList = true;
 				values.name = title.textContent!;
@@ -74,39 +74,74 @@ export class MyAnimeListTitle extends ServiceTitle {
 				values.start = MyAnimeListTitle.dateRowToDate(body, 'start');
 				values.end = MyAnimeListTitle.dateRowToDate(body, 'finish');
 			}
-		} else values.inList = false;
+		} else {
+			values.inList = false;
+			if (/\/login\./.test(response.url)) {
+				values.loggedIn = false;
+			} else values.loggedIn = true;
+		}
 		return new MyAnimeListTitle(id as number, values);
 	};
 
 	persist = async (): Promise<RequestStatus> => {
 		let url = `https://myanimelist.net/ownlist/manga/${this.id}/edit?hideLayout`;
 		if (!this.inList) url = `https://myanimelist.net/ownlist/manga/add?selected_manga_id=${this.id}&hideLayout`;
-		const body: FormDataProxy = {
+		const body: Record<string, string | number> = {
+			entry_id: 0,
 			manga_id: this.id,
 			'add_manga[status]': MyAnimeListTitle.fromStatus(this.status),
-			'add_manga[num_read_chapters]': this.progress.chapter,
-			csrf_token: this.csrf,
 		};
 		if (this.progress.volume) body['add_manga[num_read_volumes]'] = this.progress.volume;
+		else body['add_manga[num_read_volumes]'] = 0;
+		body['last_completed_vol'] = '';
+		body['num_read_chapters'] = this.progress.chapter;
+		// Score
 		if (this.score) body['add_manga[score]'] = Math.round(this.score / 10);
+		else body['add_manga[score]'] = '';
+		// Dates
 		if (this.start) {
-			body['add_manga[start_date][yeay]'] = this.start.getUTCFullYear();
-			body['add_manga[start_date][month]'] = this.start.getMonth() + 1;
+			body['add_manga[start_date][month]'] = this.start.getMonth();
 			body['add_manga[start_date][day]'] = this.start.getDate();
+			body['add_manga[start_date][year]'] = this.start.getUTCFullYear();
+		} else {
+			body['add_manga[start_date][month]'] = '';
+			body['add_manga[start_date][day]'] = '';
+			body['add_manga[start_date][year]'] = '';
 		}
 		if (this.end) {
-			body['add_manga[finish_date][yeay]'] = this.end.getUTCFullYear();
-			body['add_manga[finish_date][month]'] = this.end.getMonth() + 1;
+			body['add_manga[finish_date][month]'] = this.end.getMonth();
 			body['add_manga[finish_date][day]'] = this.end.getDate();
+			body['add_manga[finish_date][year]'] = this.end.getUTCFullYear();
+		} else {
+			body['add_manga[finish_date][month]'] = '';
+			body['add_manga[finish_date][day]'] = '';
+			body['add_manga[finish_date][year]'] = '';
 		}
+		body['add_manga[tags]'] = ''; // TODO: Retrieve all other fields
+		body['add_manga[priority]'] = 0;
+		body['add_manga[storage_type]'] = '';
+		body['add_manga[num_retail_volumes]'] = 0;
+		body['add_manga[num_read_times]'] = 0;
+		body['add_manga[reread_value]'] = '';
+		body['add_manga[comments]'] = '';
+		body['add_manga[is_asked_to_discuss]'] = 0;
+		body['add_manga[sns_post_type]'] = 0;
+		if (this.status == Status.REREADING) body['add_manga[is_rereading]'] = 1;
+		body['submitIt'] = 0;
+		body['csrf_token'] = this.csrf;
 		const response = await Runtime.request<RawResponse>({
 			url: url,
 			method: 'POST',
 			credentials: 'include',
+			cache: 'no-cache',
 			headers: {
 				'Content-Type': 'application/x-www-form-urlencoded',
 			},
-			body: body,
+			body: Object.keys(body)
+				.map((field) => {
+					return `${encodeURIComponent(field)}=${encodeURIComponent(body[field]!)}`;
+				})
+				.join('&'),
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		if (!this.inList) {

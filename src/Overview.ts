@@ -1,8 +1,7 @@
 import { DOM } from './DOM';
-import { Title, ServiceKey, ReverseServiceName, ServiceTitle, ActivableKey, ReverseActivableName } from './Title';
+import { Title, ServiceTitle, ActivableKey, ReverseActivableName, ServiceTitleList } from './Title';
 import { Runtime, RequestStatus } from './Runtime';
 import { Options } from './Options';
-import { GetService } from './Service';
 
 interface ServiceOverview {
 	service: Promise<ServiceTitle | RequestStatus>;
@@ -12,14 +11,16 @@ interface ServiceOverview {
 }
 
 export class Overview {
+	title: Title;
 	row: HTMLElement;
 	column: HTMLElement;
 	serviceList: HTMLUListElement;
 	bodies: HTMLElement;
 	current?: ServiceOverview;
-	overviews: ServiceOverview[] = [];
+	overviews: Partial<{ [key in ActivableKey]: ServiceOverview }> = {};
 
-	constructor() {
+	constructor(title: Title) {
+		this.title = title;
 		this.column = DOM.create('div', { class: 'overview col-lg-9 col-xl-10', textContent: 'Loading...' });
 		this.row = DOM.create('div', {
 			class: 'row m-0 py-1 px-0 border-top loading',
@@ -31,15 +32,22 @@ export class Overview {
 		this.bodies = DOM.create('div', { class: 'bodies' });
 	}
 
-	finish = (): void => {
-		this.row.classList.remove('loading');
-	};
-
 	alert = (type: 'warning' | 'danger', content: string): HTMLElement => {
 		return DOM.create('div', {
 			class: `alert alert-${type}`,
 			textContent: content,
 		});
+	};
+
+	updateOverview = (serviceKey: ActivableKey, service: ServiceTitle | RequestStatus): void => {
+		const overview = this.overviews[serviceKey]!;
+		if (service instanceof ServiceTitle) {
+			DOM.clear(overview.body);
+			service.overview(overview.body);
+			if (!service.isSynced(this.title)) {
+				overview.body.appendChild(DOM.text('Not Synced'));
+			}
+		} else this.errorMessage(service, overview);
 	};
 
 	activateOverview = (overview: ServiceOverview): void => {
@@ -82,38 +90,30 @@ export class Overview {
 		}
 	};
 
-	load = (title: Title): void => {
+	displayServices = (services: ServiceTitleList): void => {
 		DOM.clear(this.column);
+		// Select Services to display
 		if (Options.services.length == 0) {
 			this.column.appendChild(
 				this.alert('warning', `You have no active Services, SyncDex won't do anything until you activate one.`)
 			);
-			return this.finish();
+			this.row.classList.remove('loading');
+			return;
 		}
-		// Get Service Keys
-		let displayServices = Object.keys(title.services).filter(
-			(key) => Options.services.indexOf(key as ActivableKey) >= 0
-		);
+		let displayServices = Object.keys(services).filter((key) => Options.services.indexOf(key as ActivableKey) >= 0);
 		if (Options.overviewMainOnly) {
 			displayServices = displayServices.filter((key) => key == Options.mainService);
 		}
 		if (displayServices.length == 0) {
 			this.column.appendChild(this.alert('warning', `No Available Services for you for this Title.`));
-			return this.finish();
+			this.row.classList.remove('loading');
+			return;
 		}
-		// Order the found Services by the User's Service order
-		const ordered = [];
-		for (const service of Options.services) {
-			if (displayServices.indexOf(service) >= 0) {
-				ordered.push(service);
-			}
-		}
-		displayServices = ordered;
 		// Display Service tabs
 		DOM.append(this.column, this.serviceList, this.bodies);
+		let i = 0;
 		for (const key of displayServices) {
 			const serviceKey = key as ActivableKey;
-			const serviceName = ReverseActivableName[serviceKey];
 			const serviceOverview: ServiceOverview = {
 				key: serviceKey,
 				tab: DOM.create('li', {
@@ -121,7 +121,7 @@ export class Overview {
 					childs: [
 						DOM.create('img', { src: Runtime.file(`/icons/${serviceKey}.png`) }),
 						DOM.space(),
-						DOM.text(serviceName),
+						DOM.text(ReverseActivableName[serviceKey]),
 					],
 					events: {
 						click: (event) => {
@@ -131,27 +131,19 @@ export class Overview {
 					},
 				}),
 				body: DOM.create('div', { class: 'body hidden', textContent: 'Loading...' }),
-				service: GetService(serviceName)
-					.get(title.services[serviceKey]!)
-					.then((res) => {
-						if (res instanceof ServiceTitle) {
-							DOM.clear(serviceOverview.body);
-							res.overview(serviceOverview.body);
-							if (!res.isSynced(title)) {
-								serviceOverview.body.appendChild(DOM.text('Not Synced'));
-							}
-						} else this.errorMessage(res, serviceOverview);
-						return res;
-					}),
+				service: services[serviceKey]!.then((res) => {
+					this.updateOverview(serviceKey, res);
+					return res;
+				}),
 			};
 			if (Options.mainService == serviceKey) serviceOverview.tab.classList.add('main');
-			this.overviews.push(serviceOverview);
-			if (this.overviews.length == 1) {
+			this.overviews[serviceKey] = serviceOverview;
+			if (i++ == 0) {
 				this.activateOverview(serviceOverview);
 			}
 			this.serviceList.appendChild(serviceOverview.tab);
 			this.bodies.appendChild(serviceOverview.body);
 		}
-		this.finish();
+		this.row.classList.remove('loading');
 	};
 }
