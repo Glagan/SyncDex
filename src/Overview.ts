@@ -1,5 +1,5 @@
-import { DOM } from './DOM';
-import { Title, ServiceTitle, ActivableKey, ReverseActivableName, ServiceTitleList } from './Title';
+import { DOM, AppendableElement } from './DOM';
+import { Title, ServiceTitle, ActivableKey, ReverseActivableName, ServiceTitleList, ServiceKey } from './Title';
 import { Runtime, RequestStatus } from './Runtime';
 import { Options } from './Options';
 
@@ -32,18 +32,45 @@ export class Overview {
 		this.bodies = DOM.create('div', { class: 'bodies' });
 	}
 
-	alert = (type: 'warning' | 'danger', content: string): HTMLElement => {
+	alert = (type: 'warning' | 'danger', content: string | AppendableElement[]): HTMLElement => {
+		if (typeof content === 'string') {
+			return DOM.create('div', {
+				class: `alert alert-${type}`,
+				textContent: content,
+			});
+		}
 		return DOM.create('div', {
 			class: `alert alert-${type}`,
-			textContent: content,
+			childs: content,
 		});
 	};
 
-	syncButton = (): HTMLButtonElement => {
+	syncButton = (serviceKey: ActivableKey, service: ServiceTitle): HTMLButtonElement => {
 		return DOM.create('button', {
 			class: 'btn btn-primary sync-button',
 			childs: [DOM.icon('sync-alt'), DOM.space(), DOM.text('Sync')],
+			events: {
+				click: (event) => {
+					event.preventDefault();
+					this.isSyncing(serviceKey);
+					service.import(this.title);
+					service.persist().then((res) => {
+						if (res > RequestStatus.CREATED) this.updateOverview(serviceKey, res);
+						else this.updateOverview(serviceKey, service);
+					});
+				},
+			},
 		});
+	};
+
+	isSyncing = (serviceKey: ActivableKey): void => {
+		const overview = this.overviews[serviceKey]!;
+		overview.body.appendChild(
+			DOM.create('div', {
+				class: 'syncing',
+				childs: [DOM.icon('sync-alt fa-spin'), DOM.space(), DOM.text('Syncing...')],
+			})
+		);
 	};
 
 	updateOverview = (serviceKey: ActivableKey, service: ServiceTitle | RequestStatus): void => {
@@ -52,7 +79,7 @@ export class Overview {
 			DOM.clear(overview.body);
 			service.overview(overview.body);
 			if (!Options.autoSync && !service.isSynced(this.title)) {
-				overview.body.appendChild(this.syncButton());
+				overview.body.appendChild(this.syncButton(serviceKey, service));
 			}
 		} else this.errorMessage(service, overview);
 	};
@@ -73,12 +100,29 @@ export class Overview {
 		}
 	};
 
+	openOptionsButton = (): HTMLButtonElement => {
+		return DOM.create('button', {
+			class: 'btn btn-primary',
+			textContent: 'Open Options',
+			events: {
+				click: (event) => {
+					event.preventDefault();
+					Runtime.openOptions();
+				},
+			},
+		});
+	};
+
 	errorMessage = (res: RequestStatus, overview: ServiceOverview): void => {
 		DOM.clear(overview.body);
 		switch (res) {
 			case RequestStatus.MISSING_TOKEN:
 				overview.body.appendChild(
-					this.alert('danger', 'Missing Token, check your Login Status in the Options.')
+					this.alert('danger', [
+						DOM.text('Missing Token, check your Login Status in the Options.'),
+						DOM.space(),
+						this.openOptionsButton(),
+					])
 				);
 				break;
 			case RequestStatus.BAD_REQUEST:

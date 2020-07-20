@@ -359,6 +359,7 @@ export class Title implements FullTitle {
 	 * Convert a Title to a SaveTitle to follow the save schema and save it in LocalStorage
 	 */
 	save = async (): Promise<void> => {
+		this.new = false;
 		return LocalStorage.set(this.id, this.toSave());
 	};
 }

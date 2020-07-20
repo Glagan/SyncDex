@@ -244,6 +244,7 @@ export class SyncDex {
 						response.isSynced(title);
 						// If Auto Sync is on, import from now up to date Title and persist
 						if (Options.autoSync && (!response.inList || !response.synced)) {
+							if (overview) overview.isSyncing(serviceKey);
 							response.import(title);
 							response.persist().then((res) => {
 								if (overview) {
