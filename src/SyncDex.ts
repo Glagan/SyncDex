@@ -216,24 +216,34 @@ export class SyncDex {
 						// Sync Title with the first available ServiceTitle
 						if (!mainCheck && response.inList) {
 							// Sync Title to the ServiceTitle if it's more recent
-							if (title.new || response.progress.chapter > title.progress.chapter) {
+							if (
+								title.new ||
+								response.progress.chapter > title.progress.chapter ||
+								(response.progress.volume !== undefined && title.progress.volume === undefined) ||
+								(response.progress.volume &&
+									title.progress.volume &&
+									response.progress.volume > title.progress.volume) ||
+								(title.score == 0 && response.score && response.score > 0)
+							) {
 								response.export(title);
 								await title.save();
 							}
 							mainCheck = true;
 						}
 						if (!Options.autoSync && overview) {
+							response.isSynced(title);
 							overview.updateOverview(serviceKey, response);
 						}
 					}
 				}
 				// When the Title is synced, all remaining ServiceTitle are synced with it
-				if (!Options.autoSync) return;
 				for (const serviceKey of Options.services) {
 					if (services[serviceKey] === undefined) continue;
 					const response: ServiceTitle | RequestStatus = await services[serviceKey]!;
 					if (response instanceof ServiceTitle && response.loggedIn) {
-						if (!response.inList || !response.isSynced(title)) {
+						response.isSynced(title);
+						// If Auto Sync is on, import from now up to date Title and persist
+						if (Options.autoSync && (!response.inList || !response.synced)) {
 							response.import(title);
 							response.persist().then((res) => {
 								if (overview) {
@@ -241,7 +251,8 @@ export class SyncDex {
 									else overview.updateOverview(serviceKey, response);
 								}
 							});
-						}
+							// Always update the overview to check against possible imported ServiceTitle
+						} else if (overview) overview.updateOverview(serviceKey, response);
 					}
 				}
 			}

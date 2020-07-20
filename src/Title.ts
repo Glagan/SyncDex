@@ -660,11 +660,11 @@ export abstract class ServiceTitle {
 			title.status === this.status &&
 			title.progress.chapter === this.progress.chapter &&
 			title.progress.volume === this.progress.volume &&
-			(missingFields.indexOf('score') < 0 || title.score === this.score) &&
-			(missingFields.indexOf('start') < 0 ||
+			(missingFields.indexOf('score') >= 0 || title.score === this.score) &&
+			(missingFields.indexOf('start') >= 0 ||
 				(title.start === undefined && this.start === undefined) ||
 				(title.start !== undefined && this.start !== undefined && dateCompare(title.start, this.start))) &&
-			(missingFields.indexOf('end') < 0 ||
+			(missingFields.indexOf('end') >= 0 ||
 				(title.end === undefined && this.end === undefined) ||
 				(title.end !== undefined && this.end !== undefined && dateCompare(title.end, this.end))));
 	};

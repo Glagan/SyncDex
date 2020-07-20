@@ -39,13 +39,20 @@ export class Overview {
 		});
 	};
 
+	syncButton = (): HTMLButtonElement => {
+		return DOM.create('button', {
+			class: 'btn btn-primary sync-button',
+			childs: [DOM.icon('sync-alt'), DOM.space(), DOM.text('Sync')],
+		});
+	};
+
 	updateOverview = (serviceKey: ActivableKey, service: ServiceTitle | RequestStatus): void => {
 		const overview = this.overviews[serviceKey]!;
 		if (service instanceof ServiceTitle) {
 			DOM.clear(overview.body);
 			service.overview(overview.body);
-			if (!service.isSynced(this.title)) {
-				overview.body.appendChild(DOM.text('Not Synced'));
+			if (!Options.autoSync && !service.isSynced(this.title)) {
+				overview.body.appendChild(this.syncButton());
 			}
 		} else this.errorMessage(service, overview);
 	};

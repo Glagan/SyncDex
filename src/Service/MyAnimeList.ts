@@ -94,7 +94,7 @@ export class MyAnimeListTitle extends ServiceTitle {
 		if (this.progress.volume) body['add_manga[num_read_volumes]'] = this.progress.volume;
 		else body['add_manga[num_read_volumes]'] = 0;
 		body['last_completed_vol'] = '';
-		body['num_read_chapters'] = this.progress.chapter;
+		body['add_manga[num_read_chapters]'] = this.progress.chapter;
 		// Score
 		if (this.score) body['add_manga[score]'] = Math.round(this.score / 10);
 		else body['add_manga[score]'] = '';
@@ -117,7 +117,8 @@ export class MyAnimeListTitle extends ServiceTitle {
 			body['add_manga[finish_date][day]'] = '';
 			body['add_manga[finish_date][year]'] = '';
 		}
-		body['add_manga[tags]'] = ''; // TODO: Retrieve all other fields
+		// TODO: Retrieve all other fields
+		body['add_manga[tags]'] = '';
 		body['add_manga[priority]'] = 0;
 		body['add_manga[storage_type]'] = '';
 		body['add_manga[num_retail_volumes]'] = 0;

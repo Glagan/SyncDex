@@ -39,7 +39,7 @@ browser.runtime.onMessage.addListener(
 			msg.body = msg.body !== undefined ? msg.body : null;
 			msg.redirect = msg.redirect !== undefined ? msg.redirect : 'follow';
 			msg.cache = msg.cache !== undefined ? msg.cache : 'default';
-			msg.mode = msg.mode !== undefined ? msg.mode : 'no-cors';
+			msg.mode = msg.mode !== undefined ? msg.mode : undefined;
 			msg.credentials = msg.credentials !== undefined ? msg.credentials : 'same-origin';
 			msg.headers = msg.headers !== undefined ? msg.headers : {};
 			let body: FormData | string | undefined;

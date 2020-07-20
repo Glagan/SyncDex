@@ -58,7 +58,7 @@ export class MangaUpdatesTitle extends ServiceTitle {
 		if (!response.ok) return Runtime.responseStatus(response);
 		const parser = new DOMParser();
 		const body = parser.parseFromString(response.body, 'text/html');
-		const values: Partial<MangaUpdatesTitle> = {};
+		const values: Partial<MangaUpdatesTitle> = { progress: { chapter: 0 } };
 		const showList = body.getElementById('showList');
 		if (showList !== null) {
 			values.loggedIn = true;
@@ -137,19 +137,22 @@ export class MangaUpdatesTitle extends ServiceTitle {
 	};
 
 	persist = async (): Promise<RequestStatus> => {
-		// Status requirements
-		let list = this.pathToStatus();
-		for (const status of list) {
-			if (status == MangaUpdatesStatus.NONE) {
-				this.delete();
-			} else {
-				const response = await this.updateStatus(status);
-				if (!response.ok) return Runtime.responseStatus(response);
+		// Avoid updating status since reassigning the same status delete from the list
+		if (this.current === undefined || this.status !== this.current.status) {
+			// Status requirements
+			let list = this.pathToStatus();
+			for (const status of list) {
+				if (status == MangaUpdatesStatus.NONE) {
+					this.delete();
+				} else {
+					const response = await this.updateStatus(status);
+					if (!response.ok) return Runtime.responseStatus(response);
+				}
 			}
+			// Real status
+			const response = await this.updateStatus(MangaUpdatesTitle.fromStatus(this.status));
+			if (!response.ok) return Runtime.responseStatus(response);
 		}
-		// Real status
-		const response = await this.updateStatus(MangaUpdatesTitle.fromStatus(this.status));
-		if (!response.ok) return Runtime.responseStatus(response);
 		// Update progress -- only if chapter or volume is different
 		if (
 			this.current === undefined ||
@@ -171,10 +174,8 @@ export class MangaUpdatesTitle extends ServiceTitle {
 			this.score !== undefined &&
 			this.score > 0 &&
 			(this.current === undefined ||
-				(this.current !== undefined &&
-					this.current.score !== undefined &&
-					this.score != this.current.score &&
-					this.current.score > 0))
+				this.current.score === undefined ||
+				(this.score != this.current.score && this.current.score > 0))
 		) {
 			// Convert back to the MangaUpdates 0-10 range
 			const muScore = Math.round(this.score / 10);
