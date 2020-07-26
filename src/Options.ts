@@ -21,7 +21,6 @@ export interface AvailableOptions {
 	updateOnlyInList: boolean;
 	// Title
 	linkToServices: boolean;
-	showOverview: boolean;
 	overviewMainOnly: boolean;
 	autoSync: boolean;
 	// History
@@ -72,7 +71,6 @@ export const DefaultOptions: AvailableOptions = {
 	updateOnlyInList: false,
 	// Title
 	linkToServices: true,
-	showOverview: true,
 	overviewMainOnly: true,
 	autoSync: false,
 	// History

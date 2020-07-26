@@ -61,6 +61,7 @@ export class Runtime {
 	static responseStatus<R extends RequestResponse>(response: R): RequestStatus {
 		if (response.code == 0) return RequestStatus.FAIL;
 		else if (response.code >= 500) return RequestStatus.SERVER_ERROR;
+		else if (response.code == 404) return RequestStatus.NOT_FOUND;
 		else if (response.code >= 400) return RequestStatus.BAD_REQUEST;
 		return RequestStatus.SUCCESS;
 	}

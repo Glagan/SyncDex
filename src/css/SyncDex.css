@@ -137,6 +137,9 @@
  * * Overview
  ***/
 
+.overview .quick-buttons {
+	margin-bottom: 4px;
+}
 .overview .tabs {
 	list-style: none;
 	margin: 0;

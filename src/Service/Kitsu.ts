@@ -138,7 +138,7 @@ export class KitsuTitle extends ServiceTitle {
 	persist = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		const method = this.libraryEntryId && this.libraryEntryId > 0 ? 'PATCH' : 'POST';
-		const url = `${KitsuAPI}${this.libraryEntryId !== undefined ? `/${this.libraryEntryId}` : ''}`;
+		const url = `${KitsuAPI}${this.libraryEntryId > 0 ? `/${this.libraryEntryId}` : ''}`;
 		// Convert 0-100 score to the 0-20 range -- round to the nearest
 		const kuScore = this.score !== undefined && this.score > 0 ? Math.round(this.score / 5) : undefined;
 		const response = await Runtime.jsonRequest<KitsuPersistResponse>({
@@ -147,7 +147,7 @@ export class KitsuTitle extends ServiceTitle {
 			headers: KitsuHeaders(),
 			body: JSON.stringify({
 				data: {
-					id: this.libraryEntryId,
+					id: this.libraryEntryId ? this.libraryEntryId : undefined,
 					attributes: {
 						status: KitsuTitle.fromStatus(this.status),
 						progress: this.progress.chapter,

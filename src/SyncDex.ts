@@ -128,36 +128,21 @@ export class SyncDex {
 		console.log('SyncDex :: Title List');
 	};
 
-	/**
-	 * Check if any Service in services is available, in the list and more recent that the local Title.
-	 * If an external Service is more recent, sync with it and sync all other Services with the then synced Title.
-	 */
-	syncServices = async (title: Title, services: ServiceTitleList, overview?: Overview): Promise<void> => {
-		// Sync Title with the most recent ServiceTitle ordered by User choice
-		// Services are reversed to select the first choice last
-		let externalImported = false;
-		for (const serviceKey of Options.services.reverse()) {
-			if (services[serviceKey] === undefined) continue;
-			const response: ServiceTitle | RequestStatus = await services[serviceKey]!;
-			if (response instanceof ServiceTitle && response.loggedIn) {
-				// Check if any of the ServiceTitle is more recent than the local Title
-				if (response.inList && (title.new || response.isMoreRecent(title))) {
-					// If there is one, sync with it and save
-					title.new = false;
-					response.merge(title);
-					externalImported = true;
-				}
-			}
-		}
-		if (externalImported) await title.save();
-		// When the Title is synced, all remaining ServiceTitle are synced with it
+	syncServices = async (
+		title: Title,
+		services: ServiceTitleList,
+		overview?: Overview,
+		auto: boolean = false
+	): Promise<void> => {
+		console.debug('Syncing Services', 'Overview?', overview);
 		for (const serviceKey of Options.services) {
 			if (services[serviceKey] === undefined) continue;
+			console.debug('Syncing', serviceKey);
 			const response: ServiceTitle | RequestStatus = await services[serviceKey]!;
 			if (response instanceof ServiceTitle && response.loggedIn) {
 				response.isSynced(title);
 				// If Auto Sync is on, import from now up to date Title and persist
-				if (Options.autoSync && (!response.inList || !response.synced)) {
+				if ((!auto || Options.autoSync) && (!response.inList || !response.synced)) {
 					if (overview) overview.isSyncing(serviceKey);
 					response.import(title);
 					response.persist().then((res) => {
@@ -172,10 +157,39 @@ export class SyncDex {
 		}
 	};
 
+	/**
+	 * Check if any Service in services is available, in the list and more recent that the local Title.
+	 * If an external Service is more recent, sync with it and sync all other Services with the then synced Title.
+	 */
+	checkServiceStatus = async (title: Title, services: ServiceTitleList, overview: Overview): Promise<void> => {
+		// Sync Title with the most recent ServiceTitle ordered by User choice
+		// Services are reversed to select the first choice last
+		let externalImported = false;
+		for (const serviceKey of Options.services.reverse()) {
+			if (services[serviceKey] === undefined) continue;
+			const response: ServiceTitle | RequestStatus = await services[serviceKey]!;
+			console.debug(serviceKey, response, 'is in list', typeof response === 'object' ? response.inList : false);
+			if (response instanceof ServiceTitle && response.loggedIn) {
+				// Check if any of the ServiceTitle is more recent than the local Title
+				if (response.inList && (title.new || response.isMoreRecent(title))) {
+					// If there is one, sync with it and save
+					title.new = false;
+					response.merge(title);
+					externalImported = true;
+				}
+			}
+		}
+		if (externalImported) await title.save();
+		// When the Title is synced, all remaining ServiceTitle are synced with it
+		if (title.status == Status.NONE) {
+			overview.addQuickButtons();
+		} else this.syncServices(title, services, overview, true);
+	};
+
 	titlePage = async (): Promise<void> => {
 		console.log('SyncDex :: Title');
 
-		if (!Options.showOverview && !Options.linkToServices && !Options.saveOpenedChapters) return;
+		if (!Options.linkToServices && !Options.saveOpenedChapters) return;
 		// Get Title
 		const id = parseInt(document.querySelector<HTMLElement>('.row .fas.fa-hashtag')!.parentElement!.textContent!);
 		const title = await Title.get(id);
@@ -247,13 +261,10 @@ export class SyncDex {
 			}
 		}
 		// Search for the progress row and add overview there
-		let overview: Overview | undefined;
-		if (Options.showOverview) {
-			overview = new Overview(title, services, this);
-			overview.displayServices();
-		}
+		let overview = new Overview(title, services, this);
+		overview.displayServices();
 		// Sync Services
-		this.syncServices(title, services, overview);
+		this.checkServiceStatus(title, services, overview);
 	};
 
 	updatesPage = (): void => {

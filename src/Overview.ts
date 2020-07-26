@@ -54,9 +54,10 @@ export class Overview {
 		});
 	};
 
-	syncButton = (serviceKey: ActivableKey, service: ServiceTitle): HTMLButtonElement => {
-		const overview = this.overviews[serviceKey]!;
-		return overview.manage.appendChild(
+	syncButton = (serviceKey: ActivableKey, service: ServiceTitle): void => {
+		const overview = this.overviews[serviceKey];
+		if (!overview) return;
+		overview.manage.appendChild(
 			DOM.create('button', {
 				class: 'btn btn-primary sync-button',
 				childs: [DOM.icon('sync-alt'), DOM.space(), DOM.text('Sync')],
@@ -76,7 +77,8 @@ export class Overview {
 	};
 
 	isSyncing = (serviceKey: ActivableKey): void => {
-		const overview = this.overviews[serviceKey]!;
+		const overview = this.overviews[serviceKey];
+		if (!overview) return;
 		overview.syncing = DOM.create('div', {
 			class: 'syncing',
 			childs: [DOM.icon('sync-alt fa-spin'), DOM.space(), DOM.text('Syncing...')],
@@ -85,7 +87,8 @@ export class Overview {
 	};
 
 	updateOverview = (serviceKey: ActivableKey, service: ServiceTitle | RequestStatus): void => {
-		const overview = this.overviews[serviceKey]!;
+		const overview = this.overviews[serviceKey];
+		if (!overview) return;
 		if (service instanceof ServiceTitle) {
 			this.clearOverview(overview);
 			service.overview(overview.content);
@@ -135,7 +138,7 @@ export class Overview {
 					this.services[serviceKey] = GetService(ReverseActivableName[serviceKey]).get(
 						this.title.services[serviceKey]!
 					);
-					await this.syncDex.syncServices(this.title, this.services, this);
+					await this.syncDex.checkServiceStatus(this.title, this.services, this);
 					button.classList.remove('loading');
 					button.disabled = false;
 				},
@@ -158,7 +161,8 @@ export class Overview {
 	};
 
 	errorMessage = (serviceKey: ActivableKey, res: RequestStatus): void => {
-		const overview = this.overviews[serviceKey]!;
+		const overview = this.overviews[serviceKey];
+		if (!overview) return;
 		this.clearOverview(overview);
 		switch (res) {
 			case RequestStatus.MISSING_TOKEN:
@@ -173,7 +177,13 @@ export class Overview {
 				);
 				break;
 			case RequestStatus.BAD_REQUEST:
-				overview.content.appendChild(this.alert('danger', 'Bad Request, if this happen again open an issue.'));
+				overview.content.appendChild(
+					this.alert('danger', [
+						DOM.text('Bad Request, if this happen again open an issue.'),
+						DOM.space(),
+						this.refreshButton(serviceKey),
+					])
+				);
 				break;
 			case RequestStatus.NOT_FOUND:
 				overview.content.appendChild(
@@ -252,5 +262,36 @@ export class Overview {
 			this.bodies.appendChild(serviceOverview.body);
 		}
 		this.row.classList.remove('loading');
+	};
+
+	addQuickButtons = (): void => {
+		const quickButtons = DOM.create('div', { class: 'quick-buttons' });
+		let startReading = DOM.create('button', {
+			class: 'btn btn-primary',
+			childs: [DOM.icon('book-open'), DOM.space(), DOM.text('Start Reading')],
+		});
+		let planToRead = DOM.create('button', {
+			class: 'btn btn-secondary',
+			childs: [DOM.icon('bookmark'), DOM.space(), DOM.text('Add to Plan to Read')],
+		});
+		const quickBind = async (status: Status): Promise<void> => {
+			startReading.disabled = true;
+			planToRead.disabled = true;
+			this.title.status = status;
+			if (status == Status.READING) this.title.start = new Date();
+			await this.title.save();
+			await this.syncDex.syncServices(this.title, this.services, this);
+			quickButtons.remove();
+		};
+		startReading.addEventListener('click', async (event) => {
+			event.preventDefault();
+			quickBind(Status.READING);
+		});
+		planToRead.addEventListener('click', async (event) => {
+			event.preventDefault();
+			quickBind(Status.PLAN_TO_READ);
+		});
+		DOM.append(quickButtons, startReading, DOM.space(), planToRead);
+		this.column.insertBefore(quickButtons, this.column.firstElementChild);
 	};
 }
