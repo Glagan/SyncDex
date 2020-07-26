@@ -123,15 +123,13 @@ export class KitsuTitle extends ServiceTitle {
 			const libraryEntry = body.data[0];
 			values.libraryEntryId = parseInt(libraryEntry.id);
 			const attributes = libraryEntry.attributes;
-			values.progress = {
-				chapter: attributes.progress,
-				volume: attributes.volumesOwned,
-			};
 			values.status = KitsuTitle.toStatus(attributes.status);
+			values.progress = { chapter: attributes.progress };
+			if (attributes.volumesOwned > 0) values.progress.volume = attributes.volumesOwned;
 			// Kitsu have a 0-20 range
-			if (attributes.ratingTwenty !== null) values.score = attributes.ratingTwenty * 5;
-			if (attributes.startedAt !== null) values.start = new Date(attributes.startedAt);
-			if (attributes.finishedAt !== null) values.end = new Date(attributes.finishedAt);
+			if (attributes.ratingTwenty && attributes.ratingTwenty !== null) values.score = attributes.ratingTwenty * 5;
+			if (attributes.startedAt && attributes.startedAt !== null) values.start = new Date(attributes.startedAt);
+			if (attributes.finishedAt && attributes.finishedAt !== null) values.end = new Date(attributes.finishedAt);
 			values.name = body.included[0].attributes.canonicalTitle;
 		} else values.inList = false;
 		return new KitsuTitle(id as number, values);

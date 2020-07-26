@@ -238,9 +238,7 @@ export class Title implements FullTitle {
 	constructor(id: number, title?: Partial<FullTitle>) {
 		this.new = title == undefined;
 		this.id = id;
-		if (!this.new) {
-			Object.assign(this, title);
-		}
+		if (!this.new) Object.assign(this, title);
 	}
 
 	/**
@@ -298,7 +296,12 @@ export class Title implements FullTitle {
 			}
 		}
 		// Dates
-
+		if (other.start && (!this.start || this.start > other.start)) {
+			this.start = new Date(other.start);
+		}
+		if (other.end && (!this.end || this.end > other.end)) {
+			this.end = new Date(other.end);
+		}
 		// Update *this* Status if it's NONE or/and if other is not NONE
 		if (other.status != Status.NONE || this.status == Status.NONE) {
 			this.status = other.status;
@@ -359,7 +362,6 @@ export class Title implements FullTitle {
 	 * Convert a Title to a SaveTitle to follow the save schema and save it in LocalStorage
 	 */
 	save = async (): Promise<void> => {
-		this.new = false;
 		return LocalStorage.set(this.id, this.toSave());
 	};
 }
@@ -651,6 +653,17 @@ export abstract class ServiceTitle {
 		} else DOM.append(parent, DOM.text('Not in List.'));
 	};
 
+	isMoreRecent = (title: Title): boolean => {
+		return (
+			this.progress.chapter > title.progress.chapter ||
+			(this.progress.volume !== undefined && title.progress.volume === undefined) ||
+			(this.progress.volume && title.progress.volume && this.progress.volume > title.progress.volume) ||
+			(title.score == 0 && this.score !== undefined && this.score > 0) ||
+			(this.start !== undefined && (title.start === undefined || title.start > this.start)) ||
+			(this.end !== undefined && (title.end === undefined || title.end > this.end))
+		);
+	};
+
 	/**
 	 * Compare the Media on the Service to a Title to check if it has the same progress.
 	 * Avoid checking fields that cannot exist on the Service.
@@ -670,6 +683,9 @@ export abstract class ServiceTitle {
 				(title.end !== undefined && this.end !== undefined && dateCompare(title.end, this.end))));
 	};
 
+	/**
+	 * Assign all values from the Title to the ServiceTitle.
+	 */
 	import = (title: Title): void => {
 		this.synced = true;
 		this.status = title.status;
@@ -687,6 +703,10 @@ export abstract class ServiceTitle {
 		} else delete this.end;
 	};
 
+	/**
+	 * Assign all values from the ServiceTitle to the Title.
+	 * Avoid modifying values that cannot exist on the Service from the Title.
+	 */
 	export = (title: Title): void => {
 		this.synced = true;
 		title.status = this.status;
@@ -704,6 +724,31 @@ export abstract class ServiceTitle {
 		if (missingFields.indexOf('end') < 0 && this.end) {
 			title.end = new Date(this.end);
 		} else delete title.end;
+	};
+
+	/**
+	 * Select all higher (or lower for dates) values from both ServiceTitle and Title and assign them to Title.
+	 * Score is always export to the Title if it exists.
+	 */
+	merge = (title: Title): void => {
+		this.synced = true;
+		title.status = this.status;
+		if (this.progress.chapter > title.progress.chapter) {
+			title.progress.chapter = this.progress.chapter;
+		}
+		if (this.progress.volume && (!title.progress.volume || this.progress.volume > title.progress.volume)) {
+			title.progress.volume = this.progress.volume;
+		}
+		const missingFields = (<typeof ServiceTitle>this.constructor).missingFields;
+		if (missingFields.indexOf('score') < 0 && this.score !== undefined) {
+			title.score = this.score;
+		}
+		if (missingFields.indexOf('start') < 0 && this.start && (!title.start || this.start < title.start)) {
+			title.start = new Date(this.start);
+		}
+		if (missingFields.indexOf('end') < 0 && this.end && (!title.end || this.end < title.end)) {
+			title.end = new Date(this.end);
+		}
 	};
 }
 

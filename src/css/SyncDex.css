@@ -193,12 +193,25 @@
 	opacity: 1;
 	transition: all 150ms var(--animation);
 	position: relative;
-	min-height: 1.5;
+	display: flex;
+	justify-content: space-between;
 }
 .overview .body.hidden {
 	opacity: 0;
 	padding: 0;
 	border: 0;
+}
+.overview .body .content {
+	align-self: center;
+	flex-grow: 1;
+}
+.overveiw .body .manage {
+	display: flex;
+	align-items: flex-start;
+	flex-flow: column;
+}
+.overveiw .body .manage button {
+	margin-bottom: 4px;
 }
 /** Services */
 .overview.mal .tabs::after {
@@ -284,11 +297,6 @@
 	color: var(--mangaupdates);
 	border-color: var(--mangaupdates);
 	background-color: var(--mangaupdates-bg);
-}
-.sync-button {
-	position: absolute;
-	top: 4px;
-	right: 4px;
 }
 .helper {
 	font-size: 0.75rem;
