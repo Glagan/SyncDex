@@ -6,12 +6,12 @@ import { GetService } from './Service';
 import { SyncDex } from './SyncDex';
 
 interface ServiceOverview {
-	service: Promise<ServiceTitle | RequestStatus>;
 	key: ActivableKey;
 	tab: HTMLLIElement;
 	body: HTMLElement;
 	content: HTMLElement;
 	manage: HTMLElement;
+	service?: Promise<ServiceTitle | RequestStatus>;
 	syncing?: HTMLElement;
 }
 
@@ -41,7 +41,7 @@ export class Overview {
 		this.bodies = DOM.create('div', { class: 'bodies' });
 	}
 
-	alert = (type: 'warning' | 'danger', content: string | AppendableElement[]): HTMLElement => {
+	alert = (type: 'warning' | 'danger' | 'info', content: string | AppendableElement[]): HTMLElement => {
 		if (typeof content === 'string') {
 			return DOM.create('div', {
 				class: `alert alert-${type}`,
@@ -226,16 +226,15 @@ export class Overview {
 		// Display Service tabs
 		DOM.append(this.column, this.serviceList, this.bodies);
 		let i = 0;
-		for (const key of displayServices) {
-			const serviceKey = key as ActivableKey;
+		for (const key of Options.services) {
 			const serviceOverview: ServiceOverview = {
-				key: serviceKey,
+				key: key,
 				tab: DOM.create('li', {
-					class: `tab ${serviceKey}`,
+					class: `tab ${key}`,
 					childs: [
-						DOM.create('img', { src: Runtime.file(`/icons/${serviceKey}.png`) }),
+						DOM.create('img', { src: Runtime.file(`/icons/${key}.png`) }),
 						DOM.space(),
-						DOM.text(ReverseActivableName[serviceKey]),
+						DOM.text(ReverseActivableName[key]),
 					],
 					events: {
 						click: (event) => {
@@ -247,14 +246,24 @@ export class Overview {
 				content: DOM.create('div', { class: 'content', textContent: 'Loading...' }),
 				manage: DOM.create('div', { class: 'manage' }),
 				body: DOM.create('div', { class: 'body hidden' }),
-				service: this.services[serviceKey]!.then((res) => {
-					this.updateOverview(serviceKey, res);
-					return res;
-				}),
 			};
+			if (displayServices.indexOf(key) < 0) {
+				serviceOverview.content.textContent = '';
+				serviceOverview.content.appendChild(
+					this.alert(
+						'info',
+						`No ID for ${ReverseActivableName[key]}, you can manually add one in the Save Editor.`
+					)
+				);
+			} else {
+				serviceOverview.service = this.services[key]!.then((res) => {
+					this.updateOverview(key, res);
+					return res;
+				});
+			}
 			DOM.append(serviceOverview.body, serviceOverview.content, serviceOverview.manage);
-			if (Options.mainService == serviceKey) serviceOverview.tab.classList.add('main');
-			this.overviews[serviceKey] = serviceOverview;
+			if (Options.mainService == key) serviceOverview.tab.classList.add('main');
+			this.overviews[key] = serviceOverview;
 			if (i++ == 0) {
 				this.activateOverview(serviceOverview);
 			}

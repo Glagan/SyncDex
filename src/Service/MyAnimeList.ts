@@ -67,7 +67,8 @@ export class MyAnimeListTitle extends ServiceTitle {
 					chapter:
 						parseInt((body.getElementById('add_manga_num_read_chapters') as HTMLInputElement).value) || 0,
 					volume:
-						parseInt((body.getElementById('add_manga_num_read_volumes') as HTMLInputElement).value) || 0,
+						parseInt((body.getElementById('add_manga_num_read_volumes') as HTMLInputElement).value) ||
+						undefined,
 				};
 				const score = (body.getElementById('add_manga_score') as HTMLSelectElement).value;
 				if (score !== '') values.score = parseInt(score) * 10;
