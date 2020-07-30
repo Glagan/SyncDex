@@ -1,5 +1,5 @@
 import { DOM } from '../../src/DOM';
-import { TitleCollection, Title, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
+import { TitleCollection, LocalTitle, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { Service, Summary, LoginMethod, ActivableModule, LoginModule, ActivableService } from './Service';
 import { Runtime, RequestStatus } from '../../src/Runtime';
@@ -203,7 +203,7 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListXMLTit
 					const title = titleList.find((t) => t.id == id);
 					if (title && connection['md']) {
 						titles.add(
-							new Title(connection['md'] as number, {
+							new LocalTitle(connection['md'] as number, {
 								services: { mal: title.id },
 								progress: {
 									chapter: title.chapters,
@@ -261,7 +261,7 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 		return MyAnimeListExportStatus.NONE;
 	};
 
-	createTitle = (document: Document, title: Title): HTMLElement => {
+	createTitle = (document: Document, title: LocalTitle): HTMLElement => {
 		const node = document.createElement('manga');
 		DOM.append(
 			node,
@@ -286,7 +286,7 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 		return node;
 	};
 
-	generateBatch = async (titles: Title[]): Promise<string> => {
+	generateBatch = async (titles: LocalTitle[]): Promise<string> => {
 		const xmlDocument = document.implementation.createDocument('myanimelist', '', null);
 		const main = xmlDocument.createElement('myanimelist');
 		xmlDocument.appendChild(main);

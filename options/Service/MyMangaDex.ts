@@ -1,5 +1,5 @@
 import { Options } from '../../src/Options';
-import { Title, TitleCollection, ServiceName, ServiceKey, ActivableKey } from '../../src/Title';
+import { LocalTitle, TitleCollection, ServiceName, ServiceKey, ActivableKey } from '../../src/Title';
 import { Service } from './Service';
 import { ImportSummary, FileImportFormat, FileImportableModule } from './Import';
 
@@ -66,7 +66,7 @@ class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTi
 	convertTitles = async (titles: TitleCollection, titleList: MyMangaDexTitle[]): Promise<number> => {
 		for (const title of titleList) {
 			titles.add(
-				new Title(title.id, {
+				new LocalTitle(title.id, {
 					services: {
 						mal: title.mal > 0 ? title.mal : undefined,
 					},
@@ -103,7 +103,7 @@ class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTi
 		let titles: MyMangaDexTitle[] = [];
 		for (const key in save) {
 			if (key !== 'options' && key !== 'history') {
-				// Check if Title keys are valid and contain a valid Title
+				// Check if LocalTitle keys are valid and contain a valid LocalTitle
 				if (!isNaN(parseInt(key)) && this.isValidMyMangaDexTitle(save[key])) {
 					titles.push({ ...save[key], id: parseInt(key) });
 				}

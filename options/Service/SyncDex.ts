@@ -1,6 +1,14 @@
 import { AvailableOptions } from '../../src/Options';
 import { LocalStorage } from '../../src/Storage';
-import { SaveTitle, Title, TitleCollection, ExportedSave, ServiceName, ServiceKey } from '../../src/Title';
+import {
+	StorageTitle,
+	Title,
+	TitleCollection,
+	ExportedSave,
+	ServiceName,
+	ServiceKey,
+	LocalTitle,
+} from '../../src/Title';
 import { Service } from './Service';
 import { AppendableElement, DOM } from '../../src/DOM';
 import { ImportSummary, FileImportFormat, FileImportableModule } from './Import';
@@ -13,15 +21,15 @@ class SyncDexImport extends FileImportableModule<ExportedSave, Title> {
 		let titles: Title[] = [];
 		for (const key in save) {
 			if (key !== 'options' && key !== 'history') {
-				if (!isNaN(parseInt(key)) && SaveTitle.valid(save[key])) {
-					titles.push(new Title(parseInt(key), Title.toTitle(save[key])));
+				if (!isNaN(parseInt(key)) && StorageTitle.valid(save[key])) {
+					titles.push(new LocalTitle(parseInt(key), LocalTitle.fromSave(save[key])));
 				}
 			}
 		}
 		return titles;
 	};
 
-	convertTitles = async (titles: TitleCollection, titleList: Title[]): Promise<number> => {
+	convertTitles = async (titles: TitleCollection, titleList: LocalTitle[]): Promise<number> => {
 		titles.add(...titleList);
 		return titleList.length;
 	};

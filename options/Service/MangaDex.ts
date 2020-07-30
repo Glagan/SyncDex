@@ -1,4 +1,4 @@
-import { TitleCollection, Title, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
+import { TitleCollection, Title, ServiceName, ServiceKey, ServiceKeyType, LocalTitle } from '../../src/Title';
 import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, LoginModule } from './Service';
 import { AppendableElement, DOM } from '../../src/DOM';
@@ -10,7 +10,7 @@ export class MangaDexTitle implements PersistableMedia {
 	name?: string;
 	status: Status;
 	progress: Progress;
-	score?: number;
+	score: number;
 
 	static link(id: ServiceKeyType): string {
 		return `https://mangadex.org/title/${id}`;
@@ -25,7 +25,7 @@ export class MangaDexTitle implements PersistableMedia {
 						chapter: 0,
 				  };
 		this.name = title && title.name !== undefined ? title.name : undefined;
-		this.score = title && title.score !== undefined ? title.score : undefined;
+		this.score = title && title.score ? title.score : 0;
 		this.status = title && title.status !== undefined ? title.status : Status.NONE;
 	}
 
@@ -43,16 +43,16 @@ export class MangaDexTitle implements PersistableMedia {
 		return Runtime.responseStatus(response);
 	};
 
-	toTitle = (): Title | undefined => {
-		return new Title(this.id, {
+	toTitle = (): LocalTitle | undefined => {
+		return new LocalTitle(this.id, {
 			progress: this.progress,
 			status: this.status,
-			score: this.score !== undefined && this.score > 0 ? this.score : undefined,
+			score: this.score,
 			name: this.name,
 		});
 	};
 
-	static fromTitle = (title: Title): MangaDexTitle | undefined => {
+	static fromTitle = (title: LocalTitle): MangaDexTitle | undefined => {
 		if (!title.id) return undefined;
 		return new MangaDexTitle(title.id, {
 			progress: title.progress,
@@ -151,17 +151,19 @@ class MangaDexImport extends APIImportableModule {
 	};
 
 	convertTitles = async (titles: TitleCollection, titleList: MangaDexTitle[]): Promise<number> => {
-		titles.add(...(titleList.map((title) => title.toTitle()).filter((title) => title !== undefined) as Title[]));
+		titles.add(
+			...(titleList.map((title) => title.toTitle()).filter((title) => title !== undefined) as LocalTitle[])
+		);
 		return titleList.length;
 	};
 }
 
 class MangaDexExport extends APIExportableModule {
-	selectTitles = async (titleCollection: TitleCollection): Promise<Title[]> => {
+	selectTitles = async (titleCollection: TitleCollection): Promise<LocalTitle[]> => {
 		return titleCollection.collection.filter((title) => title.status != Status.NONE);
 	};
 
-	exportTitle = async (title: Title): Promise<boolean> => {
+	exportTitle = async (title: LocalTitle): Promise<boolean> => {
 		const exportTitle = MangaDexTitle.fromTitle(title);
 		if (exportTitle && exportTitle.status !== Status.NONE) {
 			const responseStatus = await exportTitle.persist();

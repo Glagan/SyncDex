@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceKeyType, ActivableName, ActivableKey, MissableField } from '../Title';
+import { Title, ServiceKeyType, ActivableName, ActivableKey, MissableField, ExternalTitle } from '../Title';
 
 export const enum MangaUpdatesStatus {
 	NONE = -1,
@@ -10,7 +10,7 @@ export const enum MangaUpdatesStatus {
 	PAUSED = 4,
 }
 
-export class MangaUpdatesTitle extends ServiceTitle {
+export class MangaUpdatesTitle extends ExternalTitle {
 	static readonly serviceName: ActivableName = ActivableName.MangaUpdates;
 	static readonly serviceKey: ActivableKey = ActivableKey.MangaUpdates;
 	static readonly missingFields: MissableField[] = ['start', 'end'];
@@ -26,8 +26,9 @@ export class MangaUpdatesTitle extends ServiceTitle {
 		score?: number;
 	};
 
-	constructor(id: number, title?: Partial<MangaUpdatesTitle>) {
+	constructor(id: ServiceKeyType, title?: Partial<MangaUpdatesTitle>) {
 		super(title);
+		if (typeof id !== 'number') throw 'Anilist ID can only be a number';
 		this.id = id;
 		this.status = title && title.status !== undefined ? title.status : Status.NONE;
 	}
@@ -49,7 +50,7 @@ export class MangaUpdatesTitle extends ServiceTitle {
 		return MangaUpdatesStatus.NONE;
 	};
 
-	static get = async (id: ServiceKeyType): Promise<ServiceTitle | RequestStatus> => {
+	static get = async (id: ServiceKeyType): Promise<ExternalTitle | RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: MangaUpdatesTitle.link(id),
 			method: 'GET',
@@ -232,16 +233,6 @@ export class MangaUpdatesTitle extends ServiceTitle {
 				return MangaUpdatesStatus.PAUSED;
 		}
 		return MangaUpdatesStatus.NONE;
-	};
-
-	static fromTitle = (title: Title): MangaUpdatesTitle | undefined => {
-		if (!title.services.mu) return undefined;
-		return new MangaUpdatesTitle(title.services.mu, {
-			progress: title.progress,
-			status: title.status,
-			score: title.score ? title.score : undefined,
-			name: title.name,
-		});
 	};
 
 	static idFromLink = (href: string): number => {

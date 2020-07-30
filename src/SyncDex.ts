@@ -7,9 +7,9 @@ import {
 	Title,
 	ServiceKeyType,
 	ReverseActivableName,
-	ServiceTitle,
 	ActivableKey,
 	ServiceTitleList,
+	LocalTitle,
 } from './Title';
 import { Overview } from './Overview';
 import { Mochi } from './Mochi';
@@ -79,7 +79,7 @@ export class SyncDex {
 		// Hide, Highlight and add Thumbnails to each row
 		for (const group of groups) {
 			const title = titles.find(group.titleId);
-			if (title !== undefined && !title.new) {
+			if (title !== undefined && !title.inList) {
 				group.hide(title.progress);
 				group.highlight(title.progress);
 			}
@@ -134,12 +134,10 @@ export class SyncDex {
 		overview?: Overview,
 		auto: boolean = false
 	): Promise<void> => {
-		console.debug('Syncing Services', 'Overview?', overview);
 		for (const serviceKey of Options.services) {
 			if (services[serviceKey] === undefined) continue;
-			console.debug('Syncing', serviceKey);
-			const response: ServiceTitle | RequestStatus = await services[serviceKey]!;
-			if (response instanceof ServiceTitle && response.loggedIn) {
+			const response: Title | RequestStatus = await services[serviceKey]!;
+			if (response instanceof Title && response.loggedIn) {
 				response.isSynced(title);
 				// If Auto Sync is on, import from now up to date Title and persist
 				if ((!auto || Options.autoSync) && (!response.inList || !response.synced)) {
@@ -167,19 +165,18 @@ export class SyncDex {
 		let externalImported = false;
 		for (const serviceKey of Options.services.reverse()) {
 			if (services[serviceKey] === undefined) continue;
-			const response: ServiceTitle | RequestStatus = await services[serviceKey]!;
-			console.debug(serviceKey, response, 'is in list', typeof response === 'object' ? response.inList : false);
-			if (response instanceof ServiceTitle && response.loggedIn) {
+			const response: Title | RequestStatus = await services[serviceKey]!;
+			if (response instanceof Title && response.loggedIn) {
 				// Check if any of the ServiceTitle is more recent than the local Title
-				if (response.inList && (title.new || response.isMoreRecent(title))) {
+				if (response.inList && (title.inList || response.isMoreRecent(title))) {
 					// If there is one, sync with it and save
-					title.new = false;
-					response.merge(title);
+					title.inList = false;
+					title.merge(response);
 					externalImported = true;
 				}
 			}
 		}
-		if (externalImported) await title.save();
+		if (externalImported) await title.persist();
 		// When the Title is synced, all remaining ServiceTitle are synced with it
 		if (title.status == Status.NONE) {
 			overview.addQuickButtons();
@@ -192,9 +189,10 @@ export class SyncDex {
 		if (!Options.linkToServices && !Options.saveOpenedChapters) return;
 		// Get Title
 		const id = parseInt(document.querySelector<HTMLElement>('.row .fas.fa-hashtag')!.parentElement!.textContent!);
-		const title = await Title.get(id);
+		const title = await LocalTitle.get(id);
+		title.lastTitle = Date.now();
 		// Name
-		if (title.new || title.name === undefined || title.name == '') {
+		if (title.inList || title.name === undefined || title.name == '') {
 			const headerTitle = document.querySelector('h6.card-header');
 			if (headerTitle) title.name = headerTitle.textContent!.trim();
 		}
@@ -220,7 +218,6 @@ export class SyncDex {
 			const connections = await Mochi.find(id);
 			if (connections !== undefined) {
 				Mochi.assign(title, connections);
-				await title.save();
 			} else fallback = true;
 		}
 		// If Mochi failed or if it's disabled use displayed Services
@@ -243,10 +240,10 @@ export class SyncDex {
 							).idFromLink(serviceLink.href);
 						}
 					}
-					await title.save();
 				} // Nothing to do if there is no row
 			}
 		}
+		await title.persist(); // Always save
 		// Load each Services to Sync
 		const services: ServiceTitleList = {};
 		if (Options.services.length > 0) {

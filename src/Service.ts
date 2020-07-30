@@ -1,4 +1,4 @@
-import { ServiceName, ActivableName } from './Title';
+import { ActivableName } from './Title';
 import { MyAnimeListTitle } from './Service/MyAnimeList';
 import { AnilistTitle } from './Service/Anilist';
 import { KitsuTitle } from './Service/Kitsu';

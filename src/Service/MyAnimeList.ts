@@ -1,5 +1,5 @@
 import { RequestStatus, Runtime } from '../Runtime';
-import { ServiceTitle, Title, ServiceName, ServiceKey, ServiceKeyType, ActivableName, ActivableKey } from '../Title';
+import { Title, ServiceKeyType, ActivableName, ActivableKey, ExternalTitle } from '../Title';
 
 export enum MyAnimeListStatus {
 	NONE = 0,
@@ -10,7 +10,7 @@ export enum MyAnimeListStatus {
 	PLAN_TO_READ = 6,
 }
 
-export class MyAnimeListTitle extends ServiceTitle {
+export class MyAnimeListTitle extends ExternalTitle {
 	static readonly serviceName: ActivableName = ActivableName.MyAnimeList;
 	static readonly serviceKey: ActivableKey = ActivableKey.MyAnimeList;
 
@@ -21,8 +21,9 @@ export class MyAnimeListTitle extends ServiceTitle {
 	id: number;
 	csrf: string;
 
-	constructor(id: number, title?: Partial<MyAnimeListTitle>) {
+	constructor(id: ServiceKeyType, title?: Partial<MyAnimeListTitle>) {
 		super(title);
+		if (typeof id !== 'number') throw 'Anilist ID can only be a number';
 		this.id = id;
 		this.status = title && title.status !== undefined ? title.status : Status.NONE;
 		this.csrf = title && title.csrf !== undefined ? title.csrf : '';
@@ -38,7 +39,7 @@ export class MyAnimeListTitle extends ServiceTitle {
 		return new Date(parseInt(year.value), parseInt(month.value), parseInt(day.value));
 	};
 
-	static get = async (id: ServiceKeyType): Promise<ServiceTitle | RequestStatus> => {
+	static get = async (id: ServiceKeyType): Promise<ExternalTitle | RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: `https://myanimelist.net/ownlist/manga/${id}/edit?hideLayout`,
 			method: 'GET',
@@ -207,18 +208,6 @@ export class MyAnimeListTitle extends ServiceTitle {
 				return MyAnimeListStatus.PLAN_TO_READ;
 		}
 		return MyAnimeListStatus.NONE;
-	};
-
-	static fromTitle = (title: Title): MyAnimeListTitle | undefined => {
-		if (!title.services.mal) return undefined;
-		return new MyAnimeListTitle(title.services.mal, {
-			progress: title.progress,
-			status: title.status,
-			score: title.score ? title.score : undefined,
-			start: title.start ? new Date(title.start) : undefined,
-			end: title.end ? new Date(title.end) : undefined,
-			name: title.name,
-		});
 	};
 
 	static idFromLink = (href: string): number => {

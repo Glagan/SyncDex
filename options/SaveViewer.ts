@@ -7,6 +7,7 @@ import {
 	ReverseServiceName,
 	ActivableKey,
 	StatusMap,
+	LocalTitle,
 } from '../src/Title';
 import { DOM, AppendableElement } from '../src/DOM';
 import { LocalStorage } from '../src/Storage';
@@ -70,7 +71,7 @@ export class SaveViewer {
 		this.body.appendChild(fragment);
 	};
 
-	titleServices = (title: Title): AppendableElement[] => {
+	titleServices = (title: LocalTitle): AppendableElement[] => {
 		const icons: AppendableElement[] = [];
 		for (const serviceKey in title.services) {
 			const key = serviceKey as ActivableKey;
@@ -114,7 +115,7 @@ export class SaveViewer {
 		});
 	};
 
-	createModal = (title: Title): Modal => {
+	createModal = (title: LocalTitle): Modal => {
 		const modal = new Modal('medium');
 		modal.header.classList.add('title');
 		modal.header.textContent = 'Edit Entry';
@@ -268,7 +269,7 @@ export class SaveViewer {
 				GetService(sn as ServiceName).HandleInput(title, form);
 			}
 			// Save and close Modal
-			await title.save();
+			await title.persist();
 			submitButton.classList.remove('loading');
 			modal.enableExit();
 			modal.remove();
@@ -278,7 +279,7 @@ export class SaveViewer {
 		return modal;
 	};
 
-	createRow = (title: Title): HTMLElement => {
+	createRow = (title: LocalTitle): HTMLElement => {
 		const editButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('edit')] });
 		const deleteButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('trash')] });
 		const row = DOM.create('tr', {

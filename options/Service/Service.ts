@@ -9,6 +9,7 @@ import {
 	ServiceKeyType,
 	ActivableKey,
 	ActivableName,
+	LocalTitle,
 } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { RequestStatus } from '../../src/Runtime';
@@ -97,7 +98,7 @@ export abstract class Service {
 	/**
 	 * Handle Inputs created from SaveInput to update Title.services.
 	 */
-	static HandleInput(title: Title, form: HTMLFormElement): void {
+	static HandleInput(title: LocalTitle, form: HTMLFormElement): void {
 		const serviceName = (<typeof Service>this.prototype.constructor).serviceName;
 		const key = (<typeof Service>this.prototype.constructor).key as ActivableKey;
 		if (form[serviceName].value != '') {

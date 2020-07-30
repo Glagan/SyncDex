@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceKeyType, ActivableName, ActivableKey } from '../Title';
+import { Title, ServiceKeyType, ActivableName, ActivableKey, ExternalTitle } from '../Title';
 
 export const enum AnimePlanetStatus {
 	NONE = 0,
@@ -18,7 +18,7 @@ interface AnimePlanetAPIResponse {
 	[key: string]: any;
 }
 
-export class AnimePlanetTitle extends ServiceTitle {
+export class AnimePlanetTitle extends ExternalTitle {
 	static readonly serviceName: ActivableName = ActivableName.AnimePlanet;
 	static readonly serviceKey: ActivableKey = ActivableKey.AnimePlanet;
 
@@ -31,14 +31,15 @@ export class AnimePlanetTitle extends ServiceTitle {
 	id: AnimePlanetReference;
 	token: string;
 
-	constructor(id: AnimePlanetReference, title?: Partial<AnimePlanetTitle>) {
+	constructor(id: ServiceKeyType, title?: Partial<AnimePlanetTitle>) {
 		super(title);
+		if (typeof id !== 'object') throw 'AnimePlanet ID can only be a reference';
 		this.id = id;
 		this.status = title && title.status !== undefined ? title.status : Status.NONE;
 		this.token = title && title.token !== undefined ? title.token : '';
 	}
 
-	static get = async (id: ServiceKeyType): Promise<ServiceTitle | RequestStatus> => {
+	static get = async (id: ServiceKeyType): Promise<ExternalTitle | RequestStatus> => {
 		const slug = typeof id === 'string' ? id : (id as AnimePlanetReference).s;
 		const response = await Runtime.request<RawResponse>({
 			url: AnimePlanetTitle.link(id),
@@ -164,16 +165,6 @@ export class AnimePlanetTitle extends ServiceTitle {
 				return AnimePlanetStatus.WONT_READ;
 		}
 		return AnimePlanetStatus.NONE;
-	};
-
-	static fromTitle = (title: Title): AnimePlanetTitle | undefined => {
-		if (!title.services.ap) return undefined;
-		return new AnimePlanetTitle(title.services.ap, {
-			progress: title.progress,
-			status: title.status,
-			score: title.score ? title.score : undefined,
-			name: title.name,
-		});
 	};
 
 	static idFromLink = (href: string): AnimePlanetReference => {

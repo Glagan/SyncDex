@@ -208,12 +208,12 @@
 	align-self: center;
 	flex-grow: 1;
 }
-.overveiw .body .manage {
+.overview .body .manage {
 	display: flex;
 	align-items: flex-start;
 	flex-flow: column;
 }
-.overveiw .body .manage button {
+.overview .body .manage button {
 	margin-bottom: 4px;
 }
 /** Services */

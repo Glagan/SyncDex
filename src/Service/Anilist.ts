@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceKeyType, ActivableName, ActivableKey } from '../Title';
+import { Title, ServiceKeyType, ActivableName, ActivableKey, ExternalTitle, LocalTitle } from '../Title';
 import { Options } from '../Options';
 
 export const enum AnilistStatus {
@@ -76,7 +76,7 @@ export const AnilistHeaders = (): AnilistHeaders => {
  * An Anilist MediaEntry.
  * Score are automatically converted in a 0-100 range.
  */
-export class AnilistTitle extends ServiceTitle {
+export class AnilistTitle extends ExternalTitle {
 	static readonly serviceName: ActivableName = ActivableName.Anilist;
 	static readonly serviceKey: ActivableKey = ActivableKey.Anilist;
 
@@ -140,8 +140,9 @@ export class AnilistTitle extends ServiceTitle {
 			}
 		}`;
 
-	constructor(id: number, title?: Partial<AnilistTitle>) {
+	constructor(id: ServiceKeyType, title?: Partial<AnilistTitle>) {
 		super(title);
+		if (typeof id !== 'number') throw 'Anilist ID can only be a number';
 		this.id = id;
 		this.status = title && title.status !== undefined ? title.status : Status.NONE;
 		this.mediaEntryId = title && title.mediaEntryId !== undefined ? title.mediaEntryId : 0;
@@ -154,7 +155,7 @@ export class AnilistTitle extends ServiceTitle {
 		return undefined;
 	};
 
-	static get = async (id: ServiceKeyType): Promise<ServiceTitle | RequestStatus> => {
+	static get = async (id: ServiceKeyType): Promise<Title | RequestStatus> => {
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<AnilistGetResponse>({
 			url: AnilistAPI,
@@ -282,7 +283,7 @@ export class AnilistTitle extends ServiceTitle {
 		return AnilistStatus.NONE;
 	};
 
-	static fromTitle = (title: Title): AnilistTitle | undefined => {
+	static fromTitle = (title: LocalTitle): AnilistTitle | undefined => {
 		if (!title.services.al) return undefined;
 		return new AnilistTitle(title.services.al, {
 			progress: title.progress,

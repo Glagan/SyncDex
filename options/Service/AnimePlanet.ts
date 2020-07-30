@@ -2,7 +2,7 @@ import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } from './Service';
 import { AnimePlanetTitle } from '../../src/Service/AnimePlanet';
 import { DOM } from '../../src/DOM';
-import { Title, TitleCollection, ServiceKeyType, ActivableName, ActivableKey } from '../../src/Title';
+import { Title, TitleCollection, ServiceKeyType, ActivableName, ActivableKey, LocalTitle } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { APIImportableModule } from './Import';
 import { APIExportableModule } from './Export';
@@ -121,7 +121,7 @@ class AnimePlanetImport extends APIImportableModule {
 					const title = titleList.find((t) => t.id.i == parseInt(key));
 					if (title) {
 						title.mangaDex = connection['md'];
-						const convertedTitle = title.toTitle();
+						const convertedTitle = title.toLocalTitle();
 						if (convertedTitle) {
 							titles.add(convertedTitle);
 							found.push(title.id.i);
@@ -138,12 +138,12 @@ class AnimePlanetImport extends APIImportableModule {
 }
 
 class AnimePlanetExport extends APIExportableModule {
-	exportTitle = async (title: Title): Promise<boolean> => {
-		const exportTitle = AnimePlanetTitle.fromTitle(title);
+	exportTitle = async (title: LocalTitle): Promise<boolean> => {
+		const exportTitle = title.toExternal(AnimePlanet.key);
 		if (exportTitle && exportTitle.status !== Status.NONE) {
-			exportTitle.token = (this.service as AnimePlanet).loginModule.token;
+			(exportTitle as AnimePlanetTitle).token = (this.service as AnimePlanet).loginModule.token;
 			const responseStatus = await exportTitle.persist();
-			return responseStatus == RequestStatus.SUCCESS;
+			return responseStatus <= RequestStatus.CREATED;
 		}
 		return false;
 	};
@@ -171,7 +171,7 @@ export class AnimePlanet extends Service implements ActivableService {
 		];
 	}
 
-	static HandleInput(title: Title, form: HTMLFormElement): void {
+	static HandleInput(title: LocalTitle, form: HTMLFormElement): void {
 		if (form.AnimePlanet_slug.value != '' && form.AnimePlanet_id.value) {
 			const id = parseInt(form.AnimePlanet_id.value as string);
 			if (!isNaN(id)) title.services.ap = { s: form.AnimePlanet_slug.value, i: id };

@@ -1,7 +1,16 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { Options } from '../../src/Options';
 import { Runtime, RequestStatus } from '../../src/Runtime';
-import { Title, ServiceName, ServiceKey, ServiceKeyType, ActivableName, ActivableKey } from '../../src/Title';
+import {
+	Title,
+	ServiceName,
+	ServiceKey,
+	ServiceKeyType,
+	ActivableName,
+	ActivableKey,
+	ExternalTitle,
+	LocalTitle,
+} from '../../src/Title';
 import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } from './Service';
 import { AnilistStatus, AnilistTitle, AnilistDate, AnilistAPI, AnilistHeaders } from '../../src/Service/Anilist';
 import { APIImportableModule } from './Import';
@@ -63,7 +72,6 @@ class AnilistActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	loginUrl: string = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
 	static LoginQuery: string = `query { Viewer { id } }`;
-	form?: HTMLFormElement;
 }
 
 class AnilistImport extends APIImportableModule {
@@ -181,11 +189,11 @@ class AnilistImport extends APIImportableModule {
 }
 
 class AnilistExport extends APIExportableModule {
-	exportTitle = async (title: Title): Promise<boolean> => {
-		const exportTitle = AnilistTitle.fromTitle(title);
+	exportTitle = async (title: LocalTitle): Promise<boolean> => {
+		const exportTitle = title.toExternal(Anilist.key);
 		if (exportTitle && exportTitle.status !== Status.NONE) {
 			const responseStatus = await exportTitle.persist();
-			return responseStatus == RequestStatus.SUCCESS;
+			return responseStatus <= RequestStatus.CREATED;
 		}
 		return false;
 	};

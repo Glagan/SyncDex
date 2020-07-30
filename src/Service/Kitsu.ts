@@ -1,6 +1,6 @@
 import { Options } from '../Options';
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceTitle, Title, ServiceKeyType, ActivableName, ActivableKey } from '../Title';
+import { Title, ServiceKeyType, ActivableName, ActivableKey, ExternalTitle } from '../Title';
 
 interface KitsuHeaders {
 	Accept: string;
@@ -89,7 +89,7 @@ export const KitsuHeaders = (): KitsuHeaders => {
 	};
 };
 
-export class KitsuTitle extends ServiceTitle {
+export class KitsuTitle extends ExternalTitle {
 	static readonly serviceName: ActivableName = ActivableName.Kitsu;
 	static readonly serviceKey: ActivableKey = ActivableKey.Kitsu;
 
@@ -100,15 +100,16 @@ export class KitsuTitle extends ServiceTitle {
 	id: number;
 	libraryEntryId: number;
 
-	constructor(id: number, title?: Partial<KitsuTitle>) {
+	constructor(id: ServiceKeyType, title?: Partial<KitsuTitle>) {
 		super(title);
+		if (typeof id !== 'number') throw 'Kitsu ID can only be a number';
 		this.id = id;
 		this.status = title && title.status !== undefined ? title.status : Status.NONE;
 		this.libraryEntryId = title && title.libraryEntryId !== undefined ? title.libraryEntryId : 0;
 	}
 
 	// abstract static get(id): RequestStatus
-	static get = async (id: ServiceKeyType): Promise<ServiceTitle | RequestStatus> => {
+	static get = async (id: ServiceKeyType): Promise<ExternalTitle | RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<KitsuResponse>({
 			url: `${KitsuAPI}?filter[manga_id]=${id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=canonicalTitle`,
@@ -228,18 +229,6 @@ export class KitsuTitle extends ServiceTitle {
 				return KitsuStatus.PLAN_TO_READ;
 		}
 		return KitsuStatus.NONE;
-	};
-
-	static fromTitle = (title: Title): KitsuTitle | undefined => {
-		if (!title.services.ku) return undefined;
-		return new KitsuTitle(title.services.ku, {
-			progress: title.progress,
-			status: title.status,
-			score: title.score ? title.score : undefined,
-			start: title.start ? new Date(title.start) : undefined,
-			end: title.end ? new Date(title.end) : undefined,
-			name: title.name,
-		});
 	};
 
 	static idFromLink = (href: string): number => {

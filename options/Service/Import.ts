@@ -1,6 +1,6 @@
 import { Checkbox, Summary, SaveModule } from './Service';
 import { DOM } from '../../src/DOM';
-import { TitleCollection, ServiceTitle, ServiceKeyType } from '../../src/Title';
+import { TitleCollection, ServiceKeyType, ExternalTitle } from '../../src/Title';
 import { LocalStorage } from '../../src/Storage';
 import { Options } from '../../src/Options';
 import { Mochi } from '../../src/Mochi';
@@ -332,10 +332,10 @@ export abstract class APIImportableModule extends ImportableModule {
 						const connection = connections[key];
 						if (connection['md'] !== undefined) {
 							const id = parseInt(key);
-							const title = titleList.find((t) => t.id == id) as ServiceTitle;
+							const title = titleList.find((t) => t.id == id) as ExternalTitle | undefined;
 							if (title) {
 								title.mangaDex = connection['md'];
-								const convertedTitle = title.toTitle();
+								const convertedTitle = title.toLocalTitle();
 								if (convertedTitle) {
 									collection.add(convertedTitle);
 									this.summary.valid++;

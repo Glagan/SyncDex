@@ -1,6 +1,6 @@
 import { Options } from '../../src/Options';
 import { Runtime, RequestStatus } from '../../src/Runtime';
-import { Title, ServiceKeyType, ActivableName, ActivableKey } from '../../src/Title';
+import { Title, ServiceKeyType, ActivableName, ActivableKey, LocalTitle } from '../../src/Title';
 import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } from './Service';
 import { KitsuTitle, KitsuManga, KitsuResponse, KitsuHeaders, KitsuAPI } from '../../src/Service/Kitsu';
 import { DOM } from '../../src/DOM';
@@ -161,7 +161,7 @@ class KitsuExport extends APIExportableModule {
 	onlineList: { [key: string]: number | undefined } = {};
 
 	// Fetch all Kitsu titles to check if they already are in user list
-	preMain = async (titles: Title[]): Promise<boolean> => {
+	preMain = async (titles: LocalTitle[]): Promise<boolean> => {
 		let notification = this.notification('loading', 'Checking current status of each titles...');
 		let max = Math.ceil(titles.length / 500);
 		for (let current = 1; current <= max; current++) {
@@ -192,8 +192,8 @@ class KitsuExport extends APIExportableModule {
 		return true;
 	};
 
-	exportTitle = async (title: Title): Promise<boolean> => {
-		const exportTitle = KitsuTitle.fromTitle(title);
+	exportTitle = async (title: LocalTitle): Promise<boolean> => {
+		const exportTitle = title.toExternal(Kitsu.key) as KitsuTitle | undefined;
 		if (exportTitle && exportTitle.status !== Status.NONE) {
 			const libraryEntryId = this.onlineList[exportTitle.id];
 			if (libraryEntryId) {
