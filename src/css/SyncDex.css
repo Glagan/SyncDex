@@ -333,6 +333,9 @@
 	align-items: center;
 	user-select: none;
 }
+.has-error {
+	color: rgb(167, 20, 20);
+}
 /** Status */
 .status {
 	font-size: 1.5rem;

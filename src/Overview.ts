@@ -17,6 +17,7 @@ import { SyncDex } from './SyncDex';
 interface ServiceOverview {
 	key: ServiceKey;
 	tab: HTMLLIElement;
+	tabIcon?: HTMLElement;
 	body: HTMLElement;
 	content: HTMLElement;
 	manage: HTMLElement;
@@ -85,9 +86,16 @@ export class Overview {
 		);
 	};
 
+	setTabIcon = (overview: ServiceOverview, icon: string): void => {
+		if (!overview.tabIcon) overview.tabIcon = DOM.create('i');
+		overview.tabIcon.className = `fas fa-${icon}`;
+		DOM.append(overview.tab, DOM.space(), overview.tabIcon);
+	};
+
 	isSyncing = (serviceKey: ActivableKey | StaticKey.SyncDex): void => {
 		const overview = this.overviews[serviceKey];
 		if (!overview) return;
+		this.setTabIcon(overview, 'sync-alt fa-spin');
 		overview.syncing = DOM.create('div', {
 			class: 'syncing',
 			childs: [DOM.icon('sync-alt fa-spin'), DOM.space(), DOM.text('Syncing...')],
@@ -112,9 +120,13 @@ export class Overview {
 			service.overview(overview.content);
 			// Display *Sync* button only if the title is out of sync, with auto sync disabled and if the title is in a list
 			if (!Options.autoSync && !service.isSynced(this.title) && this.title.status !== Status.NONE) {
+				this.setTabIcon(overview, 'sync has-error');
 				this.syncButton(serviceKey, service);
 			}
-		} else this.errorMessage(serviceKey, service);
+		} else {
+			this.setTabIcon(overview, 'times has-error');
+			this.errorMessage(serviceKey, service);
+		}
 	};
 
 	activateOverview = (overview: ServiceOverview): void => {
@@ -139,6 +151,10 @@ export class Overview {
 		if (overview.syncing) {
 			overview.syncing.remove();
 			overview.syncing = undefined;
+		}
+		if (overview.tabIcon) {
+			overview.tabIcon.remove();
+			overview.tabIcon = undefined;
 		}
 	};
 
@@ -280,6 +296,7 @@ export class Overview {
 						`No ID for ${ReverseActivableName[key]}, you can manually add one in the Save Editor.`
 					)
 				);
+				this.setTabIcon(serviceOverview, 'times has-error');
 			} else {
 				serviceOverview.service = this.services[key]!.then((res) => {
 					this.updateOverview(key, res);

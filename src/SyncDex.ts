@@ -46,7 +46,10 @@ export class SyncDex {
 			],
 			this.titleList
 		);
-		this.router.register('/(manga|title)(/?|/\\d+(/?|/[-A-Za-z0-9_]{0,}/?))$', this.titlePage);
+		this.router.register(
+			'/(manga|title)(/?|/\\d+(/?|/[-A-Za-z0-9_]{0,}(/?|/chapters(/?|/\\d+/?))))$',
+			this.titlePage
+		);
 		this.router.register('/updates(/?$|/\\d+/?)$', this.updatesPage);
 	}
 
