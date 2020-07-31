@@ -3,10 +3,9 @@ import { Options, AvailableOptions } from './Options';
 import { RequestStatus } from './Runtime';
 import { DOM } from './DOM';
 import { dateFormat, dateCompare } from './Utility';
-import { GetService } from './Service';
 
 export const StatusMap: { [key in Status]: string } = {
-	[Status.NONE]: 'None',
+	[Status.NONE]: 'No Status',
 	[Status.READING]: 'Reading',
 	[Status.COMPLETED]: 'Completed',
 	[Status.PAUSED]: 'Paused',
@@ -175,7 +174,7 @@ export class StorageTitle {
 
 export type MissableField = 'score' | 'start' | 'end';
 
-export abstract class Title implements TitleProperties, ExternalTitleProperties {
+export abstract class BaseTitle implements TitleProperties, ExternalTitleProperties {
 	static readonly serviceName: ServiceName;
 	static readonly serviceKey: ServiceKey;
 
@@ -212,8 +211,8 @@ export abstract class Title implements TitleProperties, ExternalTitleProperties 
 	 * Pull the current status of the Media identified by ID.
 	 * Return a `RequestStatus` on error.
 	 */
-	static get = async (id: ServiceKeyType): Promise<Title | RequestStatus> => {
-		throw 'Title.get is an abstract function';
+	static get = async (id: ServiceKeyType): Promise<BaseTitle | RequestStatus> => {
+		throw 'BaseTitle.get is an abstract function';
 	};
 
 	overviewRow = (icon: string, content: string): HTMLElement => {
@@ -240,8 +239,8 @@ export abstract class Title implements TitleProperties, ExternalTitleProperties 
 			);
 			return;
 		}
-		if (this.inList) {
-			const missingFields = (<typeof Title>this.constructor).missingFields;
+		if (this.inList || this instanceof Title) {
+			const missingFields = (<typeof BaseTitle>this.constructor).missingFields;
 			const rows: HTMLElement[] = [
 				DOM.create('div', { class: `status st${this.status}`, textContent: StatusMap[this.status] }),
 			];
@@ -263,8 +262,8 @@ export abstract class Title implements TitleProperties, ExternalTitleProperties 
 				rows.push(
 					this.overviewRow(
 						'ban',
-						`No ${Title.missingFieldsMap[missingField]} available on ${
-							(<typeof Title>this.constructor).serviceName
+						`No ${BaseTitle.missingFieldsMap[missingField]} available on ${
+							(<typeof BaseTitle>this.constructor).serviceName
 						}`
 					)
 				);
@@ -273,7 +272,7 @@ export abstract class Title implements TitleProperties, ExternalTitleProperties 
 		} else DOM.append(parent, DOM.text('Not in List.'));
 	};
 
-	isMoreRecent = (title: Title): boolean => {
+	isMoreRecent = (title: BaseTitle): boolean => {
 		return (
 			this.progress.chapter > title.progress.chapter ||
 			(this.progress.volume !== undefined && title.progress.volume === undefined) ||
@@ -288,8 +287,8 @@ export abstract class Title implements TitleProperties, ExternalTitleProperties 
 	 * Compare the Media on the Service to a Title to check if it has the same progress.
 	 * Avoid checking fields that cannot exist on the Service.
 	 */
-	isSynced = (title: Title): boolean => {
-		const missingFields = (<typeof Title>this.constructor).missingFields;
+	isSynced = (title: BaseTitle): boolean => {
+		const missingFields = (<typeof BaseTitle>this.constructor).missingFields;
 		return (this.synced =
 			title.status === this.status &&
 			title.progress.chapter === this.progress.chapter &&
@@ -306,14 +305,14 @@ export abstract class Title implements TitleProperties, ExternalTitleProperties 
 	/**
 	 * Assign all values from the Title to *this*.
 	 */
-	import = (title: Title): void => {
+	import = (title: BaseTitle): void => {
 		this.synced = true;
 		this.status = title.status;
 		this.progress.chapter = title.progress.chapter;
 		if (title.progress.volume) {
 			this.progress.volume = title.progress.volume;
 		} else delete this.progress.volume;
-		const missingFields = (<typeof Title>this.constructor).missingFields;
+		const missingFields = (<typeof BaseTitle>this.constructor).missingFields;
 		if (missingFields.indexOf('score') < 0) this.score = title.score;
 		if (missingFields.indexOf('start') < 0 && title.start) {
 			this.start = new Date(title.start);
@@ -327,7 +326,7 @@ export abstract class Title implements TitleProperties, ExternalTitleProperties 
 	 * Select all higher (or lower for dates) values from both Titles and assign them to *this*.
 	 * Score is always export to the Title if it exists.
 	 */
-	merge = (title: Title): void => {
+	merge = (title: BaseTitle): void => {
 		this.synced = true;
 		this.status = title.status;
 		if (title.progress.chapter > this.progress.chapter) {
@@ -336,7 +335,7 @@ export abstract class Title implements TitleProperties, ExternalTitleProperties 
 		if (title.progress.volume && (!this.progress.volume || title.progress.volume > this.progress.volume)) {
 			this.progress.volume = title.progress.volume;
 		}
-		const missingFields = (<typeof Title>title.constructor).missingFields;
+		const missingFields = (<typeof BaseTitle>title.constructor).missingFields;
 		if (missingFields.indexOf('score') < 0 && title.score !== undefined) {
 			this.score = title.score;
 		}
@@ -353,30 +352,73 @@ export abstract class Title implements TitleProperties, ExternalTitleProperties 
 	 * Link to a single Media page.
 	 */
 	static link = (id: ServiceKeyType): string => {
-		return '#';
+		throw 'BaseTitle.link is an abstract function';
 	};
 
 	link(): string {
-		return (<typeof Title>this.constructor).link(this.id);
+		return (<typeof BaseTitle>this.constructor).link(this.id);
 	}
 }
 
-export class LocalTitle extends Title implements LocalTitleProperties {
+export abstract class ExternalTitle extends BaseTitle {
+	static readonly serviceName: ActivableName;
+	static readonly serviceKey: ActivableKey;
+
+	constructor(title?: Partial<ExternalTitle>) {
+		super();
+		if (title !== undefined) Object.assign(this, title);
+	}
+
+	/**
+	 * Get the ID used by Mochi that can only be a number or a string.
+	 */
+	abstract get mochi(): number | string;
+
+	toLocalTitle(): Title | undefined {
+		if (!this.mangaDex) return undefined;
+		return new Title(this.mangaDex, {
+			inList: this.inList,
+			synced: this.synced,
+			services: { [(<typeof ExternalTitle>this.constructor).serviceKey]: this.id },
+			chapters: [],
+			progress: this.progress,
+			status: this.status,
+			score: this.score,
+			start: this.start ? this.start : undefined,
+			end: this.end ? this.end : undefined,
+			name: this.name,
+		});
+	}
+
+	static fromLocalTitle(title: Title): ExternalTitle | undefined {
+		const Service = <typeof ExternalTitle>this.constructor;
+		const key = Service.serviceKey;
+		if (title.services[key] === undefined) return undefined;
+		/// @ts-ignore
+		return new Service(title.services[key]!, {
+			progress: title.progress,
+			status: title.status,
+			score: title.score ? title.score : undefined,
+			start: title.start ? new Date(title.start) : undefined,
+			end: title.end ? new Date(title.end) : undefined,
+			name: title.name,
+		});
+	}
+}
+
+export class Title extends BaseTitle implements LocalTitleProperties {
 	static readonly serviceName: ServiceName = StaticName.SyncDex;
 	static readonly serviceKey: ServiceKey = StaticKey.SyncDex;
 
 	id: number;
-
 	/**
 	 * `ServiceKey` list of mapped Service for the Title.
 	 */
 	services: ServiceList = {};
-
 	/**
 	 * List of all read Chapters.
 	 */
 	chapters: number[] = [];
-
 	/**
 	 * Last time the Title page of the Title was visited.
 	 */
@@ -451,14 +493,14 @@ export class LocalTitle extends Title implements LocalTitleProperties {
 	/**
 	 * Retrieve a Title by it's MangaDex ID from Local Storage.
 	 */
-	static async get(id: ServiceKeyType): Promise<LocalTitle> {
+	static async get(id: ServiceKeyType): Promise<Title> {
 		if (typeof id !== 'number' && typeof id !== 'string') throw 'LocalTitle.id need to be a number or a string.';
 		const title: StorageTitle | undefined = await LocalStorage.get<StorageTitle>(id);
 		const rid = typeof id === 'number' ? id : parseInt(id);
 		if (title === undefined) {
-			return new LocalTitle(rid);
+			return new Title(rid);
 		}
-		return new LocalTitle(rid, LocalTitle.fromSave(title));
+		return new Title(rid, Title.fromSave(title));
 	}
 
 	/**
@@ -499,6 +541,7 @@ export class LocalTitle extends Title implements LocalTitleProperties {
 	 * Convert a Title to a SaveTitle to follow the save schema and save it in LocalStorage
 	 */
 	persist = async (): Promise<RequestStatus> => {
+		this.inList = true;
 		await LocalStorage.set(this.id as number | string, this.toSave());
 		return RequestStatus.SUCCESS;
 	};
@@ -511,11 +554,11 @@ export class LocalTitle extends Title implements LocalTitleProperties {
 	/**
 	 * Select highest values of both Titles and assign them to the receiving Title.
 	 */
-	localMerge = (other: LocalTitle): void => {
+	localMerge = (other: Title): void => {
 		this.merge(other);
 		// Update all 'number' properties to select the highest ones -- except for dates
 		for (let k in this) {
-			const key = k as keyof LocalTitle;
+			const key = k as keyof Title;
 			if (this[key] && other[key] && typeof this[key] === 'number' && typeof other[key] === 'number') {
 				Object.assign(this, { [key]: Math.max(this[key] as number, other[key] as number) });
 			}
@@ -530,67 +573,19 @@ export class LocalTitle extends Title implements LocalTitleProperties {
 			this.chapters.splice(-diff, diff);
 		}
 	};
-
-	static link = (id: ServiceKeyType): string => {
-		return `https://mangadex.org/title/${id}`;
-	};
-
-	toExternal = (key: ActivableKey): ExternalTitle | undefined => {
-		if (this.services[key] === undefined) return undefined;
-		const Service = GetService(ReverseActivableName[key]);
-		return new Service(this.services[key]!, {
-			progress: this.progress,
-			status: this.status,
-			score: this.score ? this.score : undefined,
-			start: this.start ? new Date(this.start) : undefined,
-			end: this.end ? new Date(this.end) : undefined,
-			name: this.name,
-		});
-	};
-}
-
-export abstract class ExternalTitle extends Title {
-	static readonly serviceName: ActivableName;
-	static readonly serviceKey: ActivableKey;
-
-	constructor(title?: Partial<ExternalTitle>) {
-		super();
-		if (title !== undefined) Object.assign(this, title);
-	}
-
-	/**
-	 * Get the ID used by Mochi that can only be a number or a string.
-	 */
-	abstract get mochi(): number | string;
-
-	toLocalTitle = (): LocalTitle | undefined => {
-		if (!this.mangaDex) return undefined;
-		return new LocalTitle(this.mangaDex, {
-			inList: this.inList,
-			synced: this.synced,
-			services: { [(<typeof ExternalTitle>this.constructor).serviceKey]: this.id },
-			chapters: [],
-			progress: this.progress,
-			status: this.status,
-			score: this.score,
-			start: this.start ? this.start : undefined,
-			end: this.end ? this.end : undefined,
-			name: this.name,
-		});
-	};
 }
 
 export class TitleCollection {
-	collection: LocalTitle[] = [];
+	collection: Title[] = [];
 
-	constructor(titles: LocalTitle[] = []) {
+	constructor(titles: Title[] = []) {
 		this.collection = titles;
 	}
 
 	/**
 	 * Add Title(s) to the Collection.
 	 */
-	add = (...title: LocalTitle[]): void => {
+	add = (...title: Title[]): void => {
 		this.collection.push(...title);
 	};
 
@@ -627,7 +622,7 @@ export class TitleCollection {
 			const localTitles = (await LocalStorage.getAll()) as ExportedSave;
 			for (const key in localTitles) {
 				if (key !== 'options' && key != 'history') {
-					collection.add(new LocalTitle(parseInt(key), LocalTitle.fromSave(localTitles[key])));
+					collection.add(new Title(parseInt(key), Title.fromSave(localTitles[key])));
 				}
 			}
 		} else {
@@ -636,9 +631,9 @@ export class TitleCollection {
 				for (const id of list) {
 					const titleId = typeof id === 'number' ? id : parseInt(id);
 					if (localTitles[titleId] === undefined) {
-						collection.add(new LocalTitle(titleId));
+						collection.add(new Title(titleId));
 					} else {
-						collection.add(new LocalTitle(titleId, LocalTitle.fromSave(localTitles[titleId])));
+						collection.add(new Title(titleId, Title.fromSave(localTitles[titleId])));
 					}
 				}
 			}
@@ -649,7 +644,7 @@ export class TitleCollection {
 	/**
 	 * Find the title with the MangaDex ID `id` inside the Collection.
 	 */
-	find = (id: number): LocalTitle | undefined => {
+	find = (id: number): Title | undefined => {
 		for (const title of this.collection) {
 			if (title.id === id) return title;
 		}
@@ -664,7 +659,7 @@ export class TitleCollection {
 		for (const title of other.collection) {
 			let found = this.find(title.id);
 			if (found !== undefined) {
-				found.merge(title);
+				found.localMerge(title);
 			} else {
 				this.add(title);
 			}
@@ -683,4 +678,4 @@ export class TitleCollection {
 	};
 }
 
-export type ServiceTitleList = Partial<{ [key in ActivableKey]: Promise<Title | RequestStatus> }>;
+export type ServiceTitleList = Partial<{ [key in ActivableKey]: Promise<BaseTitle | RequestStatus> }>;

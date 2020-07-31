@@ -1,7 +1,7 @@
 import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, ActivableModule, LoginMethod, LoginModule, ActivableService } from './Service';
 import { MangaUpdatesTitle } from '../../src/Service/MangaUpdates';
-import { LocalTitle, ServiceName, ServiceKey, ServiceKeyType, ActivableName, ActivableKey } from '../../src/Title';
+import { Title, ServiceName, ServiceKey, ServiceKeyType, ActivableName, ActivableKey } from '../../src/Title';
 import { APIImportableModule } from './Import';
 import { APIExportableModule } from './Export';
 
@@ -88,7 +88,7 @@ class MangaUpdatesExport extends APIExportableModule {
 
 	// We need the status of each titles before to move them from lists to lists
 	// Use ImportModule and get a list of MangaUpdatesTitles
-	preMain = async (_titles: LocalTitle[]): Promise<boolean> => {
+	preMain = async (_titles: Title[]): Promise<boolean> => {
 		let notification = this.notification('loading', 'Checking current status of each titles...');
 		const importModule = new MangaUpdatesImport(this.service);
 		while (!this.doStop && importModule.getNextPage() !== false) {
@@ -105,8 +105,8 @@ class MangaUpdatesExport extends APIExportableModule {
 		return true;
 	};
 
-	exportTitle = async (title: LocalTitle): Promise<boolean> => {
-		const exportTitle = title.toExternal(MangaUpdates.key) as MangaUpdatesTitle | undefined;
+	exportTitle = async (title: Title): Promise<boolean> => {
+		const exportTitle = MangaUpdatesTitle.fromLocalTitle(title) as MangaUpdatesTitle | undefined;
 		if (exportTitle && exportTitle.status !== Status.NONE) {
 			const onlineTitle = this.onlineList[exportTitle.id];
 			if (onlineTitle) {

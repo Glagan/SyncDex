@@ -1,4 +1,4 @@
-import { TitleCollection, Title, ServiceName, ServiceKey, ServiceKeyType, LocalTitle } from '../../src/Title';
+import { TitleCollection, ServiceName, ServiceKey, ServiceKeyType, Title } from '../../src/Title';
 import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, LoginModule } from './Service';
 import { AppendableElement, DOM } from '../../src/DOM';
@@ -43,8 +43,8 @@ export class MangaDexTitle implements PersistableMedia {
 		return Runtime.responseStatus(response);
 	};
 
-	toTitle = (): LocalTitle | undefined => {
-		return new LocalTitle(this.id, {
+	toTitle = (): Title | undefined => {
+		return new Title(this.id, {
 			progress: this.progress,
 			status: this.status,
 			score: this.score,
@@ -52,7 +52,7 @@ export class MangaDexTitle implements PersistableMedia {
 		});
 	};
 
-	static fromTitle = (title: LocalTitle): MangaDexTitle | undefined => {
+	static fromTitle = (title: Title): MangaDexTitle | undefined => {
 		if (!title.id) return undefined;
 		return new MangaDexTitle(title.id, {
 			progress: title.progress,
@@ -151,19 +151,17 @@ class MangaDexImport extends APIImportableModule {
 	};
 
 	convertTitles = async (titles: TitleCollection, titleList: MangaDexTitle[]): Promise<number> => {
-		titles.add(
-			...(titleList.map((title) => title.toTitle()).filter((title) => title !== undefined) as LocalTitle[])
-		);
+		titles.add(...(titleList.map((title) => title.toTitle()).filter((title) => title !== undefined) as Title[]));
 		return titleList.length;
 	};
 }
 
 class MangaDexExport extends APIExportableModule {
-	selectTitles = async (titleCollection: TitleCollection): Promise<LocalTitle[]> => {
+	selectTitles = async (titleCollection: TitleCollection): Promise<Title[]> => {
 		return titleCollection.collection.filter((title) => title.status != Status.NONE);
 	};
 
-	exportTitle = async (title: LocalTitle): Promise<boolean> => {
+	exportTitle = async (title: Title): Promise<boolean> => {
 		const exportTitle = MangaDexTitle.fromTitle(title);
 		if (exportTitle && exportTitle.status !== Status.NONE) {
 			const responseStatus = await exportTitle.persist();

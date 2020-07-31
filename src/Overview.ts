@@ -1,13 +1,13 @@
 import { DOM, AppendableElement } from './DOM';
 import {
-	Title,
+	BaseTitle,
 	ActivableKey,
 	ReverseActivableName,
 	ServiceTitleList,
 	ServiceKey,
 	ReverseServiceName,
 	StaticKey,
-	LocalTitle,
+	Title,
 } from './Title';
 import { Runtime, RequestStatus } from './Runtime';
 import { Options } from './Options';
@@ -20,12 +20,12 @@ interface ServiceOverview {
 	body: HTMLElement;
 	content: HTMLElement;
 	manage: HTMLElement;
-	service?: Promise<Title | RequestStatus>;
+	service?: Promise<BaseTitle | RequestStatus>;
 	syncing?: HTMLElement;
 }
 
 export class Overview {
-	title: LocalTitle;
+	title: Title;
 	services: ServiceTitleList;
 	syncDex: SyncDex;
 	row: HTMLElement;
@@ -35,7 +35,7 @@ export class Overview {
 	current?: ServiceOverview;
 	overviews: Partial<{ [key in ActivableKey | StaticKey.SyncDex]: ServiceOverview }> = {};
 
-	constructor(title: LocalTitle, services: ServiceTitleList, syncDex: SyncDex) {
+	constructor(title: Title, services: ServiceTitleList, syncDex: SyncDex) {
 		this.title = title;
 		this.services = services;
 		this.syncDex = syncDex;
@@ -63,7 +63,7 @@ export class Overview {
 		});
 	};
 
-	syncButton = (serviceKey: ActivableKey, service: Title): void => {
+	syncButton = (serviceKey: ActivableKey, service: BaseTitle): void => {
 		const overview = this.overviews[serviceKey];
 		if (!overview) return;
 		overview.manage.appendChild(
@@ -85,7 +85,7 @@ export class Overview {
 		);
 	};
 
-	isSyncing = (serviceKey: ActivableKey): void => {
+	isSyncing = (serviceKey: ActivableKey | StaticKey.SyncDex): void => {
 		const overview = this.overviews[serviceKey];
 		if (!overview) return;
 		overview.syncing = DOM.create('div', {
@@ -95,11 +95,20 @@ export class Overview {
 		overview.body.appendChild(overview.syncing);
 	};
 
-	updateOverview = (serviceKey: ActivableKey, service: Title | RequestStatus): void => {
+	updateMainOverview = (): void => {
+		const overview = this.overviews[StaticKey.SyncDex];
+		if (!overview) return;
+		this.clearOverview(overview);
+		if (this.title.status == Status.NONE) {
+			overview.content.appendChild(this.quickButtons());
+		} else this.title.overview(overview.content);
+	};
+
+	updateOverview = (serviceKey: ActivableKey, service: BaseTitle | RequestStatus): void => {
 		const overview = this.overviews[serviceKey];
 		if (!overview) return;
-		if (service instanceof Title) {
-			this.clearOverview(overview);
+		this.clearOverview(overview);
+		if (typeof service === 'object') {
 			service.overview(overview.content);
 			// Display *Sync* button only if the title is out of sync, with auto sync disabled and if the title is in a list
 			if (!Options.autoSync && !service.isSynced(this.title) && this.title.status !== Status.NONE) {
@@ -154,6 +163,10 @@ export class Overview {
 			manage: DOM.create('div', { class: 'manage' }),
 			body: DOM.create('div', { class: 'body hidden' }),
 		};
+		DOM.append(serviceOverview.body, serviceOverview.content, serviceOverview.manage);
+		if (Options.mainService == key) serviceOverview.tab.classList.add('main');
+		this.serviceList.appendChild(serviceOverview.tab);
+		this.bodies.appendChild(serviceOverview.body);
 		return serviceOverview;
 	};
 
@@ -196,7 +209,6 @@ export class Overview {
 	errorMessage = (serviceKey: ActivableKey, res: RequestStatus): void => {
 		const overview = this.overviews[serviceKey];
 		if (!overview) return;
-		this.clearOverview(overview);
 		switch (res) {
 			case RequestStatus.MISSING_TOKEN:
 				overview.content.appendChild(
@@ -251,16 +263,12 @@ export class Overview {
 		if (Options.overviewMainOnly) {
 			displayServices = displayServices.filter((key) => key == Options.mainService);
 		}
-		if (displayServices.length == 0) {
-			this.column.appendChild(this.alert('warning', `No Available Services for you for this Title.`));
-			this.row.classList.remove('loading');
-			return;
-		}
 		// Append columns and display SyncDex tab
 		DOM.append(this.column, this.serviceList, this.bodies);
-		const syncDex = this.createOverview(StaticKey.SyncDex);
-		this.title.overview(syncDex.content);
-		this.activateOverview(syncDex);
+		this.overviews[StaticKey.SyncDex] = this.createOverview(StaticKey.SyncDex);
+		this.updateMainOverview();
+		this.activateOverview(this.overviews[StaticKey.SyncDex]!);
+		this.isSyncing(StaticKey.SyncDex);
 		// Display Service tabs
 		for (const key of Options.services) {
 			const serviceOverview = this.createOverview(key);
@@ -278,16 +286,12 @@ export class Overview {
 					return res;
 				});
 			}
-			DOM.append(serviceOverview.body, serviceOverview.content, serviceOverview.manage);
-			if (Options.mainService == key) serviceOverview.tab.classList.add('main');
 			this.overviews[key] = serviceOverview;
-			this.serviceList.appendChild(serviceOverview.tab);
-			this.bodies.appendChild(serviceOverview.body);
 		}
 		this.row.classList.remove('loading');
 	};
 
-	addQuickButtons = (): void => {
+	quickButtons = (): HTMLElement => {
 		const quickButtons = DOM.create('div', { class: 'quick-buttons' });
 		let startReading = DOM.create('button', {
 			class: 'btn btn-primary',
@@ -304,7 +308,7 @@ export class Overview {
 			if (status == Status.READING) this.title.start = new Date();
 			await this.title.persist();
 			await this.syncDex.syncServices(this.title, this.services, this);
-			quickButtons.remove();
+			this.updateMainOverview();
 		};
 		startReading.addEventListener('click', async (event) => {
 			event.preventDefault();
@@ -315,6 +319,6 @@ export class Overview {
 			quickBind(Status.PLAN_TO_READ);
 		});
 		DOM.append(quickButtons, startReading, DOM.space(), planToRead);
-		this.column.insertBefore(quickButtons, this.column.firstElementChild);
+		return quickButtons;
 	};
 }

@@ -1,6 +1,6 @@
 import { duration, Checkbox, Summary, SaveModule } from './Service';
 import { DOM } from '../../src/DOM';
-import { TitleCollection, Title, ActivableKey, LocalTitle } from '../../src/Title';
+import { TitleCollection, ActivableKey, Title } from '../../src/Title';
 
 export abstract class ExportableModule extends SaveModule {
 	summary: Summary = new Summary();
@@ -12,7 +12,7 @@ export abstract class ExportableModule extends SaveModule {
 	/**
 	 * By default, select all titles with a Service key for the current service and a status
 	 */
-	selectTitles = async (titleCollection: TitleCollection): Promise<LocalTitle[]> => {
+	selectTitles = async (titleCollection: TitleCollection): Promise<Title[]> => {
 		return titleCollection.collection.filter((title) => {
 			const id = title.services[this.service.key as ActivableKey];
 			return id !== undefined && id > 0 && title.status !== Status.NONE;
@@ -75,8 +75,8 @@ export abstract class FileExportableModule extends ExportableModule {
 }
 
 export abstract class APIExportableModule extends ExportableModule {
-	abstract exportTitle(title: LocalTitle): Promise<boolean>;
-	preMain?(titles: LocalTitle[]): Promise<boolean>;
+	abstract exportTitle(title: Title): Promise<boolean>;
+	preMain?(titles: Title[]): Promise<boolean>;
 
 	createForm = (): HTMLFormElement => {
 		const form = DOM.create('form', { class: 'body' });
@@ -154,7 +154,7 @@ export abstract class APIExportableModule extends ExportableModule {
 }
 
 export abstract class BatchExportableModule<T> extends ExportableModule {
-	abstract generateBatch(titles: LocalTitle[]): Promise<T>;
+	abstract generateBatch(titles: Title[]): Promise<T>;
 	abstract sendBatch(batch: T, summary: Summary): Promise<boolean>;
 
 	createForm = (): HTMLFormElement => {

@@ -4,12 +4,12 @@ import { MangaDex } from './MangaDex';
 import { DOM } from './DOM';
 import {
 	TitleCollection,
-	Title,
+	BaseTitle,
 	ServiceKeyType,
 	ReverseActivableName,
 	ActivableKey,
 	ServiceTitleList,
-	LocalTitle,
+	Title,
 } from './Title';
 import { Overview } from './Overview';
 import { Mochi } from './Mochi';
@@ -136,8 +136,8 @@ export class SyncDex {
 	): Promise<void> => {
 		for (const serviceKey of Options.services) {
 			if (services[serviceKey] === undefined) continue;
-			const response: Title | RequestStatus = await services[serviceKey]!;
-			if (response instanceof Title && response.loggedIn) {
+			const response: BaseTitle | RequestStatus = await services[serviceKey]!;
+			if (response instanceof BaseTitle && response.loggedIn) {
 				response.isSynced(title);
 				// If Auto Sync is on, import from now up to date Title and persist
 				if ((!auto || Options.autoSync) && (!response.inList || !response.synced)) {
@@ -165,8 +165,8 @@ export class SyncDex {
 		let externalImported = false;
 		for (const serviceKey of Options.services.reverse()) {
 			if (services[serviceKey] === undefined) continue;
-			const response: Title | RequestStatus = await services[serviceKey]!;
-			if (response instanceof Title && response.loggedIn) {
+			const response: BaseTitle | RequestStatus = await services[serviceKey]!;
+			if (response instanceof BaseTitle && response.loggedIn) {
 				// Check if any of the ServiceTitle is more recent than the local Title
 				if (response.inList && (title.inList || response.isMoreRecent(title))) {
 					// If there is one, sync with it and save
@@ -177,10 +177,9 @@ export class SyncDex {
 			}
 		}
 		if (externalImported) await title.persist();
+		overview.updateMainOverview();
 		// When the Title is synced, all remaining ServiceTitle are synced with it
-		if (title.status == Status.NONE) {
-			overview.addQuickButtons();
-		} else this.syncServices(title, services, overview, true);
+		if (title.status != Status.NONE) this.syncServices(title, services, overview, true);
 	};
 
 	titlePage = async (): Promise<void> => {
@@ -189,7 +188,7 @@ export class SyncDex {
 		if (!Options.linkToServices && !Options.saveOpenedChapters) return;
 		// Get Title
 		const id = parseInt(document.querySelector<HTMLElement>('.row .fas.fa-hashtag')!.parentElement!.textContent!);
-		const title = await LocalTitle.get(id);
+		const title = await Title.get(id);
 		title.lastTitle = Date.now();
 		// Name
 		if (title.inList || title.name === undefined || title.name == '') {

@@ -1,5 +1,4 @@
 import {
-	Title,
 	TitleCollection,
 	ServiceKey,
 	ActivableName,
@@ -7,7 +6,7 @@ import {
 	ReverseServiceName,
 	ActivableKey,
 	StatusMap,
-	LocalTitle,
+	Title,
 } from '../src/Title';
 import { DOM, AppendableElement } from '../src/DOM';
 import { LocalStorage } from '../src/Storage';
@@ -71,7 +70,7 @@ export class SaveViewer {
 		this.body.appendChild(fragment);
 	};
 
-	titleServices = (title: LocalTitle): AppendableElement[] => {
+	titleServices = (title: Title): AppendableElement[] => {
 		const icons: AppendableElement[] = [];
 		for (const serviceKey in title.services) {
 			const key = serviceKey as ActivableKey;
@@ -115,7 +114,7 @@ export class SaveViewer {
 		});
 	};
 
-	createModal = (title: LocalTitle): Modal => {
+	createModal = (title: Title): Modal => {
 		const modal = new Modal('medium');
 		modal.header.classList.add('title');
 		modal.header.textContent = 'Edit Entry';
@@ -279,7 +278,7 @@ export class SaveViewer {
 		return modal;
 	};
 
-	createRow = (title: LocalTitle): HTMLElement => {
+	createRow = (title: Title): HTMLElement => {
 		const editButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('edit')] });
 		const deleteButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('trash')] });
 		const row = DOM.create('tr', {

@@ -1,16 +1,7 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { Options } from '../../src/Options';
 import { Runtime, RequestStatus } from '../../src/Runtime';
-import {
-	Title,
-	ServiceName,
-	ServiceKey,
-	ServiceKeyType,
-	ActivableName,
-	ActivableKey,
-	ExternalTitle,
-	LocalTitle,
-} from '../../src/Title';
+import { ServiceKeyType, ActivableName, ActivableKey, Title } from '../../src/Title';
 import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } from './Service';
 import { AnilistStatus, AnilistTitle, AnilistDate, AnilistAPI, AnilistHeaders } from '../../src/Service/Anilist';
 import { APIImportableModule } from './Import';
@@ -189,8 +180,8 @@ class AnilistImport extends APIImportableModule {
 }
 
 class AnilistExport extends APIExportableModule {
-	exportTitle = async (title: LocalTitle): Promise<boolean> => {
-		const exportTitle = title.toExternal(Anilist.key);
+	exportTitle = async (title: Title): Promise<boolean> => {
+		const exportTitle = AnilistTitle.fromLocalTitle(title);
 		if (exportTitle && exportTitle.status !== Status.NONE) {
 			const responseStatus = await exportTitle.persist();
 			return responseStatus <= RequestStatus.CREATED;

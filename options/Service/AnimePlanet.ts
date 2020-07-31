@@ -2,7 +2,7 @@ import { Runtime, RequestStatus } from '../../src/Runtime';
 import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } from './Service';
 import { AnimePlanetTitle } from '../../src/Service/AnimePlanet';
 import { DOM } from '../../src/DOM';
-import { Title, TitleCollection, ServiceKeyType, ActivableName, ActivableKey, LocalTitle } from '../../src/Title';
+import { TitleCollection, ServiceKeyType, ActivableName, ActivableKey, Title } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { APIImportableModule } from './Import';
 import { APIExportableModule } from './Export';
@@ -138,8 +138,8 @@ class AnimePlanetImport extends APIImportableModule {
 }
 
 class AnimePlanetExport extends APIExportableModule {
-	exportTitle = async (title: LocalTitle): Promise<boolean> => {
-		const exportTitle = title.toExternal(AnimePlanet.key);
+	exportTitle = async (title: Title): Promise<boolean> => {
+		const exportTitle = AnimePlanetTitle.fromLocalTitle(title);
 		if (exportTitle && exportTitle.status !== Status.NONE) {
 			(exportTitle as AnimePlanetTitle).token = (this.service as AnimePlanet).loginModule.token;
 			const responseStatus = await exportTitle.persist();
@@ -171,7 +171,7 @@ export class AnimePlanet extends Service implements ActivableService {
 		];
 	}
 
-	static HandleInput(title: LocalTitle, form: HTMLFormElement): void {
+	static HandleInput(title: Title, form: HTMLFormElement): void {
 		if (form.AnimePlanet_slug.value != '' && form.AnimePlanet_id.value) {
 			const id = parseInt(form.AnimePlanet_id.value as string);
 			if (!isNaN(id)) title.services.ap = { s: form.AnimePlanet_slug.value, i: id };

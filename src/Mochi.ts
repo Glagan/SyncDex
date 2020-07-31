@@ -1,5 +1,5 @@
 import { Runtime } from './Runtime';
-import { ServiceList, ServiceName, ActivableKey, StaticKey, LocalTitle } from './Title';
+import { ServiceList, ServiceName, ActivableKey, StaticKey, Title } from './Title';
 
 interface MochiService extends ServiceList {
 	[StaticKey.MangaDex]?: number;
@@ -65,7 +65,7 @@ export class Mochi {
 	/**
 	 * Assign connections found from Mochi to a Title.
 	 */
-	static assign(title: LocalTitle, connections: ServiceList): void {
+	static assign(title: Title, connections: ServiceList): void {
 		for (const key in connections) {
 			const serviceKey = key as ActivableKey;
 			Object.assign(title.services, {

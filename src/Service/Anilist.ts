@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { Title, ServiceKeyType, ActivableName, ActivableKey, ExternalTitle, LocalTitle } from '../Title';
+import { BaseTitle, ServiceKeyType, ActivableName, ActivableKey, ExternalTitle, Title } from '../Title';
 import { Options } from '../Options';
 
 export const enum AnilistStatus {
@@ -155,7 +155,7 @@ export class AnilistTitle extends ExternalTitle {
 		return undefined;
 	};
 
-	static get = async (id: ServiceKeyType): Promise<Title | RequestStatus> => {
+	static get = async (id: ServiceKeyType): Promise<AnilistTitle | RequestStatus> => {
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<AnilistGetResponse>({
 			url: AnilistAPI,
@@ -283,7 +283,7 @@ export class AnilistTitle extends ExternalTitle {
 		return AnilistStatus.NONE;
 	};
 
-	static fromTitle = (title: LocalTitle): AnilistTitle | undefined => {
+	static fromTitle = (title: Title): AnilistTitle | undefined => {
 		if (!title.services.al) return undefined;
 		return new AnilistTitle(title.services.al, {
 			progress: title.progress,

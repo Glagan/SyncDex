@@ -138,7 +138,7 @@
  ***/
 
 .overview .quick-buttons {
-	margin-bottom: 4px;
+	text-align: center;
 }
 .overview .tabs {
 	list-style: none;
@@ -216,6 +216,20 @@
 .overview .body .manage button {
 	margin-bottom: 4px;
 }
+
+/** SyncDex */
+.overview.sc .tabs::after {
+	border-color: var(--syncdex-1);
+}
+.overview .tab.sc {
+	color: var(--syncdex-1);
+	border-color: var(--syncdex-1);
+	background-color: var(--syncdex-bg);
+}
+.overview .tab.sc.active {
+	border-bottom-color: var(--syncdex-bg);
+}
+
 /** Services */
 .overview.mal .tabs::after {
 	border-color: var(--myanimelist);

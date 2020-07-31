@@ -1,5 +1,5 @@
 import { Options } from '../../src/Options';
-import { LocalTitle, TitleCollection, ServiceName, ServiceKey, ActivableKey } from '../../src/Title';
+import { Title, TitleCollection, ServiceName, ServiceKey, ActivableKey } from '../../src/Title';
 import { Service } from './Service';
 import { ImportSummary, FileImportFormat, FileImportableModule } from './Import';
 
@@ -66,7 +66,7 @@ class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTi
 	convertTitles = async (titles: TitleCollection, titleList: MyMangaDexTitle[]): Promise<number> => {
 		for (const title of titleList) {
 			titles.add(
-				new LocalTitle(title.id, {
+				new Title(title.id, {
 					services: {
 						mal: title.mal > 0 ? title.mal : undefined,
 					},
