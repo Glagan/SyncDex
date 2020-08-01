@@ -223,26 +223,32 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 			childs: [DOM.create('i', { class: `fas fa-${icon}` }), DOM.space(), nameHeader],
 		});
 		if (content !== undefined) {
-			const value = DOM.create('span', {
-				textContent: `${isDate(content) ? dateFormat(content) : content}`,
-			});
-			DOM.append(row, DOM.space(), value);
-			if (
-				original !== undefined &&
-				((isDate(content) && isDate(original) && !dateCompare(content, original)) ||
-					(typeof original !== 'object' && content != original))
-			) {
-				value.classList.add('not-synced');
-				DOM.append(
-					row,
-					DOM.space(),
-					DOM.create('span', {
-						textContent: `${isDate(original) ? dateFormat(original) : original}`,
-						class: 'synced',
-					})
-				);
-			}
+			DOM.append(
+				row,
+				DOM.space(),
+				DOM.create('span', {
+					textContent: `${isDate(content) ? dateFormat(content) : content}`,
+				})
+			);
 		} else nameHeader.className = 'helper';
+		if (
+			original !== undefined &&
+			(content === undefined ||
+				(isDate(content) && isDate(original) && !dateCompare(content, original)) ||
+				(typeof original !== 'object' && content != original))
+		) {
+			if (content) {
+				row.lastElementChild!.classList.add('not-synced');
+			} else nameHeader.classList.add('not-synced');
+			DOM.append(
+				row,
+				DOM.space(),
+				DOM.create('span', {
+					textContent: `${isDate(original) ? dateFormat(original) : original}`,
+					class: 'synced',
+				})
+			);
+		}
 		return row;
 	};
 
@@ -264,28 +270,19 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 			const rows: HTMLElement[] = [
 				DOM.create('div', { class: `status st${this.status}`, textContent: StatusMap[this.status] }),
 			];
-			rows.push(
-				this.overviewRow(
-					'bookmark',
-					'Chapter',
-					this.progress.chapter,
-					title ? title.progress.chapter : undefined
-				)
-			);
+			rows.push(this.overviewRow('bookmark', 'Chapter', this.progress.chapter, title?.progress.chapter));
 			if (missingFields.indexOf('volume') < 0 && this.progress.volume) {
-				rows.push(
-					this.overviewRow('book', 'Volume', this.progress.volume, title ? title.progress.volume : undefined)
-				);
+				rows.push(this.overviewRow('book', 'Volume', this.progress.volume, title?.progress.volume));
 			}
 			if (this.start) {
-				rows.push(this.overviewRow('calendar-plus', 'Started', this.start, title ? title.start : undefined));
+				rows.push(this.overviewRow('calendar-plus', 'Started', this.start, title?.start));
 			} else if (missingFields.indexOf('start') < 0) {
-				rows.push(this.overviewRow('calendar-plus', 'No Start Date'));
+				rows.push(this.overviewRow('calendar-plus', 'No Start Date', undefined, title?.start));
 			}
 			if (this.end) {
-				rows.push(this.overviewRow('calendar-check', 'Completed', this.end, title ? title.end : undefined));
+				rows.push(this.overviewRow('calendar-check', 'Completed', this.end, title?.end));
 			} else if (missingFields.indexOf('end') < 0) {
-				rows.push(this.overviewRow('calendar-check', 'No Completion Date'));
+				rows.push(this.overviewRow('calendar-check', 'No Completion Date', undefined, title?.end));
 			}
 			if (this.score) {
 				rows.push(
@@ -293,10 +290,18 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 						'star',
 						'Scored',
 						`${this.score} out of 100`,
-						title ? `${title.score} out of 100` : undefined
+						title && title.score > 0 ? `${title.score} out of 100` : undefined
 					)
 				);
-			} else if (missingFields.indexOf('score') < 0) rows.push(this.overviewRow('star', 'Not Scored yet'));
+			} else if (missingFields.indexOf('score') < 0)
+				rows.push(
+					this.overviewRow(
+						'star',
+						'Not Scored yet',
+						undefined,
+						title && title.score > 0 ? `${title.score} out of 100` : undefined
+					)
+				);
 			for (const missingField of missingFields) {
 				rows.push(
 					this.overviewRow(

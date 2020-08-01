@@ -104,7 +104,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 		if (this.start) {
 			body['add_manga[start_date][month]'] = this.start.getMonth();
 			body['add_manga[start_date][day]'] = this.start.getDate();
-			body['add_manga[start_date][year]'] = this.start.getUTCFullYear();
+			body['add_manga[start_date][year]'] = this.start.getFullYear();
 		} else {
 			body['add_manga[start_date][month]'] = '';
 			body['add_manga[start_date][day]'] = '';
@@ -113,7 +113,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 		if (this.end) {
 			body['add_manga[finish_date][month]'] = this.end.getMonth();
 			body['add_manga[finish_date][day]'] = this.end.getDate();
-			body['add_manga[finish_date][year]'] = this.end.getUTCFullYear();
+			body['add_manga[finish_date][year]'] = this.end.getFullYear();
 		} else {
 			body['add_manga[finish_date][month]'] = '';
 			body['add_manga[finish_date][day]'] = '';

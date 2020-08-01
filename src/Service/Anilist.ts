@@ -193,7 +193,7 @@ export class AnilistTitle extends ExternalTitle {
 
 	static dateToAnilist = (date?: Date): AnilistDate | undefined => {
 		if (date !== undefined) {
-			return { day: date.getDate(), month: date.getMonth() + 1, year: date.getUTCFullYear() };
+			return { day: date.getDate(), month: date.getMonth() + 1, year: date.getFullYear() };
 		}
 		return undefined;
 	};
