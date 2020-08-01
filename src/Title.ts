@@ -383,7 +383,9 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 	merge = (title: BaseTitle): void => {
 		const missingFields = (<typeof BaseTitle>title.constructor).missingFields;
 		this.synced = true;
-		this.status = title.status;
+		if (title.status !== Status.NONE) {
+			this.status = title.status;
+		}
 		if (title.progress.chapter > this.progress.chapter) {
 			this.progress.chapter = title.progress.chapter;
 		}
@@ -613,7 +615,6 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 	 * Select highest values of both Titles and assign them to the receiving Title.
 	 */
 	localMerge = (other: Title): void => {
-		this.merge(other);
 		// Update all 'number' properties to select the highest ones -- except for dates
 		for (let k in this) {
 			const key = k as keyof Title;
@@ -621,6 +622,7 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 				Object.assign(this, { [key]: Math.max(this[key] as number, other[key] as number) });
 			}
 		}
+		this.merge(other);
 		Object.assign(this.services, other.services); // Merge Services -- other erase *this*
 		// Merge chapters array
 		this.chapters = this.chapters.concat(other.chapters);

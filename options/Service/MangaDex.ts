@@ -128,9 +128,9 @@ class MangaDexImport extends APIImportableModule {
 				const score = row.querySelector('.disabled.manga_rating_button');
 				titles.push(
 					new MangaDexTitle(id, {
-						status: status ? parseInt(status.getAttribute('id') as string) : Status.NONE,
-						score: score ? parseInt(score.getAttribute('id') as string) * 10 : undefined,
-						name: (row.querySelector('.manga_title') as HTMLElement).textContent as string,
+						status: status ? parseInt(status.id!) : Status.NONE,
+						score: score ? parseInt(score.id!) * 10 : undefined,
+						name: row.querySelector<HTMLElement>('.manga_title')!.textContent!,
 					})
 				);
 			}

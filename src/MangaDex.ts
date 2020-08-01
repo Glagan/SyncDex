@@ -80,7 +80,7 @@ export class Thumbnail {
 					tooltipThumb.src = `https://mangadex.org/images/manga/${id}.jpg`;
 					tooltipThumb.dataset.ext = '1';
 				} else {
-					tooltipThumb.src = `https://mangadex.org/images/manga/${id}.thumb.jpg`;
+					tooltipThumb.src = `https://mangadex.org/images/manga/${id}.large.jpg`;
 				}
 			}
 			this.updatePosition();

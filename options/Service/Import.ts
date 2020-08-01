@@ -37,9 +37,7 @@ export abstract class ImportableModule extends SaveModule<ImportSummary> {
 		// this.notification('success', `Done Importing ${this.service.serviceName} !`);
 		if (this.summary.total != this.summary.valid) {
 			const content = DOM.create('p', {
-				textContent: `${
-					this.summary.total - this.summary.valid
-				} titles were not imported since they had invalid or missing properties.`,
+				textContent: `${this.summary.failed.length} titles were not imported since they had invalid or missing properties.`,
 			});
 			const notification = this.notification('warning', [content]);
 			if (this.summary.failed.length > 0) {
@@ -332,7 +330,7 @@ export abstract class APIImportableModule extends ImportableModule {
 						const connection = connections[key];
 						if (connection['md'] !== undefined) {
 							const id = parseInt(key);
-							const title = titleList.find((t) => t.id == id) as ExternalTitle | undefined;
+							const title = titleList.find((t) => t.mochi == id) as ExternalTitle | undefined;
 							if (title) {
 								title.mangaDex = connection['md'];
 								const convertedTitle = title.toLocalTitle();
@@ -340,13 +338,13 @@ export abstract class APIImportableModule extends ImportableModule {
 									collection.add(convertedTitle);
 									this.summary.valid++;
 								}
-								found.push(id);
+								found.push(title.mochi);
 							}
 						}
 					}
 				}
 				// Add missing titles to the failed Summary
-				const noIds = titles.filter((t) => found.indexOf(t.mochi) < 0);
+				const noIds = titleList.filter((t) => found.indexOf(t.mochi) < 0);
 				this.summary.failed.push(...noIds.filter((t) => t.name !== undefined).map((t) => t.name as string));
 			}
 		}

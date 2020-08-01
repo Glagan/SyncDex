@@ -635,9 +635,7 @@ export abstract class SaveModule<T extends Summary = Summary> {
 				for (const titleId in connections) {
 					const id = parseInt(titleId);
 					const title = titleList.find((t) => t.id == id);
-					if (title) {
-						Mochi.assign(title, connections[titleId]);
-					}
+					if (title) Mochi.assign(title, connections[titleId]);
 				}
 			}
 		}

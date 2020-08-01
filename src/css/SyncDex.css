@@ -386,3 +386,22 @@
 .overview .content .synced {
 	color: #79c268;
 }
+
+/** Title List */
+.has-status {
+	justify-content: space-between;
+}
+.has-status .manga_title {
+	flex-grow: 1;
+}
+.float-right.has-status {
+	display: flex;
+	align-items: center;
+	float: none !important;
+}
+.float-right.has-status > span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 0.6125rem;
+}

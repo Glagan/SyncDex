@@ -10,6 +10,7 @@ import {
 	ActivableKey,
 	ServiceTitleList,
 	Title,
+	StatusMap,
 } from './Title';
 import { Overview } from './Overview';
 import { Mochi } from './Mochi';
@@ -119,16 +120,35 @@ export class SyncDex {
 	titleList = async (): Promise<void> => {
 		console.log('SyncDex :: Title List');
 
-		const listType = 0;
+		const listTypeSelector = document.querySelector('.dropdown-item.title_mode.active');
+		const listType: ListType = listTypeSelector ? parseInt(listTypeSelector.id) : ListType.Simple;
 		const rows = document.querySelectorAll<HTMLElement>('.manga-entry');
 		const titles = await TitleCollection.get(Array.from(rows).map((row) => parseInt(row.dataset.id!)));
 		for (const row of rows) {
 			const id = parseInt(row.dataset.id!);
 			const title = titles.find(id);
-			if (title && title.inList) {
-				// TODO: Add Status Icon or Text
+			if (title && title.inList && title.status !== Status.NONE) {
+				const status = DOM.create('span', {
+					class: `st${title.status}`,
+					textContent: StatusMap[title.status],
+				});
+				if (listType == ListType.Grid) {
+					const bottomRow = row.querySelector('.float-right');
+					if (bottomRow) {
+						bottomRow.classList.add('has-status');
+						bottomRow.insertBefore(status, bottomRow.firstElementChild);
+					}
+				} else {
+					const nameCol = row.querySelector('.manga_title');
+					if (nameCol) {
+						status.classList.add('right');
+						nameCol.parentElement!.classList.add('has-status');
+						nameCol.parentElement!.appendChild(status);
+					}
+				}
 			}
-			if (Options.thumbnail) new Thumbnail(id, row);
+			// Do not display thumbnails in Grid and Detailed lists
+			if (Options.thumbnail && listType != ListType.Grid && listType != ListType.Detailed) new Thumbnail(id, row);
 		}
 	};
 

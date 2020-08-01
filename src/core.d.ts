@@ -14,6 +14,13 @@ const enum Status {
 	WONT_READ,
 }
 
+const enum ListType {
+	Detailed,
+	Expanded,
+	Simple,
+	Grid,
+}
+
 interface AnimePlanetReference {
 	s: string;
 	i: number;
