@@ -1,6 +1,6 @@
 import { Router } from './Router';
 import { Options } from './Options';
-import { MangaDex } from './MangaDex';
+import { MangaDex, Thumbnail } from './MangaDex';
 import { DOM } from './DOM';
 import {
 	TitleCollection,
@@ -39,8 +39,8 @@ export class SyncDex {
 				'/follows/manga(/?|/\\d(/?|/\\d+(/?|/\\d+/?)))$',
 				'/group/\\d+/[-A-Za-z0-9_]{0,}/manga(/?|/\\d+/?)$',
 				'/user/\\d+/[-A-Za-z0-9_]{0,}/manga(/?|/\\d+/?)$',
-				'(/search|\\?page=search)',
-				'(/titles|\\?page=titles)',
+				'/(search|\\?page=search.*)',
+				'/(titles|\\?page=titles.*)',
 				'/genre(/\\d+)?$',
 				'/featured$',
 			],
@@ -64,31 +64,20 @@ export class SyncDex {
 		if (!Options.hideHigher && !Options.hideLast && !Options.hideLower && !Options.thumbnail && !Options.highlight)
 			return;
 		const md = new MangaDex(document);
-		const groups = md.getChaptersGroups();
-		const container = Options.thumbnail
-			? (() => {
-					const container = DOM.create('div', {
-						id: 'tooltip-container',
-					});
-					document.body.appendChild(container);
-					return container;
-			  })()
-			: undefined;
+		const groups = md.getChapterGroups();
 		const titles = await TitleCollection.get(
 			groups.map((group) => {
-				return group.titleId;
+				return group.id;
 			})
 		);
 		// Hide, Highlight and add Thumbnails to each row
 		for (const group of groups) {
-			const title = titles.find(group.titleId);
+			const title = titles.find(group.id);
 			if (title !== undefined && !title.inList) {
 				group.hide(title.progress);
 				group.highlight(title.progress);
 			}
-			if (Options.thumbnail && container) {
-				group.setThumbnail(container);
-			}
+			if (Options.thumbnail) group.setThumbnails();
 		}
 		// Button to toggle hidden chapters
 		const rows = document.querySelectorAll('.hidden');
@@ -110,8 +99,8 @@ export class SyncDex {
 				});
 				icon.classList.toggle('fa-eye');
 				icon.classList.toggle('fa-eye-slash');
-				if (active) linkContent.textContent = `Show Hidden ${hiddenCount}`;
-				else linkContent.textContent = `Hide Hidden ${hiddenCount}`;
+				if (active) linkContent.textContent = `Show Hidden (${hiddenCount})`;
+				else linkContent.textContent = `Hide Hidden (${hiddenCount})`;
 				active = !active;
 			});
 			const button = DOM.create('li', { class: 'nav-item', childs: [link] });
@@ -127,8 +116,20 @@ export class SyncDex {
 		console.log('SyncDex :: Chapter');
 	};
 
-	titleList = (): void => {
+	titleList = async (): Promise<void> => {
 		console.log('SyncDex :: Title List');
+
+		const listType = 0;
+		const rows = document.querySelectorAll<HTMLElement>('.manga-entry');
+		const titles = await TitleCollection.get(Array.from(rows).map((row) => parseInt(row.dataset.id!)));
+		for (const row of rows) {
+			const id = parseInt(row.dataset.id!);
+			const title = titles.find(id);
+			if (title && title.inList) {
+				// TODO: Add Status Icon or Text
+			}
+			if (Options.thumbnail) new Thumbnail(id, row);
+		}
 	};
 
 	syncServices = async (

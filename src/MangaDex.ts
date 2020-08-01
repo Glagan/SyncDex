@@ -1,6 +1,165 @@
 import { DOM } from './DOM';
 import { Options } from './Options';
-import { ServiceKey, ActivableKey } from './Title';
+import { ActivableKey } from './Title';
+
+export class Thumbnail {
+	static container?: HTMLElement;
+	row: HTMLElement;
+	thumbnail: HTMLElement;
+
+	constructor(id: number, row: HTMLElement) {
+		this.row = row;
+		// Create tooltip
+		this.thumbnail = DOM.create('div', {
+			class: 'sd-tooltip loading',
+			css: {
+				left: `-${window.innerWidth}px`,
+				maxHeight: `${(window.innerHeight - 10) * (Options.thumbnailMaxHeight / 100)}px`,
+			},
+		});
+		let spinner = DOM.create('i', {
+			class: 'fas fa-circle-notch fa-spin',
+		});
+		this.thumbnail.appendChild(spinner);
+		if (Thumbnail.container === undefined) {
+			Thumbnail.container = DOM.create('div', {
+				id: 'tooltip-container',
+			});
+			document.body.appendChild(Thumbnail.container);
+		}
+		Thumbnail.container.appendChild(this.thumbnail);
+		// Thumbnail
+		let tooltipThumb = DOM.create('img', {
+			class: 'thumbnail loading',
+			css: {
+				maxHeight: `${(window.innerHeight - 10) * (Options.thumbnailMaxHeight / 100)}px`,
+			},
+		});
+		tooltipThumb.style.length;
+		this.thumbnail.appendChild(tooltipThumb);
+		// Load cover
+		tooltipThumb.addEventListener('load', () => {
+			delete this.row.dataset.loading;
+			this.row.dataset.loaded = 'true';
+			// Remove the spinner
+			spinner.remove();
+			this.thumbnail.classList.remove('loading');
+			this.thumbnail.style.left = `-${window.innerWidth}px`;
+			tooltipThumb.classList.remove('loading');
+			// Update position
+			if (this.thumbnail.classList.contains('active')) {
+				setTimeout(() => {
+					this.updatePosition();
+				}, 1);
+			}
+		});
+		let extensions = ['jpg', 'png', 'jpeg', 'gif'];
+		tooltipThumb.addEventListener('error', () => {
+			if (Options.originalThumbnail) {
+				let tryNumber = tooltipThumb.dataset.ext ? Math.floor(parseInt(tooltipThumb.dataset.ext)) : 1;
+				if (tryNumber < extensions.length) {
+					tooltipThumb.src = `https://mangadex.org/images/manga/${id}.${extensions[tryNumber]}`;
+					tooltipThumb.dataset.ext = (tryNumber + 1).toString();
+				} else {
+					tooltipThumb.src = '';
+				}
+			}
+		});
+		// Events
+		let activateTooltip = (rightColumn: boolean) => {
+			this.thumbnail.dataset.column = rightColumn.toString();
+			this.thumbnail.classList.add('active');
+			if (this.row.dataset.loading) {
+				this.updatePosition();
+				return;
+			}
+			if (!this.row.dataset.loaded) {
+				this.row.dataset.loading = 'true';
+				// Will trigger 'load' event
+				if (Options.originalThumbnail) {
+					tooltipThumb.src = `https://mangadex.org/images/manga/${id}.jpg`;
+					tooltipThumb.dataset.ext = '1';
+				} else {
+					tooltipThumb.src = `https://mangadex.org/images/manga/${id}.thumb.jpg`;
+				}
+			}
+			this.updatePosition();
+		};
+		let disableTooltip = () => {
+			this.thumbnail.classList.remove('active');
+			this.thumbnail.style.left = '-5000px';
+		};
+		// First column
+		if (this.row.firstElementChild) {
+			this.row.firstElementChild.addEventListener('mouseenter', (event) => {
+				event.stopPropagation();
+				activateTooltip(false);
+			});
+		}
+		// Second column
+		if (this.row.lastElementChild) {
+			this.row.lastElementChild.addEventListener('mouseenter', (event) => {
+				event.stopPropagation();
+				activateTooltip(true);
+			});
+		}
+		// Row
+		this.row.addEventListener('mouseleave', (event) => {
+			event.stopPropagation();
+			disableTooltip();
+		});
+		this.row.addEventListener('mouseout', (event) => {
+			event.stopPropagation();
+			if (event.target == this.row) {
+				disableTooltip();
+			}
+		});
+	}
+
+	updatePosition = (): void => {
+		let rightColumn = this.thumbnail.dataset.column == 'true';
+		let rect = {
+			thumbnail: this.thumbnail.getBoundingClientRect(),
+			row: this.row.getBoundingClientRect(),
+			firstChild: {} as DOMRect,
+			lastChild: {} as DOMRect,
+		};
+		// Calculate to place on the left of the main column by default
+		let left = Math.max(5, rect.row.x - rect.thumbnail.width - 5);
+		let maxWidth = rect.row.left - 10;
+		// Boundaries
+		if ((Options.originalThumbnail && rect.row.left < 400) || rect.row.left < 100) {
+			if (rightColumn && this.row.lastElementChild) {
+				rect.lastChild = this.row.lastElementChild.getBoundingClientRect();
+				maxWidth = rect.lastChild.left - 10;
+			} else if (!rightColumn && this.row.firstElementChild) {
+				rect.firstChild = this.row.firstElementChild.getBoundingClientRect();
+				maxWidth = document.body.clientWidth - 10;
+			}
+		}
+		this.thumbnail.style.maxWidth = `${maxWidth}px`;
+		// X axis
+		setTimeout(() => {
+			if ((Options.originalThumbnail && rect.row.left < 400) || rect.row.left < 100) {
+				if (rightColumn) {
+					left = rect.lastChild.left - 5 - Math.min(maxWidth, rect.thumbnail.width);
+				} else {
+					left = rect.firstChild.right + 5;
+				}
+			}
+			this.thumbnail.style.left = `${left}px`;
+		}, 1);
+		// Y axis
+		rect.thumbnail = this.thumbnail.getBoundingClientRect();
+		let top = window.scrollY + rect.row.y + rect.row.height / 2 - rect.thumbnail.height / 2;
+		if (top <= window.scrollY) {
+			top = window.scrollY + 5;
+		} else if (top + rect.thumbnail.height > window.scrollY + window.innerHeight) {
+			top = window.scrollY + window.innerHeight - rect.thumbnail.height - 5;
+		}
+		this.thumbnail.style.top = `${top}px`;
+	};
+}
 
 interface ChapterRow {
 	progress: Progress | undefined;
@@ -9,13 +168,18 @@ interface ChapterRow {
 }
 
 class ChapterGroup {
-	titleId: number = 0;
+	id: number = 0;
 	name: string = '';
 	/**
 	 * List of all chapter rows in the group, starting from the top.
 	 */
 	rows: ChapterRow[] = [];
 	static currentColor: number = 0;
+
+	constructor(id?: number, name?: string) {
+		if (id) this.id = id;
+		if (name) this.name = name;
+	}
 
 	hide = (progress: Progress): void => {
 		if (!Options.hideHigher && !Options.hideLower && !Options.hideLast) return;
@@ -39,7 +203,7 @@ class ChapterGroup {
 				let link = DOM.create('a', {
 					textContent: this.name,
 					class: 'text-truncate',
-					href: `/title/${this.titleId}`,
+					href: `/title/${this.id}`,
 					title: this.name,
 				});
 				this.rows[j].node.firstElementChild?.appendChild(link);
@@ -92,157 +256,11 @@ class ChapterGroup {
 		ChapterGroup.currentColor = (ChapterGroup.currentColor + 1) % lastColor;
 	};
 
-	setThumbnail = (container: HTMLElement): void => {
+	setThumbnails = (): void => {
 		// Add events
 		for (const group of this.rows) {
-			this.setRowThumbnail(container, group.node);
+			new Thumbnail(this.id, group.node);
 		}
-	};
-
-	setRowThumbnail = (container: HTMLElement, row: HTMLElement): void => {
-		// Create tooltip
-		let tooltip = DOM.create('div', {
-			class: 'sd-tooltip loading',
-			css: {
-				left: `-${window.innerWidth}px`,
-				maxHeight: `${(window.innerHeight - 10) * (Options.thumbnailMaxHeight / 100)}px`,
-			},
-		});
-		let spinner = DOM.create('i', {
-			class: 'fas fa-circle-notch fa-spin',
-		});
-		tooltip.appendChild(spinner);
-		container.appendChild(tooltip);
-		// Thumbnail
-		let tooltipThumb = DOM.create('img', {
-			class: 'thumbnail loading',
-			css: {
-				maxHeight: `${(window.innerHeight - 10) * (Options.thumbnailMaxHeight / 100)}px`,
-			},
-		});
-		tooltipThumb.style.length;
-		tooltip.appendChild(tooltipThumb);
-		// Load cover
-		tooltipThumb.addEventListener('load', () => {
-			delete row.dataset.loading;
-			row.dataset.loaded = 'true';
-			// Remove the spinner
-			spinner.remove();
-			tooltip.classList.remove('loading');
-			tooltip.style.left = `-${window.innerWidth}px`;
-			tooltipThumb.classList.remove('loading');
-			// Update position
-			if (tooltip.classList.contains('active')) {
-				setTimeout(() => {
-					this.updateThumbnailPosition(tooltip, row);
-				}, 1);
-			}
-		});
-		let extensions = ['jpg', 'png', 'jpeg', 'gif'];
-		tooltipThumb.addEventListener('error', () => {
-			if (Options.originalThumbnail) {
-				let tryNumber = tooltipThumb.dataset.ext ? Math.floor(parseInt(tooltipThumb.dataset.ext)) : 1;
-				if (tryNumber < extensions.length) {
-					tooltipThumb.src = `https://mangadex.org/images/manga/${this.titleId}.${extensions[tryNumber]}`;
-					tooltipThumb.dataset.ext = (tryNumber + 1).toString();
-				} else {
-					tooltipThumb.src = '';
-				}
-			}
-		});
-		// Events
-		let activateTooltip = (rightColumn: boolean) => {
-			tooltip.dataset.column = rightColumn.toString();
-			tooltip.classList.add('active');
-			if (row.dataset.loading) {
-				this.updateThumbnailPosition(tooltip, row);
-				return;
-			}
-			if (!row.dataset.loaded) {
-				row.dataset.loading = 'true';
-				// Will trigger 'load' event
-				if (Options.originalThumbnail) {
-					tooltipThumb.src = `https://mangadex.org/images/manga/${this.titleId}.jpg`;
-					tooltipThumb.dataset.ext = '1';
-				} else {
-					tooltipThumb.src = `https://mangadex.org/images/manga/${this.titleId}.thumb.jpg`;
-				}
-			}
-			this.updateThumbnailPosition(tooltip, row);
-		};
-		let disableTooltip = () => {
-			tooltip.classList.remove('active');
-			tooltip.style.left = '-5000px';
-		};
-		// First column
-		if (row.firstElementChild) {
-			row.firstElementChild.addEventListener('mouseenter', (event) => {
-				event.stopPropagation();
-				activateTooltip(false);
-			});
-		}
-		// Second column
-		if (row.lastElementChild) {
-			row.lastElementChild.addEventListener('mouseenter', (event) => {
-				event.stopPropagation();
-				activateTooltip(true);
-			});
-		}
-		// Row
-		row.addEventListener('mouseleave', (event) => {
-			event.stopPropagation();
-			disableTooltip();
-		});
-		row.addEventListener('mouseout', (event) => {
-			event.stopPropagation();
-			if (event.target == row) {
-				disableTooltip();
-			}
-		});
-	};
-
-	updateThumbnailPosition = (tooltip: HTMLElement, row: HTMLElement): void => {
-		let rightColumn = tooltip.dataset.column == 'true';
-		let rect = {
-			tooltip: tooltip.getBoundingClientRect(),
-			row: row.getBoundingClientRect(),
-			firstChild: {} as DOMRect,
-			lastChild: {} as DOMRect,
-		};
-		// Calculate to place on the left of the main column by default
-		let left = Math.max(5, rect.row.x - rect.tooltip.width - 5);
-		let maxWidth = rect.row.left - 10;
-		// Boundaries
-		if ((Options.originalThumbnail && rect.row.left < 400) || rect.row.left < 100) {
-			if (rightColumn && row.lastElementChild) {
-				rect.lastChild = row.lastElementChild.getBoundingClientRect();
-				maxWidth = rect.lastChild.left - 10;
-			} else if (!rightColumn && row.firstElementChild) {
-				rect.firstChild = row.firstElementChild.getBoundingClientRect();
-				maxWidth = document.body.clientWidth - 10;
-			}
-		}
-		tooltip.style.maxWidth = `${maxWidth}px`;
-		// X axis
-		setTimeout(() => {
-			if ((Options.originalThumbnail && rect.row.left < 400) || rect.row.left < 100) {
-				if (rightColumn) {
-					left = rect.lastChild.left - 5 - Math.min(maxWidth, rect.tooltip.width);
-				} else {
-					left = rect.firstChild.right + 5;
-				}
-			}
-			tooltip.style.left = `${left}px`;
-		}, 1);
-		// Y axis
-		rect.tooltip = tooltip.getBoundingClientRect();
-		let top = window.scrollY + rect.row.y + rect.row.height / 2 - rect.tooltip.height / 2;
-		if (top <= window.scrollY) {
-			top = window.scrollY + 5;
-		} else if (top + rect.tooltip.height > window.scrollY + window.innerHeight) {
-			top = window.scrollY + window.innerHeight - rect.tooltip.height - 5;
-		}
-		tooltip.style.top = `${top}px`;
 	};
 }
 
@@ -253,7 +271,7 @@ export class MangaDex {
 		this.document = document;
 	}
 
-	getChaptersGroups = (): ChapterGroup[] => {
+	getChapterGroups = (): ChapterGroup[] => {
 		let chapterContainer = this.document.querySelector<HTMLElement>('.chapter-container');
 		if (!chapterContainer) return [];
 		let nodes = chapterContainer.children;
@@ -264,19 +282,14 @@ export class MangaDex {
 				let chapterRow = row.querySelector<HTMLElement>('[data-chapter]');
 				const firstChild = row.firstElementChild!;
 				if (chapterRow && chapterRow.dataset.mangaId && firstChild) {
-					let titleId = Math.floor(parseInt(chapterRow.dataset.mangaId));
+					let id = Math.floor(parseInt(chapterRow.dataset.mangaId));
 					let isFirstRow = firstChild && firstChild.childElementCount > 0;
 					// Is this is a new entry push the current group and create a new one
 					if (isFirstRow) {
 						if (currentGroup.rows.length > 0) {
 							groups.push(currentGroup);
 						}
-						currentGroup = new ChapterGroup();
-						Object.assign(currentGroup, {
-							titleId: titleId,
-							name: (firstChild.textContent as string).trim(),
-							chapters: [],
-						});
+						currentGroup = new ChapterGroup(id, firstChild.textContent!.trim());
 					}
 					let chapter: ChapterRow = {
 						progress: (() => {

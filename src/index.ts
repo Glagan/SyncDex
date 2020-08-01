@@ -8,5 +8,5 @@ console.log('SyncDex :: Index');
 	setBrowser();
 	const sync = new SyncDex();
 	await Options.load();
-	sync.execute(window.location.pathname);
+	sync.execute(`${window.location.pathname}${window.location.search}`);
 })();
