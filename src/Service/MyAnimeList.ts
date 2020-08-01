@@ -36,7 +36,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 		if (month == null || day == null || year == null) return undefined;
 		const parts: number[] = [parseInt(year.value), parseInt(month.value), parseInt(day.value)];
 		if (parts.some((part) => isNaN(part))) return undefined;
-		return new Date(parseInt(year.value), parseInt(month.value), parseInt(day.value));
+		return new Date(parts[0], parts[1] - 1, parts[2]);
 	};
 
 	static get = async (id: ServiceKeyType): Promise<ExternalTitle | RequestStatus> => {

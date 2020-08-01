@@ -1,5 +1,5 @@
 import { Runtime, RequestStatus } from '../Runtime';
-import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle } from '../Title';
+import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle, MissableField } from '../Title';
 
 export const enum AnimePlanetStatus {
 	NONE = 0,
@@ -21,6 +21,7 @@ interface AnimePlanetAPIResponse {
 export class AnimePlanetTitle extends ExternalTitle {
 	static readonly serviceName: ActivableName = ActivableName.AnimePlanet;
 	static readonly serviceKey: ActivableKey = ActivableKey.AnimePlanet;
+	static readonly missingFields: MissableField[] = ['volume', 'start', 'end'];
 
 	static link(id: ServiceKeyType): string {
 		if (typeof id === 'string') return `https://www.anime-planet.com/manga/${id}`;
@@ -48,7 +49,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		if (response.redirected) return RequestStatus.NOT_FOUND;
-		const values: Partial<AnimePlanetTitle> = {};
+		const values: Partial<AnimePlanetTitle> = { status: Status.NONE };
 		const tokenArr = /TOKEN\s*=\s*'(.{40})';/.exec(response.body);
 		const parser = new DOMParser();
 		const body = parser.parseFromString(response.body, 'text/html');
@@ -60,10 +61,8 @@ export class AnimePlanetTitle extends ExternalTitle {
 		const mediaEntryForm = body.querySelector<HTMLFormElement>('form[id^=manga]')!;
 		const api = parseInt(mediaEntryForm.dataset.id!);
 		const statusSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.changeStatus [selected]');
-		if (statusSelector) {
-			values.inList = true;
-			values.status = AnimePlanetTitle.toStatus(parseInt(statusSelector.value));
-		} else values.inList = false;
+		if (statusSelector) values.status = AnimePlanetTitle.toStatus(parseInt(statusSelector.value));
+		values.inList = values.status != Status.NONE;
 		// Chapter
 		const chapterSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.chapters [selected]');
 		values.progress = { chapter: 0 };

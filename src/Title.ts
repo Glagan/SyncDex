@@ -2,7 +2,7 @@ import { LocalStorage } from './Storage';
 import { Options, AvailableOptions } from './Options';
 import { RequestStatus } from './Runtime';
 import { DOM } from './DOM';
-import { dateFormat, dateCompare } from './Utility';
+import { dateFormat, dateCompare, isDate } from './Utility';
 
 export const StatusMap: { [key in Status]: string } = {
 	[Status.NONE]: 'No Status',
@@ -172,7 +172,7 @@ export class StorageTitle {
 	}
 }
 
-export type MissableField = 'score' | 'start' | 'end';
+export type MissableField = 'volume' | 'score' | 'start' | 'end';
 
 export abstract class BaseTitle implements TitleProperties, ExternalTitleProperties {
 	static readonly serviceName: ServiceName;
@@ -192,6 +192,7 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 
 	static readonly missingFields: MissableField[] = [];
 	static readonly missingFieldsMap: { [key in MissableField]: string } = {
+		volume: 'Volume',
 		start: 'Start Date',
 		end: 'Finish Date',
 		score: 'Score',
@@ -215,21 +216,40 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 		throw 'BaseTitle.get is an abstract function';
 	};
 
-	overviewRow = (icon: string, content: string): HTMLElement => {
-		return DOM.create('div', {
+	overviewRow = <K = Date | number | string>(icon: string, name: string, content?: K, original?: K): HTMLElement => {
+		const nameHeader = DOM.create('span', { textContent: name });
+		const row = DOM.create('div', {
 			class: icon == 'ban' ? 'helper' : undefined,
-			childs: [
-				DOM.create('i', { class: `fas fa-${icon}` }),
-				DOM.space(),
-				DOM.create('span', { textContent: content }),
-			],
+			childs: [DOM.create('i', { class: `fas fa-${icon}` }), DOM.space(), nameHeader],
 		});
+		if (content !== undefined) {
+			const value = DOM.create('span', {
+				textContent: `${isDate(content) ? dateFormat(content) : content}`,
+			});
+			DOM.append(row, DOM.space(), value);
+			if (
+				original !== undefined &&
+				((isDate(content) && isDate(original) && !dateCompare(content, original)) ||
+					(typeof original !== 'object' && content != original))
+			) {
+				value.classList.add('not-synced');
+				DOM.append(
+					row,
+					DOM.space(),
+					DOM.create('span', {
+						textContent: `${isDate(original) ? dateFormat(original) : original}`,
+						class: 'synced',
+					})
+				);
+			}
+		} else nameHeader.className = 'helper';
+		return row;
 	};
 
 	/**
 	 * Create a list of all values for the Media.
 	 */
-	overview = (parent: HTMLElement): void => {
+	overview = (parent: HTMLElement, title?: BaseTitle): void => {
 		if (!this.loggedIn) {
 			parent.appendChild(
 				DOM.create('div', {
@@ -244,20 +264,39 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 			const rows: HTMLElement[] = [
 				DOM.create('div', { class: `status st${this.status}`, textContent: StatusMap[this.status] }),
 			];
-			if (this.progress.volume) rows.push(this.overviewRow('book', `Volume ${this.progress.volume}`));
-			rows.push(this.overviewRow('bookmark', `Chapter ${this.progress.chapter}`));
+			rows.push(
+				this.overviewRow(
+					'bookmark',
+					'Chapter',
+					this.progress.chapter,
+					title ? title.progress.chapter : undefined
+				)
+			);
+			if (missingFields.indexOf('volume') < 0 && this.progress.volume) {
+				rows.push(
+					this.overviewRow('book', 'Volume', this.progress.volume, title ? title.progress.volume : undefined)
+				);
+			}
 			if (this.start) {
-				rows.push(this.overviewRow('calendar-plus', dateFormat(this.start)));
+				rows.push(this.overviewRow('calendar-plus', 'Started', this.start, title ? title.start : undefined));
 			} else if (missingFields.indexOf('start') < 0) {
 				rows.push(this.overviewRow('calendar-plus', 'No Start Date'));
 			}
 			if (this.end) {
-				rows.push(this.overviewRow('calendar-check', dateFormat(this.end)));
+				rows.push(this.overviewRow('calendar-check', 'Completed', this.end, title ? title.end : undefined));
 			} else if (missingFields.indexOf('end') < 0) {
-				rows.push(this.overviewRow('calendar-check', 'No Finish Date'));
+				rows.push(this.overviewRow('calendar-check', 'No Completion Date'));
 			}
-			if (this.score) rows.push(this.overviewRow('star', `Scored ${this.score} out of 100`));
-			else if (missingFields.indexOf('score') < 0) rows.push(this.overviewRow('star', `Not Scored yet`));
+			if (this.score) {
+				rows.push(
+					this.overviewRow(
+						'star',
+						'Scored',
+						`${this.score} out of 100`,
+						title ? `${title.score} out of 100` : undefined
+					)
+				);
+			} else if (missingFields.indexOf('score') < 0) rows.push(this.overviewRow('star', 'Not Scored yet'));
 			for (const missingField of missingFields) {
 				rows.push(
 					this.overviewRow(
@@ -272,14 +311,24 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 		} else DOM.append(parent, DOM.text('Not in List.'));
 	};
 
-	isMoreRecent = (title: BaseTitle): boolean => {
+	/**
+	 * Check if *this* BaseTitle is more recent that the other BaseTitle.
+	 * A different score always trigger a true, since higher Services are tested last.
+	 */
+	isMoreRecent = (other: BaseTitle): boolean => {
+		const missingFields = (<typeof BaseTitle>this.constructor).missingFields;
 		return (
-			this.progress.chapter > title.progress.chapter ||
-			(this.progress.volume !== undefined && title.progress.volume === undefined) ||
-			(this.progress.volume && title.progress.volume && this.progress.volume > title.progress.volume) ||
-			(title.score == 0 && this.score !== undefined && this.score > 0) ||
-			(this.start !== undefined && (title.start === undefined || title.start > this.start)) ||
-			(this.end !== undefined && (title.end === undefined || title.end > this.end))
+			this.progress.chapter > other.progress.chapter ||
+			(missingFields.indexOf('volume') < 0 &&
+				((this.progress.volume !== undefined && other.progress.volume === undefined) ||
+					(this.progress.volume && other.progress.volume && this.progress.volume > other.progress.volume))) ||
+			(missingFields.indexOf('score') < 0 && this.score > 0 && this.score != other.score) ||
+			(missingFields.indexOf('start') < 0 &&
+				this.start !== undefined &&
+				(other.start === undefined || other.start > this.start)) ||
+			(missingFields.indexOf('end') < 0 &&
+				this.end !== undefined &&
+				(other.end === undefined || other.end > this.end))
 		);
 	};
 
@@ -292,7 +341,7 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 		return (this.synced =
 			title.status === this.status &&
 			title.progress.chapter === this.progress.chapter &&
-			title.progress.volume === this.progress.volume &&
+			(missingFields.indexOf('volume') >= 0 || title.progress.volume === this.progress.volume) &&
 			(missingFields.indexOf('score') >= 0 || title.score === this.score) &&
 			(missingFields.indexOf('start') >= 0 ||
 				(title.start === undefined && this.start === undefined) ||
@@ -306,13 +355,13 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 	 * Assign all values from the Title to *this*.
 	 */
 	import = (title: BaseTitle): void => {
+		const missingFields = (<typeof BaseTitle>this.constructor).missingFields;
 		this.synced = true;
 		this.status = title.status;
 		this.progress.chapter = title.progress.chapter;
-		if (title.progress.volume) {
+		if (missingFields.indexOf('volume') < 0 && title.progress.volume) {
 			this.progress.volume = title.progress.volume;
 		} else delete this.progress.volume;
-		const missingFields = (<typeof BaseTitle>this.constructor).missingFields;
 		if (missingFields.indexOf('score') < 0) this.score = title.score;
 		if (missingFields.indexOf('start') < 0 && title.start) {
 			this.start = new Date(title.start);
@@ -327,22 +376,26 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 	 * Score is always export to the Title if it exists.
 	 */
 	merge = (title: BaseTitle): void => {
+		const missingFields = (<typeof BaseTitle>title.constructor).missingFields;
 		this.synced = true;
 		this.status = title.status;
 		if (title.progress.chapter > this.progress.chapter) {
 			this.progress.chapter = title.progress.chapter;
 		}
-		if (title.progress.volume && (!this.progress.volume || title.progress.volume > this.progress.volume)) {
+		if (
+			missingFields.indexOf('volume') < 0 &&
+			title.progress.volume &&
+			(!this.progress.volume || title.progress.volume > this.progress.volume)
+		) {
 			this.progress.volume = title.progress.volume;
 		}
-		const missingFields = (<typeof BaseTitle>title.constructor).missingFields;
 		if (missingFields.indexOf('score') < 0 && title.score !== undefined) {
 			this.score = title.score;
 		}
-		if (missingFields.indexOf('start') < 0 && title.start && (!this.start || title.start < this.start)) {
+		if (missingFields.indexOf('start') < 0 && title.start && (!this.start || this.start > title.start)) {
 			this.start = new Date(title.start);
 		}
-		if (missingFields.indexOf('end') < 0 && title.end && (!this.end || title.end < this.end)) {
+		if (missingFields.indexOf('end') < 0 && title.end && (!this.end || this.end > title.end)) {
 			this.end = new Date(title.end);
 		}
 		if (this.name && this.name != '') title.name = title.name;
@@ -572,6 +625,15 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 			const diff = Options.chaptersSaved - this.chapters.length;
 			this.chapters.splice(-diff, diff);
 		}
+	};
+
+	refresh = async (): Promise<boolean> => {
+		const reloaded = await LocalStorage.get<StorageTitle>(this.id);
+		if (reloaded) {
+			Object.assign(this, Title.fromSave(reloaded));
+			return true;
+		}
+		return false;
 	};
 }
 

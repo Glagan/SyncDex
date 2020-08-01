@@ -204,13 +204,17 @@
 	padding: 0;
 	border: 0;
 }
+.overview .body .content > div:not(:first-child) i:first-child {
+	width: 16px;
+	text-align: center;
+}
 .overview .body .content {
 	align-self: center;
 	flex-grow: 1;
 }
 .overview .body .manage {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	flex-flow: column;
 }
 .overview .body .manage button {
@@ -333,6 +337,9 @@
 	align-items: center;
 	user-select: none;
 }
+.tab i {
+	vertical-align: middle;
+}
 .has-error {
 	color: rgb(167, 20, 20);
 }
@@ -371,4 +378,11 @@
 /** Won't Read */
 .st7 {
 	color: rgb(209, 32, 32);
+}
+.overview .content .not-synced {
+	color: rgb(167, 20, 20);
+	text-decoration: line-through;
+}
+.overview .content .synced {
+	color: #79c268;
 }

@@ -110,6 +110,24 @@ export class Overview {
 		if (this.title.status == Status.NONE) {
 			overview.content.appendChild(this.quickButtons());
 		} else this.title.overview(overview.content);
+		// Add Refresh Button
+		const refreshButton = DOM.create('button', {
+			class: 'btn btn-secondary',
+			childs: [DOM.icon('download'), DOM.space(), DOM.text('Refresh')],
+			events: {
+				click: async (event) => {
+					event.preventDefault();
+					refreshButton.classList.add('loading');
+					refreshButton.disabled = true;
+					await this.title.refresh();
+					// checkServiceStatus will refresh the main overview
+					await this.syncDex.checkServiceStatus(this.title, this.services, this);
+					refreshButton.classList.remove('loading');
+					refreshButton.disabled = false;
+				},
+			},
+		});
+		overview.manage.appendChild(refreshButton);
 	};
 
 	updateOverview = (serviceKey: ActivableKey, service: BaseTitle | RequestStatus): void => {
@@ -117,11 +135,15 @@ export class Overview {
 		if (!overview) return;
 		this.clearOverview(overview);
 		if (typeof service === 'object') {
-			service.overview(overview.content);
+			service.overview(overview.content, this.title);
+			overview.manage.appendChild(this.refreshButton(serviceKey));
 			// Display *Sync* button only if the title is out of sync, with auto sync disabled and if the title is in a list
 			if (!Options.autoSync && !service.isSynced(this.title) && this.title.status !== Status.NONE) {
 				this.setTabIcon(overview, 'sync has-error');
 				this.syncButton(serviceKey, service);
+			}
+			if (!service.inList) {
+				this.setTabIcon(overview, 'bookmark has-error');
 			}
 		} else {
 			this.setTabIcon(overview, 'times has-error');
@@ -188,8 +210,8 @@ export class Overview {
 
 	refreshButton = (serviceKey: ActivableKey): HTMLButtonElement => {
 		const button = DOM.create('button', {
-			class: 'btn btn-primary',
-			textContent: 'Refresh',
+			class: 'btn btn-secondary',
+			childs: [DOM.icon('download'), DOM.space(), DOM.text('Refresh')],
 			events: {
 				click: async (event) => {
 					event.preventDefault();

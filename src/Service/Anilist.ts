@@ -150,7 +150,7 @@ export class AnilistTitle extends ExternalTitle {
 
 	static dateFromAnilist = (date: AnilistDate): Date | undefined => {
 		if (date.day !== null && date.month !== null && date.year !== null) {
-			return new Date(date.year, date.month, date.day);
+			return new Date(date.year, date.month - 1, date.day);
 		}
 		return undefined;
 	};
