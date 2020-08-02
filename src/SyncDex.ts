@@ -8,7 +8,7 @@ import {
 	ServiceKeyType,
 	ReverseActivableName,
 	ActivableKey,
-	ServiceTitleList,
+	ExternalTitleList,
 	Title,
 	StatusMap,
 } from './Title';
@@ -16,6 +16,12 @@ import { Overview } from './Overview';
 import { Mochi } from './Mochi';
 import { GetService } from './Service';
 import { RequestStatus } from './Runtime';
+import { injectScript } from './Utility';
+
+interface ReadingState {
+	title?: Title;
+	services: ExternalTitleList;
+}
 
 console.log('SyncDex :: Core');
 
@@ -34,7 +40,7 @@ export class SyncDex {
 			],
 			this.chapterList
 		);
-		this.router.register('/chapter/\\d+$', this.chapterPage);
+		this.router.register('/chapter/\\d+(/\\d+)?$', this.chapterPage);
 		this.router.register(
 			[
 				'/follows/manga(/?|/\\d(/?|/\\d+(/?|/\\d+/?)))$',
@@ -113,8 +119,88 @@ export class SyncDex {
 		}
 	};
 
+	chapterEvent = async (details: ChapterChangeEventDetails, state: ReadingState): Promise<void> => {
+		console.log(details);
+		// Get the Title and Services initial state on the first chapter change
+		let init = false;
+		if (!state.title) {
+			const id = details.manga._data.id;
+			state.title = await Title.get(id);
+			// Find Services
+			let fallback = false;
+			if (Options.useMochi) {
+				const connections = await Mochi.find(id);
+				if (connections !== undefined) {
+					Mochi.assign(state.title, connections);
+				} else fallback = true;
+			}
+			if (!Options.useMochi || fallback) {
+				const services = details.manga._data.links;
+				for (const key in services) {
+					const serviceKey = MangaDex.iconToService(key);
+					if (serviceKey !== undefined) {
+						(state.title.services[serviceKey] as ServiceKeyType) = GetService(
+							ReverseActivableName[serviceKey]
+						).idFromString(services[key as MangaDexExternalKeys]);
+					}
+				}
+			}
+			await state.title.persist(); // Always save
+			init = true;
+		}
+		// Update title state if not delayed
+		const delayed = details._data.status != 'OK' && details._data.status != 'external';
+		let doUpdate = false;
+		if (!delayed) {
+			state.title.status = Status.READING;
+			const currentProgress: Progress = { chapter: parseFloat(details._data.chapter) };
+			if (details._data.volume !== '') currentProgress.volume = parseInt(details._data.volume);
+			state.title.progress = currentProgress;
+			await state.title.persist();
+			doUpdate = true;
+		}
+		// Sync Services -- Check initial Status and update if it's the first time
+		if (init) {
+			await this.checkServiceStatus(state.title, state.services);
+		} else if (doUpdate) this.syncServices(state.title, state.services);
+	};
+
 	chapterPage = (): void => {
 		console.log('SyncDex :: Chapter');
+
+		// No support for Legacy Reader
+		if (!document.querySelector('.reader-controls-container')) return;
+
+		// Inject script to listen to Reader *chapterchange* event
+		injectScript(function () {
+			// *window* is in the MangaDex page context
+			const addEventInterceptor = () =>
+				window.reader!.model.on('chapterchange', (event) => {
+					document.dispatchEvent(
+						new CustomEvent('ReaderChapterChange', {
+							detail: event,
+						})
+					);
+				});
+			// If the MangaDex reader still hasn't been loaded, check every 50ms
+			if (window.reader === undefined) {
+				const i = setInterval(() => {
+					if (window.reader !== undefined) {
+						clearInterval(i);
+						addEventInterceptor();
+					}
+				}, 50);
+			} else addEventInterceptor();
+		});
+
+		// Listen to injected Reader event
+		const state: ReadingState = {
+			title: undefined,
+			services: {},
+		};
+		document.addEventListener('ReaderChapterChange', async (event) => {
+			await this.chapterEvent((event as ChapterChangeEvent).detail, state);
+		});
 	};
 
 	titleList = async (): Promise<void> => {
@@ -154,9 +240,9 @@ export class SyncDex {
 
 	syncServices = async (
 		title: Title,
-		services: ServiceTitleList,
+		services: ExternalTitleList,
 		overview?: Overview,
-		auto: boolean = false
+		checkAutoSyncOption: boolean = false
 	): Promise<void> => {
 		for (const serviceKey of Options.services) {
 			if (services[serviceKey] === undefined) continue;
@@ -164,7 +250,7 @@ export class SyncDex {
 			if (response instanceof BaseTitle && response.loggedIn) {
 				response.isSynced(title);
 				// If Auto Sync is on, import from now up to date Title and persist
-				if ((!auto || Options.autoSync) && (!response.inList || !response.synced)) {
+				if ((!checkAutoSyncOption || Options.autoSync) && (!response.inList || !response.synced)) {
 					if (overview) overview.isSyncing(serviceKey);
 					response.import(title);
 					response.persist().then((res) => {
@@ -183,7 +269,7 @@ export class SyncDex {
 	 * Check if any Service in services is available, in the list and more recent that the local Title.
 	 * If an external Service is more recent, sync with it and sync all other Services with the then synced Title.
 	 */
-	checkServiceStatus = async (title: Title, services: ServiceTitleList, overview: Overview): Promise<void> => {
+	checkServiceStatus = async (title: Title, services: ExternalTitleList, overview?: Overview): Promise<void> => {
 		// Sync Title with the most recent ServiceTitle ordered by User choice
 		// Services are reversed to select the first choice last
 		let externalImported = false;
@@ -201,7 +287,7 @@ export class SyncDex {
 			}
 		}
 		if (externalImported) await title.persist();
-		overview.updateMainOverview();
+		if (overview) overview.updateMainOverview();
 		// When the Title is synced, all remaining ServiceTitle are synced with it
 		if (title.status != Status.NONE) this.syncServices(title, services, overview, true);
 	};
@@ -268,7 +354,7 @@ export class SyncDex {
 		}
 		await title.persist(); // Always save
 		// Load each Services to Sync
-		const services: ServiceTitleList = {};
+		const services: ExternalTitleList = {};
 		if (Options.services.length > 0) {
 			let activeServices = Object.keys(title.services).filter(
 				(key) => Options.services.indexOf(key as ActivableKey) >= 0

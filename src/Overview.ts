@@ -3,7 +3,7 @@ import {
 	BaseTitle,
 	ActivableKey,
 	ReverseActivableName,
-	ServiceTitleList,
+	ExternalTitleList,
 	ServiceKey,
 	ReverseServiceName,
 	StaticKey,
@@ -27,7 +27,7 @@ interface ServiceOverview {
 
 export class Overview {
 	title: Title;
-	services: ServiceTitleList;
+	services: ExternalTitleList;
 	syncDex: SyncDex;
 	row: HTMLElement;
 	column: HTMLElement;
@@ -36,7 +36,7 @@ export class Overview {
 	current?: ServiceOverview;
 	overviews: Partial<{ [key in ActivableKey | StaticKey.SyncDex]: ServiceOverview }> = {};
 
-	constructor(title: Title, services: ServiceTitleList, syncDex: SyncDex) {
+	constructor(title: Title, services: ExternalTitleList, syncDex: SyncDex) {
 		this.title = title;
 		this.services = services;
 		this.syncDex = syncDex;
@@ -101,6 +101,19 @@ export class Overview {
 			childs: [DOM.icon('sync-alt fa-spin'), DOM.space(), DOM.text('Syncing...')],
 		});
 		overview.body.appendChild(overview.syncing);
+	};
+
+	hasSynced = (serviceKey: ActivableKey | StaticKey.SyncDex): void => {
+		const overview = this.overviews[serviceKey];
+		if (!overview) return;
+		if (overview.tabIcon) {
+			overview.tabIcon.remove();
+			overview.tabIcon = undefined;
+		}
+		if (overview.syncing) {
+			overview.syncing.remove();
+			overview.syncing = undefined;
+		}
 	};
 
 	updateMainOverview = (): void => {
@@ -215,9 +228,11 @@ export class Overview {
 			events: {
 				click: async (event) => {
 					event.preventDefault();
-					if (!this.title.services[serviceKey]) return;
+					const overview = this.overviews[serviceKey];
+					if (!this.title.services[serviceKey] || !overview) return;
 					button.classList.add('loading');
 					button.disabled = true;
+					this.isSyncing(serviceKey);
 					await Options.load();
 					this.services[serviceKey] = GetService(ReverseActivableName[serviceKey]).get(
 						this.title.services[serviceKey]!
@@ -225,6 +240,7 @@ export class Overview {
 					await this.syncDex.checkServiceStatus(this.title, this.services, this);
 					button.classList.remove('loading');
 					button.disabled = false;
+					this.hasSynced(serviceKey);
 				},
 			},
 		});

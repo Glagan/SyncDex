@@ -22,6 +22,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 	static readonly serviceName: ActivableName = ActivableName.AnimePlanet;
 	static readonly serviceKey: ActivableKey = ActivableKey.AnimePlanet;
 	static readonly missingFields: MissableField[] = ['volume', 'start', 'end'];
+	static readonly requireIdQuery: boolean = true;
 
 	static link(id: ServiceKeyType): string {
 		if (typeof id === 'string') return `https://www.anime-planet.com/manga/${id}`;
@@ -174,6 +175,10 @@ export class AnimePlanetTitle extends ExternalTitle {
 				i: 0,
 			};
 		return { s: '', i: 0 };
+	};
+
+	static idFromString = (str: string): AnimePlanetReference => {
+		return { s: str, i: 0 };
 	};
 
 	get mochi(): number {

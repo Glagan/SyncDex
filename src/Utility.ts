@@ -18,3 +18,17 @@ export function dateFormat(timestamp: number | Date): string {
 export function dateCompare(d1: Date, d2: Date): boolean {
 	return d1.getFullYear() == d2.getFullYear() && d1.getMonth() == d2.getMonth() && d1.getDate() == d2.getDate();
 }
+
+/**
+ * source: https://stackoverflow.com/a/9517879
+ * Inject a page script
+ * Content scripts don't have access to variables, this does
+ * Communicate using events: https://stackoverflow.com/a/19312198
+ * @param {function} func The function to be injected and executed
+ */
+export function injectScript(func: Function) {
+	const script = document.createElement('script');
+	script.textContent = `(${func})();`;
+	(document.head || document.documentElement).appendChild(script);
+	script.remove();
+}

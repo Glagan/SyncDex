@@ -301,6 +301,10 @@ export class AnilistTitle extends ExternalTitle {
 		return 0;
 	};
 
+	static idFromString = (str: string): number => {
+		return parseInt(str);
+	};
+
 	get mochi(): number {
 		return this.id;
 	}

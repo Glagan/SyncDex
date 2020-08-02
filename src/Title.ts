@@ -423,6 +423,7 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 export abstract class ExternalTitle extends BaseTitle {
 	static readonly serviceName: ActivableName;
 	static readonly serviceKey: ActivableKey;
+	static readonly requireIdQuery: boolean = false;
 
 	constructor(title?: Partial<ExternalTitle>) {
 		super();
@@ -464,6 +465,14 @@ export abstract class ExternalTitle extends BaseTitle {
 			name: title.name,
 		});
 	}
+
+	static idFromLink = (str: string): ServiceKeyType => {
+		throw 'ExternalTitle.idFromLink is an abstract function';
+	};
+
+	static idFromString = (str: string): ServiceKeyType => {
+		throw 'ExternalTitle.idFromString is an abstract function';
+	};
 }
 
 export class Title extends BaseTitle implements LocalTitleProperties {
@@ -747,4 +756,4 @@ export class TitleCollection {
 	};
 }
 
-export type ServiceTitleList = Partial<{ [key in ActivableKey]: Promise<BaseTitle | RequestStatus> }>;
+export type ExternalTitleList = Partial<{ [key in ActivableKey]: Promise<BaseTitle | RequestStatus> }>;
