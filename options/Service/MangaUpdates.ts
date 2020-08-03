@@ -1,4 +1,4 @@
-import { Runtime, RequestStatus } from '../../src/Runtime';
+import { Runtime } from '../../src/Runtime';
 import { Service, ActivableModule, LoginMethod, LoginModule, ActivableService } from './Service';
 import { MangaUpdatesTitle } from '../../src/Service/MangaUpdates';
 import { Title, ServiceName, ServiceKey, ServiceKeyType, ActivableName, ActivableKey } from '../../src/Title';

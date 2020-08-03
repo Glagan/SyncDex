@@ -1,6 +1,6 @@
 import { DOM, AppendableElement } from '../../src/DOM';
 import { Options } from '../../src/Options';
-import { Runtime, RequestStatus } from '../../src/Runtime';
+import { Runtime } from '../../src/Runtime';
 import { ServiceKeyType, ActivableName, ActivableKey, Title } from '../../src/Title';
 import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } from './Service';
 import { AnilistStatus, AnilistTitle, AnilistDate, AnilistAPI, AnilistHeaders } from '../../src/Service/Anilist';

@@ -1,4 +1,4 @@
-import { Runtime, RequestStatus } from '../Runtime';
+import { Runtime } from '../Runtime';
 import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle, MissableField } from '../Title';
 
 export const enum AnimePlanetStatus {

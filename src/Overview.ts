@@ -9,7 +9,7 @@ import {
 	StaticKey,
 	Title,
 } from './Title';
-import { Runtime, RequestStatus } from './Runtime';
+import { Runtime } from './Runtime';
 import { Options } from './Options';
 import { GetService } from './Service';
 import { SyncDex } from './SyncDex';

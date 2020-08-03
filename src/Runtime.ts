@@ -1,18 +1,3 @@
-export const enum RequestStatus {
-	SUCCESS,
-	CREATED,
-	MISSING_TOKEN,
-	FAIL,
-	SERVER_ERROR,
-	BAD_REQUEST,
-	NOT_FOUND,
-}
-
-export enum MessageAction {
-	request = 'request',
-	openOptions = 'openOptions',
-}
-
 export class Runtime {
 	/**
 	 * Send a message to the background running script.

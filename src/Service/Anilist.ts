@@ -1,4 +1,4 @@
-import { Runtime, RequestStatus } from '../Runtime';
+import { Runtime } from '../Runtime';
 import { BaseTitle, ServiceKeyType, ActivableName, ActivableKey, ExternalTitle, Title } from '../Title';
 import { Options } from '../Options';
 

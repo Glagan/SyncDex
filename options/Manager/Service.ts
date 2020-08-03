@@ -9,7 +9,6 @@ import { Anilist } from '../Service/Anilist';
 import { Kitsu } from '../Service/Kitsu';
 import { AnimePlanet } from '../Service/AnimePlanet';
 import { MangaUpdates } from '../Service/MangaUpdates';
-import { RequestStatus } from '../../src/Runtime';
 import { ServiceName, ActivableKey, ActivableName } from '../../src/Title';
 
 export function GetService(name: ServiceName): typeof Service {

@@ -1,7 +1,7 @@
 interface Window {
 	chrome: typeof chrome;
 	browser?: typeof browser;
-	// I only use the on fuction on the Reader...
+	// I only use the *on* fuction of the Reader...
 	reader?: {
 		model: {
 			on: (event: ReaderEvent, callback: (data: any) => void) => void;
@@ -39,6 +39,21 @@ interface FormDataFile {
 
 interface FormDataProxy {
 	[key: string]: string | number | FormDataFile;
+}
+
+declare const enum RequestStatus {
+	SUCCESS,
+	CREATED,
+	MISSING_TOKEN,
+	FAIL,
+	SERVER_ERROR,
+	BAD_REQUEST,
+	NOT_FOUND,
+}
+
+declare const enum MessageAction {
+	request = 'request',
+	openOptions = 'openOptions',
 }
 
 interface RequestMessage {

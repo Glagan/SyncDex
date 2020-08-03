@@ -12,10 +12,17 @@ console.log('SyncDex :: Anilist Token');
 		Options.tokens.anilistToken = found[1];
 		await Options.save();
 		console.log('Token saved !');
-		// SimpleNotification.success("Token saved", "You can now close this page.", undefined, {
-		// 	position: "bottom-left", sticky: true,
-		// });
+		SimpleNotification.success(
+			{
+				title: 'Token saved',
+				text: 'You can now close this page.',
+			},
+			{ sticky: true }
+		);
 	} else {
-		// SimpleNotification.error("Token not saved", "There was an error while saving the token.");
+		SimpleNotification.error({
+			title: 'Token not saved',
+			text: 'There was an error while saving the token.',
+		});
 	}
 })();

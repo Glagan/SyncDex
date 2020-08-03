@@ -1,4 +1,4 @@
-import { Runtime, RequestStatus } from '../../src/Runtime';
+import { Runtime } from '../../src/Runtime';
 import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } from './Service';
 import { AnimePlanetTitle } from '../../src/Service/AnimePlanet';
 import { DOM } from '../../src/DOM';

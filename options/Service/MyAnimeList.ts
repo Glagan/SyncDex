@@ -2,7 +2,7 @@ import { DOM } from '../../src/DOM';
 import { TitleCollection, Title, ServiceName, ServiceKey, ServiceKeyType } from '../../src/Title';
 import { Mochi } from '../../src/Mochi';
 import { Service, Summary, LoginMethod, ActivableModule, LoginModule, ActivableService } from './Service';
-import { Runtime, RequestStatus } from '../../src/Runtime';
+import { Runtime } from '../../src/Runtime';
 import { MyAnimeListTitle } from '../../src/Service/MyAnimeList';
 import { FileImportFormat, FileImportableModule } from './Import';
 import { BatchExportableModule } from './Export';

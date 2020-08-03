@@ -1,5 +1,4 @@
 import { setBrowser } from '../src/Browser';
-import { MessageAction } from '../src/Runtime';
 
 console.log('SyncDex :: Background');
 

@@ -47,7 +47,7 @@ let mainManifest = {
 	content_scripts: [
 		{
 			matches: ['https://anilist.co/api/v2/oauth/pin?syncdex*'],
-			js: ['dist/simpleNotification.min.js', 'external/SyncDex_Anilist.js'],
+			js: ['dist/SimpleNotification.js', 'external/SyncDex_Anilist.js'],
 		},
 		{
 			matches: [
@@ -66,8 +66,8 @@ let mainManifest = {
 				'https://*.mangadex.org/list*',
 				'https://*.mangadex.org/updates*',
 			],
-			js: ['dist/simpleNotification.min.js', 'SyncDex.js'],
-			css: ['dist/simpleNotification.min.css', 'SyncDex.css'],
+			js: ['dist/SimpleNotification.js', 'SyncDex.js'],
+			css: ['dist/SimpleNotification.min.css', 'SyncDex.css'],
 		},
 	],
 	browser_action: {
@@ -162,6 +162,7 @@ let bundleList = [
 const bundles = bundleList.map((bundle) => {
 	return {
 		input: bundle.input,
+		// external: ['SimpleNotification'],
 		plugins: (() => {
 			let list = [typescript()];
 			if (options.mode == 'prod' || options.mode == 'production') {
@@ -178,7 +179,7 @@ const bundles = bundleList.map((bundle) => {
 			buildDelay: 750,
 			clearScreen: false,
 			chokidar: false,
-			exclude: ['node_modules/**', 'build/**'],
+			exclude: ['node_modules/**/*', 'build/**/*', 'dist/**/*'],
 		},
 	};
 });

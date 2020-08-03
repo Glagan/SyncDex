@@ -1,5 +1,5 @@
 import { Options } from '../../src/Options';
-import { Runtime, RequestStatus } from '../../src/Runtime';
+import { Runtime } from '../../src/Runtime';
 import { ServiceKeyType, ActivableName, ActivableKey, Title } from '../../src/Title';
 import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } from './Service';
 import { KitsuTitle, KitsuManga, KitsuResponse, KitsuHeaders, KitsuAPI } from '../../src/Service/Kitsu';

@@ -1,6 +1,5 @@
 import { LocalStorage } from './Storage';
 import { Options, AvailableOptions } from './Options';
-import { RequestStatus } from './Runtime';
 import { DOM } from './DOM';
 import { dateFormat, dateCompare, isDate } from './Utility';
 

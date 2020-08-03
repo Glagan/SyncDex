@@ -1,5 +1,5 @@
 import { TitleCollection, ServiceName, ServiceKey, ServiceKeyType, Title } from '../../src/Title';
-import { Runtime, RequestStatus } from '../../src/Runtime';
+import { Runtime } from '../../src/Runtime';
 import { Service, LoginModule } from './Service';
 import { AppendableElement, DOM } from '../../src/DOM';
 import { APIExportableModule } from './Export';

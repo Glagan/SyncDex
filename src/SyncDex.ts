@@ -15,7 +15,6 @@ import {
 import { Overview } from './Overview';
 import { Mochi } from './Mochi';
 import { GetService } from './Service';
-import { RequestStatus } from './Runtime';
 import { injectScript } from './Utility';
 
 interface ReadingState {
@@ -150,6 +149,10 @@ export class SyncDex {
 		}
 		// Update title state if not delayed
 		const delayed = details._data.status != 'OK' && details._data.status != 'external';
+		SimpleNotification.warning({
+			title: 'Test',
+			text: `Test`,
+		});
 		let doUpdate = false;
 		if (!delayed) {
 			state.title.status = Status.READING;
@@ -160,9 +163,9 @@ export class SyncDex {
 			doUpdate = true;
 		}
 		// Sync Services -- Check initial Status and update if it's the first time
-		if (init) {
+		/*if (init) {
 			await this.checkServiceStatus(state.title, state.services);
-		} else if (doUpdate) this.syncServices(state.title, state.services);
+		} else if (doUpdate) this.syncServices(state.title, state.services);*/
 	};
 
 	chapterPage = (): void => {

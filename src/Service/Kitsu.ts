@@ -1,5 +1,5 @@
 import { Options } from '../Options';
-import { Runtime, RequestStatus } from '../Runtime';
+import { Runtime } from '../Runtime';
 import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle } from '../Title';
 
 interface KitsuHeaders {

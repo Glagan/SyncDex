@@ -1,4 +1,4 @@
-import { RequestStatus, Runtime } from '../Runtime';
+import { Runtime } from '../Runtime';
 import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle } from '../Title';
 
 export enum MyAnimeListStatus {

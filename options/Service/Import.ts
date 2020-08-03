@@ -4,7 +4,6 @@ import { TitleCollection, ServiceKeyType, ExternalTitle } from '../../src/Title'
 import { LocalStorage } from '../../src/Storage';
 import { Options } from '../../src/Options';
 import { Mochi } from '../../src/Mochi';
-import { RequestStatus } from '../../src/Runtime';
 
 interface ImportState {
 	current: number;
