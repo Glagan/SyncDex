@@ -179,10 +179,8 @@ export class AnilistTitle extends ExternalTitle {
 		if (mediaEntry) {
 			values.mediaEntryId = mediaEntry.id;
 			values.inList = true;
-			values.progress = {
-				chapter: mediaEntry.progress,
-				volume: mediaEntry.progressVolumes,
-			};
+			values.progress = { chapter: mediaEntry.progress };
+			if (mediaEntry.progressVolumes > 0) values.progress.volume = mediaEntry.progressVolumes;
 			values.status = AnilistTitle.toStatus(mediaEntry.status);
 			values.score = mediaEntry.score ? mediaEntry.score : 0;
 			values.start = AnilistTitle.dateFromAnilist(mediaEntry.startedAt);

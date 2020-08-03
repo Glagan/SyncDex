@@ -70,12 +70,12 @@ export class MangaUpdatesTitle extends ExternalTitle {
 				values.current = { progress: { chapter: 0 }, status: values.status };
 				// The state in list is only displayed if the title is in the READING list
 				if (values.status == Status.READING) {
-					const chapter = showList.querySelector<HTMLAnchorElement>(`a[title='Increment Chapter']`)!;
-					const volume = showList.querySelector<HTMLAnchorElement>(`a[title='Increment Volume']`)!;
-					values.progress = {
-						chapter: parseInt(chapter.textContent!.substr(2)), // Remove c. and v.
-						volume: parseInt(volume.textContent!.substr(2)),
-					};
+					const chapterLink = showList.querySelector<HTMLAnchorElement>(`a[title='Increment Chapter']`)!;
+					const volumeLink = showList.querySelector<HTMLAnchorElement>(`a[title='Increment Volume']`)!;
+					// Remove c. and v. with substr
+					values.progress = { chapter: parseInt(chapterLink.textContent!.substr(2)) };
+					const volume = parseInt(volumeLink.textContent!.substr(2));
+					if (volume > 1) values.progress.volume = volume;
 					values.current.progress = Object.assign({}, values.progress); // Avoid reference
 				}
 			} else values.inList = false;

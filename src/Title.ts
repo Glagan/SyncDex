@@ -234,7 +234,10 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 			original !== undefined &&
 			(content === undefined ||
 				(isDate(content) && isDate(original) && !dateCompare(content, original)) ||
-				(typeof original !== 'object' && content != original))
+				(typeof content === 'number' &&
+					typeof original === 'number' &&
+					Math.floor(content) != Math.floor(original)) ||
+				(typeof content === 'string' && typeof original === 'string' && content != original))
 		) {
 			if (content) {
 				row.lastElementChild!.classList.add('not-synced');
@@ -342,9 +345,9 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 	 */
 	isSynced = (title: BaseTitle): boolean => {
 		const missingFields = (<typeof BaseTitle>this.constructor).missingFields;
-		return (this.synced =
+		this.synced =
 			title.status === this.status &&
-			title.progress.chapter === this.progress.chapter &&
+			Math.floor(title.progress.chapter) === Math.floor(this.progress.chapter) &&
 			(missingFields.indexOf('volume') >= 0 || title.progress.volume === this.progress.volume) &&
 			(missingFields.indexOf('score') >= 0 || title.score === this.score) &&
 			(missingFields.indexOf('start') >= 0 ||
@@ -352,7 +355,8 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 				(title.start !== undefined && this.start !== undefined && dateCompare(title.start, this.start))) &&
 			(missingFields.indexOf('end') >= 0 ||
 				(title.end === undefined && this.end === undefined) ||
-				(title.end !== undefined && this.end !== undefined && dateCompare(title.end, this.end))));
+				(title.end !== undefined && this.end !== undefined && dateCompare(title.end, this.end)));
+		return this.synced;
 	};
 
 	/**
@@ -417,6 +421,10 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 	link(): string {
 		return (<typeof BaseTitle>this.constructor).link(this.id);
 	}
+
+	isNextChapter = (progress: Progress): boolean => {
+		return progress.chapter < Math.floor(this.progress.chapter) + 2;
+	};
 }
 
 export abstract class ExternalTitle extends BaseTitle {

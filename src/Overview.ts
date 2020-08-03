@@ -133,8 +133,9 @@ export class Overview {
 					refreshButton.classList.add('loading');
 					refreshButton.disabled = true;
 					await this.title.refresh();
-					// checkServiceStatus will refresh the main overview
+					// syncServices will refresh the main overview
 					await this.syncDex.checkServiceStatus(this.title, this.services, this);
+					await this.syncDex.syncServices(this.title, this.services, this, true);
 					refreshButton.classList.remove('loading');
 					refreshButton.disabled = false;
 				},
@@ -238,6 +239,7 @@ export class Overview {
 						this.title.services[serviceKey]!
 					);
 					await this.syncDex.checkServiceStatus(this.title, this.services, this);
+					await this.syncDex.syncServices(this.title, this.services, this, true);
 					button.classList.remove('loading');
 					button.disabled = false;
 					this.hasSynced(serviceKey);

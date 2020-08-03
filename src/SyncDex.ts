@@ -1,6 +1,6 @@
 import { Router } from './Router';
 import { Options } from './Options';
-import { MangaDex, Thumbnail } from './MangaDex';
+import { MangaDex } from './ChapterGroup';
 import { DOM } from './DOM';
 import {
 	TitleCollection,
@@ -11,11 +11,15 @@ import {
 	ExternalTitleList,
 	Title,
 	StatusMap,
+	ExternalTitle,
+	ReverseServiceName,
 } from './Title';
 import { Overview } from './Overview';
 import { Mochi } from './Mochi';
 import { GetService } from './Service';
 import { injectScript } from './Utility';
+import { Runtime } from './Runtime';
+import { Thumbnail } from './Thumbnail';
 
 interface ReadingState {
 	title?: Title;
@@ -121,10 +125,11 @@ export class SyncDex {
 	chapterEvent = async (details: ChapterChangeEventDetails, state: ReadingState): Promise<void> => {
 		console.log(details);
 		// Get the Title and Services initial state on the first chapter change
+		const id = details.manga._data.id;
 		let init = false;
-		if (!state.title) {
-			const id = details.manga._data.id;
+		if (state.title == undefined) {
 			state.title = await Title.get(id);
+			init = true;
 			// Find Services
 			let fallback = false;
 			if (Options.useMochi) {
@@ -144,32 +149,97 @@ export class SyncDex {
 					}
 				}
 			}
+			this.setServices(state.title, state.services); // Send initial requests
+			state.title.name = details.manga._data.title;
 			await state.title.persist(); // Always save
-			init = true;
 		}
 		// Update title state if not delayed
 		const delayed = details._data.status != 'OK' && details._data.status != 'external';
-		SimpleNotification.warning({
-			title: 'Test',
-			text: `Test`,
-		});
 		let doUpdate = false;
 		if (!delayed) {
 			state.title.status = Status.READING;
 			const currentProgress: Progress = { chapter: parseFloat(details._data.chapter) };
 			if (details._data.volume !== '') currentProgress.volume = parseInt(details._data.volume);
-			state.title.progress = currentProgress;
-			await state.title.persist();
-			doUpdate = true;
+			// Check if currentProgress should be updated
+			if (
+				(!Options.saveOnlyNext && !Options.saveOnlyHigher) ||
+				(Options.saveOnlyNext && state.title.isNextChapter(currentProgress)) ||
+				(Options.saveOnlyHigher && state.title.progress.chapter < currentProgress.chapter)
+			) {
+				state.title.progress = currentProgress;
+				await state.title.persist();
+				doUpdate = true;
+			} else if (Options.saveOnlyNext || Options.saveOnlyHigher) {
+				// TODO: *Update* notifications buttons
+				SimpleNotification.info(
+					{
+						title: 'Chapter Not Higher',
+						image: `https://mangadex.org/images/manga/${id}.large.jpg`,
+						text: `**${state.title.name}** Chapter **${details._data.chapter}** is not the next or higher and hasn't been updated.`,
+						buttons: [
+							{
+								type: 'success',
+								value: 'Update',
+							},
+							{
+								type: 'message',
+								value: 'Close',
+							},
+						],
+					},
+					{ sticky: true }
+				);
+			}
+		} else {
+			SimpleNotification.warning(
+				{
+					title: 'Title Delayed',
+					image: `https://mangadex.org/images/manga/${id}.large.jpg`,
+					text: `**${state.title.name}** Chapter **${details._data.chapter}** is delayed and has not been updated.`,
+				},
+				{ sticky: true }
+			);
 		}
-		// Sync Services -- Check initial Status and update if it's the first time
-		/*if (init) {
-			await this.checkServiceStatus(state.title, state.services);
-		} else if (doUpdate) this.syncServices(state.title, state.services);*/
+		// Sync Services -- Check initial Status if it's the first time
+		if (init) await this.checkServiceStatus(state.title, state.services);
+		if (doUpdate) {
+			const result = await this.syncServices(state.title, state.services);
+			const updatedServices = result.filter((key) => Options.services.indexOf(key as ActivableKey) >= 0);
+			if (updatedServices.length > 0) {
+				SimpleNotification.success(
+					{
+						title: 'Progress Updated',
+						image: `https://mangadex.org/images/manga/${id}.large.jpg`,
+						text: `${updatedServices
+							.map((k) => `**${ReverseServiceName[k]}**`)
+							.join(', ')} have been updated to Chapter ${Math.floor(state.title.progress.chapter)}.`,
+					},
+					{ sticky: true }
+				);
+			} else {} // TODO: Nothing updated, but .x chapter
+		}
 	};
 
 	chapterPage = (): void => {
 		console.log('SyncDex :: Chapter');
+
+		if (Options.services.length == 0) {
+			SimpleNotification.error({
+				title: 'No active Services',
+				text: `You have no **active Services**, nothing will be synced !\nEnable one in the **Options** and refresh this page.`,
+				buttons: [
+					{
+						type: 'info',
+						value: 'Options',
+						onClick: (notification: SimpleNotification) => {
+							Runtime.openOptions();
+							notification.closeAnimated();
+						},
+					},
+				],
+			});
+			return;
+		}
 
 		// No support for Legacy Reader
 		if (!document.querySelector('.reader-controls-container')) return;
@@ -241,12 +311,57 @@ export class SyncDex {
 		}
 	};
 
+	setServices = (title: Title, services: ExternalTitleList): void => {
+		const activeServices = Object.keys(title.services).filter(
+			(key) => Options.services.indexOf(key as ActivableKey) >= 0
+		);
+		// Add Services ordered by Options.services to check Main Service first
+		for (const service of Options.services) {
+			if (activeServices.indexOf(service) >= 0) {
+				services[service] = GetService(ReverseActivableName[service]).get(title.services[service]!);
+			}
+		}
+	};
+
+	/**
+	 * Check if any Service in services is available, in the list and more recent that the local Title.
+	 * If an external Service is more recent, sync with it and sync all other Services with the then synced Title.
+	 */
+	checkServiceStatus = async (title: Title, services: ExternalTitleList, overview?: Overview): Promise<void> => {
+		// Sync Title with the most recent ServiceTitle ordered by User choice
+		// Services are reversed to select the first choice last
+		let doSave = false;
+		for (const serviceKey of Options.services.reverse()) {
+			if (services[serviceKey] === undefined) continue;
+			const response: BaseTitle | RequestStatus = await services[serviceKey]!;
+			if (response instanceof BaseTitle && response.loggedIn) {
+				// Check if any of the ServiceTitle is more recent than the local Title
+				if (response.inList && (title.inList || response.isMoreRecent(title))) {
+					// If there is one, sync with it and save
+					title.inList = false;
+					title.merge(response);
+					doSave = true;
+				}
+				// Finish retrieving the ID if required -- AnimePlanet has 2 fields
+				if ((<typeof ExternalTitle>response.constructor).requireIdQuery) {
+					(title.services[
+						(<typeof ExternalTitle>response.constructor).serviceKey
+					] as ServiceKeyType) = response.id;
+					doSave = true;
+				}
+			}
+		}
+		if (doSave) await title.persist();
+		if (overview) overview.updateMainOverview();
+	};
+
 	syncServices = async (
 		title: Title,
 		services: ExternalTitleList,
 		overview?: Overview,
 		checkAutoSyncOption: boolean = false
-	): Promise<void> => {
+	): Promise<ActivableKey[]> => {
+		const updated: ActivableKey[] = [];
 		for (const serviceKey of Options.services) {
 			if (services[serviceKey] === undefined) continue;
 			const response: BaseTitle | RequestStatus = await services[serviceKey]!;
@@ -262,37 +377,12 @@ export class SyncDex {
 							else overview.updateOverview(serviceKey, response);
 						}
 					});
+					updated.push(serviceKey);
 					// Always update the overview to check against possible imported ServiceTitle
 				} else if (overview) overview.updateOverview(serviceKey, response);
 			}
 		}
-	};
-
-	/**
-	 * Check if any Service in services is available, in the list and more recent that the local Title.
-	 * If an external Service is more recent, sync with it and sync all other Services with the then synced Title.
-	 */
-	checkServiceStatus = async (title: Title, services: ExternalTitleList, overview?: Overview): Promise<void> => {
-		// Sync Title with the most recent ServiceTitle ordered by User choice
-		// Services are reversed to select the first choice last
-		let externalImported = false;
-		for (const serviceKey of Options.services.reverse()) {
-			if (services[serviceKey] === undefined) continue;
-			const response: BaseTitle | RequestStatus = await services[serviceKey]!;
-			if (response instanceof BaseTitle && response.loggedIn) {
-				// Check if any of the ServiceTitle is more recent than the local Title
-				if (response.inList && (title.inList || response.isMoreRecent(title))) {
-					// If there is one, sync with it and save
-					title.inList = false;
-					title.merge(response);
-					externalImported = true;
-				}
-			}
-		}
-		if (externalImported) await title.persist();
-		if (overview) overview.updateMainOverview();
-		// When the Title is synced, all remaining ServiceTitle are synced with it
-		if (title.status != Status.NONE) this.syncServices(title, services, overview, true);
+		return updated;
 	};
 
 	titlePage = async (): Promise<void> => {
@@ -358,22 +448,14 @@ export class SyncDex {
 		await title.persist(); // Always save
 		// Load each Services to Sync
 		const services: ExternalTitleList = {};
-		if (Options.services.length > 0) {
-			let activeServices = Object.keys(title.services).filter(
-				(key) => Options.services.indexOf(key as ActivableKey) >= 0
-			);
-			// Add Services ordered by Options.services to check Main Service first
-			for (const service of Options.services) {
-				if (activeServices.indexOf(service) >= 0) {
-					services[service] = GetService(ReverseActivableName[service]).get(title.services[service]!);
-				}
-			}
-		}
+		if (Options.services.length > 0) this.setServices(title, services);
 		// Search for the progress row and add overview there
 		let overview = new Overview(title, services, this);
 		overview.displayServices();
-		// Sync Services
-		this.checkServiceStatus(title, services, overview);
+		// Check current online Status
+		await this.checkServiceStatus(title, services, overview);
+		// When the Title is synced, all remaining ServiceTitle are synced with it
+		if (title.status != Status.NONE) this.syncServices(title, services, overview, true);
 	};
 
 	updatesPage = (): void => {

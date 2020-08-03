@@ -48,6 +48,7 @@ let mainManifest = {
 		{
 			matches: ['https://anilist.co/api/v2/oauth/pin?syncdex*'],
 			js: ['dist/SimpleNotification.js', 'external/SyncDex_Anilist.js'],
+			css: ['dist/SimpleNotification.min.css'],
 		},
 		{
 			matches: [
