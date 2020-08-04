@@ -12,7 +12,7 @@ import {
 import { Runtime } from './Runtime';
 import { Options } from './Options';
 import { GetService } from './Service';
-import { SyncDex } from './SyncDex';
+import { SyncDex, SyncEvents } from './SyncDex';
 
 interface ServiceOverview {
 	key: ServiceKey;
@@ -35,6 +35,7 @@ export class Overview {
 	bodies: HTMLElement;
 	current?: ServiceOverview;
 	overviews: Partial<{ [key in ActivableKey | StaticKey.SyncDex]: ServiceOverview }> = {};
+	syncEvents: SyncEvents;
 
 	constructor(title: Title, services: ExternalTitleList, syncDex: SyncDex) {
 		this.title = title;
@@ -49,6 +50,18 @@ export class Overview {
 		row.parentElement!.insertBefore(this.row, row);
 		this.serviceList = DOM.create('ul', { class: 'tabs' });
 		this.bodies = DOM.create('div', { class: 'bodies' });
+		this.syncEvents = {
+			beforePersist: (key) => {
+				this.isSyncing(key);
+			},
+			afterPersist: async (key, response) => {
+				if (response > RequestStatus.CREATED) this.updateOverview(key, response);
+				else this.updateOverview(key, await this.services[key]!);
+			},
+			alreadySynced: async (key) => {
+				this.updateOverview(key, await this.services[key]!);
+			},
+		};
 	}
 
 	alert = (type: 'warning' | 'danger' | 'info', content: string | AppendableElement[]): HTMLElement => {
@@ -133,9 +146,9 @@ export class Overview {
 					refreshButton.classList.add('loading');
 					refreshButton.disabled = true;
 					await this.title.refresh();
-					// syncServices will refresh the main overview
-					await this.syncDex.checkServiceStatus(this.title, this.services, this);
-					await this.syncDex.syncServices(this.title, this.services, this, true);
+					await this.syncDex.checkServiceStatus(this.title, this.services);
+					this.updateMainOverview();
+					await this.syncDex.syncServices(this.title, this.services, this.syncEvents, true);
 					refreshButton.classList.remove('loading');
 					refreshButton.disabled = false;
 				},
@@ -238,8 +251,9 @@ export class Overview {
 					this.services[serviceKey] = GetService(ReverseActivableName[serviceKey]).get(
 						this.title.services[serviceKey]!
 					);
-					await this.syncDex.checkServiceStatus(this.title, this.services, this);
-					await this.syncDex.syncServices(this.title, this.services, this, true);
+					await this.syncDex.checkServiceStatus(this.title, this.services);
+					this.updateMainOverview();
+					await this.syncDex.syncServices(this.title, this.services, this.syncEvents, true);
 					button.classList.remove('loading');
 					button.disabled = false;
 					this.hasSynced(serviceKey);
@@ -364,7 +378,7 @@ export class Overview {
 			this.title.status = status;
 			if (status == Status.READING) this.title.start = new Date();
 			await this.title.persist();
-			await this.syncDex.syncServices(this.title, this.services, this);
+			await this.syncDex.syncServices(this.title, this.services, this.syncEvents);
 			this.updateMainOverview();
 		};
 		startReading.addEventListener('click', async (event) => {

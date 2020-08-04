@@ -405,3 +405,21 @@
 	white-space: nowrap;
 	font-size: 0.6125rem;
 }
+
+/** Reading Overview */
+.reading-overview {
+	display: flex;
+	justify-content: space-evenly;
+}
+.reading-overview .error {
+	box-shadow: 0 0 4px 2px rgb(155, 13, 13);
+	background-color: rgb(155, 13, 13);
+}
+.reading-overview .warning {
+	box-shadow: 0 0 4px 2px rgb(216, 151, 12);
+	background-color: rgb(216, 151, 12);
+}
+.reading-overview .synced {
+	box-shadow: 0 0 4px 2px rgb(12, 139, 22);
+	background-color: rgb(12, 139, 22);
+}

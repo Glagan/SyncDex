@@ -227,7 +227,11 @@ function bundleName(outputFile) {
 			for (const browser of browsers) {
 				await buildExtension(browser, doneInitial);
 			}
-			console.log('Done');
+			const zeroPad = (n) => `00${n}`.slice(-2);
+			const now = new Date();
+			console.log(
+				`Done at ${zeroPad(now.getHours())}h${zeroPad(now.getMinutes())}min${zeroPad(now.getSeconds())}s`
+			);
 			if (!doneInitial) {
 				if (!options.watch) {
 					watcher.close();

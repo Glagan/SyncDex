@@ -1,4 +1,4 @@
-type Position = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
+type NotificationPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
 type Type = 'success' | 'info' | 'error' | 'warning' | 'message';
 type eventCallback = (notification: SimpleNotification) => void;
 type Events = {
@@ -21,7 +21,7 @@ interface Content {
 }
 
 interface Options {
-	position: Position;
+	position: NotificationPosition;
 	maxNotifications: number;
 	removeAllOnDisplay: boolean;
 	closeOnClick: boolean;
@@ -89,7 +89,7 @@ declare class SimpleNotification {
 	addExtinguishFct(): void;
 	removeExtinguishFct(): void;
 	disableButtons(): void;
-	static wrappers: Partial<Record<Position, HTMLElement>>;
+	static wrappers: Partial<Record<NotificationPosition, HTMLElement>>;
 	static displayed: SimpleNotification[];
 	static _options: Options;
 	static makeWrapper(position: number): void;
