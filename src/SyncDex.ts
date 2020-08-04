@@ -13,6 +13,7 @@ import {
 	StatusMap,
 	ExternalTitle,
 	ReverseServiceName,
+	ServiceKey,
 } from './Title';
 import { Overview } from './Overview';
 import { Mochi } from './Mochi';
@@ -122,6 +123,91 @@ export class SyncDex {
 		}
 	};
 
+	syncShowResult = async (state: ReadingState, created: boolean, init: boolean): Promise<void> => {
+		if (state.title == undefined) return;
+		const result = await this.syncServices(state.title, state.services);
+		/**
+		 * Display result notification, one line per Service
+		 * {Icon} Name [Created] / [Synced] / [Up to date] / [Imported]
+		 * Display another notification for errors, with the same template
+		 * {Icon} Name [Not Logged In] / [Bad Request] / [Server Error]
+		 */
+		const makeRow = (key: ServiceKey, status: string) =>
+			`![${ReverseServiceName[key]}|${Runtime.file(`/icons/${key}.png`)}] **${
+				ReverseServiceName[key]
+			}**>*>[${status}]<`;
+		const updateRows: string[] = [];
+		const errorRows: string[] = [];
+		let upToDateCount = 0;
+		for (const key of Options.services) {
+			if (state.title.services[key] === undefined) {
+				updateRows.push(makeRow(key, 'No ID'));
+			} else if (result[key] === undefined) {
+				updateRows.push(makeRow(key, 'Up to date'));
+				upToDateCount++;
+			} else if (result[key] === false) {
+				errorRows.push(makeRow(key, 'Logged Out'));
+			} else if (result[key]! <= RequestStatus.CREATED) {
+				updateRows.push(makeRow(key, result[key] === RequestStatus.CREATED ? 'Created' : 'Synced'));
+			} else {
+				errorRows.push(
+					makeRow(key, result[key] === RequestStatus.SERVER_ERROR ? 'Server Error' : 'Bad Request')
+				);
+			}
+		}
+		// Display Notifications
+		if (!init && upToDateCount == Options.services.length) {
+			SimpleNotification.success(
+				{
+					title: 'Progress Updated',
+					image: `https://mangadex.org/images/manga/${state.title.id}.large.jpg`,
+					text: `Chapter ${Math.floor(state.title.progress.chapter)}\n${
+						created ? '**Start Date** set to Today !\n' : ''
+					}${makeRow(ServiceKey.SyncDex, 'Saved')}\nNothing else to do !`,
+				},
+				{ sticky: true }
+			);
+		} else if (upToDateCount != Options.services.length) {
+			SimpleNotification.success(
+				{
+					title: 'Progress Updated',
+					image: `https://mangadex.org/images/manga/${state.title.id}.large.jpg`,
+					text: `Chapter ${Math.floor(state.title.progress.chapter)}\n${
+						created ? '**Start Date** set to Today !\n' : ''
+					}${updateRows.join('\n')}`,
+				},
+				{ sticky: true }
+			);
+		}
+		if (errorRows.length > 0) {
+			SimpleNotification.error(
+				{
+					title: 'Error',
+					image: `https://mangadex.org/images/manga/${state.title.id}.large.jpg`,
+					text: errorRows.join('\n'),
+				},
+				{ sticky: true }
+			);
+		}
+	};
+
+	setStateProgress = async (
+		state: ReadingState,
+		progress: Progress,
+		created: boolean,
+		chapter: number
+	): Promise<void> => {
+		if (!state.title) return;
+		state.title.status = Status.READING;
+		state.title.progress = progress;
+		if (created) state.title.start = new Date();
+		if (Options.biggerHistory) {
+			state.title.lastChapter = chapter;
+			state.title.lastRead = Date.now();
+		}
+		await state.title.persist();
+	};
+
 	chapterEvent = async (details: ChapterChangeEventDetails, state: ReadingState): Promise<void> => {
 		console.log(details);
 		// Get the Title and Services initial state on the first chapter change
@@ -151,26 +237,26 @@ export class SyncDex {
 			}
 			this.setServices(state.title, state.services); // Send initial requests
 			state.title.name = details.manga._data.title;
-			await state.title.persist(); // Always save
 		}
+		// Check initial Status if it's the first time
+		if (init) await this.checkServiceStatus(state.title, state.services);
+		const created = state.title.status == Status.NONE || state.title.status == Status.PLAN_TO_READ;
 		// Update title state if not delayed
 		const delayed = details._data.status != 'OK' && details._data.status != 'external';
 		let doUpdate = false;
 		if (!delayed) {
-			state.title.status = Status.READING;
 			const currentProgress: Progress = { chapter: parseFloat(details._data.chapter) };
 			if (details._data.volume !== '') currentProgress.volume = parseInt(details._data.volume);
 			// Check if currentProgress should be updated
+			// TODO: Check if saveOnlyNext works with new Titles, and a chapter 0 or 1
 			if (
 				(!Options.saveOnlyNext && !Options.saveOnlyHigher) ||
 				(Options.saveOnlyNext && state.title.isNextChapter(currentProgress)) ||
 				(Options.saveOnlyHigher && state.title.progress.chapter < currentProgress.chapter)
 			) {
-				state.title.progress = currentProgress;
-				await state.title.persist();
+				await this.setStateProgress(state, currentProgress, created, details._data.id);
 				doUpdate = true;
 			} else if (Options.saveOnlyNext || Options.saveOnlyHigher) {
-				// TODO: *Update* notifications buttons
 				SimpleNotification.info(
 					{
 						title: 'Chapter Not Higher',
@@ -180,6 +266,11 @@ export class SyncDex {
 							{
 								type: 'success',
 								value: 'Update',
+								onClick: async (notification: SimpleNotification) => {
+									await this.setStateProgress(state, currentProgress, created, details._data.id);
+									this.syncShowResult(state, created, false);
+									notification.closeAnimated();
+								},
 							},
 							{
 								type: 'message',
@@ -200,24 +291,9 @@ export class SyncDex {
 				{ sticky: true }
 			);
 		}
-		// Sync Services -- Check initial Status if it's the first time
-		if (init) await this.checkServiceStatus(state.title, state.services);
-		if (doUpdate) {
-			const result = await this.syncServices(state.title, state.services);
-			const updatedServices = result.filter((key) => Options.services.indexOf(key as ActivableKey) >= 0);
-			if (updatedServices.length > 0) {
-				SimpleNotification.success(
-					{
-						title: 'Progress Updated',
-						image: `https://mangadex.org/images/manga/${id}.large.jpg`,
-						text: `${updatedServices
-							.map((k) => `**${ReverseServiceName[k]}**`)
-							.join(', ')} have been updated to Chapter ${Math.floor(state.title.progress.chapter)}.`,
-					},
-					{ sticky: true }
-				);
-			} else {} // TODO: Nothing updated, but .x chapter
-		}
+		await state.title.persist(); // Always save
+		// Always Sync Services -- even if doUpdate is set to false, to sync any out of sync services
+		if (init || doUpdate) this.syncShowResult(state, created, init);
 	};
 
 	chapterPage = (): void => {
@@ -360,29 +436,32 @@ export class SyncDex {
 		services: ExternalTitleList,
 		overview?: Overview,
 		checkAutoSyncOption: boolean = false
-	): Promise<ActivableKey[]> => {
-		const updated: ActivableKey[] = [];
+	): Promise<{ [key in ActivableKey]?: RequestStatus | false }> => {
+		const report: { [key in ActivableKey]?: RequestStatus | false } = {};
 		for (const serviceKey of Options.services) {
 			if (services[serviceKey] === undefined) continue;
 			const response: BaseTitle | RequestStatus = await services[serviceKey]!;
-			if (response instanceof BaseTitle && response.loggedIn) {
+			if (response instanceof BaseTitle) {
+				if (!response.loggedIn) {
+					report[serviceKey] = false;
+					continue;
+				}
 				response.isSynced(title);
 				// If Auto Sync is on, import from now up to date Title and persist
 				if ((!checkAutoSyncOption || Options.autoSync) && (!response.inList || !response.synced)) {
 					if (overview) overview.isSyncing(serviceKey);
 					response.import(title);
-					response.persist().then((res) => {
-						if (overview) {
-							if (res > RequestStatus.CREATED) overview.updateOverview(serviceKey, res);
-							else overview.updateOverview(serviceKey, response);
-						}
-					});
-					updated.push(serviceKey);
+					const res = await response.persist();
+					if (overview) {
+						if (res > RequestStatus.CREATED) overview.updateOverview(serviceKey, res);
+						else overview.updateOverview(serviceKey, response);
+					}
+					report[serviceKey] = res;
 					// Always update the overview to check against possible imported ServiceTitle
 				} else if (overview) overview.updateOverview(serviceKey, response);
-			}
+			} else report[serviceKey] = response;
 		}
-		return updated;
+		return report;
 	};
 
 	titlePage = async (): Promise<void> => {

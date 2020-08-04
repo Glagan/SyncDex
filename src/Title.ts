@@ -98,7 +98,6 @@ export interface StorageTitle {
 	sd?: number; // start
 	ed?: number; // end
 	lt?: number; // lastTitle
-	lc?: number; // lastCheck
 	n?: string; // name
 	// History
 	id?: number; // lastChapter
@@ -161,7 +160,6 @@ export class StorageTitle {
 			(title.sd === undefined || typeof title.sd === 'number') &&
 			(title.ed === undefined || typeof title.ed === 'number') &&
 			(title.lt === undefined || typeof title.lt === 'number') &&
-			(title.lc === undefined || typeof title.lc === 'number') &&
 			(title.id === undefined || typeof title.id === 'number') &&
 			(title.h === undefined || (typeof title.h === 'object' && title.h.c !== undefined)) &&
 			(title.hi === undefined || typeof title.hi === 'number') &&
@@ -246,7 +244,13 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 				row,
 				DOM.space(),
 				DOM.create('span', {
-					textContent: `${isDate(original) ? dateFormat(original) : original}`,
+					textContent: `${
+						isDate(original)
+							? dateFormat(original)
+							: typeof original === 'number'
+							? Math.floor(original)
+							: original
+					}`,
 					class: 'synced',
 				})
 			);
@@ -499,10 +503,6 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 	 * Last time the Title page of the Title was visited.
 	 */
 	lastTitle?: number;
-	/**
-	 * Last time the Title was synced with an external Service
-	 */
-	lastCheck?: number;
 
 	// History
 
@@ -551,7 +551,6 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 			start: title.sd ? new Date(title.sd) : undefined,
 			end: title.ed ? new Date(title.ed) : undefined,
 			lastTitle: title.lt,
-			lastCheck: title.lc,
 			lastChapter: title.id,
 			highest: title.hi,
 			name: title.n,
@@ -593,7 +592,6 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 				v: this.progress.volume && this.progress.volume > 0 ? this.progress.volume : undefined,
 			},
 			lt: this.lastTitle,
-			lc: this.lastCheck,
 			id: this.lastChapter,
 			hi: this.highest,
 			n: this.name,

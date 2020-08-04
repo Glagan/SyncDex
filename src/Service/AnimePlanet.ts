@@ -86,6 +86,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 
 	persist = async (): Promise<RequestStatus> => {
 		const id = this.id.i;
+		// TODO: Avoid sending Status request if it's already in list
 		let response = await Runtime.jsonRequest({
 			url: `https://www.anime-planet.com/api/list/status/manga/${id}/${AnimePlanetTitle.fromStatus(
 				this.status
@@ -96,7 +97,9 @@ export class AnimePlanetTitle extends ExternalTitle {
 		// Chapter progress
 		if (this.progress.chapter > 0) {
 			response = await Runtime.jsonRequest({
-				url: `https://www.anime-planet.com/api/list/update/manga/${id}/${this.progress.chapter}/0/${this.token}`,
+				url: `https://www.anime-planet.com/api/list/update/manga/${id}/${Math.floor(this.progress.chapter)}/0/${
+					this.token
+				}`,
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);

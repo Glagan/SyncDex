@@ -1,9 +1,4 @@
 /**
- * Simple Notification
- * https://github.com/Glagan/SimpleNotification
- */
-
-/**
  * @typedef {('top-left' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right')} Position
  */
 
@@ -929,6 +924,12 @@ SimpleNotification.tags = {
 		class: 'gn-bold',
 		open: '**',
 		close: '**',
+	},
+	floatRight: {
+		type: 'span',
+		class: 'gn-float-right',
+		open: '>*>',
+		close: '<',
 	},
 	italic: {
 		type: 'span',

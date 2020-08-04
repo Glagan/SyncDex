@@ -209,7 +209,7 @@ export class AnilistTitle extends ExternalTitle {
 					mediaId: this.id,
 					status: AnilistTitle.fromStatus(this.status),
 					score: this.score !== undefined && this.score > 0 ? this.score : undefined,
-					progress: this.progress.chapter,
+					progress: Math.floor(this.progress.chapter),
 					progressVolumes: this.progress.volume,
 					startedAt: AnilistTitle.dateToAnilist(this.start),
 					completedAt: AnilistTitle.dateToAnilist(this.end),

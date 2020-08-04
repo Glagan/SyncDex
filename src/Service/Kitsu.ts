@@ -151,7 +151,7 @@ export class KitsuTitle extends ExternalTitle {
 					id: this.libraryEntryId ? this.libraryEntryId : undefined,
 					attributes: {
 						status: KitsuTitle.fromStatus(this.status),
-						progress: this.progress.chapter,
+						progress: Math.floor(this.progress.chapter),
 						volumesOwned: this.progress.volume,
 						ratingTwenty: kuScore,
 						startedAt: this.start !== undefined ? this.start.toISOString() : undefined,

@@ -96,7 +96,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 		if (this.progress.volume) body['add_manga[num_read_volumes]'] = this.progress.volume;
 		else body['add_manga[num_read_volumes]'] = 0;
 		body['last_completed_vol'] = '';
-		body['add_manga[num_read_chapters]'] = this.progress.chapter;
+		body['add_manga[num_read_chapters]'] = Math.floor(this.progress.chapter);
 		// Score
 		if (this.score) body['add_manga[score]'] = Math.round(this.score / 10);
 		else body['add_manga[score]'] = '';

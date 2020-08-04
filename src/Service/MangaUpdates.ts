@@ -165,7 +165,9 @@ export class MangaUpdatesTitle extends ExternalTitle {
 			const volume =
 				this.progress.volume !== undefined && this.progress.volume > 0 ? `&set_v=${this.progress.volume}` : '';
 			const response = await Runtime.request<RawResponse>({
-				url: `https://www.mangaupdates.com/ajax/chap_update.php?s=${this.id}${volume}&set_c=${this.progress.chapter}`,
+				url: `https://www.mangaupdates.com/ajax/chap_update.php?s=${this.id}${volume}&set_c=${Math.floor(
+					this.progress.chapter
+				)}`,
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);
