@@ -132,7 +132,12 @@ export class SyncDex {
 		}
 	};
 
-	syncShowResult = async (state: ReadingState, created: boolean, init: boolean): Promise<void> => {
+	readingNotificationRow = (key: ServiceKey, status: string) =>
+		`![${ReverseServiceName[key]}|${Runtime.file(`/icons/${key}.png`)}] **${
+			ReverseServiceName[key]
+		}**>*>[${status}]<`;
+
+	syncShowResult = async (state: ReadingState, created: boolean, init: boolean, updated: boolean): Promise<void> => {
 		if (state.title == undefined) return;
 		const result = await this.syncServices(state.title, state.services, {
 			beforePersist: (key) => {
@@ -155,23 +160,26 @@ export class SyncDex {
 		 * Display another notification for errors, with the same template
 		 * {Icon} Name [Not Logged In] / [Bad Request] / [Server Error]
 		 */
-		const makeRow = (key: ServiceKey, status: string) =>
-			`![${ReverseServiceName[key]}|${Runtime.file(`/icons/${key}.png`)}] **${
-				ReverseServiceName[key]
-			}**>*>[${status}]<`;
 		const updateRows: string[] = [];
 		const errorRows: string[] = [];
+		let invalidServices = 0;
 		for (const key of Options.services) {
 			if (result[key] === undefined) continue;
-			if (state.title.services[key] === undefined) {
-				updateRows.push(makeRow(key, 'No ID'));
-			} else if (result[key] === false) {
-				errorRows.push(makeRow(key, 'Logged Out'));
+			if (result[key] === false) {
+				if (init) errorRows.push(this.readingNotificationRow(key, 'Logged Out'));
+				invalidServices++;
+			} else if (state.title.services[key] === undefined) {
+				if (init) errorRows.push(this.readingNotificationRow(key, 'No ID'));
 			} else if (result[key]! <= RequestStatus.CREATED) {
-				updateRows.push(makeRow(key, result[key] === RequestStatus.CREATED ? 'Created' : 'Synced'));
+				updateRows.push(
+					this.readingNotificationRow(key, result[key] === RequestStatus.CREATED ? 'Created' : 'Synced')
+				);
 			} else {
 				errorRows.push(
-					makeRow(key, result[key] === RequestStatus.SERVER_ERROR ? 'Server Error' : 'Bad Request')
+					this.readingNotificationRow(
+						key,
+						result[key] === RequestStatus.SERVER_ERROR ? 'Server Error' : 'Bad Request'
+					)
 				);
 			}
 		}
@@ -181,19 +189,19 @@ export class SyncDex {
 				{
 					title: 'Progress Updated',
 					image: `https://mangadex.org/images/manga/${state.title.id}.thumb.jpg`,
-					text: `Chapter ${Math.floor(state.title.progress.chapter)}\n${
+					text: `Chapter ${state.title.progress.chapter}\n${
 						created ? '**Start Date** set to Today !\n' : ''
 					}${updateRows.join('\n')}`,
 				},
 				{ position: 'bottom-left', sticky: true }
 			);
-		} else if (!init) {
+		} else if (!init || Options.services.length == 0 || updated) {
 			SimpleNotification.success(
 				{
 					title: 'Progress Updated',
-					text: `Chapter ${Math.floor(state.title.progress.chapter)}\n${
+					text: `Chapter ${state.title.progress.chapter}\n${
 						created ? '**Start Date** set to Today !\n' : ''
-					}${makeRow(StaticKey.SyncDex, 'Synced')}`,
+					}${this.readingNotificationRow(StaticKey.SyncDex, 'Synced')}`,
 				},
 				{ position: 'bottom-left', sticky: true }
 			);
@@ -205,7 +213,7 @@ export class SyncDex {
 					image: `https://mangadex.org/images/manga/${state.title.id}.thumb.jpg`,
 					text: errorRows.join('\n'),
 				},
-				{ position: 'bottom-left', sticky: true }
+				{ position: 'bottom-left', sticky: true } // Keep sticky
 			);
 		}
 	};
@@ -261,8 +269,10 @@ export class SyncDex {
 				class: 'col-auto row no-gutters p-1',
 				childs: [state.overview],
 			});
-			const actionsRow = document.querySelector('.reader-controls-mode')!;
-			actionsRow.parentElement!.insertBefore(overviewParent, actionsRow);
+			if (Options.services.length > 0) {
+				const actionsRow = document.querySelector('.reader-controls-mode')!;
+				actionsRow.parentElement!.insertBefore(overviewParent, actionsRow);
+			}
 			// Overview Icons
 			for (const key of Options.services) {
 				state.icons[key] = DOM.create('img', {
@@ -271,16 +281,31 @@ export class SyncDex {
 				});
 				state.overview.appendChild(state.icons[key]!);
 			}
+			// Send initial requests
 			this.setServices(state.title, state.services, {
 				beforeRequest: (key) => {
 					state.icons[key]?.classList.add('loading');
 				},
-			}); // Send initial requests
+			});
 		}
 		// Check initial Status if it's the first time
-		if (init) await this.checkServiceStatus(state.title, state.services);
-		const created = state.title.status == Status.NONE || state.title.status == Status.PLAN_TO_READ;
+		if (init && Options.services.length > 0) {
+			await this.checkServiceStatus(state.title, state.services);
+			// Update Overview
+			for (const key of Options.services) {
+				const status = await state.services[key];
+				state.icons[key]?.classList.remove('loading');
+				if (status instanceof BaseTitle) {
+					if (!status.loggedIn) {
+						state.icons[key]?.classList.add('error');
+					} else {
+						state.icons[key]?.classList.add('synced');
+					}
+				} else state.icons[key]?.classList.add('warning');
+			}
+		}
 		// Update title state if not delayed
+		const created = state.title.status == Status.NONE || state.title.status == Status.PLAN_TO_READ;
 		const delayed = details._data.status != 'OK' && details._data.status != 'external';
 		let doUpdate = false;
 		if (!delayed) {
@@ -307,7 +332,7 @@ export class SyncDex {
 								value: 'Update',
 								onClick: async (notification: SimpleNotification) => {
 									await this.setStateProgress(state, currentProgress, created, details._data.id);
-									this.syncShowResult(state, created, false);
+									this.syncShowResult(state, created, false, true);
 									notification.closeAnimated();
 								},
 							},
@@ -332,7 +357,7 @@ export class SyncDex {
 		}
 		await state.title.persist(); // Always save
 		// Always Sync Services -- even if doUpdate is set to false, to sync any out of sync services
-		if (init || doUpdate) this.syncShowResult(state, created, init);
+		if ((init && Options.services.length > 0) || doUpdate) this.syncShowResult(state, created, init, doUpdate);
 	};
 
 	chapterPage = (): void => {
@@ -341,7 +366,7 @@ export class SyncDex {
 		if (Options.services.length == 0) {
 			SimpleNotification.error({
 				title: 'No active Services',
-				text: `You have no **active Services**  !\nEnable one in the **Options** and refresh this page.\nAll Progress is still saved locally.`,
+				text: `You have no **active Services** !\nEnable one in the **Options** and refresh this page.\nAll Progress is still saved locally.`,
 				buttons: [
 					{
 						type: 'info',
@@ -350,6 +375,10 @@ export class SyncDex {
 							Runtime.openOptions();
 							notification.closeAnimated();
 						},
+					},
+					{
+						type: 'message',
+						value: 'Close',
 					},
 				],
 			});
@@ -488,7 +517,10 @@ export class SyncDex {
 			responses.push(
 				services[serviceKey]!.then(async (response) => {
 					if (response instanceof BaseTitle) {
-						if (!response.loggedIn) report[serviceKey] = false;
+						if (!response.loggedIn) {
+							report[serviceKey] = false;
+							return;
+						}
 						response.isSynced(title);
 						// If Auto Sync is on, import from now up to date Title and persist
 						if ((!checkAutoSyncOption || Options.autoSync) && (!response.inList || !response.synced)) {
