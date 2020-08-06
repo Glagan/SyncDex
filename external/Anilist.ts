@@ -8,10 +8,10 @@ console.log('SyncDex :: Anilist Token');
 	await Options.load();
 	// Search token in URL
 	let found = /access_token=(.+)&token_type=Bearer/.exec(window.location.href);
+	// Always display notifications here
 	if (found) {
 		Options.tokens.anilistToken = found[1];
 		await Options.save();
-		console.log('Token saved !');
 		SimpleNotification.success(
 			{
 				title: 'Token saved',

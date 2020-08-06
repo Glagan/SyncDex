@@ -216,6 +216,11 @@
 	display: flex;
 	align-items: center;
 	flex-flow: column;
+	justify-content: center;
+	margin-left: 4px;
+}
+.overview .body .manage:empty {
+	margin-left: 0;
 }
 .overview .body .manage button {
 	margin-bottom: 4px;

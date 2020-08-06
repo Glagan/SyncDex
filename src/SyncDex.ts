@@ -162,12 +162,10 @@ export class SyncDex {
 		 */
 		const updateRows: string[] = [];
 		const errorRows: string[] = [];
-		let invalidServices = 0;
 		for (const key of Options.services) {
 			if (result[key] === undefined) continue;
 			if (result[key] === false) {
 				if (init) errorRows.push(this.readingNotificationRow(key, 'Logged Out'));
-				invalidServices++;
 			} else if (state.title.services[key] === undefined) {
 				if (init) errorRows.push(this.readingNotificationRow(key, 'No ID'));
 			} else if (result[key]! <= RequestStatus.CREATED) {
@@ -184,29 +182,31 @@ export class SyncDex {
 			}
 		}
 		// Display Notifications
-		if (updateRows.length > 0) {
-			SimpleNotification.success(
-				{
-					title: 'Progress Updated',
-					image: `https://mangadex.org/images/manga/${state.title.id}.thumb.jpg`,
-					text: `Chapter ${state.title.progress.chapter}\n${
-						created ? '**Start Date** set to Today !\n' : ''
-					}${updateRows.join('\n')}`,
-				},
-				{ position: 'bottom-left', sticky: true }
-			);
-		} else if (!init || Options.services.length == 0 || updated) {
-			SimpleNotification.success(
-				{
-					title: 'Progress Updated',
-					text: `Chapter ${state.title.progress.chapter}\n${
-						created ? '**Start Date** set to Today !\n' : ''
-					}${this.readingNotificationRow(StaticKey.SyncDex, 'Synced')}`,
-				},
-				{ position: 'bottom-left', sticky: true }
-			);
+		if (Options.notifications) {
+			if (updateRows.length > 0) {
+				SimpleNotification.success(
+					{
+						title: 'Progress Updated',
+						image: `https://mangadex.org/images/manga/${state.title.id}.thumb.jpg`,
+						text: `Chapter ${state.title.progress.chapter}\n${
+							created ? '**Start Date** set to Today !\n' : ''
+						}${updateRows.join('\n')}`,
+					},
+					{ position: 'bottom-left', sticky: true }
+				);
+			} else if (!init || Options.services.length == 0 || updated) {
+				SimpleNotification.success(
+					{
+						title: 'Progress Updated',
+						text: `Chapter ${state.title.progress.chapter}\n${
+							created ? '**Start Date** set to Today !\n' : ''
+						}${this.readingNotificationRow(StaticKey.SyncDex, 'Synced')}`,
+					},
+					{ position: 'bottom-left', sticky: true }
+				);
+			}
 		}
-		if (errorRows.length > 0) {
+		if (Options.errorNotifications && errorRows.length > 0) {
 			SimpleNotification.error(
 				{
 					title: 'Error',
@@ -218,21 +218,14 @@ export class SyncDex {
 		}
 	};
 
-	setStateProgress = async (
-		state: ReadingState,
-		progress: Progress,
-		created: boolean,
-		chapter: number
-	): Promise<void> => {
+	setStateProgress = (state: ReadingState, progress: Progress, created: boolean): void => {
 		if (!state.title) return;
 		state.title.status = Status.READING;
 		state.title.progress = progress;
 		if (created) state.title.start = new Date();
-		if (Options.biggerHistory) {
-			state.title.lastChapter = chapter;
-			state.title.lastRead = Date.now();
+		if (Options.saveOpenedChapters) {
+			state.title.addChapter(progress.chapter);
 		}
-		await state.title.persist();
 	};
 
 	chapterEvent = async (details: ChapterChangeEventDetails, state: ReadingState): Promise<void> => {
@@ -318,9 +311,9 @@ export class SyncDex {
 				(Options.saveOnlyNext && state.title.isNextChapter(currentProgress)) ||
 				(Options.saveOnlyHigher && state.title.progress.chapter < currentProgress.chapter)
 			) {
-				await this.setStateProgress(state, currentProgress, created, details._data.id);
+				this.setStateProgress(state, currentProgress, created);
 				doUpdate = true;
-			} else if (Options.saveOnlyNext || Options.saveOnlyHigher) {
+			} else if (Options.confirmChapter && (Options.saveOnlyNext || Options.saveOnlyHigher)) {
 				SimpleNotification.info(
 					{
 						title: 'Chapter Not Higher',
@@ -331,7 +324,8 @@ export class SyncDex {
 								type: 'success',
 								value: 'Update',
 								onClick: async (notification: SimpleNotification) => {
-									await this.setStateProgress(state, currentProgress, created, details._data.id);
+									this.setStateProgress(state, currentProgress, created);
+									await state.title!.persist();
 									this.syncShowResult(state, created, false, true);
 									notification.closeAnimated();
 								},
@@ -345,7 +339,7 @@ export class SyncDex {
 					{ position: 'bottom-left', sticky: true }
 				);
 			}
-		} else {
+		} else if (Options.notifications) {
 			SimpleNotification.warning(
 				{
 					title: 'Title Delayed',
@@ -355,6 +349,12 @@ export class SyncDex {
 				{ position: 'bottom-left', sticky: true }
 			);
 		}
+		// Update History values if enabled, do not look at other options
+		if (Options.biggerHistory) {
+			state.title.lastChapter = details._data.id;
+			state.title.lastRead = Date.now();
+			state.title.history = state.title.progress;
+		}
 		await state.title.persist(); // Always save
 		// Always Sync Services -- even if doUpdate is set to false, to sync any out of sync services
 		if ((init && Options.services.length > 0) || doUpdate) this.syncShowResult(state, created, init, doUpdate);
@@ -363,7 +363,7 @@ export class SyncDex {
 	chapterPage = (): void => {
 		console.log('SyncDex :: Chapter');
 
-		if (Options.services.length == 0) {
+		if (Options.services.length == 0 && Options.errorNotifications) {
 			SimpleNotification.error({
 				title: 'No active Services',
 				text: `You have no **active Services** !\nEnable one in the **Options** and refresh this page.\nAll Progress is still saved locally.`,
@@ -476,7 +476,7 @@ export class SyncDex {
 	 * Check if any Service in services is available, in the list and more recent that the local Title.
 	 * If an external Service is more recent, sync with it and sync all other Services with the then synced Title.
 	 */
-	checkServiceStatus = async (title: Title, services: ExternalTitleList): Promise<void> => {
+	checkServiceStatus = async (title: Title, services: ExternalTitleList): Promise<boolean> => {
 		// Sync Title with the most recent ServiceTitle ordered by User choice
 		// Services are reversed to select the first choice last
 		let doSave = false;
@@ -502,6 +502,7 @@ export class SyncDex {
 			}
 		}
 		if (doSave) await title.persist();
+		return doSave;
 	};
 
 	syncServices = async (
@@ -542,32 +543,16 @@ export class SyncDex {
 	titlePage = async (): Promise<void> => {
 		console.log('SyncDex :: Title');
 
-		if (!Options.linkToServices && !Options.saveOpenedChapters) return;
 		// Get Title
 		const id = parseInt(document.querySelector<HTMLElement>('.row .fas.fa-hashtag')!.parentElement!.textContent!);
 		const title = await Title.get(id);
 		title.lastTitle = Date.now();
-		// Name
-		if (title.inList || title.name === undefined || title.name == '') {
+		if (!title.inList || title.name === undefined || title.name == '') {
 			const headerTitle = document.querySelector('h6.card-header');
 			if (headerTitle) title.name = headerTitle.textContent!.trim();
 		}
-		// Highlight read chapters and next chapter
-		if (Options.saveOpenedChapters) {
-			const rows = document.querySelectorAll<HTMLElement>('.chapter-row');
-			for (const row of rows) {
-				const chapter = parseInt(row.dataset.chapter!);
-				if (!isNaN(chapter)) {
-					if (chapter > title.progress.chapter && chapter < Math.floor(title.progress.chapter) + 2) {
-						row.classList.add('has-transition');
-						row.style.backgroundColor = Options.colors.nextChapter;
-					} else if (title.chapters.indexOf(chapter) >= 0) {
-						row.classList.add('has-transition');
-						row.style.backgroundColor = Options.colors.openedChapter;
-					}
-				}
-			}
-		}
+		const chapterRows = document.querySelectorAll<HTMLElement>('.chapter-row');
+
 		// Always Find Services
 		let fallback = false;
 		if (Options.useMochi) {
@@ -600,6 +585,7 @@ export class SyncDex {
 			}
 		}
 		await title.persist(); // Always save
+
 		// Load each Services to Sync
 		const services: ExternalTitleList = {};
 		if (Options.services.length > 0) this.setServices(title, services);
@@ -607,10 +593,51 @@ export class SyncDex {
 		let overview = new Overview(title, services, this);
 		overview.displayServices();
 		// Check current online Status
-		await this.checkServiceStatus(title, services);
+		const imported = await this.checkServiceStatus(title, services);
 		overview.updateMainOverview();
+		if (Options.saveOpenedChapters) {
+			if (imported) title.addChapter(title.progress.chapter);
+			// Highlight chapters -- and add a list of previous opened chapters if we just imported
+			let highest = 0;
+			let nextChapter: HTMLElement | undefined;
+			for (const row of chapterRows) {
+				const chapter = parseFloat(row.dataset.chapter!);
+				if (!isNaN(chapter)) {
+					if (chapter > highest) highest = chapter;
+					let added = false;
+					if (imported && chapter < title.progress.chapter) {
+						title.addChapter(chapter);
+						added = true;
+					}
+					// Remove previous Highlight
+					row.classList.remove('has-transition');
+					row.style.backgroundColor = '';
+					// Add Highlight if needed
+					if (chapter > title.progress.chapter) {
+						nextChapter = row;
+					} else if (added || title.chapters.indexOf(chapter) >= 0) {
+						row.classList.add('has-transition');
+						row.style.backgroundColor = Options.colors.openedChapter;
+					}
+				}
+			}
+			if (nextChapter) {
+				nextChapter.classList.add('has-transition');
+				nextChapter.style.backgroundColor = Options.colors.nextChapter;
+			}
+			if (Options.biggerHistory && (!title.highest || title.highest < highest)) {
+				title.highest = highest;
+			}
+			// Save added previous opened chapters
+			if (imported || Options.biggerHistory) await title.persist();
+		}
 		// When the Title is synced, all remaining ServiceTitle are synced with it
 		if (title.status != Status.NONE) this.syncServices(title, services, overview.syncEvents, true);
+
+		// Add link to Services if they are missing
+		if (Options.linkToServices) {
+			// TODO
+		}
 	};
 
 	updatesPage = (): void => {

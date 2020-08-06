@@ -165,11 +165,18 @@ export class Overview {
 			service.overview(overview.content, this.title);
 			overview.manage.appendChild(this.refreshButton(serviceKey));
 			// Display *Sync* button only if the title is out of sync, with auto sync disabled and if the title is in a list
-			if (!Options.autoSync && !service.isSynced(this.title) && this.title.status !== Status.NONE) {
+			if (
+				!Options.autoSync &&
+				!service.isSynced(this.title) &&
+				this.title.status !== Status.NONE &&
+				service.loggedIn
+			) {
 				this.setTabIcon(overview, 'sync has-error');
 				this.syncButton(serviceKey, service);
 			}
-			if (!service.inList) {
+			if (!service.loggedIn) {
+				this.setTabIcon(overview, 'times has-error');
+			} else if (!service.inList) {
 				this.setTabIcon(overview, 'bookmark has-error');
 			}
 		} else {

@@ -516,7 +516,7 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 	 */
 	history?: Progress;
 	/**
-	 * Highest read chapter on MangaDex
+	 * Highest available chapter on MangaDex
 	 */
 	highest?: number;
 	/**
@@ -646,6 +646,28 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 			const diff = Options.chaptersSaved - this.chapters.length;
 			this.chapters.splice(-diff, diff);
 		}
+	};
+
+	addChapter = (chapter: number): boolean => {
+		let index = this.chapters.indexOf(chapter);
+		if (index >= 0) return false;
+		// Sorted insert
+		const max = this.chapters.length;
+		index = 0;
+		for (; index <= max; index++) {
+			if (index == max) {
+				this.chapters.push(chapter);
+			} else if (chapter < this.chapters[index]) {
+				this.chapters.splice(index, 0, chapter);
+				break;
+			}
+		}
+		// We only save 100 chapters
+		if (max == 99) {
+			if (index >= 50) this.chapters.unshift();
+			else this.chapters.pop();
+		}
+		return true;
 	};
 
 	refresh = async (): Promise<boolean> => {
