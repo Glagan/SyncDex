@@ -84,6 +84,21 @@ export const ReverseServiceName: { [key in ServiceKey]: ServiceName } = (() => {
 	return res as { [key in ServiceKey]: ServiceName };
 })();
 
+export function iconToService(src: string): ActivableKey | undefined {
+	const key = /https:\/\/(?:www\.)?mangadex\.org\/images\/misc\/(.+)\.png/.exec(src);
+	if (key == null) return undefined;
+	switch (key[1]) {
+		case 'mal':
+		case 'al':
+		case 'ap':
+		case 'mu':
+			return key[1] as ActivableKey;
+		case 'kt':
+			return ActivableKey.Kitsu;
+	}
+	return undefined;
+}
+
 interface SaveProgress {
 	c: number;
 	v?: number;
@@ -427,7 +442,7 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 	}
 
 	isNextChapter = (progress: Progress): boolean => {
-		return progress.chapter < Math.floor(this.progress.chapter) + 2;
+		return progress.chapter > this.progress.chapter && progress.chapter < Math.floor(this.progress.chapter) + 2;
 	};
 }
 

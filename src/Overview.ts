@@ -1,18 +1,9 @@
 import { DOM, AppendableElement } from './DOM';
-import {
-	BaseTitle,
-	ActivableKey,
-	ReverseActivableName,
-	ExternalTitleList,
-	ServiceKey,
-	ReverseServiceName,
-	StaticKey,
-	Title,
-} from './Title';
+import { BaseTitle, ActivableKey, ReverseActivableName, ServiceKey, ReverseServiceName, StaticKey } from './Title';
 import { Runtime } from './Runtime';
 import { Options } from './Options';
 import { GetService } from './Service';
-import { SyncDex, SyncEvents } from './SyncDex';
+import { SyncModule } from './SyncModule';
 
 interface ServiceOverview {
 	key: ServiceKey;
@@ -26,21 +17,16 @@ interface ServiceOverview {
 }
 
 export class Overview {
-	title: Title;
-	services: ExternalTitleList;
-	syncDex: SyncDex;
+	syncModule: SyncModule;
 	row: HTMLElement;
 	column: HTMLElement;
 	serviceList: HTMLUListElement;
 	bodies: HTMLElement;
 	current?: ServiceOverview;
 	overviews: Partial<{ [key in ActivableKey | StaticKey.SyncDex]: ServiceOverview }> = {};
-	syncEvents: SyncEvents;
 
-	constructor(title: Title, services: ExternalTitleList, syncDex: SyncDex) {
-		this.title = title;
-		this.services = services;
-		this.syncDex = syncDex;
+	constructor(syncModule: SyncModule) {
+		this.syncModule = syncModule;
 		this.column = DOM.create('div', { class: 'overview col-lg-9 col-xl-10', textContent: 'Loading...' });
 		this.row = DOM.create('div', {
 			class: 'row m-0 py-1 px-0 border-top loading',
@@ -50,18 +36,6 @@ export class Overview {
 		row.parentElement!.insertBefore(this.row, row);
 		this.serviceList = DOM.create('ul', { class: 'tabs' });
 		this.bodies = DOM.create('div', { class: 'bodies' });
-		this.syncEvents = {
-			beforePersist: (key) => {
-				this.isSyncing(key);
-			},
-			afterPersist: async (key, response) => {
-				if (response > RequestStatus.CREATED) this.updateOverview(key, response);
-				else this.updateOverview(key, await this.services[key]!);
-			},
-			alreadySynced: async (key) => {
-				this.updateOverview(key, await this.services[key]!);
-			},
-		};
 	}
 
 	alert = (type: 'warning' | 'danger' | 'info', content: string | AppendableElement[]): HTMLElement => {
@@ -88,7 +62,7 @@ export class Overview {
 					click: (event) => {
 						event.preventDefault();
 						this.isSyncing(serviceKey);
-						service.import(this.title);
+						service.import(this.syncModule.title);
 						service.persist().then((res) => {
 							if (res > RequestStatus.CREATED) this.updateOverview(serviceKey, res);
 							else this.updateOverview(serviceKey, service);
@@ -133,9 +107,9 @@ export class Overview {
 		const overview = this.overviews[StaticKey.SyncDex];
 		if (!overview) return;
 		this.clearOverview(overview);
-		if (this.title.status == Status.NONE) {
+		if (this.syncModule.title.status == Status.NONE) {
 			overview.content.appendChild(this.quickButtons());
-		} else this.title.overview(overview.content);
+		} else this.syncModule.title.overview(overview.content);
 		// Add Refresh Button
 		const refreshButton = DOM.create('button', {
 			class: 'btn btn-secondary',
@@ -145,10 +119,10 @@ export class Overview {
 					event.preventDefault();
 					refreshButton.classList.add('loading');
 					refreshButton.disabled = true;
-					await this.title.refresh();
-					await this.syncDex.checkServiceStatus(this.title, this.services);
+					await this.syncModule.title.refresh();
+					await this.syncModule.syncLocalTitle();
 					this.updateMainOverview();
-					await this.syncDex.syncServices(this.title, this.services, this.syncEvents, true);
+					await this.syncModule.syncServices(true);
 					refreshButton.classList.remove('loading');
 					refreshButton.disabled = false;
 				},
@@ -162,13 +136,13 @@ export class Overview {
 		if (!overview) return;
 		this.clearOverview(overview);
 		if (typeof service === 'object') {
-			service.overview(overview.content, this.title);
+			service.overview(overview.content, this.syncModule.title);
 			overview.manage.appendChild(this.refreshButton(serviceKey));
 			// Display *Sync* button only if the title is out of sync, with auto sync disabled and if the title is in a list
 			if (
 				!Options.autoSync &&
-				!service.isSynced(this.title) &&
-				this.title.status !== Status.NONE &&
+				!service.isSynced(this.syncModule.title) &&
+				this.syncModule.title.status !== Status.NONE &&
 				service.loggedIn
 			) {
 				this.setTabIcon(overview, 'sync has-error');
@@ -250,17 +224,17 @@ export class Overview {
 				click: async (event) => {
 					event.preventDefault();
 					const overview = this.overviews[serviceKey];
-					if (!this.title.services[serviceKey] || !overview) return;
+					if (!this.syncModule.title.services[serviceKey] || !overview) return;
 					button.classList.add('loading');
 					button.disabled = true;
 					this.isSyncing(serviceKey);
 					await Options.load();
-					this.services[serviceKey] = GetService(ReverseActivableName[serviceKey]).get(
-						this.title.services[serviceKey]!
+					this.syncModule.services[serviceKey] = GetService(ReverseActivableName[serviceKey]).get(
+						this.syncModule.title.services[serviceKey]!
 					);
-					await this.syncDex.checkServiceStatus(this.title, this.services);
+					await this.syncModule.syncLocalTitle();
 					this.updateMainOverview();
-					await this.syncDex.syncServices(this.title, this.services, this.syncEvents, true);
+					await this.syncModule.syncServices(true);
 					button.classList.remove('loading');
 					button.disabled = false;
 					this.hasSynced(serviceKey);
@@ -334,7 +308,7 @@ export class Overview {
 			this.row.classList.remove('loading');
 			return;
 		}
-		let displayServices = Object.keys(this.services).filter(
+		let displayServices = Object.keys(this.syncModule.services).filter(
 			(key) => Options.services.indexOf(key as ActivableKey) >= 0
 		);
 		if (Options.overviewMainOnly) {
@@ -359,7 +333,7 @@ export class Overview {
 				);
 				this.setTabIcon(serviceOverview, 'times has-error');
 			} else {
-				serviceOverview.service = this.services[key]!.then((res) => {
+				serviceOverview.service = this.syncModule.services[key]!.then((res) => {
 					this.updateOverview(key, res);
 					return res;
 				});
@@ -382,10 +356,10 @@ export class Overview {
 		const quickBind = async (status: Status): Promise<void> => {
 			startReading.disabled = true;
 			planToRead.disabled = true;
-			this.title.status = status;
-			if (status == Status.READING) this.title.start = new Date();
-			await this.title.persist();
-			await this.syncDex.syncServices(this.title, this.services, this.syncEvents);
+			this.syncModule.title.status = status;
+			if (status == Status.READING) this.syncModule.title.start = new Date();
+			await this.syncModule.title.persist();
+			await this.syncModule.syncServices();
 			this.updateMainOverview();
 		};
 		startReading.addEventListener('click', async (event) => {

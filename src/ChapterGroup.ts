@@ -1,6 +1,5 @@
 import { DOM } from './DOM';
 import { Options } from './Options';
-import { ActivableKey } from './Title';
 import { Thumbnail } from './Thumbnail';
 
 interface ChapterRow {
@@ -9,14 +8,16 @@ interface ChapterRow {
 	hidden: boolean;
 }
 
-class ChapterGroup {
+export class ChapterGroup {
 	id: number = 0;
 	name: string = '';
 	/**
 	 * List of all chapter rows in the group, starting from the top.
 	 */
 	rows: ChapterRow[] = [];
+	nextChapter: HTMLElement | undefined;
 	static currentColor: number = 0;
+	static titleGroups: { [key: number]: ChapterGroup[] } = {};
 
 	constructor(id?: number, name?: string) {
 		if (id) this.id = id;
@@ -65,10 +66,7 @@ class ChapterGroup {
 			let row = this.rows[j];
 			row.node.classList.add('has-fast-in-transition');
 			if (row.progress) {
-				if (
-					row.progress.chapter > progress.chapter &&
-					row.progress.chapter < Math.floor(progress.chapter) + 2
-				) {
+				if (this.nextChapter == row.node) {
 					// * Next Chapter
 					row.node.style.backgroundColor = Options.colors.nextChapter;
 					selected = j;
@@ -104,17 +102,39 @@ class ChapterGroup {
 			new Thumbnail(this.id, group.node);
 		}
 	};
-}
 
-export class MangaDex {
-	document: Document;
+	findNextChapter = (id: number, progress: Progress): void => {
+		const titleGroups = ChapterGroup.titleGroups[id];
+		if (!titleGroups) return;
+		let lowestRow: [ChapterGroup, ChapterRow] | undefined = undefined;
+		for (const group of titleGroups) {
+			// Select the lowest next chapter of the group
+			let lowestGroupRow: ChapterRow | undefined;
+			for (const row of group.rows) {
+				if (
+					row.progress &&
+					row.progress.chapter > progress.chapter &&
+					row.progress.chapter < Math.floor(progress.chapter) + 2 &&
+					(!lowestGroupRow || lowestGroupRow.progress!.chapter > row.progress.chapter)
+				) {
+					lowestGroupRow = row;
+				}
+			}
+			// Select the lowest next chapter of the Title
+			if (
+				lowestGroupRow &&
+				(lowestRow == undefined || lowestRow[1].progress!.chapter > lowestGroupRow.progress!.chapter)
+			) {
+				lowestRow = [group, lowestGroupRow];
+			}
+		}
+		if (lowestRow) {
+			lowestRow[0].nextChapter = lowestRow[1].node;
+		}
+	};
 
-	constructor(document: Document) {
-		this.document = document;
-	}
-
-	getChapterGroups = (): ChapterGroup[] => {
-		let chapterContainer = this.document.querySelector<HTMLElement>('.chapter-container');
+	static getGroups = (): ChapterGroup[] => {
+		let chapterContainer = document.querySelector<HTMLElement>('.chapter-container');
 		if (!chapterContainer) return [];
 		let nodes = chapterContainer.children;
 		let groups: ChapterGroup[] = [];
@@ -129,6 +149,10 @@ export class MangaDex {
 					// Is this is a new entry push the current group and create a new one
 					if (isFirstRow) {
 						if (currentGroup.rows.length > 0) {
+							if (!ChapterGroup.titleGroups[currentGroup.id]) {
+								ChapterGroup.titleGroups[currentGroup.id] = [];
+							}
+							ChapterGroup.titleGroups[currentGroup.id].push(currentGroup);
 							groups.push(currentGroup);
 						}
 						currentGroup = new ChapterGroup(id, firstChild.textContent!.trim());
@@ -154,24 +178,13 @@ export class MangaDex {
 			}
 			// Push last group
 			if (currentGroup.rows.length > 0) {
+				if (!ChapterGroup.titleGroups[currentGroup.id]) {
+					ChapterGroup.titleGroups[currentGroup.id] = [];
+				}
+				ChapterGroup.titleGroups[currentGroup.id].push(currentGroup);
 				groups.push(currentGroup);
 			}
 		}
 		return groups;
 	};
-
-	static iconToService(src: string): ActivableKey | undefined {
-		const key = /https:\/\/(?:www\.)?mangadex\.org\/images\/misc\/(.+)\.png/.exec(src);
-		if (key == null) return undefined;
-		switch (key[1]) {
-			case 'mal':
-			case 'al':
-			case 'ap':
-			case 'mu':
-				return key[1] as ActivableKey;
-			case 'kt':
-				return ActivableKey.Kitsu;
-		}
-		return undefined;
-	}
 }

@@ -1,6 +1,6 @@
 import { Router } from './Router';
 import { Options } from './Options';
-import { MangaDex } from './ChapterGroup';
+import { ChapterGroup } from './ChapterGroup';
 import { DOM } from './DOM';
 import {
 	TitleCollection,
@@ -11,10 +11,8 @@ import {
 	ExternalTitleList,
 	Title,
 	StatusMap,
-	ExternalTitle,
 	ReverseServiceName,
-	ServiceKey,
-	StaticKey,
+	iconToService,
 } from './Title';
 import { Overview } from './Overview';
 import { Mochi } from './Mochi';
@@ -22,18 +20,14 @@ import { GetService } from './Service';
 import { injectScript } from './Utility';
 import { Runtime } from './Runtime';
 import { Thumbnail } from './Thumbnail';
+import { SyncModule } from './SyncModule';
 
 interface ReadingState {
+	syncModule?: SyncModule;
 	title?: Title;
 	services: ExternalTitleList;
 	overview?: HTMLElement;
 	icons: { [key in ActivableKey]?: HTMLElement };
-}
-
-export interface SyncEvents {
-	beforePersist?: (key: ActivableKey) => void;
-	afterPersist?: (key: ActivableKey, response: RequestStatus) => Promise<void>;
-	alreadySynced?: (key: ActivableKey) => Promise<void>;
 }
 
 console.log('SyncDex :: Core');
@@ -83,8 +77,7 @@ export class SyncDex {
 
 		if (!Options.hideHigher && !Options.hideLast && !Options.hideLower && !Options.thumbnail && !Options.highlight)
 			return;
-		const md = new MangaDex(document);
-		const groups = md.getChapterGroups();
+		const groups = ChapterGroup.getGroups();
 		const titles = await TitleCollection.get(
 			groups.map((group) => {
 				return group.id;
@@ -93,7 +86,8 @@ export class SyncDex {
 		// Hide, Highlight and add Thumbnails to each row
 		for (const group of groups) {
 			const title = titles.find(group.id);
-			if (title !== undefined && !title.inList) {
+			if (title !== undefined && title.inList) {
+				group.findNextChapter(title.id, title.progress);
 				group.hide(title.progress);
 				group.highlight(title.progress);
 			}
@@ -132,90 +126,15 @@ export class SyncDex {
 		}
 	};
 
-	readingNotificationRow = (key: ServiceKey, status: string) =>
-		`![${ReverseServiceName[key]}|${Runtime.file(`/icons/${key}.png`)}] **${
-			ReverseServiceName[key]
-		}**>*>[${status}]<`;
-
-	syncShowResult = async (state: ReadingState, created: boolean, init: boolean, updated: boolean): Promise<void> => {
+	syncShowResult = async (
+		state: ReadingState,
+		created: boolean,
+		firstRequest: boolean,
+		localUpdated: boolean
+	): Promise<void> => {
 		if (state.title == undefined) return;
-		const result = await this.syncServices(state.title, state.services, {
-			beforePersist: (key) => {
-				state.icons[key]?.classList.add('loading');
-			},
-			afterPersist: async (key, response) => {
-				state.icons[key]?.classList.remove('loading');
-				if (response > RequestStatus.CREATED) {
-					state.icons[key]?.classList.add('error');
-				} else state.icons[key]?.classList.add('synced');
-			},
-			alreadySynced: async (key) => {
-				state.icons[key]?.classList.remove('loading');
-				state.icons[key]?.classList.add('synced');
-			},
-		});
-		/**
-		 * Display result notification, one line per Service
-		 * {Icon} Name [Created] / [Synced] / [Imported]
-		 * Display another notification for errors, with the same template
-		 * {Icon} Name [Not Logged In] / [Bad Request] / [Server Error]
-		 */
-		const updateRows: string[] = [];
-		const errorRows: string[] = [];
-		for (const key of Options.services) {
-			if (result[key] === undefined) continue;
-			if (result[key] === false) {
-				if (init) errorRows.push(this.readingNotificationRow(key, 'Logged Out'));
-			} else if (state.title.services[key] === undefined) {
-				if (init) errorRows.push(this.readingNotificationRow(key, 'No ID'));
-			} else if (result[key]! <= RequestStatus.CREATED) {
-				updateRows.push(
-					this.readingNotificationRow(key, result[key] === RequestStatus.CREATED ? 'Created' : 'Synced')
-				);
-			} else {
-				errorRows.push(
-					this.readingNotificationRow(
-						key,
-						result[key] === RequestStatus.SERVER_ERROR ? 'Server Error' : 'Bad Request'
-					)
-				);
-			}
-		}
-		// Display Notifications
-		if (Options.notifications) {
-			if (updateRows.length > 0) {
-				SimpleNotification.success(
-					{
-						title: 'Progress Updated',
-						image: `https://mangadex.org/images/manga/${state.title.id}.thumb.jpg`,
-						text: `Chapter ${state.title.progress.chapter}\n${
-							created ? '**Start Date** set to Today !\n' : ''
-						}${updateRows.join('\n')}`,
-					},
-					{ position: 'bottom-left', sticky: true }
-				);
-			} else if (!init || Options.services.length == 0 || updated) {
-				SimpleNotification.success(
-					{
-						title: 'Progress Updated',
-						text: `Chapter ${state.title.progress.chapter}\n${
-							created ? '**Start Date** set to Today !\n' : ''
-						}${this.readingNotificationRow(StaticKey.SyncDex, 'Synced')}`,
-					},
-					{ position: 'bottom-left', sticky: true }
-				);
-			}
-		}
-		if (Options.errorNotifications && errorRows.length > 0) {
-			SimpleNotification.error(
-				{
-					title: 'Error',
-					image: `https://mangadex.org/images/manga/${state.title.id}.thumb.jpg`,
-					text: errorRows.join('\n'),
-				},
-				{ position: 'bottom-left', sticky: true } // Keep sticky
-			);
-		}
+		const report = await state.syncModule!.syncServices();
+		state.syncModule!.displayReportNotifications(report, created, firstRequest, localUpdated);
 	};
 
 	setStateProgress = (state: ReadingState, progress: Progress, created: boolean): void => {
@@ -229,14 +148,14 @@ export class SyncDex {
 	};
 
 	chapterEvent = async (details: ChapterChangeEventDetails, state: ReadingState): Promise<void> => {
-		console.log(details);
+		// console.log(details);
 		// Get the Title and Services initial state on the first chapter change
 		const id = details.manga._data.id;
-		let init = false;
+		let firstRequest = false;
 		if (state.title == undefined) {
 			state.title = await Title.get(id);
 			state.title.name = details.manga._data.title;
-			init = true;
+			firstRequest = true;
 			// Find Services
 			let fallback = false;
 			if (Options.useMochi) {
@@ -248,7 +167,7 @@ export class SyncDex {
 			if (!Options.useMochi || fallback) {
 				const services = details.manga._data.links;
 				for (const key in services) {
-					const serviceKey = MangaDex.iconToService(key);
+					const serviceKey = iconToService(key);
 					if (serviceKey !== undefined) {
 						(state.title.services[serviceKey] as ServiceKeyType) = GetService(
 							ReverseActivableName[serviceKey]
@@ -274,16 +193,33 @@ export class SyncDex {
 				});
 				state.overview.appendChild(state.icons[key]!);
 			}
-			// Send initial requests
-			this.setServices(state.title, state.services, {
+		}
+		// Send initial requests -- Another if block to tell Typescript state.syncModule does exist
+		if (state.syncModule == undefined) {
+			state.syncModule = new SyncModule(state.title);
+			state.syncModule.setEvents({
 				beforeRequest: (key) => {
 					state.icons[key]?.classList.add('loading');
 				},
+				beforePersist: (key) => {
+					state.icons[key]?.classList.add('loading');
+				},
+				afterPersist: async (key, response) => {
+					state.icons[key]?.classList.remove('loading');
+					if (response > RequestStatus.CREATED) {
+						state.icons[key]?.classList.add('error');
+					} else state.icons[key]?.classList.add('synced');
+				},
+				alreadySynced: async (key) => {
+					state.icons[key]?.classList.remove('loading');
+					state.icons[key]?.classList.add('synced');
+				},
 			});
+			state.syncModule.initialize();
 		}
 		// Check initial Status if it's the first time
-		if (init && Options.services.length > 0) {
-			await this.checkServiceStatus(state.title, state.services);
+		if (firstRequest && Options.services.length > 0) {
+			await state.syncModule.syncLocalTitle();
 			// Update Overview
 			for (const key of Options.services) {
 				const status = await state.services[key];
@@ -327,6 +263,13 @@ export class SyncDex {
 									this.setStateProgress(state, currentProgress, created);
 									await state.title!.persist();
 									this.syncShowResult(state, created, false, true);
+									const report = await state.syncModule!.syncServices();
+									state.syncModule!.displayReportNotifications(
+										report,
+										created,
+										firstRequest,
+										doUpdate
+									);
 									notification.closeAnimated();
 								},
 							},
@@ -357,7 +300,10 @@ export class SyncDex {
 		}
 		await state.title.persist(); // Always save
 		// Always Sync Services -- even if doUpdate is set to false, to sync any out of sync services
-		if ((init && Options.services.length > 0) || doUpdate) this.syncShowResult(state, created, init, doUpdate);
+		if ((firstRequest && Options.services.length > 0) || doUpdate) {
+			const report = await state.syncModule!.syncServices();
+			state.syncModule!.displayReportNotifications(report, created, firstRequest, doUpdate);
+		}
 	};
 
 	chapterPage = (): void => {
@@ -412,6 +358,7 @@ export class SyncDex {
 		// Listen to injected Reader event
 		const state: ReadingState = {
 			title: undefined,
+			syncModule: undefined,
 			services: {},
 			icons: {},
 		};
@@ -455,91 +402,6 @@ export class SyncDex {
 		}
 	};
 
-	setServices = (
-		title: Title,
-		services: ExternalTitleList,
-		events: { beforeRequest?: (key: ActivableKey) => void } = {}
-	): void => {
-		const activeServices = Object.keys(title.services).filter(
-			(key) => Options.services.indexOf(key as ActivableKey) >= 0
-		);
-		// Add Services ordered by Options.services to check Main Service first
-		for (const key of Options.services) {
-			if (activeServices.indexOf(key) >= 0) {
-				if (events.beforeRequest) events.beforeRequest(key);
-				services[key] = GetService(ReverseActivableName[key]).get(title.services[key]!);
-			}
-		}
-	};
-
-	/**
-	 * Check if any Service in services is available, in the list and more recent that the local Title.
-	 * If an external Service is more recent, sync with it and sync all other Services with the then synced Title.
-	 */
-	checkServiceStatus = async (title: Title, services: ExternalTitleList): Promise<boolean> => {
-		// Sync Title with the most recent ServiceTitle ordered by User choice
-		// Services are reversed to select the first choice last
-		let doSave = false;
-		await Promise.all(Object.values(services));
-		for (const key of Options.services.reverse()) {
-			if (services[key] === undefined) continue;
-			const response = await services[key];
-			if (response instanceof BaseTitle && response.loggedIn) {
-				// Check if any of the ServiceTitle is more recent than the local Title
-				if (response.inList && (title.inList || response.isMoreRecent(title))) {
-					// If there is one, sync with it and save
-					title.inList = false;
-					title.merge(response);
-					doSave = true;
-				}
-				// Finish retrieving the ID if required -- AnimePlanet has 2 fields
-				if ((<typeof ExternalTitle>response.constructor).requireIdQuery) {
-					(title.services[
-						(<typeof ExternalTitle>response.constructor).serviceKey
-					] as ServiceKeyType) = response.id;
-					doSave = true;
-				}
-			}
-		}
-		if (doSave) await title.persist();
-		return doSave;
-	};
-
-	syncServices = async (
-		title: Title,
-		services: ExternalTitleList,
-		events: SyncEvents = {},
-		checkAutoSyncOption: boolean = false
-	): Promise<{ [key in ActivableKey]?: RequestStatus | false }> => {
-		const report: { [key in ActivableKey]?: RequestStatus | false } = {};
-		const responses: Promise<void>[] = [];
-		for (const serviceKey of Options.services) {
-			if (services[serviceKey] === undefined) continue;
-			responses.push(
-				services[serviceKey]!.then(async (response) => {
-					if (response instanceof BaseTitle) {
-						if (!response.loggedIn) {
-							report[serviceKey] = false;
-							return;
-						}
-						response.isSynced(title);
-						// If Auto Sync is on, import from now up to date Title and persist
-						if ((!checkAutoSyncOption || Options.autoSync) && (!response.inList || !response.synced)) {
-							if (events.beforePersist) events.beforePersist(serviceKey);
-							response.import(title);
-							const res = await response.persist();
-							if (events.afterPersist) await events.afterPersist(serviceKey, res);
-							report[serviceKey] = res;
-							// Always update the overview to check against possible imported ServiceTitle
-						} else if (events.alreadySynced) await events.alreadySynced(serviceKey);
-					} else report[serviceKey] = response;
-				})
-			);
-		}
-		await Promise.all(responses);
-		return report;
-	};
-
 	titlePage = async (): Promise<void> => {
 		console.log('SyncDex :: Title');
 
@@ -574,7 +436,7 @@ export class SyncDex {
 					for (const serviceIcon of services) {
 						const serviceLink = serviceIcon.nextElementSibling as HTMLAnchorElement;
 						// Convert icon name to ServiceKey, only since kt is ku
-						const serviceKey = MangaDex.iconToService(serviceIcon.src);
+						const serviceKey = iconToService(serviceIcon.src);
 						if (serviceKey !== undefined) {
 							(title.services[serviceKey] as ServiceKeyType) = GetService(
 								ReverseActivableName[serviceKey]
@@ -586,14 +448,30 @@ export class SyncDex {
 		}
 		await title.persist(); // Always save
 
+		// Add link to Services if they are missing
+		if (Options.linkToServices) {
+			// TODO
+		}
+
 		// Load each Services to Sync
-		const services: ExternalTitleList = {};
-		if (Options.services.length > 0) this.setServices(title, services);
-		// Search for the progress row and add overview there
-		let overview = new Overview(title, services, this);
+		const syncModule = new SyncModule(title);
+		let overview = new Overview(syncModule);
+		syncModule.setEvents({
+			beforePersist: (key) => {
+				overview.isSyncing(key);
+			},
+			afterPersist: async (key, response) => {
+				if (response > RequestStatus.CREATED) overview.updateOverview(key, response);
+				else overview.updateOverview(key, await syncModule.services[key]!);
+			},
+			alreadySynced: async (key) => {
+				overview.updateOverview(key, await syncModule.services[key]!);
+			},
+		});
+		if (Options.services.length > 0) syncModule.initialize();
 		overview.displayServices();
 		// Check current online Status
-		const imported = await this.checkServiceStatus(title, services);
+		const imported = await syncModule.syncLocalTitle();
 		overview.updateMainOverview();
 		if (Options.saveOpenedChapters) {
 			if (imported) title.addChapter(title.progress.chapter);
@@ -612,8 +490,12 @@ export class SyncDex {
 					// Remove previous Highlight
 					row.classList.remove('has-transition');
 					row.style.backgroundColor = '';
-					// Add Highlight if needed
-					if (chapter > title.progress.chapter) {
+					// Add Highlight if needed*
+					// Next Chapter is 0 if it exists and it's a new Title or the first next closest
+					if (
+						(chapter == 0 && title.progress.chapter == 0) ||
+						(chapter > title.progress.chapter && chapter < Math.floor(title.progress.chapter) + 2)
+					) {
 						nextChapter = row;
 					} else if (added || title.chapters.indexOf(chapter) >= 0) {
 						row.classList.add('has-transition');
@@ -632,12 +514,7 @@ export class SyncDex {
 			if (imported || Options.biggerHistory) await title.persist();
 		}
 		// When the Title is synced, all remaining ServiceTitle are synced with it
-		if (title.status != Status.NONE) this.syncServices(title, services, overview.syncEvents, true);
-
-		// Add link to Services if they are missing
-		if (Options.linkToServices) {
-			// TODO
-		}
+		if (title.status != Status.NONE) await syncModule.syncServices(true);
 	};
 
 	updatesPage = (): void => {
