@@ -1,5 +1,6 @@
 import { Options } from '../../src/Options';
 import { DOM } from '../../src/DOM';
+import { SaveOptions } from '../SaveOptions';
 
 class Highlights {
 	index: number;
@@ -35,7 +36,7 @@ class Highlights {
 			clearTimeout(Highlights.timeout);
 			Highlights.timeout = window.setTimeout(() => {
 				Options.colors.highlights[this.index] = this.input.value;
-				Options.save();
+				SaveOptions();
 			}, 300);
 		});
 		this.remove.addEventListener('click', () => {
@@ -50,7 +51,7 @@ class Highlights {
 				this.node.remove();
 				clearTimeout(Highlights.timeout);
 				Highlights.timeout = window.setTimeout(() => {
-					Options.save();
+					SaveOptions();
 				}, 300);
 			}
 		});

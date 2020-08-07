@@ -7,6 +7,7 @@ import { DOM } from '../../src/DOM';
 import { Modal } from '../Modal';
 import { APIImportableModule } from './Import';
 import { APIExportableModule } from './Export';
+import { SaveOptions } from '../SaveOptions';
 
 interface KitsuUserResponse {
 	data: {
@@ -60,7 +61,7 @@ class KitsuLogin extends LoginModule {
 		if (!response.ok) return Runtime.responseStatus(response);
 		Options.tokens.kitsuToken = response.body.access_token;
 		const userIdResp = await this.getUserId();
-		await Options.save();
+		await SaveOptions();
 		if (userIdResp !== RequestStatus.SUCCESS) return userIdResp;
 		return RequestStatus.SUCCESS;
 	};
@@ -68,7 +69,7 @@ class KitsuLogin extends LoginModule {
 	logout = async (): Promise<void> => {
 		delete Options.tokens.kitsuToken;
 		delete Options.tokens.kitsuUser;
-		return await Options.save();
+		return await SaveOptions();
 	};
 }
 

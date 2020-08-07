@@ -360,6 +360,18 @@ export abstract class APIImportableModule extends ImportableModule {
 			await this.mochiCheck(collection);
 			if (this.doStop) return;
 		}
+		// Add chapters
+		if (Options.saveOpenedChapters) {
+			for (const title of collection.collection) {
+				if (title.progress.chapter > 0) {
+					title.chapters = [];
+					let index = Math.max(title.progress.chapter - 100, 1);
+					for (; index <= title.progress.chapter; index++) {
+						title.chapters.push(index);
+					}
+				}
+			}
+		}
 		// Done !
 		notification = this.notification('loading', 'Saving...');
 		await Options.save(); // Always save -- options are deleted in LocalStorage

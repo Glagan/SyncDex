@@ -6,6 +6,7 @@ import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } 
 import { AnilistStatus, AnilistTitle, AnilistDate, AnilistAPI, AnilistHeaders } from '../../src/Service/Anilist';
 import { APIImportableModule } from './Import';
 import { APIExportableModule } from './Export';
+import { SaveOptions } from '../SaveOptions';
 
 interface AnilistViewerResponse {
 	data: {
@@ -55,7 +56,7 @@ class AnilistLogin extends LoginModule {
 
 	logout = async (): Promise<void> => {
 		delete Options.tokens.anilistToken;
-		return await Options.save();
+		return await SaveOptions();
 	};
 }
 

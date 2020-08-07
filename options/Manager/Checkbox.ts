@@ -1,5 +1,6 @@
 import { Options, AvailableOptions } from '../../src/Options';
 import { DOM } from '../../src/DOM';
+import { SaveOptions } from '../SaveOptions';
 
 // https://medium.com/dailyjs/typescript-create-a-condition-based-subset-types-9d902cea5b8c#6f75
 type BooleanOptions = Pick<
@@ -48,7 +49,7 @@ export class Checkbox {
 
 	update = (value: boolean): void => {
 		Options[this.optionName] = value;
-		Options.save().then(() => {
+		SaveOptions().then(() => {
 			this.toggle(value);
 		});
 	};

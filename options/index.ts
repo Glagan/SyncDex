@@ -9,6 +9,7 @@ import { ServiceManager } from './Manager/Service';
 import { LocalStorage } from '../src/Storage';
 import { SaveViewer } from './SaveViewer';
 import { ImportExportManager } from './Manager/ImportExport';
+import { SaveOptions } from './SaveOptions';
 
 class OptionsManager {
 	highlightsManager: HighlightsManager;
@@ -34,13 +35,15 @@ class OptionsManager {
 		if (deleteSave) {
 			let clearClickCount = 0;
 			let clickCount = 0;
+			let notification: SimpleNotification;
 			deleteSave.addEventListener('click', async () => {
 				if (clickCount == 1) {
 					window.clearTimeout(clearClickCount);
 					deleteSave.classList.add('loading');
+					if (notification) notification.remove();
 					await LocalStorage.clear();
 					Options.reset();
-					await Options.save();
+					await SaveOptions();
 					this.reload();
 					clickCount = 0;
 					deleteSave.classList.remove('loading');
@@ -49,8 +52,15 @@ class OptionsManager {
 					deleteSave.style.fontSize = 'var(--title-30)';
 					++clickCount;
 					// Clear clickCount after 2s, just in case
+					notification = SimpleNotification.info(
+						{
+							text: 'Click **Delete** again to confirm',
+						},
+						{ position: 'bottom-left', duration: 4000 }
+					);
 					window.clearTimeout(clearClickCount);
 					clearClickCount = window.setTimeout(() => {
+						notification.remove();
 						clickCount = 0;
 						deleteSave.style.fontSize = 'var(--body-20)';
 					}, 4000);

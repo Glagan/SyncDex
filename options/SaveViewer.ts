@@ -269,6 +269,7 @@ export class SaveViewer {
 			}
 			// Save and close Modal
 			await title.persist();
+			SimpleNotification.info({ title: 'Title Saved' }, { position: 'bottom-left' });
 			submitButton.classList.remove('loading');
 			modal.enableExit();
 			modal.remove();

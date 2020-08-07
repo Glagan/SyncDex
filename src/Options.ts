@@ -67,7 +67,7 @@ export const DefaultOptions: AvailableOptions = {
 	chaptersSaved: 400,
 	saveOnlyHigher: true,
 	saveOnlyNext: false,
-	confirmChapter: false,
+	confirmChapter: true,
 	updateOnlyInList: false,
 	// Title
 	linkToServices: true,

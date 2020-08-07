@@ -14,6 +14,7 @@ import { Mochi } from '../../src/Mochi';
 import { Modal } from '../Modal';
 import { ImportableModule } from './Import';
 import { ExportableModule } from './Export';
+import { SaveOptions } from '../SaveOptions';
 
 export const enum LoginMethod {
 	EXTERNAL,
@@ -283,7 +284,7 @@ export abstract class ActivableModule {
 					activeCards[activeCards.length - 1].nextElementSibling
 				);
 			}
-			Options.save();
+			SaveOptions();
 			this.service.manager.reloadManager(this.service);
 		});
 		this.mainButton.addEventListener('click', () => {
@@ -291,7 +292,7 @@ export abstract class ActivableModule {
 			const index = Options.services.indexOf(this.service.key as ActivableKey);
 			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
 			Options.mainService = this.service.key as ActivableKey;
-			Options.save();
+			SaveOptions();
 			// Remove main button and add the main button to the previous main
 			if (this.service.manager.mainService && this.service.manager.mainService.activeModule) {
 				const oldMainContent = this.service.manager.mainService.activeModule.activeCardContent;
@@ -341,7 +342,7 @@ export abstract class ActivableModule {
 				await this.service.loginModule.logout();
 			}
 			// Save
-			Options.save();
+			SaveOptions();
 			// Disable card
 			this.service.manager.removeActiveService(this.service.key as ActivableKey);
 			this.desactivate();

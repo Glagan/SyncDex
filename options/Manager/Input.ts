@@ -1,4 +1,5 @@
 import { Options, AvailableOptions } from '../../src/Options';
+import { SaveOptions } from '../SaveOptions';
 
 type ValidInputs = Omit<
 	Pick<
@@ -32,7 +33,7 @@ export class Input {
 				Options[this.optionName] = value;
 				clearTimeout(Input.timeout);
 				Input.timeout = window.setTimeout(() => {
-					Options.save();
+					SaveOptions();
 				}, 300);
 			} else {
 				this.input.classList.add('invalid');
