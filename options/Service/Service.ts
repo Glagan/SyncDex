@@ -14,7 +14,7 @@ import { Mochi } from '../../src/Mochi';
 import { Modal } from '../Modal';
 import { ImportableModule } from './Import';
 import { ExportableModule } from './Export';
-import { SaveOptions } from '../SaveOptions';
+import { SaveOptions } from '../Utility';
 
 export const enum LoginMethod {
 	EXTERNAL,
@@ -514,7 +514,7 @@ export abstract class SaveModule<T extends Summary = Summary> {
 		this.card = this.service.createCard(false);
 		this.card.addEventListener('click', () => {
 			this.resetModal();
-			this.modal.show(); // TODO: Avoid modal in FileExport
+			this.modal.show();
 		});
 	}
 

@@ -4,6 +4,7 @@ import { TitleCollection, ServiceKeyType, ExternalTitle } from '../../src/Title'
 import { LocalStorage } from '../../src/Storage';
 import { Options } from '../../src/Options';
 import { Mochi } from '../../src/Mochi';
+import { ReloadOptions } from '../Utility';
 
 interface ImportState {
 	current: number;
@@ -117,7 +118,6 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		return form;
 	};
 
-	// TODO: Notifications are after the body
 	handle = async (form: HTMLFormElement): Promise<void> => {
 		let notification: HTMLElement;
 		if (!form.save || form.save.files.length < 1) {
@@ -212,7 +212,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		}
 		await Options.save(); // Always save -- options are deleted in LocalStorage
 		if (this.handleOptions) {
-			this.service.manager.reloadOptions(); // TODO: Reload
+			ReloadOptions();
 		}
 		notification.remove();
 		this.displaySummary();

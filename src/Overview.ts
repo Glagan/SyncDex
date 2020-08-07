@@ -193,11 +193,7 @@ export class Overview {
 			key: key,
 			tab: DOM.create('li', {
 				class: `tab ${key}`,
-				childs: [
-					DOM.create('img', { src: Runtime.file(`/icons/${key}.png`) }),
-					DOM.space(),
-					DOM.text(ReverseServiceName[key]),
-				],
+				childs: [DOM.create('img', { src: Runtime.icon(key) }), DOM.space(), DOM.text(ReverseServiceName[key])],
 				events: {
 					click: (event) => {
 						event.preventDefault();

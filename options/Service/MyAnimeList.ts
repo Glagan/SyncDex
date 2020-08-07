@@ -72,12 +72,12 @@ class MyAnimeListActive extends ActivableModule {
  * 			 my_finish_date: date, ^
  * 			 my_scanalation_group: string, CDATA
  * 			 my_score: number, 0-10 range
- * 			 my_storage: TODO
+ * 			 my_storage: None for manga ?
  * 			 my_status: Completed, Plan to Read, Reading, On-Hold, Dropped
  * 			 my_comments: string, CDATA
  * 			 my_times_read: number
  * 			 my_tags: string, CDATA
- * 			 my_reread_value: TODO
+ * 			 my_reread_value: Very Low, Low, Medium, High, Very High
  * 			 update_on_import: number, 0 to not edit, 1 to edit
  * 		</manga>
  * </myanimelist>

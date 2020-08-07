@@ -1,6 +1,6 @@
 import { Options } from '../../src/Options';
 import { DOM } from '../../src/DOM';
-import { SaveOptions } from '../SaveOptions';
+import { SaveOptions } from '../Utility';
 
 class Highlights {
 	index: number;

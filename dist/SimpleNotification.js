@@ -126,8 +126,9 @@ class SimpleNotification {
 		/** @type {HTMLElement | undefined} */
 		this.progressBar = undefined;
 		// Functions
-		// TODO: Missing typedef
+		/** @type {() => void} */
 		this.addExtinguish = this.addExtinguishFct.bind(this);
+		/** @type {() => void} */
 		this.removeExtinguish = this.removeExtinguishFct.bind(this);
 	}
 
@@ -446,7 +447,6 @@ class SimpleNotification {
 				} else {
 					this.disableButtons();
 					this.closeAnimated();
-					// TODO: Add event listener to pause closing
 				}
 			}
 		});

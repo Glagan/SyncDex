@@ -30,6 +30,7 @@ export class MangaDexTitle implements PersistableMedia {
 	}
 
 	persist = async (): Promise<RequestStatus> => {
+		// Status
 		const response = await Runtime.request<RawResponse>({
 			url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_follow&id=${this.id}&type=${
 				this.status
@@ -39,7 +40,18 @@ export class MangaDexTitle implements PersistableMedia {
 				'X-Requested-With': 'XMLHttpRequest',
 			},
 		});
-		// TODO: Add Score
+		// Score
+		if (this.score > 0) {
+			await Runtime.request<RawResponse>({
+				url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_rating&id=${this.id}&rating=${
+					this.score / 10
+				}&_=${Date.now()}`,
+				credentials: 'include',
+				headers: {
+					'X-Requested-With': 'XMLHttpRequest',
+				},
+			});
+		}
 		return Runtime.responseStatus(response);
 	};
 

@@ -1,5 +1,5 @@
 import { Options, AvailableOptions } from '../../src/Options';
-import { SaveOptions } from '../SaveOptions';
+import { SaveOptions } from '../Utility';
 
 type ValidInputs = Omit<
 	Pick<

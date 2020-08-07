@@ -120,9 +120,7 @@ export class SyncModule {
 	};
 
 	reportNotificationRow = (key: ServiceKey, status: string) =>
-		`![${ReverseServiceName[key]}|${Runtime.file(`/icons/${key}.png`)}] **${
-			ReverseServiceName[key]
-		}**>*>[${status}]<`;
+		`![${ReverseServiceName[key]}|${Runtime.icon(key)}] **${ReverseServiceName[key]}**>*>[${status}]<`;
 
 	/**
 	 * Display result notification, one line per Service

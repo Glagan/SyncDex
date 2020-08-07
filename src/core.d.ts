@@ -29,6 +29,7 @@ interface AnimePlanetReference {
 interface Progress {
 	chapter: number;
 	volume?: number;
+	oneshot?: boolean;
 }
 
 interface FormDataFile {

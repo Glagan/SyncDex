@@ -1,4 +1,5 @@
 import { Options } from '../src/Options';
+import { OptionsManager } from './OptionsManager';
 
 let savingNotification: SimpleNotification;
 
@@ -11,4 +12,10 @@ export async function SaveOptions(): Promise<void> {
 		},
 		{ position: 'bottom-left' }
 	);
+}
+
+export function ReloadOptions(): void {
+	if (OptionsManager.instance) {
+		OptionsManager.instance.reload();
+	}
 }

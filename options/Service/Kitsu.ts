@@ -7,7 +7,7 @@ import { DOM } from '../../src/DOM';
 import { Modal } from '../Modal';
 import { APIImportableModule } from './Import';
 import { APIExportableModule } from './Export';
-import { SaveOptions } from '../SaveOptions';
+import { SaveOptions } from '../Utility';
 
 interface KitsuUserResponse {
 	data: {

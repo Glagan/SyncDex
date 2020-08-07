@@ -188,7 +188,7 @@ export class SyncDex {
 			// Overview Icons
 			for (const key of Options.services) {
 				state.icons[key] = DOM.create('img', {
-					src: Runtime.file(`/icons/${key}.png`),
+					src: Runtime.icon(key),
 					title: ReverseServiceName[key],
 				});
 				state.overview.appendChild(state.icons[key]!);
@@ -235,18 +235,42 @@ export class SyncDex {
 		}
 		// Update title state if not delayed
 		const created = state.title.status == Status.NONE || state.title.status == Status.PLAN_TO_READ;
-		const delayed = details._data.status != 'OK' && details._data.status != 'external';
+		// Handle external titles as delayed
+		const delayed = details._data.status != 'OK'; // && details._data.status != 'external';
 		let doUpdate = false;
 		if (!delayed) {
 			const currentProgress: Progress = { chapter: parseFloat(details._data.chapter) };
+			if (isNaN(currentProgress.chapter) && details._data.title == 'Oneshot') {
+				currentProgress.chapter = 0;
+				currentProgress.oneshot = true;
+			} else {
+				if (Options.errorNotifications) {
+					SimpleNotification.error(
+						{
+							title: 'No Chapter found',
+							text: 'No Chapter could be found and no progress is saved.',
+						},
+						{ position: 'bottom-left' }
+					);
+				}
+				// Execute basic first request sync if needed before leaving
+				// created means there is nothing to sync, do nothing then
+				await state.title.persist();
+				if (firstRequest && Options.services.length > 0 && !created) {
+					const report = await state.syncModule.syncServices();
+					state.syncModule.displayReportNotifications(report, created, firstRequest, false);
+				}
+				return;
+			}
 			if (details._data.volume !== '') currentProgress.volume = parseInt(details._data.volume);
 			// Check if currentProgress should be updated
-			// TODO: Check if saveOnlyNext works with new Titles, and a chapter 0 or 1
+			const isFirstChapter = state.title.progress.chapter == 0 && currentProgress.chapter == 0;
 			if (
 				(!Options.saveOnlyNext && !Options.saveOnlyHigher) ||
-				(Options.saveOnlyNext && state.title.isNextChapter(currentProgress)) ||
-				(Options.saveOnlyHigher && state.title.progress.chapter < currentProgress.chapter)
+				(Options.saveOnlyNext && (isFirstChapter || state.title.isNextChapter(currentProgress))) ||
+				(Options.saveOnlyHigher && (isFirstChapter || state.title.progress.chapter < currentProgress.chapter))
 			) {
+				// TODO: Pepper: Set to COMPLETED if currentProgress is ONESHOT
 				this.setStateProgress(state, currentProgress, created);
 				doUpdate = true;
 			} else if (Options.confirmChapter && (Options.saveOnlyNext || Options.saveOnlyHigher)) {
@@ -285,9 +309,9 @@ export class SyncDex {
 		} else if (Options.notifications) {
 			SimpleNotification.warning(
 				{
-					title: 'Title Delayed',
+					title: 'External/Delayed Title',
 					image: `https://mangadex.org/images/manga/${id}.thumb.jpg`,
-					text: `**${state.title.name}** Chapter **${details._data.chapter}** is delayed and has not been updated.`,
+					text: `**${state.title.name}** Chapter **${details._data.chapter}** is delayed or external and has not been updated.`,
 				},
 				{ position: 'bottom-left', sticky: true }
 			);
@@ -301,8 +325,8 @@ export class SyncDex {
 		await state.title.persist(); // Always save
 		// Always Sync Services -- even if doUpdate is set to false, to sync any out of sync services
 		if ((firstRequest && Options.services.length > 0) || doUpdate) {
-			const report = await state.syncModule!.syncServices();
-			state.syncModule!.displayReportNotifications(report, created, firstRequest, doUpdate);
+			const report = await state.syncModule.syncServices();
+			state.syncModule.displayReportNotifications(report, created, firstRequest, doUpdate);
 		}
 	};
 
@@ -310,24 +334,27 @@ export class SyncDex {
 		console.log('SyncDex :: Chapter');
 
 		if (Options.services.length == 0 && Options.errorNotifications) {
-			SimpleNotification.error({
-				title: 'No active Services',
-				text: `You have no **active Services** !\nEnable one in the **Options** and refresh this page.\nAll Progress is still saved locally.`,
-				buttons: [
-					{
-						type: 'info',
-						value: 'Options',
-						onClick: (notification: SimpleNotification) => {
-							Runtime.openOptions();
-							notification.closeAnimated();
+			SimpleNotification.error(
+				{
+					title: 'No active Services',
+					text: `You have no **active Services** !\nEnable one in the **Options** and refresh this page.\nAll Progress is still saved locally.`,
+					buttons: [
+						{
+							type: 'info',
+							value: 'Options',
+							onClick: (notification: SimpleNotification) => {
+								Runtime.openOptions();
+								notification.closeAnimated();
+							},
 						},
-					},
-					{
-						type: 'message',
-						value: 'Close',
-					},
-				],
-			});
+						{
+							type: 'message',
+							value: 'Close',
+						},
+					],
+				},
+				{ position: 'bottom-left' }
+			);
 		}
 
 		// No support for Legacy Reader
@@ -424,33 +451,83 @@ export class SyncDex {
 			} else fallback = true;
 		}
 		// If Mochi failed or if it's disabled use displayed Services
-		if (!Options.useMochi || fallback) {
-			const informationTable = document.querySelector('.col-xl-9.col-lg-8.col-md-7');
-			if (informationTable) {
-				// Look for the "Information:" column
-				const informationRow = Array.from(informationTable.children).find(
-					(row) => row.firstElementChild!.textContent == 'Information:'
-				);
-				if (informationRow) {
-					const services = informationRow.querySelectorAll<HTMLImageElement>('img');
-					for (const serviceIcon of services) {
-						const serviceLink = serviceIcon.nextElementSibling as HTMLAnchorElement;
-						// Convert icon name to ServiceKey, only since kt is ku
-						const serviceKey = iconToService(serviceIcon.src);
-						if (serviceKey !== undefined) {
-							(title.services[serviceKey] as ServiceKeyType) = GetService(
-								ReverseActivableName[serviceKey]
-							).idFromLink(serviceLink.href);
+		const pickLocalServices = !Options.useMochi || fallback;
+		const localServices: { [key in ActivableKey]?: [HTMLElement, ServiceKeyType] } = {};
+		const informationTable = document.querySelector('.col-xl-9.col-lg-8.col-md-7')!;
+		// Look for the "Information:" column
+		let informationRow = Array.from(informationTable.children).find(
+			(row) => row.firstElementChild?.textContent == 'Information:'
+		);
+		if (pickLocalServices || Options.linkToServices) {
+			if (informationRow) {
+				const services = informationRow.querySelectorAll<HTMLImageElement>('img');
+				for (const serviceIcon of services) {
+					const serviceLink = serviceIcon.nextElementSibling as HTMLAnchorElement;
+					// Convert icon name to ServiceKey, only since kt is ku
+					const serviceKey = iconToService(serviceIcon.src);
+					if (serviceKey !== undefined) {
+						const id = GetService(ReverseActivableName[serviceKey]).idFromLink(serviceLink.href);
+						localServices[serviceKey] = [serviceLink.parentElement!, id];
+						if (pickLocalServices) {
+							(title.services[serviceKey] as ServiceKeyType) = id;
 						}
 					}
-				} // Nothing to do if there is no row
-			}
+				}
+			} // Nothing to do if there is no row
 		}
 		await title.persist(); // Always save
 
 		// Add link to Services if they are missing
-		if (Options.linkToServices) {
-			// TODO
+		if (Options.linkToServices && !pickLocalServices) {
+			// Create a row for the links if there isn't one
+			if (!informationRow) {
+				informationRow = DOM.create('div', {
+					class: 'row m-0 py-1 px-0 border-top',
+					childs: [
+						DOM.create('div', { class: 'col-lg-3 col-xl-2 strong', textContent: 'Information:' }),
+						DOM.create('div', {
+							class: 'col-lg-9 col-xl-10',
+							childs: [DOM.create('ul', { class: 'list-inline mb-0' })],
+						}),
+					],
+				});
+				// Insert before the *Reading Progres* -- and before Overview
+				const progressRow = document.querySelector('.reading_progress')!.parentElement!;
+				progressRow.parentElement!.insertBefore(informationRow, progressRow);
+			}
+			const serviceList = informationRow.querySelector('ul')!;
+			// Add Links
+			for (const key of Object.values(ActivableKey)) {
+				const localService = localServices[key];
+				if (title.services[key] == undefined) continue;
+				const serviceName = ReverseActivableName[key];
+				// If there is no localService add a link
+				if (localService == undefined) {
+					const link = DOM.create('li', {
+						class: 'list-inline-item',
+						childs: [
+							DOM.create('img', { src: Runtime.icon(key), title: serviceName }),
+							DOM.space(),
+							DOM.create('a', {
+								href: GetService(serviceName).link(title.services[key]!),
+								target: '_blank',
+								textContent: `${serviceName} (SyncDex)`,
+							}),
+						],
+					});
+					serviceList.appendChild(link);
+				} else if (!GetService(serviceName).compareId(title.services[key]!, localService[1])) {
+					DOM.append(
+						localService[0],
+						DOM.space(),
+						DOM.create('a', {
+							href: GetService(serviceName).link(title.services[key]!),
+							target: '_blank',
+							textContent: '(SyncDex)',
+						})
+					);
+				}
+			}
 		}
 
 		// Load each Services to Sync
@@ -479,7 +556,8 @@ export class SyncDex {
 			let highest = 0;
 			let nextChapter: HTMLElement | undefined;
 			for (const row of chapterRows) {
-				const chapter = parseFloat(row.dataset.chapter!);
+				// Handle Oneshot as chapter 0
+				let chapter = row.dataset.title == 'Oneshot' ? 0 : parseFloat(row.dataset.chapter!);
 				if (!isNaN(chapter)) {
 					if (chapter > highest) highest = chapter;
 					let added = false;

@@ -54,4 +54,8 @@ export class Runtime {
 	static file(path: string): string {
 		return browser.runtime.getURL(path);
 	}
+
+	static icon(icon: string): string {
+		return Runtime.file(`/icons/${icon}.png`);
+	}
 }

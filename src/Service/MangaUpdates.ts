@@ -20,11 +20,11 @@ export class MangaUpdatesTitle extends ExternalTitle {
 	}
 
 	id: number;
-	current?: {
+	current: {
 		progress: Progress;
 		status: Status;
 		score?: number;
-	};
+	} = { progress: { chapter: 0 }, status: Status.NONE };
 
 	constructor(id: ServiceKeyType, title?: Partial<MangaUpdatesTitle>) {
 		super(title);
@@ -60,6 +60,7 @@ export class MangaUpdatesTitle extends ExternalTitle {
 		const parser = new DOMParser();
 		const body = parser.parseFromString(response.body, 'text/html');
 		const values: Partial<MangaUpdatesTitle> = { progress: { chapter: 0 } };
+		values.current = { progress: { chapter: 0 }, status: Status.NONE };
 		const showList = body.getElementById('showList');
 		if (showList !== null) {
 			values.loggedIn = true;
@@ -67,7 +68,6 @@ export class MangaUpdatesTitle extends ExternalTitle {
 			if (listType !== null) {
 				values.inList = true;
 				values.status = MangaUpdatesTitle.toStatus(MangaUpdatesTitle.listToStatus(listType[1]));
-				values.current = { progress: { chapter: 0 }, status: values.status };
 				// The state in list is only displayed if the title is in the READING list
 				if (values.status == Status.READING) {
 					const chapterLink = showList.querySelector<HTMLAnchorElement>(`a[title='Increment Chapter']`)!;
@@ -84,7 +84,7 @@ export class MangaUpdatesTitle extends ExternalTitle {
 			if (scoreNode) {
 				// MangaUpdates have a simple 0-10 range
 				values.score = parseInt(scoreNode.value) * 10;
-				if (values.current) values.current.score = values.score;
+				values.current.score = values.score;
 			}
 		} else values.loggedIn = false;
 		const title = body.querySelector('span.releasestitle');
@@ -95,7 +95,7 @@ export class MangaUpdatesTitle extends ExternalTitle {
 	// Get a list of status to go through to be able to update to the wanted status
 	pathToStatus = (): MangaUpdatesStatus[] => {
 		let list: MangaUpdatesStatus[] = [];
-		const newEntry = this.current === undefined;
+		const newEntry = !this.inList;
 		const from = newEntry ? MangaUpdatesStatus.NONE : MangaUpdatesTitle.fromStatus(this.current!.status);
 		const to = MangaUpdatesTitle.fromStatus(this.status);
 		// PAUSED requirements
@@ -139,7 +139,7 @@ export class MangaUpdatesTitle extends ExternalTitle {
 
 	persist = async (): Promise<RequestStatus> => {
 		// Avoid updating status since reassigning the same status delete from the list
-		if (this.current === undefined || this.status !== this.current.status) {
+		if (this.status !== this.current.status) {
 			// Status requirements
 			let list = this.pathToStatus();
 			for (const status of list) {
@@ -153,10 +153,10 @@ export class MangaUpdatesTitle extends ExternalTitle {
 			// Real status
 			const response = await this.updateStatus(MangaUpdatesTitle.fromStatus(this.status));
 			if (!response.ok) return Runtime.responseStatus(response);
+			this.current.status = this.status;
 		}
 		// Update progress -- only if chapter or volume is different
 		if (
-			this.current === undefined ||
 			(this.progress.chapter > 1 && this.progress.chapter != this.current.progress.chapter) ||
 			(this.progress.volume !== undefined &&
 				this.progress.volume > 0 &&
@@ -171,14 +171,15 @@ export class MangaUpdatesTitle extends ExternalTitle {
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);
+			this.current.progress = {
+				chapter: this.progress.chapter,
+				volume: this.progress.volume,
+			};
 		}
 		// Update score
 		if (
-			this.score !== undefined &&
 			this.score > 0 &&
-			(this.current === undefined ||
-				this.current.score === undefined ||
-				(this.score != this.current.score && this.current.score > 0))
+			(this.current.score === undefined || (this.score != this.current.score && this.score > 0))
 		) {
 			// Convert back to the MangaUpdates 0-10 range
 			const muScore = Math.round(this.score / 10);
@@ -187,6 +188,7 @@ export class MangaUpdatesTitle extends ExternalTitle {
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);
+			this.current.score = this.score;
 		}
 		if (!this.inList) {
 			this.inList = true;

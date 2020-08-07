@@ -171,6 +171,4 @@ export class ServiceManager {
 			this.noServices.classList.add('hidden');
 		}
 	};
-
-	reloadOptions = (): void => {};
 }

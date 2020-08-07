@@ -10,6 +10,10 @@ export enum MyAnimeListStatus {
 	PLAN_TO_READ = 6,
 }
 
+const GetField = <T extends HTMLElement>(parent: Document, field: string): T => {
+	return parent.getElementById(field) as T;
+};
+
 export class MyAnimeListTitle extends ExternalTitle {
 	static readonly serviceName: ActivableName = ActivableName.MyAnimeList;
 	static readonly serviceKey: ActivableKey = ActivableKey.MyAnimeList;
@@ -20,6 +24,28 @@ export class MyAnimeListTitle extends ExternalTitle {
 
 	id: number;
 	csrf: string;
+
+	additional: {
+		tags: string;
+		priority: string;
+		storage: string;
+		retailVolumes: string;
+		rereadCount: string;
+		rereadPriority: string;
+		comments: string;
+		askToDiscuss: string;
+		postToSns: string;
+	} = {
+		tags: '',
+		priority: '0',
+		storage: '',
+		retailVolumes: '0',
+		rereadCount: '0',
+		rereadPriority: '',
+		comments: '',
+		askToDiscuss: '0',
+		postToSns: '0',
+	};
 
 	constructor(id: ServiceKeyType, title?: Partial<MyAnimeListTitle>) {
 		super(title);
@@ -62,19 +88,28 @@ export class MyAnimeListTitle extends ExternalTitle {
 				values.inList = true;
 				values.name = title.textContent!;
 				values.status = MyAnimeListTitle.toStatus(
-					parseInt((body.getElementById('add_manga_status') as HTMLSelectElement).value)
+					parseInt(GetField<HTMLSelectElement>(body, 'add_manga_status').value)
 				);
 				values.progress = {
-					chapter:
-						parseInt((body.getElementById('add_manga_num_read_chapters') as HTMLInputElement).value) || 0,
-					volume:
-						parseInt((body.getElementById('add_manga_num_read_volumes') as HTMLInputElement).value) ||
-						undefined,
+					chapter: parseInt(GetField<HTMLInputElement>(body, 'add_manga_num_read_chapters').value) || 0,
+					volume: parseInt(GetField<HTMLInputElement>(body, 'add_manga_num_read_volumes').value) || undefined,
 				};
-				const score = (body.getElementById('add_manga_score') as HTMLSelectElement).value;
+				const score = GetField<HTMLSelectElement>(body, 'add_manga_score').value;
 				if (score !== '') values.score = parseInt(score) * 10;
 				values.start = MyAnimeListTitle.dateRowToDate(body, 'start');
 				values.end = MyAnimeListTitle.dateRowToDate(body, 'finish');
+				// Additional fields
+				values.additional = {
+					tags: GetField<HTMLTextAreaElement>(body, 'add_manga_tags').value,
+					priority: GetField<HTMLSelectElement>(body, 'add_manga_priority').value,
+					comments: GetField<HTMLTextAreaElement>(body, 'add_manga_comments').value,
+					storage: GetField<HTMLSelectElement>(body, 'add_manga_storage_type').value,
+					retailVolumes: GetField<HTMLInputElement>(body, 'add_manga_num_retail_volumes').value,
+					rereadCount: GetField<HTMLInputElement>(body, 'add_manga_num_read_times').value,
+					rereadPriority: GetField<HTMLSelectElement>(body, 'add_manga_reread_value').value,
+					askToDiscuss: GetField<HTMLSelectElement>(body, 'add_manga_is_asked_to_discuss').value,
+					postToSns: GetField<HTMLSelectElement>(body, 'add_manga_sns_post_type').value,
+				};
 			}
 		} else {
 			values.inList = false;
@@ -119,16 +154,16 @@ export class MyAnimeListTitle extends ExternalTitle {
 			body['add_manga[finish_date][day]'] = '';
 			body['add_manga[finish_date][year]'] = '';
 		}
-		// TODO: Retrieve all other fields
-		body['add_manga[tags]'] = '';
-		body['add_manga[priority]'] = 0;
-		body['add_manga[storage_type]'] = '';
-		body['add_manga[num_retail_volumes]'] = 0;
-		body['add_manga[num_read_times]'] = 0;
-		body['add_manga[reread_value]'] = '';
-		body['add_manga[comments]'] = '';
-		body['add_manga[is_asked_to_discuss]'] = 0;
-		body['add_manga[sns_post_type]'] = 0;
+		// Add other fields -- nothing is modified
+		body['add_manga[tags]'] = this.additional.tags;
+		body['add_manga[priority]'] = this.additional.priority;
+		body['add_manga[storage_type]'] = this.additional.storage;
+		body['add_manga[num_retail_volumes]'] = this.additional.retailVolumes;
+		body['add_manga[num_read_times]'] = this.additional.rereadCount;
+		body['add_manga[reread_value]'] = this.additional.rereadPriority;
+		body['add_manga[comments]'] = this.additional.comments;
+		body['add_manga[is_asked_to_discuss]'] = this.additional.askToDiscuss;
+		body['add_manga[sns_post_type]'] = this.additional.postToSns;
 		if (this.status == Status.REREADING) body['add_manga[is_rereading]'] = 1;
 		body['submitIt'] = 0;
 		body['csrf_token'] = this.csrf;

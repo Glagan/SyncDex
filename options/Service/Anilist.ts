@@ -6,7 +6,7 @@ import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } 
 import { AnilistStatus, AnilistTitle, AnilistDate, AnilistAPI, AnilistHeaders } from '../../src/Service/Anilist';
 import { APIImportableModule } from './Import';
 import { APIExportableModule } from './Export';
-import { SaveOptions } from '../SaveOptions';
+import { SaveOptions } from '../Utility';
 
 interface AnilistViewerResponse {
 	data: {

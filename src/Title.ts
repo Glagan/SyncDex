@@ -444,6 +444,14 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 	isNextChapter = (progress: Progress): boolean => {
 		return progress.chapter > this.progress.chapter && progress.chapter < Math.floor(this.progress.chapter) + 2;
 	};
+
+	static compareId = <K extends ServiceKeyType>(id1: K, id2: K): boolean => {
+		if (typeof id1 === 'number' || typeof id2 === 'string') {
+			return id1 == id2;
+		}
+		// if the id is not a string or number, the Child Class must check it
+		return false;
+	};
 }
 
 export abstract class ExternalTitle extends BaseTitle {
