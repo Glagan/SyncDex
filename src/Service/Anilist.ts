@@ -1,6 +1,6 @@
-import { Runtime } from '../Runtime';
-import { BaseTitle, ServiceKeyType, ActivableName, ActivableKey, ExternalTitle, Title } from '../Title';
-import { Options } from '../Options';
+import { Runtime } from '../Core/Runtime';
+import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle, Title } from '../Core/Title';
+import { Options } from '../Core/Options';
 
 export const enum AnilistStatus {
 	NONE = 'NONE',

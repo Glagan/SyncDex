@@ -1,5 +1,5 @@
-import { Runtime } from '../Runtime';
-import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle, MissableField } from '../Title';
+import { Runtime } from '../Core/Runtime';
+import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle, MissableField } from '../Core/Title';
 
 export const enum AnimePlanetStatus {
 	NONE = 0,

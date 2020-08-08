@@ -1,5 +1,5 @@
-import { Runtime } from '../Runtime';
-import { ServiceKeyType, ActivableName, ActivableKey, MissableField, ExternalTitle } from '../Title';
+import { Runtime } from '../Core/Runtime';
+import { ServiceKeyType, ActivableName, ActivableKey, MissableField, ExternalTitle } from '../Core/Title';
 
 export const enum MangaUpdatesStatus {
 	NONE = -1,

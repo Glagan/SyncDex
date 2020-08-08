@@ -1,5 +1,5 @@
-import { Runtime } from '../Runtime';
-import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle } from '../Title';
+import { Runtime } from '../Core/Runtime';
+import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle } from '../Core/Title';
 
 export enum MyAnimeListStatus {
 	NONE = 0,

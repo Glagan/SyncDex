@@ -1,6 +1,6 @@
-import { Options } from '../Options';
-import { Runtime } from '../Runtime';
-import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle } from '../Title';
+import { Options } from '../Core/Options';
+import { Runtime } from '../Core/Runtime';
+import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle } from '../Core/Title';
 
 interface KitsuHeaders {
 	Accept: string;

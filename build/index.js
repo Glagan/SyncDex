@@ -68,7 +68,7 @@ let mainManifest = {
 				'https://*.mangadex.org/updates*',
 			],
 			js: ['dist/SimpleNotification.js', 'SyncDex.js'],
-			css: ['dist/SimpleNotification.min.css', 'SyncDex.css'],
+			css: ['dist/SimpleNotification.min.css', 'css/Core.css'],
 		},
 	],
 	browser_action: {
@@ -109,14 +109,16 @@ let browser_manifests = {
 //
 const Files = [
 	'dist:dist',
+	'css:css',
 	'icons:icons',
-	'options:options',
-	'background:background',
-	'src/css/SyncDex.css',
+	// Background
 	'build/scripts/SyncDex_background.js:background',
+	'src/background/index.html:background',
+	// Options
 	'build/scripts/SyncDex_options.js:options',
-	'build/scripts/SyncDex.js',
+	'src/Options/index.html:options',
 	'build/scripts/SyncDex_Anilist.js:external',
+	'build/scripts/SyncDex.js',
 ];
 const DevFiles = [
 	'build/scripts/SyncDex_background.js.map:background',
@@ -140,23 +142,23 @@ console.log(
 // Compile and Build
 let bundleList = [
 	{
-		name: 'Core',
-		input: 'src/index.ts',
+		name: 'SyncDex',
+		input: 'src/SyncDex/index.ts',
 		output: 'build/scripts/SyncDex.js',
 	},
 	{
 		name: 'Background',
-		input: 'background/index.ts',
+		input: 'src/Background/index.ts',
 		output: 'build/scripts/SyncDex_background.js',
 	},
 	{
 		name: 'Options',
-		input: 'options/index.ts',
+		input: 'src/Options/index.ts',
 		output: 'build/scripts/SyncDex_options.js',
 	},
 	{
 		name: 'External',
-		input: 'external/Anilist.ts',
+		input: 'src/External/Anilist.ts',
 		output: 'build/scripts/SyncDex_Anilist.js',
 	},
 ];
