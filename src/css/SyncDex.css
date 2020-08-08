@@ -91,7 +91,7 @@
 	max-height: 100px;
 }
 .hidden.full.visible {
-	display: block;
+	display: table-row;
 }
 
 /***
@@ -433,4 +433,9 @@
 .reading-overview .synced {
 	box-shadow: 0 0 4px 2px rgb(12, 139, 22);
 	background-color: rgb(12, 139, 22);
+}
+
+/** Updates */
+.top-bar-updates button a {
+	padding: 0;
 }

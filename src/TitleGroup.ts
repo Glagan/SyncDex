@@ -49,7 +49,12 @@ export class TitleGroup {
 		if (hidden == chapterCount) {
 			this.titleRow.className = 'hidden full';
 		}
-		(this.titleRow.firstElementChild as HTMLTableDataCellElement).rowSpan = chapterCount - hidden + 1;
+		const firstRowColumn = this.titleRow.firstElementChild as HTMLTableDataCellElement;
+		const newSpan = chapterCount - hidden + 1;
+		if (newSpan != firstRowColumn.rowSpan) {
+			firstRowColumn.dataset.originalSpan = `${firstRowColumn.rowSpan}`;
+			firstRowColumn.rowSpan = newSpan;
+		}
 	};
 
 	highlight = (progress: Progress): void => {

@@ -86,6 +86,7 @@ export class SyncDex {
 				return group.id;
 			})
 		);
+
 		// Hide, Highlight and add Thumbnails to each row
 		for (const group of groups) {
 			const title = titles.find(group.id);
@@ -96,6 +97,7 @@ export class SyncDex {
 			}
 			if (Options.thumbnail) group.setThumbnails();
 		}
+
 		// Button to toggle hidden chapters
 		const rows = document.querySelectorAll('.hidden');
 		const hiddenCount = rows.length;
@@ -236,34 +238,36 @@ export class SyncDex {
 				} else state.icons[key]?.classList.add('warning');
 			}
 		}
+		// Find current Chapter Progress
 		const created = state.title.status == Status.NONE || state.title.status == Status.PLAN_TO_READ;
+		const currentProgress: Progress = {
+			chapter: details._data.title == 'Oneshot' ? 0 : parseFloat(details._data.chapter),
+		};
+		if (details._data.volume !== '') currentProgress.volume = parseInt(details._data.volume);
+		// Exit early if there is no progress
+		if (isNaN(currentProgress.chapter)) {
+			if (Options.errorNotifications) {
+				SimpleNotification.error(
+					{
+						title: 'No Chapter found',
+						text: 'No Chapter could be found and no progress was saved.',
+					},
+					{ position: 'bottom-left' }
+				);
+			}
+			// Execute basic first request sync if needed before leaving
+			// Only sync if Title has a Status to be synced to
+			await state.title.persist();
+			if (firstRequest && Options.services.length > 0 && state.title.status !== Status.NONE) {
+				const report = await state.syncModule.syncServices();
+				state.syncModule.displayReportNotifications(report, created, firstRequest, false);
+			}
+			return;
+		}
 		// Update title state if not delayed -- Handle external titles as delayed
 		const delayed = details._data.status != 'OK'; // && details._data.status != 'external';
 		let doUpdate = false;
 		if (!delayed) {
-			const currentProgress: Progress = {
-				chapter: details._data.title == 'Oneshot' ? 0 : parseFloat(details._data.chapter),
-			};
-			if (isNaN(currentProgress.chapter)) {
-				if (Options.errorNotifications) {
-					SimpleNotification.error(
-						{
-							title: 'No Chapter found',
-							text: 'No Chapter could be found and no progress was saved.',
-						},
-						{ position: 'bottom-left' }
-					);
-				}
-				// Execute basic first request sync if needed before leaving
-				// Only sync if Title has a Status to be synced to
-				await state.title.persist();
-				if (firstRequest && Options.services.length > 0 && state.title.status !== Status.NONE) {
-					const report = await state.syncModule.syncServices();
-					state.syncModule.displayReportNotifications(report, created, firstRequest, false);
-				}
-				return;
-			}
-			if (details._data.volume !== '') currentProgress.volume = parseInt(details._data.volume);
 			// Check if currentProgress should be updated
 			const isFirstChapter = state.title.progress.chapter == 0 && currentProgress.chapter == 0;
 			if (
@@ -303,9 +307,25 @@ export class SyncDex {
 		} else if (Options.notifications) {
 			SimpleNotification.warning(
 				{
-					title: 'External/Delayed Title',
+					title: 'External or Delayed',
 					image: `https://mangadex.org/images/manga/${id}.thumb.jpg`,
 					text: `**${state.title.name}** Chapter **${details._data.chapter}** is delayed or external and has not been updated.`,
+					buttons: [
+						{
+							type: 'success',
+							value: 'Update',
+							onClick: async (notification: SimpleNotification) => {
+								notification.closeAnimated();
+								this.setStateProgress(state, currentProgress, created);
+								await state.title!.persist();
+								this.syncShowResult(state, created, false, true);
+							},
+						},
+						{
+							type: 'message',
+							value: 'Close',
+						},
+					],
 				},
 				{ position: 'bottom-left', sticky: true }
 			);
@@ -602,11 +622,46 @@ export class SyncDex {
 		const groups = TitleGroup.getGroups();
 		const ids = groups.map((group) => group.id);
 		const titles = await TitleCollection.get(ids);
+
+		// Hide or Highlight groups -- no need for Thumbnails
 		for (const group of groups) {
 			const title = titles.find(group.id);
 			if (!title || !title.inList) continue;
 			if (Options.hideHigher || Options.hideLast || Options.hideLower) group.hide(title.progress);
 			if (Options.highlight) group.highlight(title.progress);
+		}
+
+		// Button to toggle hidden chapters
+		const rows = document.querySelectorAll('.hidden');
+		const hiddenCount = rows.length;
+		const topBar = document.querySelector<HTMLElement>('h6.card-header')!;
+		if (topBar && hiddenCount > 0) {
+			const icon = DOM.icon('eye');
+			const linkContent = DOM.create('span', { textContent: `Show Hidden ${hiddenCount}` });
+			const button = DOM.create('button', {
+				class: 'btn btn-secondary',
+				childs: [icon, DOM.space(), linkContent],
+			});
+			let active = false;
+			let shortenedTitles = document.querySelectorAll<HTMLTableDataCellElement>('td[data-original-span]');
+			button.addEventListener('click', (event) => {
+				event.preventDefault();
+				rows.forEach((row) => {
+					row.classList.toggle('visible');
+				});
+				shortenedTitles.forEach((row) => {
+					const span = row.rowSpan;
+					row.rowSpan = parseInt(row.dataset.originalSpan!);
+					row.dataset.originalSpan = `${span}`;
+				});
+				icon.classList.toggle('fa-eye');
+				icon.classList.toggle('fa-eye-slash');
+				if (active) linkContent.textContent = `Show Hidden (${hiddenCount})`;
+				else linkContent.textContent = `Hide Hidden (${hiddenCount})`;
+				active = !active;
+			});
+			topBar.classList.add('top-bar-updates');
+			topBar.appendChild(button);
 		}
 	};
 

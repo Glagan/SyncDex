@@ -169,12 +169,6 @@
 				<label for="ck_originalThumbnail">Display the full size original cover of the title instead of a thumbnail.</label>
 				<p class="helper">Do not enable this if you don't have a somehow good connection, some images can be big.</p>
 			</div>
-			<h2>Check Service status</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_updateServicesInList" data-name="updateServicesInList" />
-				<label for="ck_updateServicesInList">Check titles status in <b>Chapter lists</b>.</label>
-				<div class="helper">Useful if you are reading using an external application (like <b>Tachiyomi</b>) that update your Services, and make <b>SyncDex</b> out of sync.</div>
-			</div>
 		</div>
 		<h1 id="title-page"><i class="fas fa-book"></i> Title Page</h1>
 		<div class="section">
@@ -198,6 +192,7 @@
 			<div class="parameter">
 				<input type="checkbox" id="ck_autoSync" data-name="autoSync" />
 				<label for="ck_autoSync">Automatically sync all of your Services from the most recent Service, or you Local Save.</label>
+				<p class="helper">Services will be synced from the last one in your list to your <b>Main Service</b>, syncing <b>Dates</b> and <b>Score</b> with it.</p>
 			</div>
 		</div>
 		<h1 id="notifications"><i class="fas fa-bell"></i> Notifications</h1>
