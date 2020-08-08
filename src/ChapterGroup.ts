@@ -25,12 +25,12 @@ export class ChapterGroup {
 	}
 
 	hide = (progress: Progress): void => {
-		if (!Options.hideHigher && !Options.hideLower && !Options.hideLast) return;
 		let chapterCount = this.rows.length;
 		for (const row of this.rows) {
 			if (!row.progress) continue;
+			// Hide Lower and Last, avoid hiding next Chapter (0 is the next of 0)
 			if (
-				row.progress.chapter >= Math.floor(progress.chapter) + 2 ||
+				(Options.hideHigher && row.progress.chapter > progress.chapter && this.nextChapter !== row.node) ||
 				(Options.hideLower && row.progress.chapter < progress.chapter) ||
 				(Options.hideLast && progress.chapter == row.progress.chapter)
 			) {
@@ -113,8 +113,9 @@ export class ChapterGroup {
 			for (const row of group.rows) {
 				if (
 					row.progress &&
-					row.progress.chapter > progress.chapter &&
-					row.progress.chapter < Math.floor(progress.chapter) + 2 &&
+					((row.progress.chapter > progress.chapter &&
+						row.progress.chapter < Math.floor(progress.chapter) + 2) ||
+						(row.progress.chapter == 0 && progress.chapter == 0)) &&
 					(!lowestGroupRow || lowestGroupRow.progress!.chapter > row.progress.chapter)
 				) {
 					lowestGroupRow = row;
@@ -128,9 +129,7 @@ export class ChapterGroup {
 				lowestRow = [group, lowestGroupRow];
 			}
 		}
-		if (lowestRow) {
-			lowestRow[0].nextChapter = lowestRow[1].node;
-		}
+		if (lowestRow) lowestRow[0].nextChapter = lowestRow[1].node;
 	};
 
 	static getGroups = (): ChapterGroup[] => {
@@ -159,13 +158,11 @@ export class ChapterGroup {
 					}
 					let chapter: ChapterRow = {
 						progress: (() => {
-							if (chapterRow.dataset.chapter) {
-								return {
-									chapter: parseFloat(chapterRow.dataset.chapter),
-									volume: parseFloat(chapterRow.dataset?.volume || '') || undefined,
-								};
-							}
-							return undefined;
+							return {
+								chapter:
+									chapterRow.dataset.title == 'Oneshot' ? 0 : parseFloat(chapterRow.dataset.chapter!),
+								volume: parseFloat(chapterRow.dataset?.volume || '') || undefined,
+							};
 						})(),
 						node: row as HTMLElement,
 						hidden: false,

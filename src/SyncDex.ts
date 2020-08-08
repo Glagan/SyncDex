@@ -21,6 +21,7 @@ import { injectScript } from './Utility';
 import { Runtime } from './Runtime';
 import { Thumbnail } from './Thumbnail';
 import { SyncModule } from './SyncModule';
+import { TitleGroup } from './TitleGroup';
 
 interface ReadingState {
 	syncModule?: SyncModule;
@@ -65,6 +66,7 @@ export class SyncDex {
 			this.titlePage
 		);
 		this.router.register('/updates(/?$|/\\d+/?)$', this.updatesPage);
+		this.router.register('/history$', this.historyPage);
 	}
 
 	execute = (location: string): void => {
@@ -77,6 +79,7 @@ export class SyncDex {
 
 		if (!Options.hideHigher && !Options.hideLast && !Options.hideLower && !Options.thumbnail && !Options.highlight)
 			return;
+
 		const groups = ChapterGroup.getGroups();
 		const titles = await TitleCollection.get(
 			groups.map((group) => {
@@ -88,8 +91,8 @@ export class SyncDex {
 			const title = titles.find(group.id);
 			if (title !== undefined && title.inList) {
 				group.findNextChapter(title.id, title.progress);
-				group.hide(title.progress);
-				group.highlight(title.progress);
+				if (Options.hideHigher || Options.hideLast || Options.hideLower) group.hide(title.progress);
+				if (Options.highlight) group.highlight(title.progress);
 			}
 			if (Options.thumbnail) group.setThumbnails();
 		}
@@ -233,30 +236,28 @@ export class SyncDex {
 				} else state.icons[key]?.classList.add('warning');
 			}
 		}
-		// Update title state if not delayed
 		const created = state.title.status == Status.NONE || state.title.status == Status.PLAN_TO_READ;
-		// Handle external titles as delayed
+		// Update title state if not delayed -- Handle external titles as delayed
 		const delayed = details._data.status != 'OK'; // && details._data.status != 'external';
 		let doUpdate = false;
 		if (!delayed) {
-			const currentProgress: Progress = { chapter: parseFloat(details._data.chapter) };
-			if (isNaN(currentProgress.chapter) && details._data.title == 'Oneshot') {
-				currentProgress.chapter = 0;
-				currentProgress.oneshot = true;
-			} else {
+			const currentProgress: Progress = {
+				chapter: details._data.title == 'Oneshot' ? 0 : parseFloat(details._data.chapter),
+			};
+			if (isNaN(currentProgress.chapter)) {
 				if (Options.errorNotifications) {
 					SimpleNotification.error(
 						{
 							title: 'No Chapter found',
-							text: 'No Chapter could be found and no progress is saved.',
+							text: 'No Chapter could be found and no progress was saved.',
 						},
 						{ position: 'bottom-left' }
 					);
 				}
 				// Execute basic first request sync if needed before leaving
-				// created means there is nothing to sync, do nothing then
+				// Only sync if Title has a Status to be synced to
 				await state.title.persist();
-				if (firstRequest && Options.services.length > 0 && !created) {
+				if (firstRequest && Options.services.length > 0 && state.title.status !== Status.NONE) {
 					const report = await state.syncModule.syncServices();
 					state.syncModule.displayReportNotifications(report, created, firstRequest, false);
 				}
@@ -284,17 +285,10 @@ export class SyncDex {
 								type: 'success',
 								value: 'Update',
 								onClick: async (notification: SimpleNotification) => {
+									notification.closeAnimated();
 									this.setStateProgress(state, currentProgress, created);
 									await state.title!.persist();
 									this.syncShowResult(state, created, false, true);
-									const report = await state.syncModule!.syncServices();
-									state.syncModule!.displayReportNotifications(
-										report,
-										created,
-										firstRequest,
-										doUpdate
-									);
-									notification.closeAnimated();
 								},
 							},
 							{
@@ -325,8 +319,7 @@ export class SyncDex {
 		await state.title.persist(); // Always save
 		// Always Sync Services -- even if doUpdate is set to false, to sync any out of sync services
 		if ((firstRequest && Options.services.length > 0) || doUpdate) {
-			const report = await state.syncModule.syncServices();
-			state.syncModule.displayReportNotifications(report, created, firstRequest, doUpdate);
+			this.syncShowResult(state, created, firstRequest, doUpdate);
 		}
 	};
 
@@ -532,6 +525,7 @@ export class SyncDex {
 
 		// Load each Services to Sync
 		const syncModule = new SyncModule(title);
+		// TODO: Display *SyncDex* tab even if there is no Services
 		let overview = new Overview(syncModule);
 		syncModule.setEvents({
 			beforePersist: (key) => {
@@ -550,8 +544,10 @@ export class SyncDex {
 		// Check current online Status
 		const imported = await syncModule.syncLocalTitle();
 		overview.updateMainOverview();
-		if (Options.saveOpenedChapters) {
-			if (imported) title.addChapter(title.progress.chapter);
+
+		// Highlight opened chapters
+		if (Options.saveOpenedChapters || Options.biggerHistory) {
+			if (Options.saveOpenedChapters && imported) title.addChapter(title.progress.chapter);
 			// Highlight chapters -- and add a list of previous opened chapters if we just imported
 			let highest = 0;
 			let nextChapter: HTMLElement | undefined;
@@ -560,24 +556,26 @@ export class SyncDex {
 				let chapter = row.dataset.title == 'Oneshot' ? 0 : parseFloat(row.dataset.chapter!);
 				if (!isNaN(chapter)) {
 					if (chapter > highest) highest = chapter;
-					let added = false;
-					if (imported && chapter < title.progress.chapter) {
-						title.addChapter(chapter);
-						added = true;
-					}
-					// Remove previous Highlight
-					row.classList.remove('has-transition');
-					row.style.backgroundColor = '';
-					// Add Highlight if needed*
-					// Next Chapter is 0 if it exists and it's a new Title or the first next closest
-					if (
-						(chapter == 0 && title.progress.chapter == 0) ||
-						(chapter > title.progress.chapter && chapter < Math.floor(title.progress.chapter) + 2)
-					) {
-						nextChapter = row;
-					} else if (added || title.chapters.indexOf(chapter) >= 0) {
-						row.classList.add('has-transition');
-						row.style.backgroundColor = Options.colors.openedChapter;
+					if (Options.saveOpenedChapters) {
+						let added = false;
+						if (imported && chapter < title.progress.chapter) {
+							title.addChapter(chapter);
+							added = true;
+						}
+						// Remove previous Highlight
+						row.classList.remove('has-transition');
+						row.style.backgroundColor = '';
+						// Add Highlight if needed
+						// Next Chapter is 0 if it exists and it's a new Title or the first next closest
+						if (
+							(chapter > title.progress.chapter && chapter < Math.floor(title.progress.chapter) + 2) ||
+							(chapter == 0 && title.progress.chapter == 0)
+						) {
+							nextChapter = row;
+						} else if (added || title.chapters.indexOf(chapter) >= 0) {
+							row.classList.add('has-transition');
+							row.style.backgroundColor = Options.colors.openedChapter;
+						}
 					}
 				}
 			}
@@ -591,11 +589,28 @@ export class SyncDex {
 			// Save added previous opened chapters
 			if (imported || Options.biggerHistory) await title.persist();
 		}
+
 		// When the Title is synced, all remaining ServiceTitle are synced with it
 		if (title.status != Status.NONE) await syncModule.syncServices(true);
 	};
 
-	updatesPage = (): void => {
+	updatesPage = async (): Promise<void> => {
 		console.log('SyncDex :: Updates');
+
+		if (!Options.hideHigher && !Options.hideLast && !Options.hideLower && !Options.highlight) return;
+
+		const groups = TitleGroup.getGroups();
+		const ids = groups.map((group) => group.id);
+		const titles = await TitleCollection.get(ids);
+		for (const group of groups) {
+			const title = titles.find(group.id);
+			if (!title || !title.inList) continue;
+			if (Options.hideHigher || Options.hideLast || Options.hideLower) group.hide(title.progress);
+			if (Options.highlight) group.highlight(title.progress);
+		}
+	};
+
+	historyPage = (): void => {
+		console.log('SyncDex :: History Page');
 	};
 }
