@@ -1,0 +1,261 @@
+@use 'sass:map';
+@import 'Photon.scss';
+@import 'Animations.scss';
+@import 'Services.scss';
+
+// Meta
+.hidden {
+	overflow: hidden;
+	max-height: 0;
+	transform: scaleY(0);
+	transform-origin: top;
+}
+.hidden.full {
+	display: none;
+}
+.hidden.visible {
+	transform: scaleY(1);
+	max-height: 100px;
+}
+.hidden.full.visible {
+	display: table-row;
+}
+
+// Tooltips
+.tooltip {
+	display: block;
+	position: absolute;
+	border: 1px solid $white-100;
+	border-radius: 2px;
+	overflow: hidden;
+	background-color: $grey-90-a80;
+	opacity: 0;
+	transition: opacity 0.2s ease-in;
+	color: $white-100;
+	z-index: 9999;
+	pointer-events: none;
+	max-height: 80vh;
+	box-shadow: 0 1px 2px 0 $white-100;
+
+	&.loading {
+		font-size: 1rem;
+		padding: 0.25rem;
+	}
+	&.active {
+		opacity: 1;
+	}
+
+	.thumbnail {
+		max-width: 100%;
+		max-height: inherit;
+		display: block;
+	}
+	.thumbnail.loading {
+		display: none;
+	}
+	&.has-chapters .thumbnail {
+		border-bottom: 1px solid $grey-90-a60;
+	}
+
+	.content {
+		display: inline-block;
+		padding: 4px;
+	}
+	&.loading .content {
+		display: none;
+	}
+}
+
+// Title List
+.has-status {
+	justify-content: space-between;
+}
+.has-status .manga_title {
+	flex-grow: 1;
+}
+.float-right.has-status {
+	display: flex;
+	align-items: center;
+	float: none !important;
+}
+.float-right.has-status > span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 0.6125rem;
+}
+
+// Title Overview
+.overview {
+	.quick-buttons {
+		text-align: center;
+	}
+	.alert {
+		margin-bottom: 0;
+	}
+	.tabs {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		position: relative;
+
+		&::before {
+			z-index: 1;
+		}
+		&::after {
+			position: absolute;
+			content: '';
+			width: 100%;
+			bottom: 0;
+			left: 0;
+			border-bottom: 1px solid transparent;
+			z-index: 1;
+			transition: all 150ms $animation;
+		}
+		.tab {
+			margin: 0 8px;
+			padding: 4px 8px;
+			border: 1px solid transparent;
+			display: inline-block;
+			position: relative;
+			z-index: 0;
+			border-top-left-radius: 2px;
+			border-top-right-radius: 2px;
+			cursor: pointer;
+			transition: all 150ms $animation;
+
+			i {
+				vertical-align: middle;
+			}
+		}
+		.tab.main {
+			font-weight: bold;
+		}
+		.tab:last-child {
+			margin-right: 0;
+		}
+		.tab.active {
+			z-index: 2;
+		}
+	}
+	.bodies {
+		position: relative;
+	}
+	.body {
+		border: 1px solid transparent;
+		border-top: 0;
+		padding: 4px;
+		border-radius: 2px;
+		background-color: white;
+		color: black;
+		opacity: 1;
+		transition: all 150ms $animation;
+		position: relative;
+		display: flex;
+		justify-content: space-between;
+
+		&.hidden {
+			opacity: 0;
+			padding: 0;
+			border: 0;
+		}
+		.content > div:not(:first-child) i:first-child {
+			width: 16px;
+			text-align: center;
+		}
+		.content {
+			align-self: center;
+			flex-grow: 1;
+
+			.not-synced {
+				color: $red-60;
+				text-decoration: line-through;
+			}
+			.synced {
+				color: $green-60;
+			}
+		}
+		.manage {
+			display: flex;
+			align-items: center;
+			flex-flow: column;
+			justify-content: center;
+			margin-left: 4px;
+			&:empty {
+				margin-left: 0;
+			}
+			& button {
+				margin-bottom: 4px;
+			}
+		}
+	}
+	// Services
+	@each $key in map.keys($services) {
+		&.#{$key} .tabs::after {
+			border-color: map.get($services-color, $key);
+		}
+		& .tab.#{$key} {
+			color: map.get($services-color, $key);
+			border-color: map.get($services-color, $key);
+			background-color: map.get($services-bg, $key);
+		}
+		.tab.#{$key}.active {
+			border-bottom-color: map.get($services-bg, $key);
+		}
+		&.#{$key} .body {
+			color: map.get($services-color, $key);
+			border-color: map.get($services-color, $key);
+			background-color: map.get($services-bg, $key);
+		}
+	}
+	&.sc .body {
+		color: black;
+	}
+	.helper {
+		font-size: 0.75rem;
+		font-weight: lighter;
+		opacity: 0.6;
+	}
+	.syncing {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: $grey-90-a60;
+		color: $white-100;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		user-select: none;
+	}
+	.has-error {
+		color: $red-60;
+	}
+}
+
+// Reading Overview
+.reading-overview {
+	display: flex;
+	justify-content: space-evenly;
+
+	.error {
+		box-shadow: 0 0 4px 2px $red-60;
+		background-color: $red-60;
+	}
+	.warning {
+		box-shadow: 0 0 4px 2px $orange-60;
+		background-color: $orange-60;
+	}
+	.synced {
+		box-shadow: 0 0 4px 2px $green-60;
+		background-color: $green-60;
+	}
+}
+
+// Updates
+.top-bar-updates button a {
+	padding: 0;
+}
+
+// @import 'Editor.scss';

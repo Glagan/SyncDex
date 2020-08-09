@@ -8,6 +8,7 @@
 build/chrome
 build/firefox
 build/scripts
+build/css
 tmp
 web-ext-artifacts
 node_modules

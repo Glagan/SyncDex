@@ -130,7 +130,7 @@ export abstract class Service {
 			class: 'card',
 		});
 		const header = DOM.create('div', {
-			class: `header ${this.serviceName.toLowerCase()}`,
+			class: `header ${this.key}`,
 			childs: [this.createTitle()],
 		});
 		DOM.append(card, header);
@@ -375,7 +375,7 @@ export abstract class ActivableModule {
 				if (!this) return;
 				// Create modal
 				const modal = new Modal('small');
-				modal.header.classList.add(this.service.serviceName.toLocaleLowerCase());
+				modal.header.classList.add(this.service.key);
 				modal.header.appendChild(this.service.createTitle());
 				const submitButton = DOM.create('button', {
 					class: 'primary puffy',
@@ -545,8 +545,8 @@ export abstract class SaveModule<T extends Summary = Summary> {
 
 	createModal = (): Modal => {
 		const modal = new Modal();
-		modal.modal.classList.add('ieport');
-		modal.header.classList.add(this.service.serviceName.toLocaleLowerCase());
+		modal.modal.classList.add('import-export-modal');
+		modal.header.classList.add(this.service.key);
 		modal.header.appendChild(this.service.createTitle());
 		return modal;
 	};

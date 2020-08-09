@@ -1,0 +1,816 @@
+@use 'sass:map';
+@import 'Photon.scss';
+@import 'Animations.scss';
+@import 'Services.scss';
+@import 'Modal.scss';
+
+*:disabled,
+*.disabled {
+	opacity: 0.4;
+}
+
+/* Links */
+*[href] {
+	color: $blue-60;
+	text-decoration: none;
+}
+*[href] img,
+*[href] i {
+	vertical-align: middle;
+}
+*[href]:hover {
+	text-decoration: underline;
+}
+*[href]:active {
+	color: $blue-70;
+	text-decoration: underline;
+}
+*[href]:focus {
+	box-shadow: $focus;
+}
+
+/* Buttons */
+button,
+.button {
+	border: 0;
+	cursor: pointer;
+	font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
+		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+	text-align: center;
+	line-height: 16px;
+	transition: all 250ms $animation;
+
+	&.hidden {
+		display: none;
+	}
+	&,
+	&.default {
+		border-radius: 2px;
+		height: 32px;
+		padding: 0 8px;
+		font-size: 13px;
+		font-weight: 400;
+		min-width: 132px;
+		width: auto;
+	}
+	img,
+	i {
+		float: left;
+		font-size: 16px;
+		line-height: 32px;
+	}
+
+	// Styles
+	&.primary {
+		color: $white-100;
+		background-color: $blue-60;
+	}
+	&.primary:hover {
+		background-color: $blue-70;
+	}
+	&.primary:active {
+		background-color: $blue-80;
+	}
+	&.primary:focus {
+		box-shadow: $focus;
+	}
+	&.default {
+		color: $grey-90;
+		background-color: $grey-90-a10;
+	}
+	&.default:hover {
+		background-color: $grey-90-a20;
+	}
+	&.default:active {
+		background-color: $grey-90-a30;
+	}
+	&.default:focus {
+		box-shadow: $focus;
+	}
+	&.ghost {
+		color: $grey-90-a30;
+		background: transparent;
+		height: 32px;
+		min-width: 32px;
+		width: 32px;
+		padding: 8px;
+	}
+	&.ghost:hover {
+		background-color: $grey-90-a10;
+	}
+	&.ghost:active {
+		background-color: $grey-90-a20;
+	}
+	&.ghost:focus {
+		box-shadow: $focus;
+	}
+	&.danger {
+		color: $white-100;
+		background-color: $red-60;
+	}
+	&.danger:hover {
+		background-color: $red-70;
+	}
+	&.danger:active {
+		background-color: $red-80;
+	}
+	&.danger:focus {
+		box-shadow: $focus;
+	}
+
+	// Sizes
+	&.micro {
+		border-radius: 2px;
+		height: 24px;
+		padding: 0 8px;
+		font-size: 11px;
+		font-weight: 400;
+	}
+	&.puffy {
+		border-radius: 4px;
+		height: 48px;
+		padding: 0 16px;
+		font-size: 15px;
+		font-weight: 400;
+		width: auto;
+	}
+	&.fill {
+		display: block;
+		width: 100%;
+	}
+}
+a.button {
+	line-height: 32px;
+
+	&:hover {
+		text-decoration: none;
+	}
+	&:active {
+		text-decoration: none;
+	}
+	&:focus {
+		text-decoration: none;
+	}
+
+	// Sizes
+	&.micro {
+		line-height: 24px;
+	}
+
+	&.puffy {
+		line-height: 48px;
+	}
+}
+
+// Form
+form .row {
+	display: grid;
+	grid-template-columns: 50%;
+	grid-gap: 8px;
+	grid-auto-flow: column;
+	margin-bottom: 16px;
+
+	input[type] {
+		min-width: 200px;
+	}
+}
+
+// Inputs
+input {
+	font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
+		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+	display: block;
+
+	&[type] {
+		border-radius: 2px;
+		padding: 0 8px;
+		width: auto;
+		height: 32px;
+		color: $grey-90;
+		border: 2px solid $grey-90-a20;
+	}
+	&[type].fill {
+		width: 100%;
+		box-sizing: border-box;
+	}
+	&[type]::placeholder {
+		color: $grey-50;
+	}
+	&[type]:hover {
+		border-color: $grey-90-a30;
+	}
+	&[type]:focus {
+		border-color: $blue-50;
+		box-shadow: $focus;
+	}
+	&[type='file'] {
+		cursor: pointer;
+	}
+}
+label,
+.label {
+	cursor: pointer;
+	display: block;
+	line-height: 20px;
+}
+
+/* Select */
+select {
+	border-radius: 2px;
+	padding: 0 8px;
+	width: auto;
+	height: 32px;
+	color: $grey-90;
+	border: 2px solid $grey-90-a20;
+}
+
+/*	Checkbox */
+input[type='checkbox'] {
+	visibility: hidden;
+	position: absolute;
+	left: -1000px;
+	clip: rect(0 0 0 0);
+
+	& + label::before {
+		font-family: 'Font Awesome 5 Free';
+		content: '\f00c';
+		color: transparent;
+		border-radius: 2px;
+		height: 16px;
+		width: 16px;
+		font-size: 16px;
+		background-color: $grey-90-a10;
+		border: 1px solid $grey-60;
+		cursor: pointer;
+		transition: all 150ms $animation;
+		display: inline-flex;
+		justify-content: center;
+		align-items: center;
+		padding: 2px;
+		margin-right: 8px;
+	}
+	& + label:hover::before {
+		background-color: $grey-90-a20;
+	}
+	& + label:active::before {
+		background-color: $grey-90-a30;
+	}
+	& + label:focus::before {
+		box-shadow: $focus;
+	}
+
+	&:checked + label::before {
+		color: $white-100;
+		background-color: $blue-60;
+		border-color: transparent;
+	}
+	&:checked + label:hover::before {
+		background-color: $blue-70;
+	}
+	&:checked + label:active::before {
+		background-color: $blue-80;
+	}
+	&:checked + label:focus::before {
+		box-shadow: $focus;
+	}
+
+	&:disabled + label,
+	&:disabled + label + .helper {
+		opacity: 0.4;
+	}
+	&[data-dependency] + label {
+		margin-top: 8px;
+		margin-left: 30px;
+	}
+	&[data-dependency] + label + .helper {
+		margin-left: 60px;
+	}
+	& + label + .helper,
+	& + .label + .helper {
+		margin-left: 30px;
+	}
+}
+
+/* Messages */
+.message {
+	border-radius: 4px;
+	width: auto;
+	font-size: $body-10;
+	font-weight: $regular;
+	color: $grey-90;
+	background: $grey-20;
+	margin-bottom: 8px;
+	transition: all $animation;
+	display: grid;
+	grid-gap: 4px;
+	grid-template-columns: min-content auto;
+	padding: 4px;
+
+	& > div.icon {
+		font-family: 'Font Awesome 5 Free';
+		font-size: 16px;
+		line-height: 16px;
+		height: 16px;
+		width: 16px;
+		margin: 4px;
+		padding: 4px;
+	}
+	& > div.icon::before {
+		content: '\f05a';
+	}
+	& .content {
+		align-self: center;
+	}
+	& .content > p {
+		padding: 4px 0;
+		white-space: pre-wrap;
+	}
+	&.hidden {
+		min-height: 0px;
+		max-height: 0px;
+		overflow: hidden;
+		margin-bottom: 0;
+		padding: 0;
+	}
+	&.large {
+		width: 100%;
+	}
+	&.loading > div.icon {
+		animation: fa-spin 2s linear infinite;
+		transform-origin: center center;
+
+		&::before {
+			content: '\f1ce';
+		}
+	}
+	&.warning {
+		color: $yellow-90;
+		background: $yellow-50;
+
+		& > div.icon::before {
+			content: '\f071';
+		}
+	}
+	&.success {
+		color: $green-90;
+		background: $green-50;
+		& > div.icon::before {
+			content: '\f00c';
+		}
+	}
+	&.error {
+		color: $white-100;
+		background: $red-60;
+
+		& > div.icon::before {
+			content: '\f06a';
+		}
+	}
+	& button,
+	& .button {
+		background-color: $grey-60;
+		margin: 0 8px;
+
+		&:hover {
+			background-color: $grey-70;
+		}
+		&:active {
+			background-color: $grey-80;
+		}
+	}
+	&.warning button,
+	&.warning .button {
+		background-color: $yellow-60;
+
+		&:hover {
+			background-color: $yellow-70;
+		}
+		&:active {
+			background-color: $yellow-80;
+		}
+	}
+	&.success button,
+	&.success .button {
+		background-color: $green-60;
+
+		&:hover {
+			background-color: $green-70;
+		}
+		&:active {
+			background-color: $green-80;
+		}
+	}
+	&.error button,
+	&.error .button {
+		background-color: $red-60;
+
+		&:hover {
+			background-color: $red-70;
+		}
+		&:active {
+			background-color: $red-80;
+		}
+	}
+}
+
+/* Cards */
+.card {
+	border-radius: 4px;
+	box-shadow: $shadow-10;
+	min-width: 15%;
+	overflow: hidden;
+	margin: 32px;
+	transition: all 150ms $animation;
+
+	&:hover {
+		box-shadow: $shadow-20;
+	}
+	& .header {
+		font-size: $title-30;
+		text-align: center;
+		padding: 32px;
+	}
+	& > .content {
+		padding: 8px;
+		background-color: $white-100;
+	}
+	&.large > .content {
+		padding: 20px;
+	}
+	& .body {
+		overflow: auto;
+	}
+}
+
+/* Table */
+table {
+	width: calc(100% - 16px - 2px);
+	border: 1px solid $grey-20;
+	border-radius: 2px;
+	background-color: $white-100;
+	color: $grey-90;
+	text-align: center;
+	border-collapse: collapse;
+	table-layout: fixed;
+	box-shadow: $shadow-10;
+
+	& thead {
+		background-color: $grey-30;
+		border: 1px solid $grey-20;
+		position: sticky;
+		top: 0;
+
+		& th {
+			border-bottom: 1px solid $grey-20;
+			padding: 4px;
+		}
+	}
+	& tbody tr:nth-child(even) {
+		background-color: $grey-10;
+	}
+	& tbody tr td {
+		padding: 4px;
+	}
+}
+
+/* Reset */
+* {
+	margin: 0;
+	padding: 0;
+}
+
+/* Utility */
+.helper {
+	font-size: $caption-30;
+	font-weight: $regular;
+	color: $grey-50;
+}
+
+/* SyncDex */
+html {
+	font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
+		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+	font-size: $body-20;
+	font-weight: $regular;
+}
+body {
+	min-height: 100vh;
+	display: grid;
+	grid-template-columns: 20% 80%;
+	background-color: $grey-10;
+	color: $grey-90;
+	transition: all 250ms $animation;
+}
+
+/*	Navigation */
+nav {
+	padding: 16px;
+
+	ul {
+		list-style-type: none;
+
+		li {
+			padding: 8px 0;
+			cursor: pointer;
+			transition: all 150ms $animation;
+			font-weight: $light;
+			display: table;
+
+			&:first-child {
+				font-size: $display-20;
+				font-weight: $extralight;
+				cursor: default;
+			}
+			&:first-child:hover {
+				font-weight: $extralight;
+			}
+			&:hover {
+				font-weight: $bold;
+			}
+			img {
+				vertical-align: middle;
+			}
+			&.active {
+				font-weight: $bold;
+			}
+		}
+	}
+}
+
+// Body
+main {
+	max-height: 100vh;
+	overflow-y: auto;
+	overflow-x: auto;
+}
+h1 {
+	font-size: $title-40;
+	font-weight: $medium;
+	margin: 16px 0;
+}
+h2 {
+	font-size: $title-20;
+	font-weight: $medium;
+	margin-bottom: 4px;
+}
+.section {
+	margin-bottom: 64px;
+}
+.block {
+	margin-bottom: 32px;
+}
+.paragraph {
+	margin-bottom: 4px;
+}
+.center {
+	text-align: center;
+	align-self: center;
+}
+.right {
+	text-align: right;
+}
+
+/*	Services */
+.services {
+	display: flex;
+	flex-flow: row wrap;
+	align-items: flex-start;
+
+	&.selectable .card {
+		cursor: pointer;
+	}
+	.card .content {
+		display: flex;
+		flex-flow: column wrap;
+
+		button,
+		.button {
+			margin-bottom: 8px;
+		}
+		a.button img {
+			padding-top: 8px;
+		}
+		button:last-child,
+		.button:last-child,
+		.message:last-child {
+			margin-bottom: 0;
+		}
+	}
+}
+
+@each $key in map.keys($services) {
+	.card .header.#{$key} {
+		background: url('/icons/#{$key}.png') 8px center / 16px no-repeat, map.get($services-bg, $key);
+		color: map.get($services-color, $key);
+	}
+}
+// Custom separated Title
+.sync {
+	color: map.get($services-color, 'sc');
+}
+.sync .dex {
+	color: map.get($services-secondary, 'sc');
+}
+.manga {
+	color: map.get($services-secondary, 'md');
+}
+.manga .dex {
+	color: map.get($services-color, 'md');
+}
+.ani {
+	color: map.get($services-secondary, 'al');
+}
+.ani .list {
+	color: map.get($services-color, 'al');
+}
+
+// Parameters
+.parameter {
+	/*display: grid;
+	grid-template-columns: 20px auto;
+	grid-template-rows: auto;
+	gap: 8px;
+	background-color: $white-100;
+	padding: 4px;
+	border: 1px solid $grey-20;
+	border-radius: 2px;*/
+	margin-bottom: 32px;
+}
+.row-parameter {
+	display: grid;
+	grid-template-columns: auto;
+	grid-template-rows: auto;
+	margin-bottom: 8px;
+	gap: 4px;
+	/*background-color: $white-100;
+	padding: 4px;
+	border: 1px solid $grey-20;
+	border-radius: 2px;*/
+}
+.row-parameter > :nth-child(2n) {
+	margin-bottom: 8px;
+}
+.dependency {
+	margin-left: 32px;
+}
+.color {
+	display: inline-block;
+	width: 32px;
+	height: 32px;
+	border: 2px solid $grey-90-a20;
+	border-top-right-radius: 2px;
+	border-bottom-right-radius: 2px;
+}
+.color-input {
+	display: flex;
+	flex-flow: row nowrap;
+	align-items: center;
+	margin-bottom: 8px;
+}
+.color-input input {
+	border-right: 0;
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+.color-input button:first-child {
+	margin-right: 4px;
+}
+
+/* Import Export Modal */
+.import-export-modal {
+	form {
+		.parameter,
+		.row-parameter {
+			margin-bottom: 32px;
+		}
+		.parameter label {
+			margin-bottom: 8px;
+		}
+		.parameter label:last-child {
+			margin-bottom: 0;
+		}
+		&.closed {
+			user-select: none;
+			transform-origin: top center;
+			animation: shrink 200ms 1 forwards;
+		}
+	}
+	.message {
+		overflow: hidden;
+
+		&:not(.in-place) {
+			font-size: $body-20;
+			animation: flash 250ms 1 forwards;
+		}
+		&:not(.in-place).loading {
+			font-size: $body-20;
+			animation: flash 250ms 1 forwards, pulse 2s ease-in-out alternate infinite;
+		}
+	}
+	.leave {
+		margin-bottom: 8px;
+	}
+	ul.failed {
+		transform-origin: top center;
+		display: none;
+
+		&.open {
+			display: block;
+			animation: expand 250ms 1 forwards;
+		}
+		li {
+			line-height: 24px;
+		}
+	}
+}
+
+/* Save Viewer */
+.save-viewer {
+	table {
+		tr {
+			th {
+				&.name {
+					width: 20%;
+				}
+				&.actions {
+					width: 5%;
+				}
+			}
+			td {
+				&.mangadex a[href] {
+					color: $grey-90;
+				}
+				&.name {
+					text-overflow: ellipsis;
+					overflow: hidden;
+					white-space: nowrap;
+				}
+			}
+		}
+	}
+	button.paging {
+		color: $grey-90;
+	}
+	button.paging.active {
+		background-color: $grey-90-a30;
+		font-weight: $bold;
+	}
+	#save-paging {
+		display: grid;
+		grid-template-columns: min-content auto;
+		grid-gap: 4px;
+	}
+	.card .header.title {
+		background: map.get($services-bg, 'sc');
+		color: $grey-90;
+	}
+	#save-body .message {
+		margin-bottom: 0;
+	}
+}
+
+// Dark Theme
+body:not(.light) {
+	background-color: $grey-70;
+	color: $white-100;
+
+	.modal .card > .content {
+		color: $grey-90;
+	}
+	.card {
+		box-shadow: $light-shadow-10;
+	}
+	.card:hover {
+		box-shadow: $light-shadow-20;
+	}
+	table {
+		border: 1px solid $grey-80;
+		background-color: $grey-60;
+		color: $white-100;
+		box-shadow: $light-shadow-10;
+	}
+	table thead {
+		background-color: $grey-70;
+		border: 1px solid $grey-80;
+	}
+	table thead th {
+		border-bottom: 1px solid $grey-80;
+	}
+	table tbody tr:nth-child(even) {
+		background-color: $grey-50;
+	}
+	.modal .card > .content {
+		color: $grey-90;
+	}
+	table tr td.mangadex a[href] {
+		color: $white-100;
+	}
+	table tbody td.actions button {
+		color: $grey-10;
+	}
+	button.paging {
+		color: $white-100;
+	}
+}
+
+// @import 'Status.scss';

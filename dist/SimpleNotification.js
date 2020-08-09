@@ -64,6 +64,7 @@
  * @property {Events} events
  * @property {InsertAnimationDefinition} insertAnimation
  * @property {RemoveAnimationDefinition} removeAnimation
+ * @property {boolean} display
  */
 
 /**

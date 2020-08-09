@@ -9,6 +9,7 @@
 		"rimraf": "^3.0.2",
 		"rollup": "^2.23.0",
 		"rollup-plugin-terser": "^6.1.0",
+		"sass": "^1.26.10",
 		"terser": "^4.8.0",
 		"typescript": "^3.9.7",
 		"web-ext": "^4.3.0"

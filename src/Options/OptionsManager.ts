@@ -48,9 +48,9 @@ export class OptionsManager {
 					this.reload();
 					clickCount = 0;
 					deleteSave.classList.remove('loading');
-					deleteSave.style.fontSize = 'var(--body-20)';
+					deleteSave.style.fontSize = '15px';
 				} else {
-					deleteSave.style.fontSize = 'var(--title-30)';
+					deleteSave.style.fontSize = '22px';
 					++clickCount;
 					// Clear clickCount after 2s, just in case
 					notification = SimpleNotification.info(
@@ -63,7 +63,7 @@ export class OptionsManager {
 					clearClickCount = window.setTimeout(() => {
 						notification.remove();
 						clickCount = 0;
-						deleteSave.style.fontSize = 'var(--body-20)';
+						deleteSave.style.fontSize = '15px';
 					}, 4000);
 				}
 			});

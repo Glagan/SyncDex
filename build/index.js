@@ -4,6 +4,7 @@ const exec = require('child_process');
 const rimraf = require('rimraf');
 const path = require('path');
 const rollup = require('rollup');
+const sass = require('sass');
 const typescript = require('@rollup/plugin-typescript');
 const { terser } = require('rollup-plugin-terser');
 const options = require('minimist')(process.argv.slice(2), {
@@ -68,7 +69,7 @@ let mainManifest = {
 				'https://*.mangadex.org/updates*',
 			],
 			js: ['dist/SimpleNotification.js', 'SyncDex.js'],
-			css: ['dist/SimpleNotification.min.css', 'css/Core.css'],
+			css: ['dist/SimpleNotification.min.css', 'css/SyncDex.css'],
 		},
 	],
 	browser_action: {
@@ -109,7 +110,7 @@ let browser_manifests = {
 //
 const Files = [
 	'dist:dist',
-	'css:css',
+	'build/css:css',
 	'icons:icons',
 	// Background
 	'build/scripts/SyncDex_background.js:background',
@@ -193,15 +194,33 @@ function bundleName(outputFile) {
 	}).name;
 }
 
+// SCSS Files
+const scss = ['SyncDex', 'Options'];
+
 // Start
 (async () => {
+	// Build CSS
+	console.log('Compiling CSS...');
+	scss.forEach((name) => {
+		process.stdout.write(`~ ${name}...`);
+		const result = sass.renderSync({
+			file: `css/${name}.scss`,
+			outFile: `${name}.css`,
+			includePaths: ['css'],
+			sourceMap: true,
+			outputStyle: options.mode == 'dev' ? 'expanded' : 'compressed',
+		});
+		fs.writeFileSync(`build/css/${name}.css`, result.css.toString());
+		fs.writeFileSync(`build/css/${name}.css.map`, result.map.toString());
+		process.stdout.write(` done in ${result.stats.duration}ms\n`);
+	});
 	// Compile modules
 	const watcher = rollup.watch(bundles);
 	let doneInitial = false;
 	let duration = 0;
 	watcher.on('event', async (event) => {
 		if (event.code == 'START') {
-			console.log(`Compiling`);
+			console.log(`Compiling Scripts`);
 			duration = 0;
 		} else if (event.code == 'BUNDLE_START') {
 			rimraf.sync(event.output[0]); // Delete previous file

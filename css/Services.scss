@@ -1,0 +1,38 @@
+$services: (
+	'mmd': 'MyMangaDex',
+	'sc': 'SyncDex',
+	'md': 'MangaDex',
+	'mal': 'MyAnimeList',
+	'al': 'Anilist',
+	'ku': 'Kitsu',
+	'mu': 'MangaUpdates',
+	'ap': 'AnimePlanet',
+);
+
+$services-color: (
+	'mmd': rgb(47, 82, 162),
+	'sc': rgb(81, 165, 234),
+	'md': rgb(247, 148, 33),
+	'mal': rgb(47, 82, 162),
+	'al': rgb(2, 169, 255),
+	'ku': #ffffff,
+	'mu': rgb(82, 102, 124),
+	'ap': rgb(252, 83, 66),
+);
+
+$services-secondary: (
+	'sc': rgb(247, 148, 33),
+	'md': #ffffff,
+	'al': #ffffff,
+);
+
+$services-bg: (
+	'mmd': #ffffff,
+	'sc': #fefefe,
+	'md': #2a2f34,
+	'mal': #ffffff,
+	'al': rgb(31, 38, 49),
+	'ku': rgb(64, 47, 63),
+	'mu': rgb(240, 243, 247),
+	'ap': rgb(48, 48, 48),
+);

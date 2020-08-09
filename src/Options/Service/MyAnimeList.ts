@@ -36,6 +36,7 @@ class MyAnimeListLogin extends LoginModule {
 			credentials: 'include',
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
+		if (response.body == '') return RequestStatus.SERVER_ERROR;
 		if (response.body && response.url.indexOf('login.php') < 0) return RequestStatus.SUCCESS;
 		return RequestStatus.FAIL;
 	};

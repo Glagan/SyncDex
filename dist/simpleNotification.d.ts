@@ -45,6 +45,7 @@ interface Options {
 		name: 'fadeout' | 'scaleout' | 'rotateout';
 		duration: number;
 	};
+	display: boolean;
 }
 
 interface TagDescription {

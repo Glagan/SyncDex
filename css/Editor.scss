@@ -1,0 +1,12 @@
+.entry-edit {
+	.service {
+		display: flex;
+		align-items: center;
+		width: 50%;
+		margin-bottom: 8px;
+
+		img {
+			flex-shrink: 0;
+		}
+	}
+}

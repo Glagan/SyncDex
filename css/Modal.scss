@@ -1,0 +1,53 @@
+.modal {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	background-color: $grey-90-a60;
+	transition: all $animation;
+	display: flex;
+	flex-flow: column nowrap;
+	justify-content: center;
+	align-content: center;
+	cursor: pointer;
+	animation: fade-in 200ms $animation 1 forwards;
+
+	&.closed {
+		user-select: none;
+		animation: fade-out 150ms $animation 1 forwards;
+	}
+	& > .content {
+		margin-left: 20%;
+		margin-right: 20%;
+		min-width: 20rem;
+		overflow: hidden;
+		cursor: initial;
+		max-height: 75vh;
+		display: flex;
+		flex-flow: column nowrap;
+
+		form .primary {
+			margin-right: 8px;
+		}
+		& > .header {
+			border-radius: 2px;
+			flex-shrink: 0;
+			font-size: $title-40;
+			font-weight: $light;
+			padding: 16px 0;
+		}
+	}
+	&.small > .content {
+		margin-left: 40%;
+		margin-right: 40%;
+
+		form .primary {
+			margin-bottom: 8px;
+		}
+	}
+	&.medium > .content {
+		margin-left: 30%;
+		margin-right: 30%;
+	}
+}
