@@ -4,17 +4,14 @@ import { ChapterGroup } from './ChapterGroup';
 import { DOM } from '../Core/DOM';
 import {
 	TitleCollection,
-	BaseTitle,
 	ServiceKeyType,
 	ReverseActivableName,
 	ActivableKey,
-	ExternalTitleList,
 	Title,
 	StatusMap,
-	ReverseServiceName,
 	iconToService,
 } from '../Core/Title';
-import { Overview } from './Overview';
+import { TitleOverview, ReadingOverview } from './Overview';
 import { Mochi } from '../Core/Mochi';
 import { GetService } from './Service';
 import { injectScript } from '../Core/Utility';
@@ -26,9 +23,6 @@ import { TitleGroup } from './TitleGroup';
 interface ReadingState {
 	syncModule?: SyncModule;
 	title?: Title;
-	services: ExternalTitleList;
-	overview?: HTMLElement;
-	icons: { [key in ActivableKey]?: HTMLElement };
 }
 
 console.log('SyncDex :: Core');
@@ -138,7 +132,7 @@ export class SyncDex {
 		localUpdated: boolean
 	): Promise<void> => {
 		if (state.title == undefined) return;
-		const report = await state.syncModule!.syncServices();
+		const report = await state.syncModule!.syncExternal();
 		state.syncModule!.displayReportNotifications(report, created, firstRequest, localUpdated);
 	};
 
@@ -180,63 +174,15 @@ export class SyncDex {
 					}
 				}
 			}
-			// Overview
-			state.overview = DOM.create('div', { class: 'col row no-gutters reading-overview' });
-			const overviewParent = DOM.create('div', {
-				class: 'col-auto row no-gutters p-1',
-				childs: [state.overview],
-			});
-			if (Options.services.length > 0) {
-				const actionsRow = document.querySelector('.reader-controls-mode')!;
-				actionsRow.parentElement!.insertBefore(overviewParent, actionsRow);
-			}
-			// Overview Icons
-			for (const key of Options.services) {
-				state.icons[key] = DOM.create('img', {
-					src: Runtime.icon(key),
-					title: ReverseServiceName[key],
-				});
-				state.overview.appendChild(state.icons[key]!);
-			}
 		}
 		// Send initial requests -- Another if block to tell Typescript state.syncModule does exist
 		if (state.syncModule == undefined) {
-			state.syncModule = new SyncModule(state.title);
-			state.syncModule.setEvents({
-				beforeRequest: (key) => {
-					state.icons[key]?.classList.add('loading');
-				},
-				beforePersist: (key) => {
-					state.icons[key]?.classList.add('loading');
-				},
-				afterPersist: async (key, response) => {
-					state.icons[key]?.classList.remove('loading');
-					if (response > RequestStatus.CREATED) {
-						state.icons[key]?.classList.add('error');
-					} else state.icons[key]?.classList.add('synced');
-				},
-				alreadySynced: async (key) => {
-					state.icons[key]?.classList.remove('loading');
-					state.icons[key]?.classList.add('synced');
-				},
-			});
+			state.syncModule = new SyncModule(state.title, new ReadingOverview());
 			state.syncModule.initialize();
 		}
 		// Check initial Status if it's the first time
 		if (firstRequest && Options.services.length > 0) {
-			await state.syncModule.syncLocalTitle();
-			// Update Overview
-			for (const key of Options.services) {
-				const status = await state.services[key];
-				state.icons[key]?.classList.remove('loading');
-				if (status instanceof BaseTitle) {
-					if (!status.loggedIn) {
-						state.icons[key]?.classList.add('error');
-					} else {
-						state.icons[key]?.classList.add('synced');
-					}
-				} else state.icons[key]?.classList.add('warning');
-			}
+			await state.syncModule.syncLocal();
 		}
 		// Find current Chapter Progress
 		const created = state.title.status == Status.NONE || state.title.status == Status.PLAN_TO_READ;
@@ -259,7 +205,7 @@ export class SyncDex {
 			// Only sync if Title has a Status to be synced to
 			await state.title.persist();
 			if (firstRequest && Options.services.length > 0 && state.title.status !== Status.NONE) {
-				const report = await state.syncModule.syncServices();
+				const report = await state.syncModule.syncExternal();
 				state.syncModule.displayReportNotifications(report, created, firstRequest, false);
 			}
 			return;
@@ -399,8 +345,6 @@ export class SyncDex {
 		const state: ReadingState = {
 			title: undefined,
 			syncModule: undefined,
-			services: {},
-			icons: {},
 		};
 		document.addEventListener('ReaderChapterChange', async (event) => {
 			await this.chapterEvent((event as ChapterChangeEvent).detail, state);
@@ -544,26 +488,10 @@ export class SyncDex {
 		}
 
 		// Load each Services to Sync
-		const syncModule = new SyncModule(title);
-		// TODO: Display *SyncDex* tab even if there is no Services
-		let overview = new Overview(syncModule);
-		syncModule.setEvents({
-			beforePersist: (key) => {
-				overview.isSyncing(key);
-			},
-			afterPersist: async (key, response) => {
-				if (response > RequestStatus.CREATED) overview.updateOverview(key, response);
-				else overview.updateOverview(key, await syncModule.services[key]!);
-			},
-			alreadySynced: async (key) => {
-				overview.updateOverview(key, await syncModule.services[key]!);
-			},
-		});
-		if (Options.services.length > 0) syncModule.initialize();
-		overview.displayServices();
+		const syncModule = new SyncModule(title, new TitleOverview());
+		syncModule.initialize();
 		// Check current online Status
-		const imported = await syncModule.syncLocalTitle();
-		overview.updateMainOverview();
+		const imported = await syncModule.syncLocal();
 
 		// Highlight opened chapters
 		if (Options.saveOpenedChapters || Options.biggerHistory) {
@@ -611,7 +539,7 @@ export class SyncDex {
 		}
 
 		// When the Title is synced, all remaining ServiceTitle are synced with it
-		if (title.status != Status.NONE) await syncModule.syncServices(true);
+		if (title.status != Status.NONE) await syncModule.syncExternal(true);
 	};
 
 	updatesPage = async (): Promise<void> => {

@@ -13,13 +13,7 @@ import {
 import { Options } from '../Core/Options';
 import { GetService } from './Service';
 import { Runtime } from '../Core/Runtime';
-
-export interface SyncEvents {
-	beforeRequest?: (key: ActivableKey) => void;
-	beforePersist?: (key: ActivableKey) => void;
-	afterPersist?: (key: ActivableKey, response: RequestStatus) => Promise<void>;
-	alreadySynced?: (key: ActivableKey) => Promise<void>;
-}
+import { Overview } from './Overview';
 
 export type SyncReport = {
 	[key in ActivableKey]?: RequestStatus | false;
@@ -27,31 +21,39 @@ export type SyncReport = {
 
 export class SyncModule {
 	title: Title;
-	services: ExternalTitleList;
-	events: SyncEvents;
+	overview: Overview;
+	loadingServices: Promise<BaseTitle | RequestStatus>[] = [];
+	services: { [key in ActivableKey]?: BaseTitle | RequestStatus } = {};
 
-	constructor(title: Title) {
+	constructor(title: Title, overview: Overview) {
 		this.title = title;
-		this.services = {};
-		this.events = {};
+		this.overview = overview;
+		if (this.overview.bind) this.overview.bind(this);
 	}
-
-	setEvents = (events: SyncEvents): void => {
-		this.events = events;
-	};
 
 	/**
 	 * Send initial Media requests concurrently for each services.
 	 */
 	initialize = (): void => {
+		if (Options.services.length == 0) {
+			this.overview.hasNoServices();
+			return;
+		}
 		const activeServices = Object.keys(this.title.services).filter(
 			(key) => Options.services.indexOf(key as ActivableKey) >= 0
 		);
 		// Add Services ordered by Options.services to check Main Service first
 		for (const key of Options.services) {
-			if (activeServices.indexOf(key) >= 0) {
-				if (this.events.beforeRequest) this.events.beforeRequest(key);
-				this.services[key] = GetService(ReverseActivableName[key]).get(this.title.services[key]!);
+			const hasId = activeServices.indexOf(key) >= 0;
+			this.overview.initializeService(key, hasId);
+			if (hasId) {
+				const initialRequest = GetService(ReverseActivableName[key]).get(this.title.services[key]!);
+				this.loadingServices.push(initialRequest);
+				initialRequest.then((res) => {
+					this.overview.receivedInitialRequest(key, res, this);
+					this.services[key] = res;
+					return res;
+				});
 			}
 		}
 	};
@@ -60,14 +62,16 @@ export class SyncModule {
 	 * Check if any Service in services is available, in the list and more recent that the local Title.
 	 * If an external Service is more recent, sync with it and sync all other Services with the then synced Title.
 	 */
-	syncLocalTitle = async (): Promise<boolean> => {
+	syncLocal = async (): Promise<boolean> => {
+		await Promise.all(this.loadingServices);
+		this.loadingServices = [];
 		// Sync Title with the most recent ServiceTitle ordered by User choice
 		// Services are reversed to select the first choice last
+		this.overview.syncingLocal();
 		let doSave = false;
-		await Promise.all(Object.values(this.services));
 		for (const key of Options.services.reverse()) {
 			if (this.services[key] === undefined) continue;
-			const response = await this.services[key];
+			const response = this.services[key];
 			if (response instanceof BaseTitle && response.loggedIn) {
 				// Check if any of the ServiceTitle is more recent than the local Title
 				if (response.inList && (this.title.inList || response.isMoreRecent(this.title))) {
@@ -86,36 +90,34 @@ export class SyncModule {
 			}
 		}
 		if (doSave) await this.title.persist();
+		this.overview.syncedLocal(this.title);
 		return doSave;
 	};
 
-	syncServices = async (checkAutoSyncOption: boolean = false): Promise<SyncReport> => {
+	syncExternal = async (checkAutoSyncOption: boolean = false): Promise<SyncReport> => {
 		const report: SyncReport = {};
-		const responses: Promise<void>[] = [];
-		for (const serviceKey of Options.services) {
-			if (this.services[serviceKey] === undefined) continue;
-			responses.push(
-				this.services[serviceKey]!.then(async (response) => {
-					if (response instanceof BaseTitle) {
-						if (!response.loggedIn) {
-							report[serviceKey] = false;
-							return;
-						}
-						response.isSynced(this.title);
-						// If Auto Sync is on, import from now up to date Title and persist
-						if ((!checkAutoSyncOption || Options.autoSync) && (!response.inList || !response.synced)) {
-							if (this.events.beforePersist) this.events.beforePersist(serviceKey);
-							response.import(this.title);
-							const res = await response.persist();
-							if (this.events.afterPersist) await this.events.afterPersist(serviceKey, res);
-							report[serviceKey] = res;
-							// Always update the overview to check against possible imported ServiceTitle
-						} else if (this.events.alreadySynced) await this.events.alreadySynced(serviceKey);
-					} else report[serviceKey] = response;
-				})
-			);
+		for (const key of Options.services) {
+			const service = this.services[key];
+			if (service === undefined) continue;
+			if (!(service instanceof BaseTitle)) {
+				report[key] = service as RequestStatus;
+				continue;
+			}
+			if (!service.loggedIn) {
+				report[key] = false;
+				continue;
+			}
+			service.isSynced(this.title);
+			// If Auto Sync is on, import from now up to date Title and persist
+			if ((!checkAutoSyncOption || Options.autoSync) && (!service.inList || !service.synced)) {
+				service.import(this.title);
+				this.overview.syncingService(key);
+				const res = await service.persist();
+				this.overview.syncedService(key, res, this.title);
+				report[key] = res;
+				// Always update the overview to check against possible imported ServiceTitle
+			} else this.overview.syncedService(key, service, this.title);
 		}
-		await Promise.all(responses);
 		return report;
 	};
 
@@ -190,5 +192,24 @@ export class SyncModule {
 				{ position: 'bottom-left', sticky: true } // Keep sticky
 			);
 		}
+	};
+
+	refreshService = async (key: ActivableKey): Promise<void> => {
+		if (!this.title.services[key]) return;
+		const res = await GetService(ReverseActivableName[key]).get(this.title.services[key]!);
+		this.services[key] = res;
+		await this.syncLocal();
+		await this.syncExternal(true);
+	};
+
+	serviceImport = async (key: ActivableKey): Promise<void> => {
+		const service = this.services[key];
+		if (!service || typeof service === 'number') return;
+		service.import(this.title);
+		this.overview.syncingService(key);
+		const res = await service.persist();
+		if (res > RequestStatus.CREATED) {
+			this.overview.syncedService(key, res, this.title);
+		} else this.overview.syncedService(key, service, this.title);
 	};
 }

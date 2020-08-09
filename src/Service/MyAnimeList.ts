@@ -62,7 +62,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 		if (month == null || day == null || year == null) return undefined;
 		const parts: number[] = [parseInt(year.value), parseInt(month.value), parseInt(day.value)];
 		if (parts.some((part) => isNaN(part))) return undefined;
-		return new Date(parts[0], parts[1], parts[2]);
+		return new Date(parts[0], parts[1] - 1, parts[2]);
 	};
 
 	static get = async (id: ServiceKeyType): Promise<ExternalTitle | RequestStatus> => {
@@ -129,7 +129,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 			'add_manga[status]': MyAnimeListTitle.fromStatus(this.status),
 		};
 		if (this.progress.volume) body['add_manga[num_read_volumes]'] = this.progress.volume;
-		else body['add_manga[num_read_volumes]'] = 0;
+		else body['add_manga[num_read_volumes]'] = '';
 		body['last_completed_vol'] = '';
 		body['add_manga[num_read_chapters]'] = Math.floor(this.progress.chapter);
 		// Score
@@ -137,7 +137,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 		else body['add_manga[score]'] = '';
 		// Dates
 		if (this.start) {
-			body['add_manga[start_date][month]'] = this.start.getMonth();
+			body['add_manga[start_date][month]'] = this.start.getMonth() + 1;
 			body['add_manga[start_date][day]'] = this.start.getDate();
 			body['add_manga[start_date][year]'] = this.start.getFullYear();
 		} else {
