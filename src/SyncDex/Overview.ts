@@ -129,31 +129,29 @@ class ServiceOverview {
 
 	syncing = (): void => {
 		this.setTabIcon('sync-alt fa-spin');
-		this.syncOverlay = DOM.create('div', {
-			class: 'syncing',
-			childs: [DOM.icon('sync-alt fa-spin'), DOM.space(), DOM.text('Syncing...')],
-		});
-		this.body.appendChild(this.syncOverlay);
+		if (!this.syncOverlay) {
+			this.syncOverlay = DOM.create('div', {
+				class: 'syncing',
+				childs: [DOM.icon('sync-alt fa-spin'), DOM.space(), DOM.text('Syncing...')],
+			});
+			this.body.appendChild(this.syncOverlay);
+		}
 	};
 
 	update = (res: BaseTitle | RequestStatus, title: Title): void => {
 		this.clear();
 		if (typeof res === 'object') {
-			try {
-				res.overview(this.content, title);
-				this.manage.appendChild(this.refreshButton);
-				// Display *Sync* button only if the title is out of sync, with auto sync disabled and if the title is in a list
-				if (!Options.autoSync && !res.isSynced(title) && title.status !== Status.NONE && res.loggedIn) {
-					this.setTabIcon('sync has-error');
-					this.manage.appendChild(this.syncButton);
-				}
-				if (!res.loggedIn) {
-					this.setTabIcon('times has-error');
-				} else if (!res.inList) {
-					this.setTabIcon('bookmark has-error');
-				}
-			} catch (error) {
-				console.error(error);
+			res.overview(this.content, title);
+			this.manage.appendChild(this.refreshButton);
+			// Display *Sync* button only if the title is out of sync, with auto sync disabled and if the title is in a list
+			if (!Options.autoSync && !res.isSynced(title) && title.status !== Status.NONE && res.loggedIn) {
+				this.setTabIcon('sync has-error');
+				this.manage.appendChild(this.syncButton);
+			}
+			if (!res.loggedIn) {
+				this.setTabIcon('times has-error');
+			} else if (!res.inList) {
+				this.setTabIcon('bookmark has-error');
 			}
 		} else {
 			this.setTabIcon('times has-error');
@@ -231,12 +229,19 @@ class SyncDexOverview extends ServiceOverview {
 	bind = (syncModule: SyncModule): void => {
 		this.refreshButton.addEventListener('click', async (event) => {
 			event.preventDefault();
-			this.syncing();
 			await syncModule.title.refresh();
 			await syncModule.syncLocal();
-			this.synced();
 			await syncModule.syncExternal(true);
 		});
+		const quickBind = async (event: Event, status: Status): Promise<void> => {
+			event.preventDefault();
+			syncModule.title.status = status;
+			if (status == Status.READING) syncModule.title.start = new Date();
+			await syncModule.syncLocal();
+			await syncModule.syncExternal(true);
+		};
+		this.startReading.addEventListener('click', (event) => quickBind(event, Status.READING));
+		this.planToRead.addEventListener('click', (event) => quickBind(event, Status.PLAN_TO_READ));
 	};
 
 	update = (_res: BaseTitle | RequestStatus, title: Title): void => {
@@ -331,8 +336,8 @@ export class TitleOverview extends Overview {
 	};
 
 	syncedLocal = (title: Title): void => {
-		this.mainOverview.synced();
 		this.mainOverview.update(RequestStatus.SUCCESS, title);
+		this.mainOverview.synced();
 	};
 
 	activateOverview = (overview: ServiceOverview): void => {

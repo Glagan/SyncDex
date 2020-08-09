@@ -113,7 +113,9 @@ export class SyncModule {
 				service.import(this.title);
 				this.overview.syncingService(key);
 				const res = await service.persist();
-				this.overview.syncedService(key, res, this.title);
+				if (res > RequestStatus.CREATED) {
+					this.overview.syncedService(key, res, this.title);
+				} else this.overview.syncedService(key, service, this.title);
 				report[key] = res;
 				// Always update the overview to check against possible imported ServiceTitle
 			} else this.overview.syncedService(key, service, this.title);
