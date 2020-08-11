@@ -398,12 +398,13 @@ export class ReadingOverview {
 
 	initializeService = (key: ActivableKey, hasId: boolean): void => {
 		const icon = DOM.create('img', {
-			class: 'loading',
 			src: Runtime.icon(key),
 			title: ReverseServiceName[key],
 		});
+		if (hasId) {
+			icon.classList.add('loading');
+		} else icon.classList.add('error');
 		this.serviceRow.appendChild(icon);
-		if (!hasId) icon.classList.add('error');
 		this.icons[key] = icon;
 	};
 

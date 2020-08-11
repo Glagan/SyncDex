@@ -234,6 +234,7 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 			class: icon == 'ban' ? 'helper' : undefined,
 			childs: [DOM.create('i', { class: `fas fa-${icon}` }), DOM.space(), nameHeader],
 		});
+		// Display value
 		if (content !== undefined) {
 			DOM.append(
 				row,
@@ -242,7 +243,9 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 					textContent: `${isDate(content) ? dateFormat(content) : content}`,
 				})
 			);
+			// Helper with message if there is no value
 		} else nameHeader.className = 'helper';
+		// Display difference between synced value
 		if (
 			original !== undefined &&
 			(content === undefined ||
@@ -252,9 +255,8 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 					Math.floor(content) != Math.floor(original)) ||
 				(typeof content === 'string' && typeof original === 'string' && content != original))
 		) {
-			if (content) {
-				row.lastElementChild!.classList.add('not-synced');
-			} else nameHeader.classList.add('not-synced');
+			row.lastElementChild!.classList.add('not-synced');
+			// Append synced value next to the not synced value
 			DOM.append(
 				row,
 				DOM.space(),

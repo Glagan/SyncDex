@@ -20,7 +20,6 @@ export class History {
 
 	static async load(): Promise<void> {
 		await (LocalStorage.get('history') as Promise<number[] | undefined>).then(async (res) => {
-			console.log('loaded history', res);
 			if (res == undefined) {
 				await LocalStorage.set('history', []);
 			} else History.values = res;
@@ -87,11 +86,24 @@ export class History {
 		card.dataset.html = 'true';
 		const content = [];
 		if (title.lastTitle) {
-			content.push(dateFormat(new Date(title.lastTitle), true));
+			content.push('Last visit', dateFormat(new Date(title.lastTitle), true));
 		}
 		if (title.lastRead) {
-			content.push(`<span style='color:rgb(51,152,182)'>${dateFormat(new Date(title.lastRead), true)}</span>`);
+			content.push(
+				'Last read',
+				`<span style='color:rgb(51,152,182)'>${dateFormat(new Date(title.lastRead), true)}</span>`
+			);
 		}
 		card.title = content.join('<br>');
+	}
+
+	static highlight(card: HTMLElement, title: Title) {
+		if (title.highest) {
+			if (title.highest <= title.progress.chapter) {
+				card.classList.add('history-up');
+			} else if (title.highest > title.progress.chapter) {
+				card.classList.add('history-down');
+			}
+		}
 	}
 }

@@ -259,4 +259,20 @@
 	padding: 0;
 }
 
+// History
+.history-up {
+	box-shadow: 0 0 6px -1px $green-60;
+	border: 1px solid $green-60;
+}
+.history-up .car-caption {
+	background-color: opacify($color: $green-60, $amount: 0.6);
+}
+.history-down {
+	box-shadow: 0 0 6px 1px $blue-40;
+	border: 1px solid $blue-40;
+}
+.history-down .car-caption {
+	background-color: opacify($color: $blue-40, $amount: 0.6);
+}
+
 // @import 'Editor.scss';
