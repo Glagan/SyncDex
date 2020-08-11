@@ -1,5 +1,5 @@
 import { Options } from '../Core/Options';
-import { DOM } from '../Core/DOM';
+import { stringToProgress } from '../Core/Utility';
 
 interface ChapterRow {
 	node: HTMLElement;
@@ -109,21 +109,11 @@ export class TitleGroup {
 			} else if (currentGroup != undefined) {
 				const chapterLink = row.querySelector<HTMLAnchorElement>(`a[href^='/chapter/'`);
 				if (!chapterLink) continue;
-				const progressReg: (string[] | null)[] = [
-					/Vol(?:\.|ume)\s*(\d+)/.exec(chapterLink.textContent!),
-					/Ch(?:\.|apter)\s*(\d+(\.\d+)?)/.exec(chapterLink.textContent!),
-				];
-				// Handle Oneshot as chapter 0
-				if (progressReg[1] === null) {
-					if (chapterLink.textContent != 'Oneshot') continue;
-					progressReg[1] = ['Oneshot', '0'];
-				}
+				const progress = stringToProgress(chapterLink.textContent!);
+				if (!progress) continue;
 				currentGroup.chapters.unshift({
 					node: row,
-					progress: {
-						volume: progressReg[0] !== null ? parseInt(progressReg[0][1]) : undefined,
-						chapter: parseFloat(progressReg[1][1]),
-					},
+					progress: progress,
 				});
 			}
 		}

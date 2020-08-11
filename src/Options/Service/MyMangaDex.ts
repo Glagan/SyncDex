@@ -152,10 +152,10 @@ class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTi
 	handleHistory = (save: MyMangaDexSave, titles: TitleCollection, summary: ImportSummary): number[] => {
 		const history: number[] = [];
 		if (!save.history || save.history.length == 0) return history;
-		for (const titleId of save.history) {
-			const found = titles.find(titleId);
-			if (found !== undefined && !found.name && !found.lastChapter && !found.history) {
-				history.push(titleId);
+		for (const id of save.history) {
+			const found = titles.find(id);
+			if (found !== undefined && found.name && found.lastChapter && found.history) {
+				history.push(id);
 			}
 		}
 		summary.history = true;

@@ -206,8 +206,8 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		}
 		// We're double checking and saving only at the end in case of abort
 		notification = this.notification('loading', 'Saving...');
-		collection.save();
-		if (this.handleHistory && history.length > 0) {
+		await collection.save();
+		if (this.handleHistory) {
 			await LocalStorage.set('history', history);
 		}
 		await Options.save(); // Always save -- options are deleted in LocalStorage

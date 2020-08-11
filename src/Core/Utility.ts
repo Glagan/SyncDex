@@ -6,10 +6,16 @@ export function isDate(date?: any): date is Date {
 	return date instanceof Date;
 }
 
-export function dateFormat(timestamp: number | Date): string {
+export function dateFormatInput(timestamp: number | Date): string {
 	let d = typeof timestamp === 'object' ? timestamp : new Date(timestamp);
 	return `${d.getFullYear()}-${zeroPad(d.getMonth() + 1)}-${zeroPad(d.getDate())}`;
-	// `${zeroPad(d.getHours())}:${zeroPad(d.getMinutes())}:${zeroPad(d.getSeconds())}`;
+}
+
+export function dateFormat(timestamp: number | Date, full: boolean = false): string {
+	let d = typeof timestamp === 'object' ? timestamp : new Date(timestamp);
+	return `${d.getDate()} ${d.toDateString().split(' ')[1]} ${d.getFullYear()}${
+		full ? ` ${d.toTimeString().split(' ')[0]}` : ''
+	}`;
 }
 
 /**
@@ -31,4 +37,26 @@ export function injectScript(func: Function) {
 	script.textContent = `(${func})();`;
 	(document.head || document.documentElement).appendChild(script);
 	script.remove();
+}
+
+export function stringToProgress(str: string): Progress | undefined {
+	// Handle Oneshot as chapter 0
+	const progressReg: (string[] | null)[] = [
+		/Vol(?:\.|ume)\s*(\d+)/.exec(str),
+		/Ch(?:\.|apter)\s*(\d+(\.\d+)?)/.exec(str),
+	];
+	// Handle Oneshot as chapter 0
+	if (progressReg[1] === null) {
+		if (str != 'Oneshot') return undefined;
+		progressReg[1] = ['Oneshot', '0'];
+	}
+	return {
+		volume: progressReg[0] !== null ? parseInt(progressReg[0][1]) : undefined,
+		chapter: parseFloat(progressReg[1][1]),
+	};
+}
+
+export function progressToString(progress: Progress): string {
+	const volume = progress.volume && progress.volume > 0 ? `Vol. ${progress.volume}` : '';
+	return `${progress.oneshot ? 'Oneshot' : `${volume ? `${volume} Ch.` : 'Chapter'} ${progress.chapter}`}`;
 }

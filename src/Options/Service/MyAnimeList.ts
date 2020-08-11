@@ -6,7 +6,7 @@ import { Runtime } from '../../Core/Runtime';
 import { MyAnimeListTitle } from '../../Service/MyAnimeList';
 import { FileImportFormat, FileImportableModule } from './Import';
 import { BatchExportableModule } from './Export';
-import { dateFormat } from '../../Core/Utility';
+import { dateFormatInput } from '../../Core/Utility';
 
 enum MyAnimeListExportStatus {
 	COMPLETED = 'Completed',
@@ -279,10 +279,10 @@ class MyAnimeListExport extends BatchExportableModule<string> {
 			node.appendChild(this.node(document, 'my_read_volumes', title.progress.volume));
 		}
 		if (title.start) {
-			node.appendChild(this.node(document, 'my_start_date', dateFormat(title.start)));
+			node.appendChild(this.node(document, 'my_start_date', dateFormatInput(title.start)));
 		}
 		if (title.end) {
-			node.appendChild(this.node(document, 'my_finish_date', dateFormat(title.end)));
+			node.appendChild(this.node(document, 'my_finish_date', dateFormatInput(title.end)));
 		}
 		return node;
 	};

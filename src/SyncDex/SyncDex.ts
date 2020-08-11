@@ -14,11 +14,13 @@ import {
 import { TitleOverview, ReadingOverview } from './Overview';
 import { Mochi } from '../Core/Mochi';
 import { GetService } from './Service';
-import { injectScript } from '../Core/Utility';
+import { injectScript, stringToProgress } from '../Core/Utility';
 import { Runtime } from '../Core/Runtime';
 import { Thumbnail } from './Thumbnail';
 import { SyncModule } from './SyncModule';
 import { TitleGroup } from './TitleGroup';
+import { LocalStorage } from '../Core/Storage';
+import { History } from './History';
 
 interface ReadingState {
 	syncModule?: SyncModule;
@@ -153,7 +155,7 @@ export class SyncDex {
 		let firstRequest = false;
 		if (state.title == undefined) {
 			state.title = await Title.get(id);
-			state.title.name = details.manga._data.title;
+			if (details.manga._data.title != '') state.title.name = details.manga._data.title;
 			firstRequest = true;
 			// Find Services
 			let fallback = false;
@@ -281,6 +283,8 @@ export class SyncDex {
 			state.title.lastChapter = details._data.id;
 			state.title.lastRead = Date.now();
 			state.title.history = state.title.progress;
+			History.add(state.title.id);
+			History.save();
 		}
 		await state.title.persist(); // Always save
 		// Always Sync Services -- even if doUpdate is set to false, to sync any out of sync services
@@ -593,7 +597,83 @@ export class SyncDex {
 		}
 	};
 
-	historyPage = (): void => {
+	historyPage = async (): Promise<void> => {
 		console.log('SyncDex :: History Page');
+
+		try {
+			if (!Options.biggerHistory) return;
+
+			// Load Titles
+			await History.load();
+			const titles = await TitleCollection.get(History.values);
+
+			// Helper function
+			const container = document.getElementById('history')!;
+			const infoNode = container.querySelector('p')!;
+			const resetInfo = () => {
+				infoNode.textContent = `Your last ${10 + History.values.length} read titles are listed below.`;
+			};
+			resetInfo();
+
+			// Add current elements to the history - first one is inserted last
+			const currentHistory = Array.from(
+				document.querySelectorAll('.large_logo.rounded.position-relative.mx-1.my-2')
+			).reverse();
+			for (const node of currentHistory) {
+				const chapterLink = node.querySelector<HTMLAnchorElement>(`a[href^='/chapter/']`)!;
+				const titleLink = node.querySelector<HTMLAnchorElement>(`a[href^='/title/']`)!;
+				const id = parseInt(/\/title\/(\d+)\/.+./.exec(titleLink.href)![1]);
+				const chapter = parseInt(/\/chapter\/(\d+)/.exec(chapterLink.href)![1]);
+				// Check if the title is in the history
+				if (History.find(id) < 0) {
+					const title = await Title.get(id);
+					if (!title.inList) {
+						title.name = node.querySelector<HTMLElement>('.manga_title')!.textContent!;
+						title.lastChapter = chapter;
+						// Progress
+						const progress = stringToProgress(chapterLink.textContent!);
+						if (!progress) continue;
+						title.progress = progress;
+					}
+					if (title.lastChapter !== chapter) {
+						title.lastChapter = chapter;
+					}
+					// If it's not in history it wasn't loaded, add it to the collection
+					titles.add(title);
+					History.add(id);
+				}
+			}
+			await titles.save();
+			await History.save();
+
+			// Display History
+			const historyCards: { [key: number]: HTMLElement } = {};
+			for (const id of History.values.reverse()) {
+				const title = titles.find(id);
+				if (title !== undefined) {
+					const exist = container.querySelector(`a[href^='/title/${id}']`);
+					console.log('exist?', id);
+					let card: HTMLElement;
+					if (!exist) {
+						card = History.buildCard(title);
+						console.log('build card', card);
+						container.insertBefore(card, container.lastElementChild);
+					} else {
+						card = exist.parentElement!.parentElement!;
+					}
+					History.updateCard(card, title);
+					historyCards[id] = card;
+				}
+			}
+
+			// Activate Tooltips
+			injectScript(() => {
+				// prettier-ignore
+				/// @ts-ignore
+				$(() => { $('[data-toggle="tooltip"]').tooltip(); });
+			});
+		} catch (error) {
+			console.error(error);
+		}
 	};
 }

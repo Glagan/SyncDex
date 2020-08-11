@@ -67,6 +67,7 @@ let mainManifest = {
 				'https://*.mangadex.org/user*',
 				'https://*.mangadex.org/list*',
 				'https://*.mangadex.org/updates*',
+				'https://*.mangadex.org/history*',
 			],
 			js: ['dist/SimpleNotification.js', 'SyncDex.js'],
 			css: ['dist/SimpleNotification.min.css', 'css/SyncDex.css'],

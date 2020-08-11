@@ -12,7 +12,7 @@ import { DOM, AppendableElement } from '../Core/DOM';
 import { LocalStorage } from '../Core/Storage';
 import { Modal } from './Modal';
 import { GetService } from './Manager/Service';
-import { dateFormat } from '../Core/Utility';
+import { dateFormat, dateFormatInput, progressToString } from '../Core/Utility';
 
 export class SaveViewer {
 	paging: HTMLElement;
@@ -210,7 +210,7 @@ export class SaveViewer {
 						name: 'start',
 						type: 'date',
 						placeholder: 'Start Date',
-						value: title.start ? dateFormat(title.start) : '',
+						value: title.start ? dateFormatInput(title.start) : '',
 					}),
 				]),
 				this.modalGroup('End', 'ee_end', [
@@ -219,7 +219,7 @@ export class SaveViewer {
 						name: 'end',
 						type: 'date',
 						placeholder: 'End Date',
-						value: title.end ? dateFormat(title.end) : '',
+						value: title.end ? dateFormatInput(title.end) : '',
 					}),
 				]),
 			]),
@@ -303,11 +303,7 @@ export class SaveViewer {
 				DOM.create('td', { childs: this.titleServices(title) }),
 				DOM.create('td', { textContent: StatusMap[title.status] }),
 				DOM.create('td', { textContent: title.score ? title.score.toString() : '-' }),
-				DOM.create('td', {
-					textContent: `Ch. ${title.progress.chapter}${
-						title.progress.volume ? ` Vol. ${title.progress.volume}` : ''
-					}`,
-				}),
+				DOM.create('td', { textContent: progressToString(title.progress) }),
 				DOM.create('td', { textContent: title.start ? dateFormat(title.start) : '-' }),
 				DOM.create('td', { textContent: title.end ? dateFormat(title.end) : '-' }),
 				DOM.create('td', {
