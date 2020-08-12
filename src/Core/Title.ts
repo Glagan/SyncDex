@@ -681,6 +681,11 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 		return true;
 	};
 
+	removeChapter = (chapter: number): void => {
+		let index = this.chapters.indexOf(chapter);
+		if (index >= 0) this.chapters.splice(index, 1);
+	};
+
 	refresh = async (): Promise<boolean> => {
 		const reloaded = await LocalStorage.get<StorageTitle>(this.id);
 		if (reloaded) {

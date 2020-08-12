@@ -278,4 +278,28 @@
 	background-color: opacify($color: $blue-40, $amount: 0.6);
 }
 
+// Title page
+.chapter-row:hover {
+	.title-column:not(.current) {
+		button {
+			opacity: 1;
+		}
+	}
+	.title-column.current {
+		button {
+			user-select: none;
+			visibility: hidden;
+			cursor: default;
+		}
+	}
+}
+.title-column {
+	display: flex;
+	justify-content: space-between;
+
+	button {
+		opacity: 0;
+	}
+}
+
 // @import 'Editor.scss';

@@ -26,6 +26,13 @@ interface ReadingState {
 	title?: Title;
 }
 
+interface ChapterRow {
+	next?: ChapterRow;
+	node: HTMLElement;
+	previous?: ChapterRow;
+	chapter: number;
+}
+
 console.log('SyncDex :: Core');
 
 export class SyncDex {
@@ -500,45 +507,104 @@ export class SyncDex {
 		// Highlight opened chapters
 		if (Options.saveOpenedChapters || Options.biggerHistory) {
 			if (Options.saveOpenedChapters && imported) title.addChapter(title.progress.chapter);
-			// Highlight chapters -- and add a list of previous opened chapters if we just imported
+			// First pass to get all previous and next rows used in events
 			let highest = 0;
-			let nextChapter: HTMLElement | undefined;
+			let rows: ChapterRow[] = [];
+			let previousRow: ChapterRow | undefined;
 			for (const row of chapterRows) {
-				// Handle Oneshot as chapter 0
 				const chapter = row.dataset.title == 'Oneshot' ? 0 : parseFloat(row.dataset.chapter!);
 				if (!isNaN(chapter)) {
-					if (chapter > highest) highest = chapter;
-					if (Options.saveOpenedChapters) {
-						let added = false;
-						if (imported && chapter < title.progress.chapter) {
-							title.addChapter(chapter);
-							added = true;
-						}
-						// Remove previous Highlight
-						row.classList.remove('has-transition');
-						row.style.backgroundColor = '';
-						// Add Highlight if needed
-						// Next Chapter is 0 if it exists and it's a new Title or the first next closest
-						if (
-							(chapter > title.progress.chapter && chapter < Math.floor(title.progress.chapter) + 2) ||
-							(chapter == 0 && title.progress.chapter == 0)
-						) {
-							nextChapter = row;
-						} else if (added || title.chapters.indexOf(chapter) >= 0) {
-							row.classList.add('has-transition');
-							row.style.backgroundColor = Options.colors.openedChapter;
-						}
+					const chapterRow = {
+						next: previousRow,
+						node: row,
+						chapter: chapter,
+					};
+					if (previousRow) {
+						previousRow.previous = chapterRow;
 					}
+					rows.unshift(chapterRow);
+					previousRow = chapterRow;
+					// Calculate highest chapter
+					if (chapter > highest) highest = chapter;
 				}
 			}
-			if (nextChapter) {
-				nextChapter.classList.add('has-transition');
-				nextChapter.style.backgroundColor = Options.colors.nextChapter;
+			// Highlight chapters -- and add a list of previous opened chapters if we just imported
+			if (Options.saveOpenedChapters) {
+				let foundNext = false;
+				for (const row of rows) {
+					let added = false;
+					if (imported && row.chapter < title.progress.chapter) {
+						title.addChapter(row.chapter);
+						added = true;
+					}
+					// Remove previous Highlight
+					const parentRow = row.node.querySelector(`a[href^='/chapter']`)!.parentElement!;
+					parentRow.classList.add('title-column');
+					row.node.classList.add('has-transition', 'chapter-row');
+					row.node.style.backgroundColor = '';
+					// Add Highlight if needed
+					// Next Chapter is 0 if it exists and it's a new Title or the first next closest
+					if (
+						!foundNext &&
+						((row.chapter > title.progress.chapter &&
+							row.chapter < Math.floor(title.progress.chapter) + 2) ||
+							(row.chapter == 0 && title.progress.chapter == 0))
+					) {
+						row.node.style.backgroundColor = Options.colors.nextChapter;
+						foundNext = true;
+					} else {
+						if (row.chapter == title.progress.chapter) {
+							parentRow.classList.add('current');
+						}
+						if (added || title.chapters.indexOf(row.chapter) >= 0) {
+							row.node.style.backgroundColor = Options.colors.openedChapter;
+						}
+					}
+					const markButton = DOM.create('button', {
+						class: 'btn btn-secondary',
+						childs: [DOM.icon('book'), DOM.space(), DOM.text('Set Latest')],
+					});
+					markButton.addEventListener('click', async (event) => {
+						event.preventDefault();
+						if (row.chapter == title.progress.chapter) return;
+						// Remove everything above current -- highligth and from opened
+						let higherRow = row;
+						while (higherRow.next && higherRow.next.chapter <= title.progress.chapter) {
+							title.removeChapter(higherRow.next.chapter);
+							higherRow.next.node.style.backgroundColor = '';
+							higherRow = higherRow.next;
+						}
+						if (higherRow.next) higherRow.next.node.style.backgroundColor = ''; // Remove next highlight
+						// Mark everything up to current as read and highlight
+						let currentRow: ChapterRow | undefined = row;
+						while (currentRow) {
+							title.addChapter(currentRow.chapter);
+							currentRow.node.style.backgroundColor = Options.colors.openedChapter;
+							currentRow = currentRow.previous;
+						}
+						// Highlight
+						const previousCurrent = document.querySelector<HTMLElement>('.col.current');
+						if (previousCurrent) previousCurrent.classList.remove('current');
+						parentRow.classList.add('current');
+						if (row.next) row.next.node.style.backgroundColor = Options.colors.nextChapter;
+						// Update Title
+						title.progress.chapter = row.chapter;
+						if (title.status == Status.NONE) {
+							title.status = Status.READING;
+							title.start = new Date();
+						}
+						await title.persist();
+						// TODO: Enable syncing external Services
+						// await syncModule.syncLocal();
+						// await syncModule.syncExternal(true);
+					});
+					parentRow.appendChild(markButton);
+				}
 			}
+			// Save added previous opened chapters and highest chapter
 			if (Options.biggerHistory && (!title.highest || title.highest < highest)) {
 				title.highest = highest;
 			}
-			// Save added previous opened chapters
 			if (imported || Options.biggerHistory) await title.persist();
 		}
 
