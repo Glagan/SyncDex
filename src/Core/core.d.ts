@@ -151,6 +151,26 @@ declare const browser: {
 	};
 };
 
+type ExportOptions = {
+	options?: AvailableOptions;
+};
+
+type HistoryObject = {
+	last?: number;
+	page?: number;
+	ids: number[];
+};
+
+type ExportHistory = {
+	history?: HistoryObject;
+};
+
+type ExportedTitles = {
+	[key: string]: StorageTitle;
+};
+
+type ExportedSave = ExportOptions & ExportHistory & ExportedTitles;
+
 declare const enum ListType {
 	Detailed,
 	Expanded,

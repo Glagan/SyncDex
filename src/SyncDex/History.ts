@@ -4,30 +4,40 @@ import { DOM } from '../Core/DOM';
 import { progressToString, dateFormat } from '../Core/Utility';
 
 export class History {
-	static values: number[] = [];
+	static last?: number;
+	static page?: number;
+	static ids: number[] = [];
 
 	static find(id: number): number {
-		return History.values.indexOf(id);
+		return History.ids.indexOf(id);
 	}
 
 	static add(id: number) {
 		const index = History.find(id);
-		if (index >= 0) {
-			History.values.splice(index, 1);
+		if (index > 0) {
+			History.ids.splice(index, 1);
 		}
-		History.values.push(id);
+		History.ids.unshift(id);
 	}
 
 	static async load(): Promise<void> {
-		await (LocalStorage.get('history') as Promise<number[] | undefined>).then(async (res) => {
+		await (LocalStorage.get('history') as Promise<HistoryObject | undefined>).then(async (res) => {
 			if (res == undefined) {
-				await LocalStorage.set('history', []);
-			} else History.values = res;
+				await LocalStorage.set('history', { ids: [] });
+			} else {
+				History.last = res.last;
+				History.page = res.page;
+				History.ids = res.ids;
+			}
 		});
 	}
 
 	static async save(): Promise<void> {
-		await LocalStorage.set('history', History.values);
+		await LocalStorage.set('history', {
+			last: History.last,
+			page: History.page,
+			ids: History.ids,
+		});
 	}
 
 	static buildCard = (title: Title): HTMLElement => {

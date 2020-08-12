@@ -230,13 +230,14 @@ class SyncDexOverview extends ServiceOverview {
 		this.refreshButton.addEventListener('click', async (event) => {
 			event.preventDefault();
 			await syncModule.title.refresh();
-			await syncModule.syncLocal();
+			await syncModule.syncLocal(); // syncModule.initialize instead ?
 			await syncModule.syncExternal(true);
 		});
 		const quickBind = async (event: Event, status: Status): Promise<void> => {
 			event.preventDefault();
 			syncModule.title.status = status;
 			if (status == Status.READING) syncModule.title.start = new Date();
+			await syncModule.title.persist();
 			await syncModule.syncLocal();
 			await syncModule.syncExternal(true);
 		};

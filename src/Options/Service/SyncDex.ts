@@ -1,6 +1,6 @@
 import { AvailableOptions } from '../../Core/Options';
 import { LocalStorage } from '../../Core/Storage';
-import { StorageTitle, TitleCollection, ExportedSave, ServiceName, ServiceKey, Title } from '../../Core/Title';
+import { StorageTitle, TitleCollection, ServiceName, ServiceKey, Title } from '../../Core/Title';
 import { Service } from './Service';
 import { AppendableElement, DOM } from '../../Core/DOM';
 import { ImportSummary, FileImportFormat, FileImportableModule } from './Import';
@@ -40,7 +40,7 @@ class SyncDexImport extends FileImportableModule<ExportedSave, Title> {
 	handleHistory = (save: ExportedSave, _titles: TitleCollection, summary: ImportSummary): number[] => {
 		if (save.history) {
 			summary.history = true;
-			return save.history;
+			return save.history.ids;
 		}
 		return [];
 	};

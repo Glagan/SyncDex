@@ -208,7 +208,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 		notification = this.notification('loading', 'Saving...');
 		await collection.save();
 		if (this.handleHistory) {
-			await LocalStorage.set('history', history);
+			await LocalStorage.set('history', { ids: history });
 		}
 		await Options.save(); // Always save -- options are deleted in LocalStorage
 		if (this.handleOptions) {

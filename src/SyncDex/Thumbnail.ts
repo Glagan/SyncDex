@@ -10,7 +10,7 @@ export class Thumbnail {
 		this.row = row;
 		// Create tooltip
 		this.thumbnail = DOM.create('div', {
-			class: 'sd-tooltip loading',
+			class: 'tooltip loading',
 			css: {
 				left: `-${window.innerWidth}px`,
 				maxHeight: `${(window.innerHeight - 10) * (Options.thumbnailMaxHeight / 100)}px`,

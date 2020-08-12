@@ -149,20 +149,6 @@ export interface ExternalTitleProperties {
 	mangaDex?: number;
 }
 
-export type ExportOptions = {
-	options?: AvailableOptions;
-};
-
-export type ExportHistory = {
-	history?: number[];
-};
-
-export type ExportedTitles = {
-	[key: string]: StorageTitle;
-};
-
-export type ExportedSave = ExportOptions & ExportHistory & ExportedTitles;
-
 export class StorageTitle {
 	static valid(title: StorageTitle): boolean {
 		return (

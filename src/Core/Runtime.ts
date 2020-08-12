@@ -23,7 +23,7 @@ export class Runtime {
 	/**
 	 * Send a fetch request.
 	 */
-	static request<R extends RequestResponse>(message: Omit<RequestMessage, 'action'>): Promise<R> {
+	static request<R extends RequestResponse = RawResponse>(message: Omit<RequestMessage, 'action'>): Promise<R> {
 		return Runtime.sendMessage<R>(
 			Object.assign(message, {
 				action: MessageAction.request,

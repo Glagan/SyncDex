@@ -14,12 +14,11 @@ import {
 import { TitleOverview, ReadingOverview } from './Overview';
 import { Mochi } from '../Core/Mochi';
 import { GetService } from './Service';
-import { injectScript, stringToProgress } from '../Core/Utility';
+import { injectScript, stringToProgress, progressToString } from '../Core/Utility';
 import { Runtime } from '../Core/Runtime';
 import { Thumbnail } from './Thumbnail';
 import { SyncModule } from './SyncModule';
 import { TitleGroup } from './TitleGroup';
-import { LocalStorage } from '../Core/Storage';
 import { History } from './History';
 
 interface ReadingState {
@@ -506,7 +505,7 @@ export class SyncDex {
 			let nextChapter: HTMLElement | undefined;
 			for (const row of chapterRows) {
 				// Handle Oneshot as chapter 0
-				let chapter = row.dataset.title == 'Oneshot' ? 0 : parseFloat(row.dataset.chapter!);
+				const chapter = row.dataset.title == 'Oneshot' ? 0 : parseFloat(row.dataset.chapter!);
 				if (!isNaN(chapter)) {
 					if (chapter > highest) highest = chapter;
 					if (Options.saveOpenedChapters) {
@@ -598,6 +597,62 @@ export class SyncDex {
 		}
 	};
 
+	async fetchFollowPage(parser: DOMParser, page: number) {
+		const before = Date.now();
+		const response = await Runtime.request({
+			url: `https://mangadex.org/follows/chapters/0/${page}/`,
+			method: 'GET',
+			cache: 'no-cache',
+			credentials: 'include',
+			redirect: 'follow',
+		});
+		const result: {
+			titles: { [key: number]: number };
+			isLastPage: boolean;
+			maxPage: number;
+			requestTime: number;
+			code: number;
+		} = {
+			titles: {},
+			isLastPage: false,
+			maxPage: 0,
+			requestTime: Date.now() - before,
+			code: response.code,
+		};
+		if (response.code >= 200 && response.code < 400) {
+			// Get titles
+			const body = parser.parseFromString(response.body, 'text/html');
+			const rows = body.querySelectorAll<HTMLElement>('[data-manga-id]');
+			for (const row of rows) {
+				const id = parseInt(row.dataset.mangaId!);
+				const chapter = parseFloat(row.dataset.chapter!);
+				if (result.titles[id] === undefined) {
+					result.titles[id] = chapter;
+				} else {
+					result.titles[id] = Math.max(result.titles[id], chapter);
+				}
+			}
+			// Last page
+			const lastPageNode = body.querySelector('nav > ul.pagination > li.disabled:last-child');
+			result.isLastPage = lastPageNode != null;
+			// Page count
+			if (result.isLastPage) {
+				result.maxPage = page;
+			} else {
+				const maxPageNode = body.querySelector<HTMLAnchorElement>(
+					`nav > ul.pagination > .page-item:last-child > a[href^='/follows/chapters/0/']`
+				);
+				if (maxPageNode) {
+					const res = /\/follows\/chapters\/\d\/(\d+)\/?/.exec(maxPageNode.href);
+					result.maxPage = res !== null ? parseInt(res[1]) : page;
+				}
+			}
+		} else {
+			result.isLastPage = true;
+		}
+		return result;
+	}
+
 	historyPage = async (): Promise<void> => {
 		console.log('SyncDex :: History Page');
 
@@ -605,15 +660,12 @@ export class SyncDex {
 
 		// Load Titles
 		await History.load();
-		const titles = await TitleCollection.get(History.values);
+		const titles = await TitleCollection.get(History.ids);
 
 		// Helper function
 		const container = document.getElementById('history')!;
 		const infoNode = container.querySelector('p')!;
-		const resetInfo = () => {
-			infoNode.textContent = `Your last ${10 + History.values.length} read titles are listed below.`;
-		};
-		resetInfo();
+		infoNode.textContent = `Your last read titles are listed below.`;
 
 		// Add current elements to the history - first one is inserted last
 		const currentHistory = Array.from(
@@ -648,7 +700,7 @@ export class SyncDex {
 
 		// Display History
 		const historyCards: { [key: number]: HTMLElement } = {};
-		for (const id of History.values.reverse()) {
+		for (const id of History.ids) {
 			const title = titles.find(id);
 			if (title !== undefined) {
 				const exist = container.querySelector(`a[href^='/title/${id}']`);
@@ -671,5 +723,158 @@ export class SyncDex {
 			/// @ts-ignore
 			$(() => { $('[data-toggle="tooltip"]').tooltip(); });
 		});
+
+		if (Options.chapterStatus) {
+			try {
+				// Limit check to every 24 hours
+				const initialized = History.last === undefined;
+				if (History.last === undefined || Date.now() - History.last >= 24 * 60 * 60 * 1000) {
+					const alert = DOM.create('div', {
+						class: 'alert alert-primary',
+						textContent: initialized
+							? `You refresh your history more than 24h ago and you can refresh it again.
+								It is not recommended to do it often, and it does nothing if you didn't add new titles to your MangaDex list.`
+							: `You never initialized your History.
+								It is recommend to do it at least once to highlight every cards.`,
+					});
+					let busy = false;
+					const refreshButton = DOM.create('button', {
+						class: 'btn btn-primary',
+						textContent: `Refresh${History.page ? ` (Continue from page ${History.page})` : ''}`,
+						events: {
+							click: async (event) => {
+								event.preventDefault();
+								if (!busy) {
+									refreshButton.disabled = true;
+									busy = true;
+									alert.classList.add('hidden', 'full');
+									const parser = new DOMParser();
+									const firstRow = document.createElement('span');
+									const secondRow = document.createElement('span');
+									const progress = DOM.create('div', {
+										class: 'alert alert-secondary loading',
+										childs: [firstRow, DOM.create('br'), secondRow],
+									});
+									alert.parentElement!.insertBefore(progress, alert.nextElementSibling!);
+									//pauseTimer = true;
+									// Fetch ALL pages until it is done
+									const historySize = History.ids.length;
+									const localTitles = new TitleCollection();
+									const found = [];
+									if (History.page === undefined) History.page = 1;
+									let alreadyLoaded: number[] = [];
+									let average = 0;
+									let maxPage = 1;
+									const before = Date.now();
+									while (true) {
+										// Display loading status
+										firstRow.textContent = `Loading Follow page ${History.page} out of ${maxPage}, found ${found.length} out of ${historySize} Titles.`;
+										// Wait between MangaDex requests
+										let doUpdate = false;
+										if (History.page > 1) {
+											const estimated = Math.floor(
+												((1500 + average) * (maxPage - History.page)) / 1000
+											);
+											const disp = [];
+											if (estimated >= 60) disp.push(`${Math.floor(estimated / 60)}min `);
+											disp.push(`${estimated % 60}s`);
+											secondRow.textContent = `Estimated time to complete ${disp.join('')}.`;
+											await new Promise((resolve) => setTimeout(resolve, 1500));
+										}
+										const res = await this.fetchFollowPage(parser, History.page);
+										if (res.code >= 400) {
+											SimpleNotification.error({
+												title: 'MangaDex Error',
+												text: `There was an error while making a request to **MangaDex**, retry later.\ncode: ${res.code}`,
+											});
+											break;
+										}
+										const { titles, isLastPage, requestTime } = res;
+										// Filter found titles to avoid loading them again for nothing
+										const foundIds = Object.keys(titles).map(parseInt);
+										let titleIds = foundIds.filter((id) => {
+											return alreadyLoaded.indexOf(id) < 0;
+										});
+										// Update local data for new found titles
+										if (titleIds.length > 0) {
+											alreadyLoaded.push(...titleIds);
+											localTitles.merge(await TitleCollection.get(titleIds));
+										}
+										for (const id in titles) {
+											// Only update if the title is in local save and has an history card
+											const title = localTitles.find(parseInt(id));
+											if (title !== undefined && historyCards[id] !== undefined) {
+												const highestChapter = Math.max(titles[id], title.highest || 0);
+												if (highestChapter <= title.progress.chapter) {
+													historyCards[id].classList.remove('history-down');
+													historyCards[id].classList.add('history-up');
+												} else if (highestChapter > title.progress.chapter) {
+													historyCards[id].classList.remove('history-up');
+													historyCards[id].classList.add('history-down');
+												}
+												if (found.indexOf(id) < 0) {
+													found.push(id);
+												}
+												// Update highest chapter for the titles
+												if (!title.highest || title.highest < highestChapter) {
+													title.highest = highestChapter;
+													doUpdate = true;
+												}
+											}
+										}
+										if (History.page == 1) {
+											average = requestTime;
+										} else {
+											average = (average + requestTime) / 2;
+										}
+										maxPage = res.maxPage;
+										// Save updated titles every loop if the user reload the History.page
+										if (doUpdate) await localTitles.save();
+										await History.save();
+										if (isLastPage) break;
+										History.page++;
+									}
+									// Update with initializedHistory and the last time
+									if (History.page == maxPage) {
+										History.last = Date.now();
+										History.page = undefined;
+									}
+									await History.save();
+									// Done
+									//pauseTimer = false;
+									progress.className = 'alert alert-success';
+									const totalTime = Math.floor((Date.now() - before) / 1000);
+									const disp = [];
+									if (totalTime >= 60) disp.push(`${Math.floor(totalTime / 60)}min `);
+									disp.push(`${totalTime % 60}s`);
+									progress.textContent = `Done ! ${
+										History.page ? History.page : maxPage
+									} pages were loaded in ${disp.join('')}.`;
+									const closeButton = DOM.create('button', {
+										class: 'btn btn-primary',
+										textContent: 'Close',
+										events: {
+											click: (event) => {
+												event.preventDefault();
+												progress.remove();
+											},
+										},
+									});
+									DOM.append(progress, DOM.space(), closeButton);
+									alert.remove();
+									busy = false;
+									refreshButton.disabled = false;
+									refreshButton.remove();
+								}
+							},
+						},
+					});
+					DOM.append(alert, DOM.space(), refreshButton);
+					infoNode.parentElement!.insertBefore(alert, infoNode);
+				}
+			} catch (error) {
+				console.error(error);
+			}
+		}
 	};
 }
