@@ -28,7 +28,10 @@ interface ReadingState {
 
 interface ChapterRow {
 	next?: ChapterRow;
+	isNext: boolean;
 	node: HTMLElement;
+	manage: HTMLElement;
+	toggleIcon?: HTMLElement;
 	previous?: ChapterRow;
 	chapter: number;
 }
@@ -516,7 +519,9 @@ export class SyncDex {
 				if (!isNaN(chapter)) {
 					const chapterRow = {
 						next: previousRow,
+						isNext: false,
 						node: row,
+						manage: DOM.create('div'),
 						chapter: chapter,
 					};
 					if (previousRow) {
@@ -529,21 +534,22 @@ export class SyncDex {
 				}
 			}
 			// Highlight chapters -- and add a list of previous opened chapters if we just imported
-			if (Options.saveOpenedChapters) {
-				let foundNext = false;
-				for (const row of rows) {
-					let added = false;
-					if (imported && row.chapter < title.progress.chapter) {
-						title.addChapter(row.chapter);
-						added = true;
-					}
-					// Remove previous Highlight
-					const parentRow = row.node.querySelector(`a[href^='/chapter']`)!.parentElement!;
-					parentRow.classList.add('title-column');
+			let foundNext = false;
+			for (const row of rows) {
+				let added = false;
+				if (Options.saveOpenedChapters && imported && row.chapter < title.progress.chapter) {
+					title.addChapter(row.chapter);
+					added = true;
+				}
+				// Remove previous Highlight
+				const parentRow = row.node.querySelector(`a[href^='/chapter']`)!.parentElement!;
+				parentRow.classList.add('title-column');
+				// Add Highlight if needed
+				if (Options.saveOpenedChapters) {
 					row.node.classList.add('has-transition', 'chapter-row');
 					row.node.style.backgroundColor = '';
-					// Add Highlight if needed
 					// Next Chapter is 0 if it exists and it's a new Title or the first next closest
+					const isOpened = added || title.chapters.indexOf(row.chapter) >= 0;
 					if (
 						!foundNext &&
 						((row.chapter > title.progress.chapter &&
@@ -551,55 +557,103 @@ export class SyncDex {
 							(row.chapter == 0 && title.progress.chapter == 0))
 					) {
 						row.node.style.backgroundColor = Options.colors.nextChapter;
+						row.isNext = true;
 						foundNext = true;
-					} else {
-						if (row.chapter == title.progress.chapter) {
-							parentRow.classList.add('current');
-						}
-						if (added || title.chapters.indexOf(row.chapter) >= 0) {
-							row.node.style.backgroundColor = Options.colors.openedChapter;
-						}
+					} else if (isOpened) {
+						row.node.style.backgroundColor = Options.colors.openedChapter;
 					}
-					const markButton = DOM.create('button', {
-						class: 'btn btn-secondary',
-						childs: [DOM.icon('book'), DOM.space(), DOM.text('Set Latest')],
+					// Add buttons to add or remove from openedChapters
+					row.toggleIcon = DOM.icon(isOpened ? 'minus' : 'plus');
+					const toggleOpened = DOM.create('button', {
+						class: 'btn btn-secondary btn-sm toggle-open',
+						childs: [row.toggleIcon],
+						events: {
+							click: async (event) => {
+								event.preventDefault();
+								if (row.toggleIcon!.classList.contains('fa-minus')) {
+									title.removeChapter(row.chapter);
+									if (!row.isNext) row.node.style.backgroundColor = '';
+								} else {
+									title.addChapter(row.chapter);
+									if (!row.isNext) row.node.style.backgroundColor = Options.colors.openedChapter;
+								}
+								await title.persist();
+								// Switch to add/remove
+								row.toggleIcon!.classList.toggle('fa-minus');
+								row.toggleIcon!.classList.toggle('fa-plus');
+							},
+						},
 					});
-					markButton.addEventListener('click', async (event) => {
-						event.preventDefault();
-						if (row.chapter == title.progress.chapter) return;
-						// Remove everything above current -- highligth and from opened
-						let higherRow = row;
-						while (higherRow.next && higherRow.next.chapter <= title.progress.chapter) {
-							title.removeChapter(higherRow.next.chapter);
-							higherRow.next.node.style.backgroundColor = '';
-							higherRow = higherRow.next;
-						}
-						if (higherRow.next) higherRow.next.node.style.backgroundColor = ''; // Remove next highlight
-						// Mark everything up to current as read and highlight
-						let currentRow: ChapterRow | undefined = row;
-						while (currentRow) {
-							title.addChapter(currentRow.chapter);
-							currentRow.node.style.backgroundColor = Options.colors.openedChapter;
-							currentRow = currentRow.previous;
-						}
-						// Highlight
-						const previousCurrent = document.querySelector<HTMLElement>('.col.current');
-						if (previousCurrent) previousCurrent.classList.remove('current');
-						parentRow.classList.add('current');
-						if (row.next) row.next.node.style.backgroundColor = Options.colors.nextChapter;
-						// Update Title
-						title.progress.chapter = row.chapter;
-						if (title.status == Status.NONE) {
-							title.status = Status.READING;
-							title.start = new Date();
-						}
-						await title.persist();
-						// TODO: Enable syncing external Services
-						// await syncModule.syncLocal();
-						// await syncModule.syncExternal(true);
-					});
-					parentRow.appendChild(markButton);
+					row.manage.appendChild(toggleOpened);
 				}
+				// Add Set Latest button
+				if (row.chapter == title.progress.chapter) {
+					parentRow.classList.add('current');
+				}
+				const markButton = DOM.create('button', {
+					class: 'btn btn-secondary btn-sm set-latest',
+					childs: [DOM.icon('book'), DOM.space(), DOM.text('Set Latest')],
+					events: {
+						click: async (event) => {
+							event.preventDefault();
+							if (row.chapter == title.progress.chapter) return;
+							// Remove everything above current -- highligth and from opened
+							let higherRow = row;
+							while (higherRow.next && higherRow.next.chapter <= title.progress.chapter) {
+								title.removeChapter(higherRow.next.chapter);
+								higherRow.next.node.style.backgroundColor = '';
+								higherRow.next.isNext = false;
+								if (higherRow.next.toggleIcon) {
+									higherRow.next.toggleIcon.classList.remove('fa-minus');
+									higherRow.next.toggleIcon.classList.add('fa-plus');
+								}
+								higherRow = higherRow.next;
+							}
+							// Remove next highlight
+							if (higherRow.next) {
+								higherRow.next.node.style.backgroundColor = '';
+								higherRow.next.isNext = false;
+								if (higherRow.next.toggleIcon) {
+									higherRow.next.toggleIcon.classList.remove('fa-minus');
+									higherRow.next.toggleIcon.classList.add('fa-plus');
+								}
+							}
+							// Mark everything up to current as read and highlight
+							let currentRow: ChapterRow | undefined = row;
+							while (currentRow) {
+								title.addChapter(currentRow.chapter);
+								currentRow.node.style.backgroundColor = Options.colors.openedChapter;
+								currentRow.isNext = false;
+								if (currentRow.toggleIcon) {
+									currentRow.toggleIcon.classList.add('fa-minus');
+									currentRow.toggleIcon.classList.remove('fa-plus');
+								}
+								currentRow = currentRow.previous;
+							}
+							// Highlight
+							const previousCurrent = document.querySelector<HTMLElement>('.col.current');
+							if (previousCurrent) previousCurrent.classList.remove('current');
+							parentRow.classList.add('current');
+							if (row.next) {
+								row.next.node.style.backgroundColor = Options.colors.nextChapter;
+								row.next.isNext = true;
+							}
+							// Update Title
+							title.progress.chapter = row.chapter;
+							if (title.status == Status.NONE) {
+								title.status = Status.READING;
+								title.start = new Date();
+							}
+							await title.persist();
+							syncModule.overview.syncedLocal(title);
+							// Ignore auto sync Option check
+							// If not, changes would be reset next refresh with isMoreRecent checks
+							await syncModule.syncExternal();
+						},
+					},
+				});
+				row.manage.insertBefore(markButton, row.manage.lastElementChild);
+				parentRow.appendChild(row.manage);
 			}
 			// Save added previous opened chapters and highest chapter
 			if (Options.biggerHistory && (!title.highest || title.highest < highest)) {

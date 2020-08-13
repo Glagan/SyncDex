@@ -280,13 +280,13 @@
 
 // Title page
 .chapter-row:hover {
-	.title-column:not(.current) {
+	.title-column {
 		button {
 			opacity: 1;
 		}
 	}
 	.title-column.current {
-		button {
+		button.set-latest {
 			user-select: none;
 			visibility: hidden;
 			cursor: default;
@@ -299,6 +299,10 @@
 
 	button {
 		opacity: 0;
+
+		&.set-latest:not(:last-child) {
+			margin-right: 4px;
+		}
 	}
 }
 
