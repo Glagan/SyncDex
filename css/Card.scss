@@ -1,0 +1,29 @@
+@import 'Photon.scss';
+
+.sc {
+	&.card {
+		border-radius: 4px;
+		box-shadow: $shadow-10;
+		min-width: 15%;
+		overflow: hidden;
+		margin: 32px;
+		transition: all 150ms $animation;
+
+		&:hover {
+			box-shadow: $shadow-20;
+		}
+		& > .header {
+			font-size: $title-30;
+			text-align: center;
+			padding: 32px;
+		}
+		& > .body {
+			padding: 8px;
+			background-color: $white-100;
+			overflow: auto;
+		}
+		&.large > .body {
+			padding: 20px;
+		}
+	}
+}

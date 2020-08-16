@@ -1,9 +1,15 @@
+@import 'Photon.scss';
+@import 'Services.scss';
+
 .entry-edit {
+	.header.title {
+		background: map.get($services-bg, 'sc');
+		color: $grey-90;
+	}
 	.service {
 		display: flex;
 		align-items: center;
 		width: 50%;
-		margin-bottom: 8px;
 
 		img {
 			flex-shrink: 0;

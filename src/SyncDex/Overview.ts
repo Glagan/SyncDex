@@ -248,6 +248,9 @@ class SyncDexOverview extends ServiceOverview {
 	update = (_res: BaseTitle | RequestStatus, title: Title): void => {
 		this.clear();
 		if (title.status == Status.NONE) {
+			if (title.progress.chapter > 0) {
+				title.overview(this.content);
+			}
 			this.content.appendChild(this.quickButtons);
 		} else title.overview(this.content);
 		this.manage.appendChild(this.refreshButton);

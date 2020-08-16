@@ -8,35 +8,49 @@ export class Modal {
 	/**
 	 * Container for the modal, with the header and body as childs.
 	 */
-	content: HTMLElement;
-	/**
-	 * The first element above the body
-	 */
+	wrapper: HTMLElement;
 	header: HTMLElement;
 	/**
-	 * The body below the Header
+	 * Wrapper of the card content in the modal, with body and footer
+	 */
+	contentWrapper: HTMLElement;
+	/**
+	 * Content of the body
 	 */
 	body: HTMLElement;
 	/**
-	 * Flag allowing to close the notification by cliking on the background.
+	 * Footer of the body
+	 */
+	footer: HTMLElement;
+	/**
+	 * Flag allowing to close the notification by clicking on the background.
 	 */
 	canExit: boolean = true;
 
 	constructor(size?: 'small' | 'medium') {
 		this.modal = DOM.create('div', {
-			class: 'modal',
+			class: 'sc modal',
 		});
 		if (size) this.modal.classList.add(size);
-		this.content = DOM.create('div', {
-			class: 'card content',
+		this.wrapper = DOM.create('div', {
+			class: 'sc card',
 		});
 		this.header = DOM.create('div', {
 			class: `header`,
 		});
-		this.body = DOM.create('div', {
-			class: 'body content',
+		this.contentWrapper = DOM.create('div', {
+			class: 'body',
 		});
-		DOM.append(this.modal, DOM.append(this.content, this.header, this.body));
+		this.body = DOM.create('div', {
+			class: 'content',
+		});
+		this.footer = DOM.create('div', {
+			class: 'footer',
+		});
+		DOM.append(
+			this.modal,
+			DOM.append(this.wrapper, this.header, DOM.append(this.contentWrapper, this.body, this.footer))
+		);
 		// Bind
 		this.modal.addEventListener('animationend', (event) => {
 			// Remove the modal when the fade-out animation ends

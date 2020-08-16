@@ -2,7 +2,9 @@
 @import 'Photon.scss';
 @import 'Animations.scss';
 @import 'Services.scss';
+@import 'Card.scss';
 @import 'Modal.scss';
+@import 'Editor.scss';
 
 *:disabled,
 *.disabled {
@@ -413,35 +415,6 @@ input[type='checkbox'] {
 	}
 }
 
-/* Cards */
-.card {
-	border-radius: 4px;
-	box-shadow: $shadow-10;
-	min-width: 15%;
-	overflow: hidden;
-	margin: 32px;
-	transition: all 150ms $animation;
-
-	&:hover {
-		box-shadow: $shadow-20;
-	}
-	& .header {
-		font-size: $title-30;
-		text-align: center;
-		padding: 32px;
-	}
-	& > .content {
-		padding: 8px;
-		background-color: $white-100;
-	}
-	&.large > .content {
-		padding: 20px;
-	}
-	& .body {
-		overflow: auto;
-	}
-}
-
 /* Table */
 table {
 	width: calc(100% - 16px - 2px);
@@ -579,7 +552,7 @@ h2 {
 	&.selectable .card {
 		cursor: pointer;
 	}
-	.card .content {
+	.card .body {
 		display: flex;
 		flex-flow: column wrap;
 
@@ -760,10 +733,6 @@ h2 {
 		grid-template-columns: min-content auto;
 		grid-gap: 4px;
 	}
-	.card .header.title {
-		background: map.get($services-bg, 'sc');
-		color: $grey-90;
-	}
 	#save-body .message {
 		margin-bottom: 0;
 	}
@@ -774,13 +743,13 @@ body:not(.light) {
 	background-color: $grey-70;
 	color: $white-100;
 
-	.modal .card > .content {
+	.sc.modal .sc.card > .body {
 		color: $grey-90;
 	}
-	.card {
+	.sc.card {
 		box-shadow: $light-shadow-10;
 	}
-	.card:hover {
+	.sc.card:hover {
 		box-shadow: $light-shadow-20;
 	}
 	table {
@@ -798,9 +767,6 @@ body:not(.light) {
 	}
 	table tbody tr:nth-child(even) {
 		background-color: $grey-50;
-	}
-	.modal .card > .content {
-		color: $grey-90;
 	}
 	table tr td.mangadex a[href] {
 		color: $white-100;

@@ -51,6 +51,11 @@ export class DOM {
 			if (properties.dataset) {
 				Object.assign(elt.dataset, properties.dataset);
 			}
+			if (properties.css) {
+				for (const key in properties.css) {
+					elt.style[key] = properties.css[key]!;
+				}
+			}
 		}
 		return elt;
 	}

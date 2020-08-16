@@ -127,7 +127,7 @@ export abstract class Service {
 
 	createCard = (withContent: boolean): HTMLElement => {
 		const card = DOM.create('div', {
-			class: 'card',
+			class: 'sc card',
 		});
 		const header = DOM.create('div', {
 			class: `header ${this.key}`,
@@ -136,7 +136,7 @@ export abstract class Service {
 		DOM.append(card, header);
 		if (withContent) {
 			const content = DOM.create('div', {
-				class: 'content',
+				class: 'body',
 			});
 			DOM.append(card, content);
 		}
@@ -382,12 +382,19 @@ export abstract class ActivableModule {
 					type: 'submit',
 					childs: [DOM.icon('sign-in-alt'), DOM.text('Login')],
 				});
+				submitButton.setAttribute('form', `login_${this.service.key}`);
 				const cancelButton = DOM.create('button', {
 					class: 'default center',
 					childs: [DOM.icon('times-circle'), DOM.text('Cancel')],
+					type: 'submit',
+				});
+				const realSubmit = DOM.create('button', {
+					type: 'submit',
+					css: { display: 'none' },
 				});
 				const form = DOM.create('form', {
 					class: 'body',
+					name: `login_${this.service.key}`,
 					childs: [
 						DOM.create('div', {
 							class: 'row-parameter',
@@ -408,12 +415,12 @@ export abstract class ActivableModule {
 								}),
 							],
 						}),
-						submitButton,
-						cancelButton,
+						realSubmit,
 					],
 				});
 				if (this.preModalForm) this.preModalForm(modal);
-				DOM.append(modal.body, DOM.append(form, cancelButton));
+				DOM.append(modal.body, form);
+				DOM.append(modal.footer, submitButton, cancelButton);
 				// Bind
 				let busy = false;
 				form.addEventListener('submit', async (event) => {
@@ -427,24 +434,38 @@ export abstract class ActivableModule {
 						submitButton.disabled = true;
 						cancelButton.disabled = true;
 						modal.disableExit();
-						modal.content.classList.add('loading');
+						modal.wrapper.classList.add('loading');
 						// Login call Options.save itself
-						const res = await this.service.loginModule.login(
-							form.identifier.value.trim(),
-							form.password.value
-						);
+						const identifier = form.identifier.value.trim();
+						const password = form.password.value;
+						const res = await this.service.loginModule.login(identifier, password);
 						submitButton.disabled = false;
 						cancelButton.disabled = false;
 						modal.enableExit();
-						modal.content.classList.remove('loading');
+						modal.wrapper.classList.remove('loading');
 						if (res == RequestStatus.SUCCESS) {
+							SimpleNotification.success(
+								{ text: `Logged in on **${this.service.serviceName}** !` },
+								{ position: 'bottom-left' }
+							);
 							this.loginButton.remove();
 							this.updateStatus(res);
 							modal.remove();
 							return;
+						} else if (identifier == '' || password == '') {
+							SimpleNotification.error(
+								{ text: 'Empty e-mail or password.' },
+								{ position: 'bottom-left' }
+							);
+						} else {
+							SimpleNotification.error({ text: 'Invalid credentials.' }, { position: 'bottom-left' });
 						}
 						busy = false;
 					}
+				});
+				submitButton.addEventListener('click', (event) => {
+					event.preventDefault();
+					realSubmit.click();
 				});
 				cancelButton.addEventListener('click', (event) => {
 					event.preventDefault();
@@ -553,16 +574,24 @@ export abstract class SaveModule<T extends Summary = Summary> {
 
 	resetModal = (): void => {
 		DOM.clear(this.modal.body);
+		DOM.clear(this.modal.footer);
 		this.stopButton.disabled = false;
 		if (this.preForm) this.preForm();
 		this.activeContainer = undefined;
 		this.doStop = false;
 		if (this.reset) this.reset();
 		const form = this.createForm();
+		const realSubmit = DOM.create('button', {
+			type: 'submit',
+			css: { display: 'none' },
+		});
+		form.appendChild(realSubmit);
+		form.name = `save_form_${this.service.key}`;
 		form.addEventListener('animationend', (event) => {
 			if (event.target == form && event.animationName == 'shrink') {
 				form.remove();
 				this.modal.disableExit();
+				DOM.clear(this.modal.footer);
 				this.handle(form);
 			}
 		});
@@ -574,6 +603,12 @@ export abstract class SaveModule<T extends Summary = Summary> {
 			class: 'primary puffy',
 			textContent: 'Start',
 			childs: [DOM.icon('play')],
+			type: 'submit',
+		});
+		startButton.setAttribute('form', `save_form_${this.service.key}`);
+		startButton.addEventListener('click', (event) => {
+			event.preventDefault();
+			realSubmit.click();
 		});
 		const cancelButton = DOM.create('button', {
 			class: 'default',
@@ -585,7 +620,7 @@ export abstract class SaveModule<T extends Summary = Summary> {
 				},
 			},
 		});
-		form.appendChild(DOM.create('div', { childs: [startButton, DOM.space(), cancelButton] }));
+		DOM.append(this.modal.footer, startButton, cancelButton);
 		this.modal.body.appendChild(form);
 		if (this.postForm) this.postForm(form);
 	};
@@ -593,7 +628,7 @@ export abstract class SaveModule<T extends Summary = Summary> {
 	displayActive = (): void => {
 		this.activeContainer = DOM.create('div');
 		this.modal.body.appendChild(this.activeContainer);
-		this.modal.body.appendChild(DOM.create('div', { class: 'leave right', childs: [this.stopButton] }));
+		this.modal.footer.appendChild(DOM.create('div', { class: 'leave right', childs: [this.stopButton] }));
 		this.summary.start();
 	};
 

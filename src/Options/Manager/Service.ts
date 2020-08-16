@@ -75,7 +75,7 @@ export class ServiceManager {
 			this.addActiveService(service.key);
 		} else if (index >= 0) {
 			// Insert as the *index* child to follow the Options order
-			const activeCards = this.activeContainer.querySelectorAll('.card.active');
+			const activeCards = this.activeContainer.querySelectorAll('.sc.card.active');
 			const length = activeCards.length;
 			if (length == 0) {
 				this.activeContainer.insertBefore(

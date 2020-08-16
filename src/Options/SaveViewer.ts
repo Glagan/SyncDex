@@ -118,12 +118,14 @@ export class SaveViewer {
 		const modal = new Modal('medium');
 		modal.header.classList.add('title');
 		modal.header.textContent = 'Edit Entry';
-		modal.body.classList.add('entry-edit');
+		modal.wrapper.classList.add('entry-edit');
 		// Buttons to add classes later
 		const submitButton = DOM.create('button', {
 			class: 'primary puffy',
 			childs: [DOM.icon('save'), DOM.text('Save')],
+			type: 'submit',
 		});
+		submitButton.setAttribute('form', 'entry-form');
 		const cancelButton = DOM.create('button', {
 			class: 'default',
 			childs: [DOM.icon('times-circle'), DOM.text('Cancel')],
@@ -151,7 +153,11 @@ export class SaveViewer {
 			);
 		}
 		// Create form with every rows
-		const form = DOM.create('form', { class: 'save-entry' });
+		const form = DOM.create('form', { class: 'save-entry', name: 'entry-form' });
+		const realSubmit = DOM.create('button', {
+			type: 'submit',
+			css: { display: 'none' },
+		});
 		DOM.append(
 			form,
 			this.modalRow([
@@ -225,9 +231,7 @@ export class SaveViewer {
 			]),
 			DOM.create('label', { textContent: 'Services' }),
 			services,
-			DOM.create('div', {
-				childs: [submitButton, cancelButton],
-			})
+			realSubmit
 		);
 		form.addEventListener('submit', async (event) => {
 			event.preventDefault();
@@ -275,7 +279,12 @@ export class SaveViewer {
 			modal.remove();
 			this.loadPage(this.currentPage);
 		});
+		submitButton.addEventListener('click', (event) => {
+			event.preventDefault();
+			realSubmit.click();
+		});
 		modal.body.appendChild(form);
+		DOM.append(modal.footer, submitButton, cancelButton);
 		return modal;
 	};
 
