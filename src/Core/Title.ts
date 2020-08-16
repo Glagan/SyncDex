@@ -457,6 +457,33 @@ export abstract class ExternalTitle extends BaseTitle {
 	 */
 	abstract get mochi(): number | string;
 
+	/**
+	 * Get a list of input elements used in the Save Viewer.
+	 */
+	static SaveInput(value?: ServiceKeyType): HTMLInputElement[] {
+		const serviceName = (<typeof ExternalTitle>this.prototype.constructor).serviceName;
+		return [
+			DOM.create('input', {
+				type: 'number',
+				name: serviceName,
+				placeholder: `${serviceName} ID`,
+				value: `${value ? value : ''}`,
+			}),
+		];
+	}
+
+	/**
+	 * Handle Inputs created from SaveInput to update Title.services.
+	 */
+	static HandleInput(title: Title, form: HTMLFormElement): void {
+		const serviceName = (<typeof ExternalTitle>this.prototype.constructor).serviceName;
+		const key = (<typeof ExternalTitle>this.prototype.constructor).serviceKey;
+		if (form[serviceName].value != '') {
+			const id = parseInt(form[serviceName].value as string);
+			if (!isNaN(id)) (title.services[key] as number) = id;
+		} else delete title.services[key];
+	}
+
 	toLocalTitle(): Title | undefined {
 		if (!this.mangaDex) return undefined;
 		return new Title(this.mangaDex, {

@@ -1,0 +1,164 @@
+@import 'Photon.scss';
+
+.scs {
+	// Form
+	form .row {
+		display: grid;
+		grid-template-columns: 50%;
+		grid-gap: 8px;
+		grid-auto-flow: column;
+		margin: 0;
+		margin-bottom: 16px;
+
+		input[type] {
+			min-width: 200px;
+		}
+	}
+	.parameter {
+		/*display: grid;
+		grid-template-columns: 20px auto;
+		grid-template-rows: auto;
+		gap: 8px;
+		background-color: $white-100;
+		padding: 4px;
+		border: 1px solid $grey-20;
+		border-radius: 2px;*/
+		margin-bottom: 32px;
+	}
+	.row-parameter {
+		display: grid;
+		grid-template-columns: auto;
+		grid-template-rows: auto;
+		margin-bottom: 8px;
+		gap: 4px;
+		/*background-color: $white-100;
+		padding: 4px;
+		border: 1px solid $grey-20;
+		border-radius: 2px;*/
+	}
+	.row-parameter > :nth-child(2n) {
+		margin-bottom: 8px;
+	}
+
+	// Inputs
+	input {
+		font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+			sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+		display: block;
+
+		&[type] {
+			border-radius: 2px;
+			padding: 0 8px;
+			width: auto;
+			height: 32px;
+			color: $grey-90;
+			border: 2px solid $grey-90-a20;
+		}
+		&[type].fill {
+			width: 100%;
+			box-sizing: border-box;
+		}
+		&[type]::placeholder {
+			color: $grey-50;
+		}
+		&[type]:hover {
+			border-color: $grey-90-a30;
+		}
+		&[type]:focus {
+			border-color: $blue-50;
+			box-shadow: $focus;
+		}
+		&[type='file'] {
+			cursor: pointer;
+		}
+	}
+	label,
+	.label {
+		cursor: pointer;
+		display: block;
+		line-height: 20px;
+	}
+
+	// Select
+	select {
+		border-radius: 2px;
+		padding: 0 8px;
+		width: auto;
+		height: 32px;
+		color: $grey-90;
+		border: 2px solid $grey-90-a20;
+	}
+
+	// Checkbox
+	input[type='checkbox'] {
+		visibility: hidden;
+		position: absolute;
+		left: -1000px;
+		clip: rect(0 0 0 0);
+
+		& + label::before {
+			font-family: 'Font Awesome 5 Free';
+			content: '\f00c';
+			color: transparent;
+			border-radius: 2px;
+			height: 16px;
+			width: 16px;
+			font-size: 16px;
+			background-color: $grey-90-a10;
+			border: 1px solid $grey-60;
+			cursor: pointer;
+			transition: all 150ms $animation;
+			display: inline-flex;
+			justify-content: center;
+			align-items: center;
+			padding: 2px;
+			margin-right: 8px;
+		}
+		& + label:hover::before {
+			background-color: $grey-90-a20;
+		}
+		& + label:active::before {
+			background-color: $grey-90-a30;
+		}
+		& + label:focus::before {
+			box-shadow: $focus;
+		}
+
+		&:checked + label::before {
+			color: $white-100;
+			background-color: $blue-60;
+			border-color: transparent;
+		}
+		&:checked + label:hover::before {
+			background-color: $blue-70;
+		}
+		&:checked + label:active::before {
+			background-color: $blue-80;
+		}
+		&:checked + label:focus::before {
+			box-shadow: $focus;
+		}
+
+		&:disabled + label,
+		&:disabled + label + .helper {
+			opacity: 0.4;
+		}
+		&[data-dependency] + label {
+			margin-top: 8px;
+			margin-left: 30px;
+		}
+		&[data-dependency] + label + .helper {
+			margin-left: 60px;
+		}
+		& + label + .helper,
+		& + .label + .helper {
+			margin-left: 30px;
+		}
+	}
+
+	.services {
+		display: flex;
+		flex-flow: row wrap;
+		align-items: flex-start;
+	}
+}

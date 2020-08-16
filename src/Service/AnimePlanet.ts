@@ -1,5 +1,6 @@
 import { Runtime } from '../Core/Runtime';
-import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle, MissableField } from '../Core/Title';
+import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle, MissableField, Title } from '../Core/Title';
+import { DOM } from '../Core/DOM';
 
 export const enum AnimePlanetStatus {
 	NONE = 0,
@@ -210,6 +211,31 @@ export class AnimePlanetTitle extends ExternalTitle {
 
 	get mochi(): number {
 		return this.id.i;
+	}
+
+	static SaveInput(value?: ServiceKeyType): HTMLInputElement[] {
+		const id = value as AnimePlanetReference | undefined;
+		return [
+			DOM.create('input', {
+				type: 'text',
+				name: `AnimePlanet_slug`,
+				value: `${id ? id.s : ''}`,
+				placeholder: 'AnimePlanet Slug',
+			}),
+			DOM.create('input', {
+				type: 'number',
+				name: `AnimePlanet_id`,
+				value: `${id ? id.i : ''}`,
+				placeholder: 'AnimePlanet ID',
+			}),
+		];
+	}
+
+	static HandleInput(title: Title, form: HTMLFormElement): void {
+		if (form.AnimePlanet_slug.value != '' && form.AnimePlanet_id.value) {
+			const id = parseInt(form.AnimePlanet_id.value as string);
+			if (!isNaN(id)) title.services.ap = { s: form.AnimePlanet_slug.value, i: id };
+		} else delete title.services.ap;
 	}
 
 	static compareId = <K extends ServiceKeyType>(id1: K, id2: K): boolean => {

@@ -4,7 +4,7 @@ import { ServiceKeyType, ActivableName, ActivableKey, Title } from '../../Core/T
 import { Service, ActivableModule, LoginMethod, ActivableService, LoginModule } from './Service';
 import { KitsuTitle, KitsuManga, KitsuResponse, KitsuHeaders, KitsuAPI } from '../../Service/Kitsu';
 import { DOM } from '../../Core/DOM';
-import { Modal } from '../Modal';
+import { Modal } from '../../Core/Modal';
 import { APIImportableModule } from './Import';
 import { APIExportableModule } from './Export';
 import { SaveOptions } from '../Utility';

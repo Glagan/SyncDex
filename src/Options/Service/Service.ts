@@ -11,7 +11,7 @@ import {
 	Title,
 } from '../../Core/Title';
 import { Mochi } from '../../Core/Mochi';
-import { Modal } from '../Modal';
+import { Modal } from '../../Core/Modal';
 import { ImportableModule } from './Import';
 import { ExportableModule } from './Export';
 import { SaveOptions } from '../Utility';
@@ -80,33 +80,6 @@ export abstract class Service {
 	exportModule?: ExportableModule;
 
 	/**
-	 * Get a list of input elements used in the Save Viewer.
-	 */
-	static SaveInput(value?: ServiceKeyType): HTMLInputElement[] {
-		const serviceName = (<typeof Service>this.prototype.constructor).serviceName;
-		return [
-			DOM.create('input', {
-				type: 'number',
-				name: serviceName,
-				placeholder: `${serviceName} ID`,
-				value: `${value ? value : ''}`,
-			}),
-		];
-	}
-
-	/**
-	 * Handle Inputs created from SaveInput to update Title.services.
-	 */
-	static HandleInput(title: Title, form: HTMLFormElement): void {
-		const serviceName = (<typeof Service>this.prototype.constructor).serviceName;
-		const key = (<typeof Service>this.prototype.constructor).key as ActivableKey;
-		if (form[serviceName].value != '') {
-			const id = parseInt(form[serviceName].value as string);
-			if (!isNaN(id)) (title.services[key] as number) = id;
-		} else delete title.services[key];
-	}
-
-	/**
 	 * Return a link to the Media identified by id on the Service.
 	 */
 	static link(id: ServiceKeyType): string {
@@ -127,7 +100,7 @@ export abstract class Service {
 
 	createCard = (withContent: boolean): HTMLElement => {
 		const card = DOM.create('div', {
-			class: 'sc card',
+			class: 'scs card',
 		});
 		const header = DOM.create('div', {
 			class: `header ${this.key}`,

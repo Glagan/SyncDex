@@ -6,6 +6,8 @@
 @import 'Card.scss';
 @import 'Modal.scss';
 @import 'Editor.scss';
+@import 'Buttons.scss';
+@import 'Form.scss';
 
 // Meta
 .hidden {
@@ -242,6 +244,7 @@
 .reading-overview {
 	display: flex;
 	justify-content: space-evenly;
+	align-items: center;
 
 	.error {
 		box-shadow: 0 0 4px 2px $red-60;

@@ -1,4 +1,4 @@
-import { DOM } from '../Core/DOM';
+import { DOM } from './DOM';
 
 export class Modal {
 	/**
@@ -10,10 +10,6 @@ export class Modal {
 	 */
 	wrapper: HTMLElement;
 	header: HTMLElement;
-	/**
-	 * Wrapper of the card content in the modal, with body and footer
-	 */
-	contentWrapper: HTMLElement;
 	/**
 	 * Content of the body
 	 */
@@ -29,28 +25,22 @@ export class Modal {
 
 	constructor(size?: 'small' | 'medium') {
 		this.modal = DOM.create('div', {
-			class: 'sc modal',
+			class: 'scs modal',
 		});
 		if (size) this.modal.classList.add(size);
 		this.wrapper = DOM.create('div', {
-			class: 'sc card',
+			class: 'scs card',
 		});
 		this.header = DOM.create('div', {
 			class: `header`,
 		});
-		this.contentWrapper = DOM.create('div', {
-			class: 'body',
-		});
 		this.body = DOM.create('div', {
-			class: 'content',
+			class: 'body',
 		});
 		this.footer = DOM.create('div', {
 			class: 'footer',
 		});
-		DOM.append(
-			this.modal,
-			DOM.append(this.wrapper, this.header, DOM.append(this.contentWrapper, this.body, this.footer))
-		);
+		DOM.append(this.modal, DOM.append(this.wrapper, this.header, this.body, this.footer));
 		// Bind
 		this.modal.addEventListener('animationend', (event) => {
 			// Remove the modal when the fade-out animation ends

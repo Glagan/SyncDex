@@ -3,6 +3,7 @@ import { BaseTitle, ActivableKey, ServiceKey, ReverseServiceName, StaticKey, Tit
 import { Runtime } from '../Core/Runtime';
 import { Options } from '../Core/Options';
 import { SyncModule } from './SyncModule';
+import { SaveEditor } from '../Core/SaveEditor';
 
 export abstract class Overview {
 	bind?(syncModule: SyncModule): void;
@@ -208,12 +209,17 @@ class ServiceOverview {
 }
 
 class SyncDexOverview extends ServiceOverview {
+	editButton: HTMLButtonElement;
 	quickButtons: HTMLElement;
 	startReading: HTMLButtonElement;
 	planToRead: HTMLButtonElement;
 
 	constructor() {
 		super(StaticKey.SyncDex);
+		this.editButton = DOM.create('button', {
+			class: 'btn btn-secondary',
+			childs: [DOM.icon('edit'), DOM.space(), DOM.text('Edit')],
+		});
 		this.quickButtons = DOM.create('div', { class: 'quick-buttons' });
 		this.startReading = DOM.create('button', {
 			class: 'btn btn-primary',
@@ -227,11 +233,22 @@ class SyncDexOverview extends ServiceOverview {
 	}
 
 	bind = (syncModule: SyncModule): void => {
+		this.editButton.addEventListener('click', async (event) => {
+			event.preventDefault();
+			SaveEditor.create(syncModule.title, async () => {
+				// TODO: Refresh active Services -- syncModule.initialize instead ?
+				await syncModule.syncLocal();
+				await syncModule.syncExternal(true);
+				// Update Highlight ?
+			}).show();
+		});
 		this.refreshButton.addEventListener('click', async (event) => {
 			event.preventDefault();
 			await syncModule.title.refresh();
-			await syncModule.syncLocal(); // syncModule.initialize instead ?
+			// TODO: Refresh active Services -- syncModule.initialize instead ?
+			await syncModule.syncLocal();
 			await syncModule.syncExternal(true);
+			// Update Highlight ?
 		});
 		const quickBind = async (event: Event, status: Status): Promise<void> => {
 			event.preventDefault();
@@ -253,6 +270,7 @@ class SyncDexOverview extends ServiceOverview {
 			}
 			this.content.appendChild(this.quickButtons);
 		} else title.overview(this.content);
+		this.manage.appendChild(this.editButton);
 		this.manage.appendChild(this.refreshButton);
 	};
 }
@@ -375,9 +393,17 @@ export class ReadingOverview {
 	rowContainer: HTMLElement;
 	serviceRow: HTMLElement;
 	icons: Partial<{ [key in ActivableKey]: HTMLImageElement }> = {};
+	editButton: HTMLButtonElement;
 
 	constructor() {
-		this.serviceRow = DOM.create('div', { class: 'col row no-gutters reading-overview' });
+		this.editButton = DOM.create('button', {
+			class: 'btn btn-secondary',
+			childs: [DOM.icon('edit'), DOM.space(), DOM.text('Edit')],
+		});
+		this.serviceRow = DOM.create('div', {
+			class: 'col row no-gutters reading-overview',
+			childs: [this.editButton],
+		});
 		this.rowContainer = DOM.create('div', {
 			class: 'col-auto row no-gutters p-1',
 			childs: [this.serviceRow],
@@ -385,6 +411,17 @@ export class ReadingOverview {
 		const actionsRow = document.querySelector('.reader-controls-mode')!;
 		actionsRow.parentElement!.insertBefore(this.rowContainer, actionsRow);
 	}
+
+	bind = (syncModule: SyncModule): void => {
+		this.editButton.addEventListener('click', async (event) => {
+			event.preventDefault();
+			SaveEditor.create(syncModule.title, async () => {
+				// TODO: Refresh active Services -- syncModule.initialize instead ?
+				await syncModule.syncLocal();
+				await syncModule.syncExternal(true);
+			}).show();
+		});
+	};
 
 	updateIcon = (icon: HTMLImageElement, res: BaseTitle | RequestStatus): void => {
 		if (res instanceof BaseTitle) {
@@ -408,7 +445,7 @@ export class ReadingOverview {
 		if (hasId) {
 			icon.classList.add('loading');
 		} else icon.classList.add('error');
-		this.serviceRow.appendChild(icon);
+		this.serviceRow.insertBefore(icon, this.serviceRow.lastElementChild);
 		this.icons[key] = icon;
 	};
 

@@ -5,13 +5,21 @@
 @import 'Card.scss';
 @import 'Modal.scss';
 @import 'Editor.scss';
+@import 'Buttons.scss';
+@import 'Form.scss';
+
+// Reset
+* {
+	margin: 0;
+	padding: 0;
+}
 
 *:disabled,
 *.disabled {
 	opacity: 0.4;
 }
 
-/* Links */
+// Links
 *[href] {
 	color: $blue-60;
 	text-decoration: none;
@@ -31,269 +39,34 @@
 	box-shadow: $focus;
 }
 
-/* Buttons */
-button,
-.button {
-	border: 0;
-	cursor: pointer;
-	font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
-		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-	text-align: center;
-	line-height: 16px;
-	transition: all 250ms $animation;
-
-	&.hidden {
-		display: none;
-	}
-	&,
-	&.default {
-		border-radius: 2px;
-		height: 32px;
-		padding: 0 8px;
-		font-size: 13px;
-		font-weight: 400;
-		min-width: 132px;
-		width: auto;
-	}
-	img,
-	i {
-		float: left;
-		font-size: 16px;
-		line-height: 32px;
-	}
-
-	// Styles
-	&.primary {
-		color: $white-100;
-		background-color: $blue-60;
-	}
-	&.primary:hover {
-		background-color: $blue-70;
-	}
-	&.primary:active {
-		background-color: $blue-80;
-	}
-	&.primary:focus {
-		box-shadow: $focus;
-	}
-	&.default {
-		color: $grey-90;
-		background-color: $grey-90-a10;
-	}
-	&.default:hover {
-		background-color: $grey-90-a20;
-	}
-	&.default:active {
-		background-color: $grey-90-a30;
-	}
-	&.default:focus {
-		box-shadow: $focus;
-	}
-	&.ghost {
-		color: $grey-90-a30;
-		background: transparent;
-		height: 32px;
-		min-width: 32px;
-		width: 32px;
-		padding: 8px;
-	}
-	&.ghost:hover {
-		background-color: $grey-90-a10;
-	}
-	&.ghost:active {
-		background-color: $grey-90-a20;
-	}
-	&.ghost:focus {
-		box-shadow: $focus;
-	}
-	&.danger {
-		color: $white-100;
-		background-color: $red-60;
-	}
-	&.danger:hover {
-		background-color: $red-70;
-	}
-	&.danger:active {
-		background-color: $red-80;
-	}
-	&.danger:focus {
-		box-shadow: $focus;
-	}
-
-	// Sizes
-	&.micro {
-		border-radius: 2px;
-		height: 24px;
-		padding: 0 8px;
-		font-size: 11px;
-		font-weight: 400;
-	}
-	&.puffy {
-		border-radius: 4px;
-		height: 48px;
-		padding: 0 16px;
-		font-size: 15px;
-		font-weight: 400;
-		width: auto;
-	}
-	&.fill {
-		display: block;
-		width: 100%;
-	}
+// Color Input and Options only input
+.dependency {
+	margin-left: 32px;
 }
-a.button {
-	line-height: 32px;
-
-	&:hover {
-		text-decoration: none;
-	}
-	&:active {
-		text-decoration: none;
-	}
-	&:focus {
-		text-decoration: none;
-	}
-
-	// Sizes
-	&.micro {
-		line-height: 24px;
-	}
-
-	&.puffy {
-		line-height: 48px;
-	}
-}
-
-// Form
-form .row {
-	display: grid;
-	grid-template-columns: 50%;
-	grid-gap: 8px;
-	grid-auto-flow: column;
-	margin-bottom: 16px;
-
-	input[type] {
-		min-width: 200px;
-	}
-}
-
-// Inputs
-input {
-	font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
-		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-	display: block;
-
-	&[type] {
-		border-radius: 2px;
-		padding: 0 8px;
-		width: auto;
-		height: 32px;
-		color: $grey-90;
-		border: 2px solid $grey-90-a20;
-	}
-	&[type].fill {
-		width: 100%;
-		box-sizing: border-box;
-	}
-	&[type]::placeholder {
-		color: $grey-50;
-	}
-	&[type]:hover {
-		border-color: $grey-90-a30;
-	}
-	&[type]:focus {
-		border-color: $blue-50;
-		box-shadow: $focus;
-	}
-	&[type='file'] {
-		cursor: pointer;
-	}
-}
-label,
-.label {
-	cursor: pointer;
-	display: block;
-	line-height: 20px;
-}
-
-/* Select */
-select {
-	border-radius: 2px;
-	padding: 0 8px;
-	width: auto;
+.color {
+	display: inline-block;
+	width: 32px;
 	height: 32px;
-	color: $grey-90;
 	border: 2px solid $grey-90-a20;
+	border-top-right-radius: 2px;
+	border-bottom-right-radius: 2px;
+}
+.color-input {
+	display: flex;
+	flex-flow: row nowrap;
+	align-items: center;
+	margin-bottom: 8px;
+}
+.color-input input {
+	border-right: 0;
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+.color-input button:first-child {
+	margin-right: 4px;
 }
 
-/*	Checkbox */
-input[type='checkbox'] {
-	visibility: hidden;
-	position: absolute;
-	left: -1000px;
-	clip: rect(0 0 0 0);
-
-	& + label::before {
-		font-family: 'Font Awesome 5 Free';
-		content: '\f00c';
-		color: transparent;
-		border-radius: 2px;
-		height: 16px;
-		width: 16px;
-		font-size: 16px;
-		background-color: $grey-90-a10;
-		border: 1px solid $grey-60;
-		cursor: pointer;
-		transition: all 150ms $animation;
-		display: inline-flex;
-		justify-content: center;
-		align-items: center;
-		padding: 2px;
-		margin-right: 8px;
-	}
-	& + label:hover::before {
-		background-color: $grey-90-a20;
-	}
-	& + label:active::before {
-		background-color: $grey-90-a30;
-	}
-	& + label:focus::before {
-		box-shadow: $focus;
-	}
-
-	&:checked + label::before {
-		color: $white-100;
-		background-color: $blue-60;
-		border-color: transparent;
-	}
-	&:checked + label:hover::before {
-		background-color: $blue-70;
-	}
-	&:checked + label:active::before {
-		background-color: $blue-80;
-	}
-	&:checked + label:focus::before {
-		box-shadow: $focus;
-	}
-
-	&:disabled + label,
-	&:disabled + label + .helper {
-		opacity: 0.4;
-	}
-	&[data-dependency] + label {
-		margin-top: 8px;
-		margin-left: 30px;
-	}
-	&[data-dependency] + label + .helper {
-		margin-left: 60px;
-	}
-	& + label + .helper,
-	& + .label + .helper {
-		margin-left: 30px;
-	}
-}
-
-/* Messages */
+// Messages
 .message {
 	border-radius: 4px;
 	width: auto;
@@ -415,7 +188,7 @@ input[type='checkbox'] {
 	}
 }
 
-/* Table */
+// Table
 table {
 	width: calc(100% - 16px - 2px);
 	border: 1px solid $grey-20;
@@ -446,20 +219,14 @@ table {
 	}
 }
 
-/* Reset */
-* {
-	margin: 0;
-	padding: 0;
-}
-
-/* Utility */
+// Utility
 .helper {
 	font-size: $caption-30;
 	font-weight: $regular;
 	color: $grey-50;
 }
 
-/* SyncDex */
+// SyncDex
 html {
 	font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
 		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
@@ -475,7 +242,7 @@ body {
 	transition: all 250ms $animation;
 }
 
-/*	Navigation */
+// Navigation
 nav {
 	padding: 16px;
 
@@ -543,12 +310,8 @@ h2 {
 	text-align: right;
 }
 
-/*	Services */
+// Services
 .services {
-	display: flex;
-	flex-flow: row wrap;
-	align-items: flex-start;
-
 	&.selectable .card {
 		cursor: pointer;
 	}
@@ -597,59 +360,7 @@ h2 {
 	color: map.get($services-color, 'al');
 }
 
-// Parameters
-.parameter {
-	/*display: grid;
-	grid-template-columns: 20px auto;
-	grid-template-rows: auto;
-	gap: 8px;
-	background-color: $white-100;
-	padding: 4px;
-	border: 1px solid $grey-20;
-	border-radius: 2px;*/
-	margin-bottom: 32px;
-}
-.row-parameter {
-	display: grid;
-	grid-template-columns: auto;
-	grid-template-rows: auto;
-	margin-bottom: 8px;
-	gap: 4px;
-	/*background-color: $white-100;
-	padding: 4px;
-	border: 1px solid $grey-20;
-	border-radius: 2px;*/
-}
-.row-parameter > :nth-child(2n) {
-	margin-bottom: 8px;
-}
-.dependency {
-	margin-left: 32px;
-}
-.color {
-	display: inline-block;
-	width: 32px;
-	height: 32px;
-	border: 2px solid $grey-90-a20;
-	border-top-right-radius: 2px;
-	border-bottom-right-radius: 2px;
-}
-.color-input {
-	display: flex;
-	flex-flow: row nowrap;
-	align-items: center;
-	margin-bottom: 8px;
-}
-.color-input input {
-	border-right: 0;
-	border-top-right-radius: 0;
-	border-bottom-right-radius: 0;
-}
-.color-input button:first-child {
-	margin-right: 4px;
-}
-
-/* Import Export Modal */
+// Import Export Modal
 .import-export-modal {
 	form {
 		.parameter,
@@ -697,7 +408,7 @@ h2 {
 	}
 }
 
-/* Save Viewer */
+// Save Viewer
 .save-viewer {
 	table {
 		tr {
@@ -743,14 +454,16 @@ body:not(.light) {
 	background-color: $grey-70;
 	color: $white-100;
 
-	.sc.modal .sc.card > .body {
-		color: $grey-90;
-	}
-	.sc.card {
-		box-shadow: $light-shadow-10;
-	}
-	.sc.card:hover {
-		box-shadow: $light-shadow-20;
+	.scs {
+		&.modal .card .body {
+			color: $grey-90;
+		}
+		&.card {
+			box-shadow: $light-shadow-10;
+		}
+		&.card:hover {
+			box-shadow: $light-shadow-20;
+		}
 	}
 	table {
 		border: 1px solid $grey-80;
@@ -778,5 +491,3 @@ body:not(.light) {
 		color: $white-100;
 	}
 }
-
-// @import 'Status.scss';
