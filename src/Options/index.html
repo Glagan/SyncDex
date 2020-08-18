@@ -23,10 +23,10 @@
 			<li data-link="title-page"><i class="fas fa-book"></i> Title Page</li>
 			<li data-link="notifications"><i class="fas fa-bell"></i> Notifications</li>
 			<li data-link="history"><i class="fas fa-history"></i> History</li>
+			<li data-link="other"><i class="fas fa-ellipsis-h"></i> Other</li>
 			<li data-link="save"><i class="fas fa-save"></i> Save Viewer</li>
 			<li data-link="import"><i class="fas fa-download"></i> Import</li>
 			<li data-link="export"><i class="fas fa-upload"></i> Export</li>
-			<li data-link="other"><i class="fas fa-ellipsis-h"></i> Other</li>
 			<li data-link="delete"><i class="fas fa-trash"></i> Delete</li>
 			<li data-link="credits"><i class="fas fa-at"></i> Credits</li>
 		</ul>
@@ -133,7 +133,7 @@
 			<h2>Confirm Chapter</h2>
 			<div class="parameter">
 				<input type="checkbox" id="ck_confirmChapter" data-name="confirmChapter" />
-				<label for="ck_confirmChapter">Asks if you want to update your list(s) to the current chapter you are reading.</label>
+				<label for="ck_confirmChapter">Asks if you still want to update your list(s) to the current chapter you are reading if the chapter is <b>Delayed</b>, <b>Higher, Lower or not your next</b> (depending on your options), or <b>not in your MangaDex list</b>.</label>
 			</div>
 			<h2>Update only if in list</h2>
 			<div class="parameter">
@@ -221,6 +221,22 @@
 				<label for="ck_chapterStatus">Highlight Covers to quickly see if you read the last chapter for a title.</label>
 			</div>
 		</div>
+		<h1 id="other"><i class="fas fa-ellipsis-h"></i> Other</h1>
+		<div class="section">
+			<h2 class="bold">Mochi</h2>
+			<div class="parameter">
+				<input type="checkbox" id="ck_useMochi" data-name="useMochi" />
+				<label for="ck_useMochi">Use <a href="https://mochi.nikurasu.org/" target="_blank" rel="noreferrer noopener">Mochi <i class="fas fa-external-link-alt"></i></a> to get Services links.</label>
+				<input type="checkbox" id="ck_acceptLowScore" data-name="acceptLowScore" data-dependency="useMochi">
+				<label for="ck_acceptLowScore">Allow low score results from <b>Mochi</b>.</label>
+				<p class="helper">It is not recommended since it could add and update unrelated titles to your list.</p>
+			</div>
+			<h2>Update MangaDex list</h2>
+			<div class="parameter">
+				<input type="checkbox" id="ck_updateMD" data-name="updateMD" />
+				<label for="ck_updateMD">Update the <b>status</b> of the titles in your <b>MangaDex</b> list when needed.</label>
+			</div>
+		</div>
 		<h1 id="save"><i class="fas fa-save"></i> Save Viewer</h1>
 		<div class="section save-viewer">
 			<div class="block message default">
@@ -268,22 +284,6 @@
 			</div>
 		</div>
 		<div class="section services selectable" id="export-container"></div>
-		<h1 id="other"><i class="fas fa-ellipsis-h"></i> Other</h1>
-		<div class="section">
-			<h2 class="bold">Mochi</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_useMochi" data-name="useMochi" />
-				<label for="ck_useMochi">Use <a href="https://mochi.nikurasu.org/" target="_blank" rel="noreferrer noopener">Mochi <i class="fas fa-external-link-alt"></i></a> to get Services links.</label>
-				<input type="checkbox" id="ck_acceptLowScore" data-name="acceptLowScore" data-dependency="useMochi">
-				<label for="ck_acceptLowScore">Allow low score results from <b>Mochi</b>.</label>
-				<p class="helper">It is not recommended since it could add and update unrelated titles to your list.</p>
-			</div>
-			<h2>Update MangaDex list</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_updateMD" data-name="updateMD" />
-				<label for="ck_updateMD">Update the <b>status</b> of the titles in your <b>MangaDex</b> list when needed.</label>
-			</div>
-		</div>
 		<h1 id="delete"><i class="fas fa-trash"></i> Delete</h1>
 		<div class="section">
 			<div class="message default">

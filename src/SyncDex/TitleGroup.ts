@@ -1,5 +1,6 @@
 import { Options } from '../Core/Options';
 import { stringToProgress } from '../Core/Utility';
+import { Title } from '../Core/Title';
 
 interface ChapterRow {
 	node: HTMLElement;
@@ -20,7 +21,8 @@ export class TitleGroup {
 		this.titleRow = titleRow;
 	}
 
-	hide = (progress: Progress): void => {
+	hide = (title: Title): void => {
+		const progress = title.progress;
 		let chapterCount = this.chapters.length;
 		let hidden = 0;
 		let foundNext = false;
@@ -30,7 +32,7 @@ export class TitleGroup {
 			const isNextChapter =
 				!foundNext &&
 				((row.progress.chapter > progress.chapter && row.progress.chapter < Math.floor(progress.chapter) + 2) ||
-					(row.progress.chapter == 0 && progress.chapter == 0));
+					(row.progress.chapter == 0 && progress.chapter == 0 && title.status !== Status.COMPLETED));
 			if (isNextChapter) {
 				foundNext = true;
 				continue;
@@ -57,7 +59,8 @@ export class TitleGroup {
 		}
 	};
 
-	highlight = (progress: Progress): void => {
+	highlight = (title: Title): void => {
+		const progress = title.progress;
 		let lastColor = Options.colors.highlights.length;
 		let foundNext = false;
 		// If there is data
@@ -68,7 +71,7 @@ export class TitleGroup {
 			if (
 				!foundNext &&
 				((row.progress.chapter > progress.chapter && row.progress.chapter < Math.floor(progress.chapter) + 2) ||
-					(row.progress.chapter == 0 && progress.chapter == 0))
+					(row.progress.chapter == 0 && progress.chapter == 0 && title.status !== Status.COMPLETED))
 			) {
 				// * Next Chapter
 				foundNext = true;

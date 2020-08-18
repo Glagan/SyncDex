@@ -53,6 +53,7 @@ let mainManifest = {
 		},
 		{
 			matches: [
+				'https://*.mangadex.org/ajax*',
 				'https://*.mangadex.org/follows*',
 				'https://*.mangadex.org/manga*',
 				'https://*.mangadex.org/titles*',

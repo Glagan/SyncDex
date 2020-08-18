@@ -1,6 +1,7 @@
 import { DOM } from '../Core/DOM';
 import { Options } from '../Core/Options';
 import { Thumbnail } from './Thumbnail';
+import { Title } from '../Core/Title';
 
 interface ChapterRow {
 	progress: Progress | undefined;
@@ -24,7 +25,8 @@ export class ChapterGroup {
 		if (name) this.name = name;
 	}
 
-	hide = (progress: Progress): void => {
+	hide = (title: Title): void => {
+		const progress = title.progress;
 		let chapterCount = this.rows.length;
 		for (const row of this.rows) {
 			if (!row.progress) continue;
@@ -54,7 +56,8 @@ export class ChapterGroup {
 		}
 	};
 
-	highlight = (progress: Progress): void => {
+	highlight = (title: Title): void => {
+		const progress = title.progress;
 		let lastColor = Options.colors.highlights.length,
 			// index of the next or current chapter in the group
 			selected = -1,
@@ -103,9 +106,10 @@ export class ChapterGroup {
 		}
 	};
 
-	findNextChapter = (id: number, progress: Progress): void => {
-		const titleGroups = ChapterGroup.titleGroups[id];
+	findNextChapter = (title: Title): void => {
+		const titleGroups = ChapterGroup.titleGroups[title.id];
 		if (!titleGroups) return;
+		const progress = title.progress;
 		let lowestRow: [ChapterGroup, ChapterRow] | undefined = undefined;
 		for (const group of titleGroups) {
 			// Select the lowest next chapter of the group
@@ -115,7 +119,7 @@ export class ChapterGroup {
 					row.progress &&
 					((row.progress.chapter > progress.chapter &&
 						row.progress.chapter < Math.floor(progress.chapter) + 2) ||
-						(row.progress.chapter == 0 && progress.chapter == 0)) &&
+						(row.progress.chapter == 0 && progress.chapter == 0 && title.status !== Status.COMPLETED)) &&
 					(!lowestGroupRow || lowestGroupRow.progress!.chapter > row.progress.chapter)
 				) {
 					lowestGroupRow = row;
@@ -140,11 +144,11 @@ export class ChapterGroup {
 		if (nodes.length > 1) {
 			let currentGroup = new ChapterGroup();
 			for (const row of nodes) {
-				let chapterRow = row.querySelector<HTMLElement>('[data-chapter]');
+				const chapterRow = row.querySelector<HTMLElement>('[data-chapter]');
 				const firstChild = row.firstElementChild!;
 				if (chapterRow && chapterRow.dataset.mangaId && firstChild) {
-					let id = Math.floor(parseInt(chapterRow.dataset.mangaId));
-					let isFirstRow = firstChild && firstChild.childElementCount > 0;
+					const id = Math.floor(parseInt(chapterRow.dataset.mangaId));
+					const isFirstRow = firstChild && firstChild.childElementCount > 0;
 					// Is this is a new entry push the current group and create a new one
 					if (isFirstRow) {
 						if (currentGroup.rows.length > 0) {
@@ -156,12 +160,13 @@ export class ChapterGroup {
 						}
 						currentGroup = new ChapterGroup(id, firstChild.textContent!.trim());
 					}
-					let chapter: ChapterRow = {
+					const chapter: ChapterRow = {
 						progress: (() => {
+							const oneshot = chapterRow.dataset.title == 'Oneshot';
 							return {
-								chapter:
-									chapterRow.dataset.title == 'Oneshot' ? 0 : parseFloat(chapterRow.dataset.chapter!),
+								chapter: oneshot ? 0 : parseFloat(chapterRow.dataset.chapter!),
 								volume: parseFloat(chapterRow.dataset?.volume || '') || undefined,
+								oneshot: oneshot,
 							};
 						})(),
 						node: row as HTMLElement,

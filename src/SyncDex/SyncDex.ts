@@ -104,9 +104,9 @@ export class SyncDex {
 		for (const group of groups) {
 			const title = titles.find(group.id);
 			if (title !== undefined && title.inList) {
-				group.findNextChapter(title.id, title.progress);
-				if (Options.hideHigher || Options.hideLast || Options.hideLower) group.hide(title.progress);
-				if (Options.highlight) group.highlight(title.progress);
+				group.findNextChapter(title);
+				if (Options.hideHigher || Options.hideLast || Options.hideLower) group.hide(title);
+				if (Options.highlight) group.highlight(title);
 			}
 			if (Options.thumbnail) group.setThumbnails();
 		}
@@ -147,22 +147,35 @@ export class SyncDex {
 	syncShowResult = async (
 		state: ReadingState,
 		created: boolean,
+		completed: boolean,
 		firstRequest: boolean,
 		localUpdated: boolean
 	): Promise<void> => {
 		if (state.title == undefined) return;
 		const report = await state.syncModule!.syncExternal();
-		state.syncModule!.displayReportNotifications(report, created, firstRequest, localUpdated);
+		state.syncModule!.displayReportNotifications(report, created, completed, firstRequest, localUpdated);
 	};
 
-	setStateProgress = (state: ReadingState, progress: Progress, created: boolean): void => {
-		if (!state.title) return;
-		state.title.status = Status.READING;
+	setStateProgress = (state: ReadingState, progress: Progress, created: boolean): boolean => {
+		if (!state.title) return false;
+		let completed = false;
+		if (progress.oneshot) {
+			state.title.status = Status.COMPLETED;
+			if (!state.title.end) {
+				state.title.end = new Date();
+				completed = true;
+			}
+		} else {
+			state.title.status = Status.READING;
+		}
 		state.title.progress = progress;
-		if (created) state.title.start = new Date();
+		if (created && !state.title.start) {
+			state.title.start = new Date();
+		}
 		if (Options.saveOpenedChapters) {
 			state.title.addChapter(progress.chapter);
 		}
+		return completed;
 	};
 
 	chapterEvent = async (details: ChapterChangeEventDetails, state: ReadingState): Promise<void> => {
@@ -194,6 +207,26 @@ export class SyncDex {
 					}
 				}
 			}
+			// Find MangaDex status if needed -- TODO: Check if logged in
+			if (Options.updateOnlyInList || Options.updateMD) {
+				const response = await Runtime.request<RawResponse>({
+					method: 'GET',
+					url: `https://mangadex.org/title/${id}`,
+					credentials: 'include',
+				});
+				if (!response.ok) {
+					SimpleNotification.error({
+						text: `Error while getting **MangaDex** Status.\ncode: **${response.code}**`,
+					});
+				} else {
+					const status = /disabled dropdown-item manga_follow_button.+?<\/span>\s*(.+?)<\/a>/.exec(
+						response.body
+					);
+					if (status) {
+						state.title.mdStatus = parseInt(status[1].trim());
+					} else state.title.mdStatus = Status.NONE;
+				}
+			}
 		}
 		// Send initial requests -- Another if block to tell Typescript state.syncModule does exist
 		if (state.syncModule == undefined) {
@@ -206,10 +239,29 @@ export class SyncDex {
 		}
 		// Find current Chapter Progress
 		const created = state.title.status == Status.NONE || state.title.status == Status.PLAN_TO_READ;
+		let completed = false;
+		const oneshot = details._data.title == 'Oneshot';
 		const currentProgress: Progress = {
-			chapter: details._data.title == 'Oneshot' ? 0 : parseFloat(details._data.chapter),
+			chapter: oneshot ? 0 : parseFloat(details._data.chapter),
+			oneshot: oneshot,
 		};
 		if (details._data.volume !== '') currentProgress.volume = parseInt(details._data.volume);
+		const confirmButtons = (): Button[] => [
+			{
+				type: 'success',
+				value: 'Update',
+				onClick: async (notification: SimpleNotification) => {
+					notification.closeAnimated();
+					const completed = this.setStateProgress(state, currentProgress, created);
+					await state.title!.persist();
+					this.syncShowResult(state, created, completed, false, true);
+				},
+			},
+			{
+				type: 'message',
+				value: 'Close',
+			},
+		];
 		// Exit early if there is no progress
 		if (isNaN(currentProgress.chapter)) {
 			if (Options.errorNotifications) {
@@ -226,77 +278,62 @@ export class SyncDex {
 			await state.title.persist();
 			if (firstRequest && Options.services.length > 0 && state.title.status !== Status.NONE) {
 				const report = await state.syncModule.syncExternal();
-				state.syncModule.displayReportNotifications(report, created, firstRequest, false);
+				state.syncModule.displayReportNotifications(report, created, false, firstRequest, false);
 			}
 			return;
 		}
+		// Check if the title is in list if required
+		let canUpdate = true;
+		if (Options.updateOnlyInList) {
+			canUpdate = state.title.mdStatus !== undefined && state.title.mdStatus !== Status.NONE;
+			if (!canUpdate && Options.confirmChapter) {
+				SimpleNotification.warning(
+					{
+						title: 'Not in your List',
+						text: `**${state.title.name}** is not your **MangaDex** List and won't be updated.`,
+						buttons: confirmButtons(),
+					},
+					{ position: 'bottom-left', duration: 4000 }
+				);
+			}
+		}
 		// Update title state if not delayed -- Handle external titles as delayed
 		const delayed = details._data.status != 'OK'; // && details._data.status != 'external';
-		let doUpdate = false;
-		if (!delayed) {
-			// Check if currentProgress should be updated
+		if (delayed && Options.confirmChapter) {
+			SimpleNotification.warning(
+				{
+					title: 'External or Delayed',
+					image: `https://mangadex.org/images/manga/${id}.thumb.jpg`,
+					text: `**${state.title.name}** Chapter **${details._data.chapter}** is delayed or external and has not been updated.`,
+					buttons: confirmButtons(),
+				},
+				{ position: 'bottom-left', duration: 4000 }
+			);
+		}
+		// Check if currentProgress should be updated
+		let doUpdate = canUpdate && !delayed;
+		if (doUpdate) {
 			const isFirstChapter = state.title.progress.chapter == 0 && currentProgress.chapter == 0;
 			if (
 				(!Options.saveOnlyNext && !Options.saveOnlyHigher) ||
 				(Options.saveOnlyNext && (isFirstChapter || state.title.isNextChapter(currentProgress))) ||
 				(Options.saveOnlyHigher && (isFirstChapter || state.title.progress.chapter < currentProgress.chapter))
 			) {
-				// TODO: Pepper: Set to COMPLETED if currentProgress is ONESHOT
-				this.setStateProgress(state, currentProgress, created);
-				doUpdate = true;
+				completed = this.setStateProgress(state, currentProgress, created);
 			} else if (Options.confirmChapter && (Options.saveOnlyNext || Options.saveOnlyHigher)) {
+				doUpdate = false;
 				SimpleNotification.info(
 					{
 						title: 'Chapter Not Higher',
 						image: `https://mangadex.org/images/manga/${id}.thumb.jpg`,
 						text: `**${state.title.name}** Chapter **${details._data.chapter}** is not the next or higher and hasn't been updated.`,
-						buttons: [
-							{
-								type: 'success',
-								value: 'Update',
-								onClick: async (notification: SimpleNotification) => {
-									notification.closeAnimated();
-									this.setStateProgress(state, currentProgress, created);
-									await state.title!.persist();
-									this.syncShowResult(state, created, false, true);
-								},
-							},
-							{
-								type: 'message',
-								value: 'Close',
-							},
-						],
+						buttons: confirmButtons(),
 					},
 					{ position: 'bottom-left', sticky: true }
 				);
 			}
-		} else if (Options.notifications) {
-			SimpleNotification.warning(
-				{
-					title: 'External or Delayed',
-					image: `https://mangadex.org/images/manga/${id}.thumb.jpg`,
-					text: `**${state.title.name}** Chapter **${details._data.chapter}** is delayed or external and has not been updated.`,
-					buttons: [
-						{
-							type: 'success',
-							value: 'Update',
-							onClick: async (notification: SimpleNotification) => {
-								notification.closeAnimated();
-								this.setStateProgress(state, currentProgress, created);
-								await state.title!.persist();
-								this.syncShowResult(state, created, false, true);
-							},
-						},
-						{
-							type: 'message',
-							value: 'Close',
-						},
-					],
-				},
-				{ position: 'bottom-left', sticky: true }
-			);
 		}
-		// Update History values if enabled, do not look at other options
+		// Always Update History values if enabled, do not look at other options
 		if (Options.biggerHistory) {
 			state.title.lastChapter = details._data.id;
 			state.title.lastRead = Date.now();
@@ -307,7 +344,7 @@ export class SyncDex {
 		await state.title.persist(); // Always save
 		// Always Sync Services -- even if doUpdate is set to false, to sync any out of sync services
 		if ((firstRequest && Options.services.length > 0) || doUpdate) {
-			this.syncShowResult(state, created, firstRequest, doUpdate);
+			this.syncShowResult(state, created, completed, firstRequest, doUpdate);
 		}
 	};
 
@@ -420,6 +457,12 @@ export class SyncDex {
 			if (headerTitle) title.name = headerTitle.textContent!.trim();
 		}
 		const chapterRows = document.querySelectorAll<HTMLElement>('.chapter-row');
+		// Get MangaDex Status
+		const statusButton = document.querySelector('.manga_follow_button.disabled');
+		if (statusButton) title.mdStatus = parseInt(statusButton.id.trim());
+		// Get MangaDex Score
+		const scoreButton = document.querySelector('.manga_rating_button.disabled');
+		if (scoreButton) title.mdScore = parseInt(scoreButton.id.trim()) * 10;
 
 		// Always Find Services
 		let fallback = false;
@@ -559,7 +602,7 @@ export class SyncDex {
 			if (
 				!foundNext &&
 				((row.chapter > title.progress.chapter && row.chapter < Math.floor(title.progress.chapter) + 2) ||
-					(row.chapter == 0 && title.progress.chapter == 0))
+					(row.chapter == 0 && title.progress.chapter == 0 && title.status !== Status.COMPLETED))
 			) {
 				row.node.style.backgroundColor = Options.colors.nextChapter;
 				row.isNext = true;
@@ -684,8 +727,8 @@ export class SyncDex {
 		for (const group of groups) {
 			const title = titles.find(group.id);
 			if (!title || !title.inList) continue;
-			if (Options.hideHigher || Options.hideLast || Options.hideLower) group.hide(title.progress);
-			if (Options.highlight) group.highlight(title.progress);
+			if (Options.hideHigher || Options.hideLast || Options.hideLower) group.hide(title);
+			if (Options.highlight) group.highlight(title);
 		}
 
 		// Button to toggle hidden chapters

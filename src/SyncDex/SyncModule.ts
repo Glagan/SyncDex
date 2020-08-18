@@ -95,6 +95,7 @@ export class SyncModule {
 	};
 
 	syncExternal = async (checkAutoSyncOption: boolean = false): Promise<SyncReport> => {
+		const promises: Promise<RequestStatus>[] = [];
 		const report: SyncReport = {};
 		for (const key of Options.services) {
 			const service = this.services[key];
@@ -112,14 +113,65 @@ export class SyncModule {
 			if ((!checkAutoSyncOption || Options.autoSync) && (!service.inList || !service.synced)) {
 				service.import(this.title);
 				this.overview.syncingService(key);
-				const res = await service.persist();
-				if (res > RequestStatus.CREATED) {
-					this.overview.syncedService(key, res, this.title);
-				} else this.overview.syncedService(key, service, this.title);
-				report[key] = res;
+				const promise = service.persist();
+				promises.push(promise);
+				promise.then((res) => {
+					if (res > RequestStatus.CREATED) {
+						this.overview.syncedService(key, res, this.title);
+					} else this.overview.syncedService(key, service, this.title);
+					report[key] = res;
+				});
 				// Always update the overview to check against possible imported ServiceTitle
 			} else this.overview.syncedService(key, service, this.title);
 		}
+		// Update MangaDex List Status and Score -- TODO: Check if logged in
+		if (Options.updateMD) {
+			const strings: [string[], string[]] = [[], []];
+			if (this.title.mdStatus != this.title.status) {
+				const res = await Runtime.request({
+					method: 'GET',
+					url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_follow&id=${this.title.id}&type=${
+						this.title.status
+					}&_=${Date.now()}`,
+					credentials: 'include',
+					headers: {
+						'X-Requested-With': 'XMLHttpRequest',
+					},
+				});
+				if (res.ok) {
+					this.title.mdStatus = this.title.status;
+					strings[0].push('Status on **MangaDex** updated.');
+				} else {
+					strings[1].push(`Error while updating **MangaDex** status.\ncode: ${res.code}`);
+				}
+			}
+			if (this.title.score > 0 && this.title.mdScore != this.title.score) {
+				// Convert 0-100 SyncDex Score to 0-10
+				const res = await Runtime.request({
+					method: 'GET',
+					url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_rating&id=${
+						this.title.id
+					}&rating=${Math.round(this.title.score / 10)}&_=${Date.now()}`,
+					credentials: 'include',
+					headers: {
+						'X-Requested-With': 'XMLHttpRequest',
+					},
+				});
+				if (res.ok) {
+					this.title.mdScore = this.title.score;
+					strings[0].push('Score on **MangaDex** updated.');
+				} else {
+					strings[1].push(`Error while updating **MangaDex** score.\ncode: ${res.code}`);
+				}
+			}
+			if (strings[0].length > 0) {
+				SimpleNotification.success({ text: strings[0].join('\n') }, { position: 'bottom-left' });
+			}
+			if (strings[1].length > 0) {
+				SimpleNotification.error({ text: strings[1].join('\n') }, { position: 'bottom-left' });
+			}
+		}
+		await Promise.all(promises);
 		return report;
 	};
 
@@ -135,6 +187,7 @@ export class SyncModule {
 	displayReportNotifications = (
 		report: SyncReport,
 		created: boolean,
+		completed: boolean,
 		firstRequest: boolean,
 		localUpdated: boolean
 	): void => {
@@ -168,7 +221,7 @@ export class SyncModule {
 						image: `https://mangadex.org/images/manga/${this.title.id}.thumb.jpg`,
 						text: `Chapter ${this.title.progress.chapter}\n${
 							created ? '**Start Date** set to Today !\n' : ''
-						}${updateRows.join('\n')}`,
+						}${completed ? '**End Date** set to Today !\n' : ''}${updateRows.join('\n')}`,
 					},
 					{ position: 'bottom-left', sticky: true }
 				);
@@ -178,7 +231,10 @@ export class SyncModule {
 						title: 'Progress Updated',
 						text: `Chapter ${this.title.progress.chapter}\n${
 							created ? '**Start Date** set to Today !\n' : ''
-						}${this.reportNotificationRow(StaticKey.SyncDex, 'Synced')}`,
+						}${completed ? '**End Date** set to Today !\n' : ''}${this.reportNotificationRow(
+							StaticKey.SyncDex,
+							'Synced'
+						)}`,
 					},
 					{ position: 'bottom-left', sticky: true }
 				);

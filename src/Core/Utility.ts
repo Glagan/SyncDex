@@ -46,13 +46,16 @@ export function stringToProgress(str: string): Progress | undefined {
 		/Ch(?:\.|apter)\s*(\d+(\.\d+)?)/.exec(str),
 	];
 	// Handle Oneshot as chapter 0
+	let oneshot = false;
 	if (progressReg[1] === null) {
 		if (str != 'Oneshot') return undefined;
 		progressReg[1] = ['Oneshot', '0'];
+		oneshot = true;
 	}
 	return {
 		volume: progressReg[0] !== null ? parseInt(progressReg[0][1]) : undefined,
 		chapter: parseFloat(progressReg[1][1]),
+		oneshot: oneshot,
 	};
 }
 

@@ -102,6 +102,7 @@ export function iconToService(src: string): ActivableKey | undefined {
 interface SaveProgress {
 	c: number;
 	v?: number;
+	o?: 1;
 }
 
 export interface StorageTitle {
@@ -530,6 +531,14 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 
 	id: number;
 	/**
+	 * External MangaDex List Status
+	 */
+	mdStatus?: Status;
+	/**
+	 * External MangaDex List Score
+	 */
+	mdScore?: number;
+	/**
 	 * `ServiceKey` list of mapped Service for the Title.
 	 */
 	services: ServiceList = {};
@@ -582,6 +591,7 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 			progress: {
 				chapter: title.p.c,
 				volume: title.p.v,
+				oneshot: title.p.o === 1,
 			},
 			status: title.st,
 			score: title.sc || 0,
@@ -628,6 +638,7 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 			p: {
 				c: this.progress.chapter,
 				v: this.progress.volume && this.progress.volume > 0 ? this.progress.volume : undefined,
+				o: this.progress.oneshot ? 1 : undefined,
 			},
 			lt: this.lastTitle,
 			id: this.lastChapter,
