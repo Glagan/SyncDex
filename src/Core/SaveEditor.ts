@@ -189,7 +189,7 @@ export class SaveEditor {
 			}
 			// Save and close Modal
 			await title.persist();
-			SimpleNotification.info({ title: 'Title Saved' }, { position: 'bottom-left' });
+			SimpleNotification.info({ title: 'Title Saved' });
 			submitButton.classList.remove('loading');
 			modal.enableExit();
 			modal.remove();

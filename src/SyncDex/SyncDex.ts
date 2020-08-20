@@ -219,12 +219,14 @@ export class SyncDex {
 						text: `Error while getting **MangaDex** Status.\ncode: **${response.code}**`,
 					});
 				} else {
-					const status = /disabled dropdown-item manga_follow_button.+?<\/span>\s*(.+?)<\/a>/.exec(
+					// Find mdStatus
+					const status = /disabled dropdown-item manga_follow_button'\s*data-manga-id='\d+'\s*id='(\d+)'/.exec(
 						response.body
 					);
-					if (status) {
-						state.title.mdStatus = parseInt(status[1].trim());
-					} else state.title.mdStatus = Status.NONE;
+					if (status) state.title.mdStatus = parseInt(status[1]);
+					// Find mdScore
+					const score = /disabled dropdown-item manga_rating_button'\s*id='(\d+)'/.exec(response.body);
+					if (score) state.title.mdScore = parseInt(score[1]) * 10;
 				}
 			}
 		}
@@ -265,13 +267,10 @@ export class SyncDex {
 		// Exit early if there is no progress
 		if (isNaN(currentProgress.chapter)) {
 			if (Options.errorNotifications) {
-				SimpleNotification.error(
-					{
-						title: 'No Chapter found',
-						text: 'No Chapter could be found and no progress was saved.',
-					},
-					{ position: 'bottom-left' }
-				);
+				SimpleNotification.error({
+					title: 'No Chapter found',
+					text: 'No Chapter could be found and no progress was saved.',
+				});
 			}
 			// Execute basic first request sync if needed before leaving
 			// Only sync if Title has a Status to be synced to
@@ -287,28 +286,22 @@ export class SyncDex {
 		if (Options.updateOnlyInList) {
 			canUpdate = state.title.mdStatus !== undefined && state.title.mdStatus !== Status.NONE;
 			if (!canUpdate && Options.confirmChapter) {
-				SimpleNotification.warning(
-					{
-						title: 'Not in your List',
-						text: `**${state.title.name}** is not your **MangaDex** List and won't be updated.`,
-						buttons: confirmButtons(),
-					},
-					{ position: 'bottom-left', duration: 4000 }
-				);
+				SimpleNotification.warning({
+					title: 'Not in your List',
+					text: `**${state.title.name}** is not your **MangaDex** List and won't be updated.`,
+					buttons: confirmButtons(),
+				});
 			}
 		}
 		// Update title state if not delayed -- Handle external titles as delayed
 		const delayed = details._data.status != 'OK'; // && details._data.status != 'external';
 		if (delayed && Options.confirmChapter) {
-			SimpleNotification.warning(
-				{
-					title: 'External or Delayed',
-					image: `https://mangadex.org/images/manga/${id}.thumb.jpg`,
-					text: `**${state.title.name}** Chapter **${details._data.chapter}** is delayed or external and has not been updated.`,
-					buttons: confirmButtons(),
-				},
-				{ position: 'bottom-left', duration: 4000 }
-			);
+			SimpleNotification.warning({
+				title: 'External or Delayed',
+				image: `https://mangadex.org/images/manga/${id}.thumb.jpg`,
+				text: `**${state.title.name}** Chapter **${details._data.chapter}** is delayed or external and has not been updated.`,
+				buttons: confirmButtons(),
+			});
 		}
 		// Check if currentProgress should be updated
 		let doUpdate = canUpdate && !delayed;
@@ -322,15 +315,12 @@ export class SyncDex {
 				completed = this.setStateProgress(state, currentProgress, created);
 			} else if (Options.confirmChapter && (Options.saveOnlyNext || Options.saveOnlyHigher)) {
 				doUpdate = false;
-				SimpleNotification.info(
-					{
-						title: 'Chapter Not Higher',
-						image: `https://mangadex.org/images/manga/${id}.thumb.jpg`,
-						text: `**${state.title.name}** Chapter **${details._data.chapter}** is not the next or higher and hasn't been updated.`,
-						buttons: confirmButtons(),
-					},
-					{ position: 'bottom-left', sticky: true }
-				);
+				SimpleNotification.info({
+					title: 'Chapter Not Higher',
+					image: `https://mangadex.org/images/manga/${id}.thumb.jpg`,
+					text: `**${state.title.name}** Chapter **${details._data.chapter}** is not the next or higher and hasn't been updated.`,
+					buttons: confirmButtons(),
+				});
 			}
 		}
 		// Always Update History values if enabled, do not look at other options
@@ -352,27 +342,24 @@ export class SyncDex {
 		console.log('SyncDex :: Chapter');
 
 		if (Options.services.length == 0 && Options.errorNotifications) {
-			SimpleNotification.error(
-				{
-					title: 'No active Services',
-					text: `You have no **active Services** !\nEnable one in the **Options** and refresh this page.\nAll Progress is still saved locally.`,
-					buttons: [
-						{
-							type: 'info',
-							value: 'Options',
-							onClick: (notification: SimpleNotification) => {
-								Runtime.openOptions();
-								notification.closeAnimated();
-							},
+			SimpleNotification.error({
+				title: 'No active Services',
+				text: `You have no **active Services** !\nEnable one in the **Options** and refresh this page.\nAll Progress is still saved locally.`,
+				buttons: [
+					{
+						type: 'info',
+						value: 'Options',
+						onClick: (notification: SimpleNotification) => {
+							Runtime.openOptions();
+							notification.closeAnimated();
 						},
-						{
-							type: 'message',
-							value: 'Close',
-						},
-					],
-				},
-				{ position: 'bottom-left' }
-			);
+					},
+					{
+						type: 'message',
+						value: 'Close',
+					},
+				],
+			});
 		}
 
 		// No support for Legacy Reader

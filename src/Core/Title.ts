@@ -533,11 +533,11 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 	/**
 	 * External MangaDex List Status
 	 */
-	mdStatus?: Status;
+	mdStatus: Status = Status.NONE;
 	/**
 	 * External MangaDex List Score
 	 */
-	mdScore?: number;
+	mdScore: number = 0;
 	/**
 	 * `ServiceKey` list of mapped Service for the Title.
 	 */

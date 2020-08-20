@@ -53,12 +53,9 @@ export class OptionsManager {
 					deleteSave.style.fontSize = '22px';
 					++clickCount;
 					// Clear clickCount after 2s, just in case
-					notification = SimpleNotification.info(
-						{
-							text: 'Click **Delete** again to confirm',
-						},
-						{ position: 'bottom-left', duration: 4000 }
-					);
+					notification = SimpleNotification.info({
+						text: 'Click **Delete** again to confirm',
+					});
 					window.clearTimeout(clearClickCount);
 					clearClickCount = window.setTimeout(() => {
 						notification.remove();

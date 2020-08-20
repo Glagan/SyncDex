@@ -128,51 +128,82 @@ export class SyncModule {
 		if (Options.updateMD) {
 			const strings: [string[], string[]] = [[], []];
 			if (this.title.mdStatus != this.title.status) {
-				const res = await Runtime.request({
-					method: 'GET',
-					url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_follow&id=${this.title.id}&type=${
-						this.title.status
-					}&_=${Date.now()}`,
-					credentials: 'include',
-					headers: {
-						'X-Requested-With': 'XMLHttpRequest',
-					},
-				});
-				if (res.ok) {
-					this.title.mdStatus = this.title.status;
-					strings[0].push('Status on **MangaDex** updated.');
+				this.title.mdStatus = this.title.status;
+				const response = await this.syncMangaDex('status');
+				if (response.ok) {
+					strings[0].push('**MangaDex** **Status** updated.');
+					if (this.overview.syncedMangaDex) {
+						this.overview.syncedMangaDex('status', this.title);
+					}
 				} else {
-					strings[1].push(`Error while updating **MangaDex** status.\ncode: ${res.code}`);
+					strings[1].push(`Error while updating **MangaDex** **Status**.\ncode: ${response.code}`);
 				}
 			}
 			if (this.title.score > 0 && this.title.mdScore != this.title.score) {
 				// Convert 0-100 SyncDex Score to 0-10
-				const res = await Runtime.request({
-					method: 'GET',
-					url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_rating&id=${
-						this.title.id
-					}&rating=${Math.round(this.title.score / 10)}&_=${Date.now()}`,
-					credentials: 'include',
-					headers: {
-						'X-Requested-With': 'XMLHttpRequest',
-					},
-				});
-				if (res.ok) {
-					this.title.mdScore = this.title.score;
-					strings[0].push('Score on **MangaDex** updated.');
+				this.title.mdScore = this.title.score;
+				const response = await this.syncMangaDex('score');
+				if (response.ok) {
+					strings[0].push('**MangaDex** **Score** updated.');
+					if (this.overview.syncedMangaDex) {
+						this.overview.syncedMangaDex('score', this.title);
+					}
 				} else {
-					strings[1].push(`Error while updating **MangaDex** score.\ncode: ${res.code}`);
+					strings[1].push(`Error while updating **MangaDex** **Score**.\ncode: ${response.code}`);
 				}
 			}
 			if (strings[0].length > 0) {
-				SimpleNotification.success({ text: strings[0].join('\n') }, { position: 'bottom-left' });
+				SimpleNotification.success({ text: strings[0].join('\n') });
 			}
 			if (strings[1].length > 0) {
-				SimpleNotification.error({ text: strings[1].join('\n') }, { position: 'bottom-left' });
+				SimpleNotification.error({ text: strings[1].join('\n') });
 			}
 		}
 		await Promise.all(promises);
 		return report;
+	};
+
+	mangaDexFunctionValues = (fct: 'unfollow' | 'status' | 'score'): string => {
+		const baseAPI = 'https://mangadex.org/ajax/actions.ajax.php';
+		let action;
+		let field;
+		let value;
+		switch (fct) {
+			case 'unfollow':
+				action = 'manga_unfollow';
+				field = 'type';
+				value = this.title.id;
+				break;
+			case 'status':
+				action = 'manga_follow';
+				field = 'type';
+				value = this.title.mdStatus!;
+				break;
+			case 'score':
+				action = 'manga_rating';
+				field = 'rating';
+				value = Math.round(this.title.mdScore! / 10);
+				break;
+		}
+		return `${baseAPI}?function=${action}&id=${this.title.id}&${field}=${value}&_=${Date.now()}`;
+	};
+
+	/**
+	 * Sync MangaDex Status or Rating.
+	 */
+	syncMangaDex = async (fct: 'unfollow' | 'status' | 'score'): Promise<RequestResponse> => {
+		const response = await Runtime.request({
+			method: 'GET',
+			url: this.mangaDexFunctionValues(fct),
+			credentials: 'include',
+			headers: {
+				'X-Requested-With': 'XMLHttpRequest',
+			},
+		});
+		if (this.overview.syncedMangaDex) {
+			this.overview.syncedMangaDex(fct, this.title);
+		}
+		return response;
 	};
 
 	reportNotificationRow = (key: ServiceKey, status: string) =>
@@ -215,29 +246,20 @@ export class SyncModule {
 		// Display Notifications
 		if (Options.notifications) {
 			if (updateRows.length > 0) {
-				SimpleNotification.success(
-					{
-						title: 'Progress Updated',
-						image: `https://mangadex.org/images/manga/${this.title.id}.thumb.jpg`,
-						text: `Chapter ${this.title.progress.chapter}\n${
-							created ? '**Start Date** set to Today !\n' : ''
-						}${completed ? '**End Date** set to Today !\n' : ''}${updateRows.join('\n')}`,
-					},
-					{ position: 'bottom-left', sticky: true }
-				);
+				SimpleNotification.success({
+					title: 'Progress Updated',
+					image: `https://mangadex.org/images/manga/${this.title.id}.thumb.jpg`,
+					text: `Chapter ${this.title.progress.chapter}\n${created ? '**Start Date** set to Today !\n' : ''}${
+						completed ? '**End Date** set to Today !\n' : ''
+					}${updateRows.join('\n')}`,
+				});
 			} else if (!firstRequest || Options.services.length == 0 || localUpdated) {
-				SimpleNotification.success(
-					{
-						title: 'Progress Updated',
-						text: `Chapter ${this.title.progress.chapter}\n${
-							created ? '**Start Date** set to Today !\n' : ''
-						}${completed ? '**End Date** set to Today !\n' : ''}${this.reportNotificationRow(
-							StaticKey.SyncDex,
-							'Synced'
-						)}`,
-					},
-					{ position: 'bottom-left', sticky: true }
-				);
+				SimpleNotification.success({
+					title: 'Progress Updated',
+					text: `Chapter ${this.title.progress.chapter}\n${created ? '**Start Date** set to Today !\n' : ''}${
+						completed ? '**End Date** set to Today !\n' : ''
+					}${this.reportNotificationRow(StaticKey.SyncDex, 'Synced')}`,
+				});
 			}
 		}
 		if (Options.errorNotifications && errorRows.length > 0) {
@@ -247,7 +269,7 @@ export class SyncModule {
 					image: `https://mangadex.org/images/manga/${this.title.id}.thumb.jpg`,
 					text: errorRows.join('\n'),
 				},
-				{ position: 'bottom-left', sticky: true } // Keep sticky
+				{ sticky: true }
 			);
 		}
 	};

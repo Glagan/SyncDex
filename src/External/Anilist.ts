@@ -15,7 +15,7 @@ console.log('SyncDex :: Anilist Token');
 		SimpleNotification.success(
 			{
 				title: 'Token saved',
-				text: 'You can now close this page.',
+				text: 'You can now close this page and press **Refresh** in the **Anilist Card**.',
 			},
 			{ sticky: true }
 		);

@@ -1,5 +1,5 @@
 import { DOM, AppendableElement } from '../Core/DOM';
-import { BaseTitle, ActivableKey, ServiceKey, ReverseServiceName, StaticKey, Title } from '../Core/Title';
+import { BaseTitle, ActivableKey, ServiceKey, ReverseServiceName, StaticKey, Title, StatusMap } from '../Core/Title';
 import { Runtime } from '../Core/Runtime';
 import { Options } from '../Core/Options';
 import { SyncModule } from './SyncModule';
@@ -14,6 +14,7 @@ export abstract class Overview {
 	abstract syncedService(key: ServiceKey, res: BaseTitle | RequestStatus, title: Title): void;
 	abstract syncingLocal(): void;
 	abstract syncedLocal(title: Title): void;
+	syncedMangaDex?(type: 'unfollow' | 'status' | 'score', title: Title): void;
 }
 
 type OverviewKey = ActivableKey | StaticKey.SyncDex;
@@ -283,6 +284,28 @@ export class TitleOverview extends Overview {
 	current?: ServiceOverview;
 	mainOverview: SyncDexOverview;
 	overviews: Partial<{ [key in ActivableKey]: ServiceOverview }> = {};
+	// MangaDex Status and Score
+	mdStatus: {
+		followButton: HTMLButtonElement;
+		button: HTMLButtonElement;
+		dropdown: HTMLElement;
+		unfollow: HTMLAnchorElement;
+		list: HTMLAnchorElement[];
+	};
+	mdScore: {
+		button: HTMLButtonElement;
+		dropdown: HTMLElement;
+		ratings: HTMLAnchorElement[];
+	};
+
+	static statusDescription: Partial<{ [key in Status]: [string, string] }> = {
+		[Status.READING]: ['eye', 'success'],
+		[Status.COMPLETED]: ['check', 'primary'],
+		[Status.PAUSED]: ['pause', 'warning'],
+		[Status.PLAN_TO_READ]: ['calendar-alt', 'info'],
+		[Status.DROPPED]: ['trash', 'danger'],
+		[Status.REREADING]: ['eye', 'secondary'],
+	};
 
 	constructor() {
 		super();
@@ -300,10 +323,113 @@ export class TitleOverview extends Overview {
 		this.mainOverview = new SyncDexOverview();
 		this.bindOverview(this.mainOverview);
 		this.activateOverview(this.mainOverview);
+		// Update Status selector
+		const statusButtons = document.querySelectorAll<HTMLAnchorElement>('a.manga_follow_button');
+		this.mdStatus = {
+			followButton: DOM.create('button'),
+			button: statusButtons[0].parentElement!.previousElementSibling as HTMLButtonElement,
+			dropdown: statusButtons[0].parentElement!,
+			unfollow: DOM.create('a'),
+			list: Array.from(statusButtons),
+		};
+		// Replace old node to remove all events
+		for (const idx in this.mdStatus.list) {
+			const oldStatus = this.mdStatus.list[idx];
+			const status = oldStatus.cloneNode(true) as HTMLAnchorElement;
+			oldStatus.replaceWith(status);
+			this.mdStatus.list[idx] = status;
+		}
+		// Create Follow button if it doesn't exist
+		const followButton = document.querySelector<HTMLButtonElement>('button.manga_follow_button');
+		if (followButton) {
+			const newFollow = followButton.cloneNode(true) as HTMLButtonElement;
+			followButton.replaceWith(newFollow);
+			this.mdStatus.followButton = newFollow;
+		} else {
+			this.mdStatus.followButton.className = 'btn btn-secondary';
+			this.mdStatus.followButton.style.display = 'none';
+			DOM.append(
+				this.mdStatus.followButton,
+				DOM.icon('bookmark fa-fw'),
+				DOM.space(),
+				DOM.create('span', { class: 'd-none d-xl-inline', textContent: 'Follow' })
+			);
+		}
+		// Create Unfollow button if it doesn't exist
+		const unfollowButton = document.querySelector<HTMLAnchorElement>('a.manga_unfollow_button');
+		if (unfollowButton) {
+			const newUnfollow = unfollowButton.cloneNode(true) as HTMLAnchorElement;
+			unfollowButton.replaceWith(newUnfollow);
+			this.mdStatus.unfollow = newUnfollow;
+		} else {
+			this.mdStatus.unfollow.className = 'dropdown-item';
+			this.mdStatus.unfollow.href = '#';
+			DOM.append(this.mdStatus.unfollow, DOM.icon('bookmark fa-fw'), DOM.text('Unfollow'));
+		}
+		// Update Score selector
+		const ratingButtons = document.querySelectorAll<HTMLAnchorElement>('a.manga_rating_button');
+		this.mdScore = {
+			button: ratingButtons[0].parentElement!.previousElementSibling as HTMLButtonElement,
+			dropdown: ratingButtons[0].parentElement!,
+			ratings: [],
+		};
+		// Replace old node to remove all events
+		for (const oldRating of ratingButtons) {
+			const rating = oldRating.cloneNode(true) as HTMLAnchorElement;
+			oldRating.replaceWith(rating);
+			this.mdScore.ratings.unshift(rating);
+		}
 	}
+
+	bindStatusUpdate = async (event: Event, syncModule: SyncModule, status: Status): Promise<void> => {
+		event.preventDefault();
+		if (syncModule.title.mdStatus == status) return;
+		syncModule.title.mdStatus = status;
+		const response = await syncModule.syncMangaDex(status == Status.NONE ? 'unfollow' : 'status');
+		if (response.ok) {
+			SimpleNotification.success({ text: '**MangaDex** **Status** updated.' });
+		} else {
+			SimpleNotification.error({
+				text: `Error while updating **MangaDex** **Status**.\ncode: ${response.code}`,
+			});
+		}
+	};
 
 	bind = (syncModule: SyncModule): void => {
 		this.mainOverview.bind(syncModule);
+		// Replace Status
+		this.mdStatus.followButton.addEventListener('click', (event) => {
+			this.bindStatusUpdate(event, syncModule, Status.READING);
+		});
+		this.mdStatus.unfollow.addEventListener('click', (event) => {
+			if (confirm('This will remove all Read chapters from MangaDex (the eye icon).\nAre you sure ?')) {
+				this.bindStatusUpdate(event, syncModule, Status.NONE);
+			}
+		});
+		for (const row of this.mdStatus.list) {
+			const status = parseInt(row.id);
+			row.addEventListener('click', async (event) => {
+				if (row.classList.contains('disabled')) return;
+				this.bindStatusUpdate(event, syncModule, status);
+			});
+		}
+		// Replace ratings
+		for (const row of this.mdScore.ratings) {
+			const score = parseInt(row.id) * 10;
+			row.addEventListener('click', async (event) => {
+				event.preventDefault();
+				if (row.classList.contains('disabled')) return;
+				syncModule.title.mdScore = score;
+				const response = await syncModule.syncMangaDex('score');
+				if (response.ok) {
+					SimpleNotification.success({ text: '**MangaDex** **Score** updated.' });
+				} else {
+					SimpleNotification.error({
+						text: `Error while updating **MangaDex** **Score**.\ncode: ${response.code}`,
+					});
+				}
+			});
+		}
 	};
 
 	hasNoServices = (): void => {
@@ -386,6 +512,44 @@ export class TitleOverview extends Overview {
 			event.preventDefault();
 			this.activateOverview(overview);
 		});
+	};
+
+	syncedMangaDex = (type: 'unfollow' | 'status' | 'score', title: Title): void => {
+		const dropdown = type == 'score' ? this.mdScore.dropdown : this.mdStatus.dropdown;
+		// Remove old value
+		const previous = dropdown.querySelector('.disabled');
+		if (previous) previous.classList.remove('disabled');
+		// Activate new Status or Rating
+		// If we're unfollowing, hide Unfollow and revert to default
+		if (type == 'unfollow') {
+			this.mdStatus.dropdown.parentElement!.insertBefore(this.mdStatus.followButton, this.mdStatus.button);
+			this.mdStatus.button.className = 'btn btn-secondary dropdown-toggle dropdown-toggle-split';
+			DOM.clear(this.mdStatus.button);
+			this.mdStatus.button.appendChild(DOM.create('span', { class: 'sr-only', textContent: 'Toggle Dropdown' }));
+			this.mdStatus.unfollow.remove();
+		} else if (type == 'status') {
+			if (title.mdStatus !== Status.NONE) {
+				const status = dropdown.querySelector(`[id='${title.mdStatus}']`);
+				if (!title.mdStatus || !status) return;
+				status.classList.add('disabled');
+				// Update button style
+				const description = TitleOverview.statusDescription[title.mdStatus]!;
+				DOM.clear(this.mdStatus.button);
+				DOM.append(
+					this.mdStatus.button,
+					DOM.icon(`${description[0]} fa-fw`),
+					DOM.space(),
+					DOM.create('span', { class: 'd-none d-xl-inline', textContent: StatusMap[title.mdStatus] })
+				);
+				this.mdStatus.button.className = `btn btn-${description[1]} dropdown-toggle`;
+				this.mdStatus.dropdown.insertBefore(this.mdStatus.unfollow, this.mdStatus.dropdown.firstElementChild);
+				this.mdStatus.followButton.remove();
+			}
+		} else {
+			const newScore = Math.round(title.mdScore! / 10);
+			this.mdScore.ratings[newScore - 1].classList.add('disabled');
+			this.mdScore.button.childNodes[1].textContent = ` ${newScore} `;
+		}
 	};
 }
 

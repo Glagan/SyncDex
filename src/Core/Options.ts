@@ -23,6 +23,7 @@ export interface AvailableOptions {
 	linkToServices: boolean;
 	overviewMainOnly: boolean;
 	autoSync: boolean;
+	mdUpdateSyncDex: boolean;
 	// History
 	biggerHistory: boolean;
 	chapterStatus: boolean;
@@ -73,6 +74,7 @@ export const DefaultOptions: AvailableOptions = {
 	linkToServices: true,
 	overviewMainOnly: true,
 	autoSync: false,
+	mdUpdateSyncDex: false,
 	// History
 	biggerHistory: true,
 	chapterStatus: false,

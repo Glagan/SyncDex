@@ -417,21 +417,15 @@ export abstract class ActivableModule {
 						modal.enableExit();
 						modal.wrapper.classList.remove('loading');
 						if (res == RequestStatus.SUCCESS) {
-							SimpleNotification.success(
-								{ text: `Logged in on **${this.service.serviceName}** !` },
-								{ position: 'bottom-left' }
-							);
+							SimpleNotification.success({ text: `Logged in on **${this.service.serviceName}** !` });
 							this.loginButton.remove();
 							this.updateStatus(res);
 							modal.remove();
 							return;
 						} else if (identifier == '' || password == '') {
-							SimpleNotification.error(
-								{ text: 'Empty e-mail or password.' },
-								{ position: 'bottom-left' }
-							);
+							SimpleNotification.error({ text: 'Empty e-mail or password.' });
 						} else {
-							SimpleNotification.error({ text: 'Invalid credentials.' }, { position: 'bottom-left' });
+							SimpleNotification.error({ text: 'Invalid credentials.' });
 						}
 						busy = false;
 					}
