@@ -140,6 +140,12 @@
 				<input type="checkbox" id="ck_updateOnlyInList" data-name="updateOnlyInList" />
 				<label for="ck_updateOnlyInList">Update your list(s) only if the title you are reading is <b>already</b> in your <b>MangaDex</b> list.</label>
 			</div>
+			<h2>Auto Sync</h2>
+			<div class="parameter">
+				<input type="checkbox" id="ck_autoSync" data-name="autoSync" />
+				<label for="ck_autoSync">Automatically sync all of your Services from the most recent Service, or you Local Save.</label>
+				<p class="helper">Services will be synced from the last one in your list to your <b>Main Service</b>, syncing <b>Dates</b> and <b>Score</b> with it.</p>
+			</div>
 		</div>
 		<h1 id="lists"><i class="fas fa-list"></i> Lists</h1>
 		<div class="section">
@@ -187,12 +193,6 @@
 			<div class="parameter">
 				<input type="checkbox" id="ck_overviewMainOnly" data-name="overviewMainOnly" />
 				<label for="ck_overviewMainOnly">Display the <b>overview</b> only for your main Service.</label>
-			</div>
-			<h2>Auto Sync</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_autoSync" data-name="autoSync" />
-				<label for="ck_autoSync">Automatically sync all of your Services from the most recent Service, or you Local Save.</label>
-				<p class="helper">Services will be synced from the last one in your list to your <b>Main Service</b>, syncing <b>Dates</b> and <b>Score</b> with it.</p>
 			</div>
 			<h2>MangaDex Buttons update SyncDex</h2>
 			<div class="parameter">
@@ -242,7 +242,7 @@
 				<label for="ck_updateMD">Update the <b>status</b> of the titles in your <b>MangaDex</b> list when needed.</label>
 				<p class="helper">
 					This will update the Status to <b>Reading</b> if it's not in your list, or if it's another list, and set it to <b>Completed</b> when you finish reading.<br />
-					Out of sync status will also be update <b>MangaDex</b> when visiting a <b>Title Page</b>.
+					Out of sync <b>MangaDex Status</b> will also be updated when visiting a <b>Title Page</b>.
 				</p>
 			</div>
 		</div>

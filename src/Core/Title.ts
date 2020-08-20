@@ -337,7 +337,7 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 			(missingFields.indexOf('volume') < 0 &&
 				((this.progress.volume !== undefined && other.progress.volume === undefined) ||
 					(this.progress.volume && other.progress.volume && this.progress.volume > other.progress.volume))) ||
-			(missingFields.indexOf('score') < 0 && this.score > 0 && this.score != other.score) ||
+			(missingFields.indexOf('score') < 0 && this.score > 0 && other.score > 0 && this.score != other.score) ||
 			(missingFields.indexOf('start') < 0 &&
 				this.start !== undefined &&
 				(other.start === undefined || other.start > this.start)) ||
@@ -407,7 +407,7 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 		) {
 			this.progress.volume = title.progress.volume;
 		}
-		if (missingFields.indexOf('score') < 0 && title.score !== undefined) {
+		if (missingFields.indexOf('score') < 0 && title.score > 0) {
 			this.score = title.score;
 		}
 		if (missingFields.indexOf('start') < 0 && title.start && (!this.start || this.start > title.start)) {

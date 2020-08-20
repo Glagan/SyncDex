@@ -384,14 +384,22 @@ export class TitleOverview extends Overview {
 	bindStatusUpdate = async (event: Event, syncModule: SyncModule, status: Status): Promise<void> => {
 		event.preventDefault();
 		if (syncModule.title.mdStatus == status) return;
-		syncModule.title.mdStatus = status;
-		const response = await syncModule.syncMangaDex(status == Status.NONE ? 'unfollow' : 'status');
-		if (response.ok) {
-			SimpleNotification.success({ text: '**MangaDex** **Status** updated.' });
-		} else {
-			SimpleNotification.error({
-				text: `Error while updating **MangaDex** **Status**.\ncode: ${response.code}`,
-			});
+		if (Options.mdUpdateSyncDex) {
+			syncModule.title.status = status;
+			await syncModule.title.persist();
+			this.syncedLocal(syncModule.title);
+			await syncModule.syncExternal(true);
+		}
+		if (!Options.mdUpdateSyncDex || !Options.updateMD) {
+			syncModule.title.mdStatus = status;
+			const response = await syncModule.syncMangaDex(status == Status.NONE ? 'unfollow' : 'status');
+			if (response.ok) {
+				SimpleNotification.success({ text: '**MangaDex Status** updated.' });
+			} else {
+				SimpleNotification.error({
+					text: `Error while updating **MangaDex Status**.\ncode: ${response.code}`,
+				});
+			}
 		}
 	};
 
@@ -419,14 +427,22 @@ export class TitleOverview extends Overview {
 			row.addEventListener('click', async (event) => {
 				event.preventDefault();
 				if (row.classList.contains('disabled')) return;
-				syncModule.title.mdScore = score;
-				const response = await syncModule.syncMangaDex('score');
-				if (response.ok) {
-					SimpleNotification.success({ text: '**MangaDex** **Score** updated.' });
-				} else {
-					SimpleNotification.error({
-						text: `Error while updating **MangaDex** **Score**.\ncode: ${response.code}`,
-					});
+				if (Options.mdUpdateSyncDex) {
+					syncModule.title.score = score;
+					await syncModule.title.persist();
+					this.syncedLocal(syncModule.title);
+					await syncModule.syncExternal(true);
+				}
+				if (!Options.mdUpdateSyncDex || !Options.updateMD) {
+					syncModule.title.mdScore = score;
+					const response = await syncModule.syncMangaDex('score');
+					if (response.ok) {
+						SimpleNotification.success({ text: '**MangaDex Score** updated.' });
+					} else {
+						SimpleNotification.error({
+							text: `Error while updating **MangaDex Score**.\ncode: ${response.code}`,
+						});
+					}
 				}
 			});
 		}

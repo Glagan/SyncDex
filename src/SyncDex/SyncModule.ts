@@ -129,27 +129,27 @@ export class SyncModule {
 			const strings: [string[], string[]] = [[], []];
 			if (this.title.mdStatus != this.title.status) {
 				this.title.mdStatus = this.title.status;
-				const response = await this.syncMangaDex('status');
+				const response = await this.syncMangaDex(this.title.mdStatus == Status.NONE ? 'unfollow' : 'status');
 				if (response.ok) {
-					strings[0].push('**MangaDex** **Status** updated.');
+					strings[0].push('**MangaDex Status** updated.');
 					if (this.overview.syncedMangaDex) {
 						this.overview.syncedMangaDex('status', this.title);
 					}
 				} else {
-					strings[1].push(`Error while updating **MangaDex** **Status**.\ncode: ${response.code}`);
+					strings[1].push(`Error while updating **MangaDex Status**.\ncode: ${response.code}`);
 				}
 			}
-			if (this.title.score > 0 && this.title.mdScore != this.title.score) {
+			if (this.title.score > 0 && Math.round(this.title.mdScore / 10) != Math.round(this.title.score / 10)) {
 				// Convert 0-100 SyncDex Score to 0-10
 				this.title.mdScore = this.title.score;
 				const response = await this.syncMangaDex('score');
 				if (response.ok) {
-					strings[0].push('**MangaDex** **Score** updated.');
+					strings[0].push('**MangaDex Score** updated.');
 					if (this.overview.syncedMangaDex) {
 						this.overview.syncedMangaDex('score', this.title);
 					}
 				} else {
-					strings[1].push(`Error while updating **MangaDex** **Score**.\ncode: ${response.code}`);
+					strings[1].push(`Error while updating **MangaDex Score**.\ncode: ${response.code}`);
 				}
 			}
 			if (strings[0].length > 0) {

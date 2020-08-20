@@ -682,9 +682,7 @@ export class SyncDex {
 						}
 						await title.persist();
 						syncModule.overview.syncedLocal(title);
-						// Ignore auto sync Option check
-						// If not, changes would be reset next refresh with isMoreRecent checks
-						await syncModule.syncExternal();
+						await syncModule.syncExternal(true);
 					},
 				},
 			});
