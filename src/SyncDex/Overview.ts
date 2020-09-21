@@ -117,6 +117,7 @@ class ServiceOverview {
 					ServiceOverview.alert('danger', 'The Media was not found on the Service, probably a bad ID.')
 				);
 				break;
+			case RequestStatus.FAIL:
 			case RequestStatus.SERVER_ERROR:
 				this.content.appendChild(
 					ServiceOverview.alert('danger', [

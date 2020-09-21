@@ -159,7 +159,11 @@ export class SyncDex {
 	setStateProgress = (state: ReadingState, progress: Progress, created: boolean): boolean => {
 		if (!state.title) return false;
 		let completed = false;
-		if (progress.oneshot || (state.title.max?.chapter && state.title.max.chapter <= progress.chapter)) {
+		if (
+			progress.oneshot ||
+			(state.title.max?.chapter && state.title.max.chapter <= progress.chapter) ||
+			(progress.volume && state.title.max?.volume && state.title.max.volume <= progress.volume)
+		) {
 			state.title.status = Status.COMPLETED;
 			if (!state.title.end) {
 				state.title.end = new Date();
@@ -450,6 +454,25 @@ export class SyncDex {
 		// Get MangaDex Score
 		const scoreButton = document.querySelector('.manga_rating_button.disabled');
 		if (scoreButton) title.mdScore = parseInt(scoreButton.id.trim()) * 10;
+		// Max progress if it's available
+		const maxChapter = document.getElementById('current_chapter');
+		if (maxChapter && maxChapter.nextSibling && maxChapter.nextSibling.textContent) {
+			const chapter = /\/(\d+)/.exec(maxChapter.nextSibling.textContent);
+			if (chapter) {
+				title.max = {
+					chapter: parseInt(chapter[1]),
+				};
+			}
+		}
+		const maxVolume = document.getElementById('current_volume');
+		if (maxVolume && maxVolume.nextSibling && maxVolume.nextSibling.textContent) {
+			const volume = /\/(\d+)/.exec(maxVolume.nextSibling.textContent);
+			if (volume) {
+				if (!title.max) title.max = { volume: parseInt(volume[1]) };
+				else title.max.volume = parseInt(volume[1]);
+			}
+		}
+		console.debug('MangaDex max Progress', title.max);
 
 		// Always Find Services
 		let fallback = false;
