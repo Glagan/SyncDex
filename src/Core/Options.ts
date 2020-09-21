@@ -163,7 +163,7 @@ export const Options: AvailableOptions & ManageOptions = Object.assign(
 		},
 
 		save: async (): Promise<void> => {
-			const values = Object.assign({}, Options);
+			const values = Object.assign({}, Options) as AvailableOptions & Partial<ManageOptions>;
 			delete values.load;
 			delete values.reloadTokens;
 			delete values.checkUpdate;

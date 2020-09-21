@@ -64,6 +64,7 @@ export class MangaUpdatesTitle extends ExternalTitle {
 		const showList = body.getElementById('showList');
 		if (showList !== null) {
 			values.loggedIn = true;
+			// No maximum chapter/volume on MangaUpdates...
 			const listType = /mylist\.html(?:\?list=(.+))?/.exec(showList.querySelector<HTMLAnchorElement>('a')!.href);
 			if (listType !== null) {
 				values.inList = true;

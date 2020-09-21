@@ -14,6 +14,8 @@ export interface KitsuManga {
 	type: 'manga';
 	links: {};
 	attributes: {
+		chapterCount: number;
+		volumeCount: number;
 		canonicalTitle: string;
 	};
 }
@@ -112,7 +114,7 @@ export class KitsuTitle extends ExternalTitle {
 	static get = async (id: ServiceKeyType): Promise<ExternalTitle | RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<KitsuResponse>({
-			url: `${KitsuAPI}?filter[manga_id]=${id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=canonicalTitle`,
+			url: `${KitsuAPI}?filter[manga_id]=${id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=chapterCount,volumeCount,canonicalTitle`,
 			method: 'GET',
 			headers: KitsuHeaders(),
 		});
@@ -120,6 +122,11 @@ export class KitsuTitle extends ExternalTitle {
 		const body = response.body;
 		const values: Partial<KitsuTitle> = { loggedIn: true };
 		if (body.data.length == 1) {
+			values.max = {
+				chapter: body.included[0].attributes.chapterCount,
+				volume: body.included[0].attributes.volumeCount,
+			};
+			console.debug(values.max);
 			values.inList = true;
 			const libraryEntry = body.data[0];
 			values.libraryEntryId = parseInt(libraryEntry.id);

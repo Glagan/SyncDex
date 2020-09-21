@@ -189,6 +189,11 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 	loggedIn: boolean = false;
 	mangaDex?: number;
 
+	max?: {
+		chapter?: number;
+		volume?: number;
+	} = undefined;
+
 	static readonly missingFields: MissableField[] = [];
 	static readonly missingFieldsMap: { [key in MissableField]: string } = {
 		volume: 'Volume',

@@ -63,8 +63,31 @@ export class SyncModule {
 	 * If an external Service is more recent, sync with it and sync all other Services with the then synced Title.
 	 */
 	syncLocal = async (): Promise<boolean> => {
-		await Promise.all(this.loadingServices);
-		this.loadingServices = [];
+		if (this.loadingServices.length > 0) {
+			await Promise.all(this.loadingServices);
+			this.loadingServices = [];
+			// Find pepper
+			for (const key in this.services) {
+				const response = this.services[key as ActivableKey];
+				if (response instanceof BaseTitle && response.max) {
+					if (!this.title.max) {
+						this.title.max = { chapter: undefined, volume: undefined };
+					}
+					if (
+						!this.title.max.chapter ||
+						(response.max.chapter && response.max.chapter < this.title.max.chapter)
+					) {
+						this.title.max.chapter = response.max.chapter;
+					}
+					if (
+						!this.title.max.volume ||
+						(response.max.volume && response.max.volume < this.title.max.volume)
+					) {
+						this.title.max.volume = response.max.volume;
+					}
+				}
+			}
+		}
 		// Sync Title with the most recent ServiceTitle ordered by User choice
 		// Services are reversed to select the first choice last
 		this.overview.syncingLocal();
@@ -126,17 +149,17 @@ export class SyncModule {
 		}
 		// Update MangaDex List Status and Score -- TODO: Check if logged in
 		if (Options.updateMD) {
-			const strings: [string[], string[]] = [[], []];
+			const strings: { success: string[]; error: string[] } = { success: [], error: [] };
 			if (this.title.mdStatus != this.title.status) {
 				this.title.mdStatus = this.title.status;
 				const response = await this.syncMangaDex(this.title.mdStatus == Status.NONE ? 'unfollow' : 'status');
 				if (response.ok) {
-					strings[0].push('**MangaDex Status** updated.');
+					strings.success.push('**MangaDex Status** updated.');
 					if (this.overview.syncedMangaDex) {
 						this.overview.syncedMangaDex('status', this.title);
 					}
 				} else {
-					strings[1].push(`Error while updating **MangaDex Status**.\ncode: ${response.code}`);
+					strings.error.push(`Error while updating **MangaDex Status**.\ncode: ${response.code}`);
 				}
 			}
 			if (this.title.score > 0 && Math.round(this.title.mdScore / 10) != Math.round(this.title.score / 10)) {
@@ -144,19 +167,19 @@ export class SyncModule {
 				this.title.mdScore = this.title.score;
 				const response = await this.syncMangaDex('score');
 				if (response.ok) {
-					strings[0].push('**MangaDex Score** updated.');
+					strings.success.push('**MangaDex Score** updated.');
 					if (this.overview.syncedMangaDex) {
 						this.overview.syncedMangaDex('score', this.title);
 					}
 				} else {
-					strings[1].push(`Error while updating **MangaDex Score**.\ncode: ${response.code}`);
+					strings.error.push(`Error while updating **MangaDex Score**.\ncode: ${response.code}`);
 				}
 			}
-			if (strings[0].length > 0) {
-				SimpleNotification.success({ text: strings[0].join('\n') });
+			if (strings.success.length > 0) {
+				SimpleNotification.success({ text: strings.success.join('\n') });
 			}
-			if (strings[1].length > 0) {
-				SimpleNotification.error({ text: strings[1].join('\n') });
+			if (strings.error.length > 0) {
+				SimpleNotification.error({ text: strings.error.join('\n') });
 			}
 		}
 		await Promise.all(promises);

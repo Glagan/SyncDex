@@ -159,7 +159,7 @@ export class SyncDex {
 	setStateProgress = (state: ReadingState, progress: Progress, created: boolean): boolean => {
 		if (!state.title) return false;
 		let completed = false;
-		if (progress.oneshot) {
+		if (progress.oneshot || (state.title.max?.chapter && state.title.max.chapter <= progress.chapter)) {
 			state.title.status = Status.COMPLETED;
 			if (!state.title.end) {
 				state.title.end = new Date();

@@ -86,6 +86,11 @@ export class MyAnimeListTitle extends ExternalTitle {
 			values.loggedIn = true;
 			if (title !== null) {
 				values.inList = true;
+				values.max = {
+					chapter: parseInt(body.getElementById('totalChap')!.textContent!) || undefined,
+					volume: parseInt(body.getElementById('totalVol')!.textContent!) || undefined,
+				};
+				console.debug(values.max);
 				values.name = title.textContent!;
 				values.status = MyAnimeListTitle.toStatus(
 					parseInt(GetField<HTMLSelectElement>(body, 'add_manga_status').value)

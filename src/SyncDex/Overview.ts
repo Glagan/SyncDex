@@ -165,6 +165,7 @@ class ServiceOverview {
 		if (this.tabIcon) {
 			this.tabIcon.remove();
 			this.tabIcon = undefined;
+			this.tab.lastChild!.remove(); // Remove whitespace
 		}
 		if (this.syncOverlay) {
 			this.syncOverlay.remove();

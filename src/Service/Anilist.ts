@@ -33,6 +33,8 @@ export interface AnilistMedia {
 	title: {
 		userPreferred: string;
 	};
+	chapters: number | null;
+	volumes: number | null;
 	mediaListEntry: {
 		id: number;
 		status: AnilistStatus;
@@ -93,6 +95,8 @@ export class AnilistTitle extends ExternalTitle {
 				title {
 					userPreferred
 				}
+				chapters
+				volumes
 				mediaListEntry {
 					id
 					status
@@ -175,7 +179,9 @@ export class AnilistTitle extends ExternalTitle {
 		const values: Partial<AnilistTitle> = {
 			name: body.data.Media.title.userPreferred,
 			loggedIn: true,
+			max: { chapter: body.data.Media.chapters ?? undefined, volume: body.data.Media.volumes ?? undefined },
 		};
+		console.debug(values.max);
 		if (mediaEntry) {
 			values.mediaEntryId = mediaEntry.id;
 			values.inList = true;
