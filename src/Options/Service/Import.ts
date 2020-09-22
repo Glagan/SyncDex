@@ -204,6 +204,18 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 			await this.mochiCheck(collection);
 			if (this.doStop) return;
 		}
+		// Add chapters
+		if (Options.saveOpenedChapters) {
+			for (const title of collection.collection) {
+				if (title.progress.chapter > 0) {
+					title.chapters = [];
+					let index = Math.max(title.progress.chapter - 500, 1);
+					for (; index <= title.progress.chapter; index++) {
+						title.chapters.push(index);
+					}
+				}
+			}
+		}
 		// We're double checking and saving only at the end in case of abort
 		notification = this.notification('loading', 'Saving...');
 		await collection.save();
@@ -365,7 +377,7 @@ export abstract class APIImportableModule extends ImportableModule {
 			for (const title of collection.collection) {
 				if (title.progress.chapter > 0) {
 					title.chapters = [];
-					let index = Math.max(title.progress.chapter - 100, 1);
+					let index = Math.max(title.progress.chapter - 500, 1);
 					for (; index <= title.progress.chapter; index++) {
 						title.chapters.push(index);
 					}

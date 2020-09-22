@@ -35,6 +35,7 @@ export class SyncModule {
 	 * Send initial Media requests concurrently for each services.
 	 */
 	initialize = (): void => {
+		this.services = {}; // Reset services
 		if (Options.services.length == 0) {
 			this.overview.hasNoServices();
 			return;
@@ -92,7 +93,7 @@ export class SyncModule {
 		// Services are reversed to select the first choice last
 		this.overview.syncingLocal();
 		let doSave = false;
-		for (const key of Options.services.reverse()) {
+		for (const key of [...Options.services].reverse()) {
 			if (this.services[key] === undefined) continue;
 			const response = this.services[key];
 			if (response instanceof BaseTitle && response.loggedIn) {

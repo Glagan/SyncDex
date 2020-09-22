@@ -4,6 +4,7 @@ import { Modal } from './Modal';
 import { GetService } from '../SyncDex/Service';
 import { dateFormatInput } from './Utility';
 import { Runtime } from './Runtime';
+import { Options } from './Options';
 
 export class SaveEditor {
 	static modalRow(content: AppendableElement[]): HTMLElement {
@@ -156,10 +157,30 @@ export class SaveEditor {
 			submitButton.disabled = true;
 			submitButton.classList.add('loading');
 			// Chapter and Status always required
+			let oldChapter = title.progress.chapter;
 			const chapter = parseFloat(form.chapter.value);
 			if (!isNaN(chapter) && chapter > -1) title.progress.chapter = chapter;
 			else title.progress.chapter = 0;
 			title.status = parseInt(form.status.value);
+			// Add Chapter list
+			if (Options.saveOpenedChapters && oldChapter != title.progress.chapter) {
+				// Delete chapter above the new lower chapter
+				if (oldChapter > title.progress.chapter) {
+					let deleteCount = 0;
+					for (const chapter of title.chapters) {
+						if (chapter > title.progress.chapter) {
+							deleteCount++;
+						} else break;
+					}
+					if (deleteCount > 0) title.chapters.splice(-deleteCount, deleteCount);
+				}
+				// Insert missing chapters between the old and new chapter
+				else {
+					while (oldChapter++ < title.progress.chapter) {
+						title.chapters.push(oldChapter);
+					}
+				}
+			}
 			// Volume
 			if (form.volume.value != '') {
 				const volume = parseInt(form.volume.value);

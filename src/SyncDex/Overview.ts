@@ -7,6 +7,7 @@ import { SaveEditor } from '../Core/SaveEditor';
 
 export abstract class Overview {
 	bind?(syncModule: SyncModule): void;
+	abstract reset(): void;
 	abstract hasNoServices(): void;
 	abstract initializeService(key: ActivableKey, hasId: boolean): void;
 	abstract receivedInitialRequest(key: ActivableKey, res: BaseTitle | RequestStatus, syncModule: SyncModule): void;
@@ -194,6 +195,7 @@ class ServiceOverview {
 		if (this.tabIcon) {
 			this.tabIcon.remove();
 			this.tabIcon = undefined;
+			this.tab.lastChild!.remove(); // Remove whitespace
 		}
 	};
 
@@ -239,7 +241,8 @@ class SyncDexOverview extends ServiceOverview {
 		this.editButton.addEventListener('click', async (event) => {
 			event.preventDefault();
 			SaveEditor.create(syncModule.title, async () => {
-				// TODO: Refresh active Services -- syncModule.initialize instead ?
+				syncModule.overview.reset();
+				syncModule.initialize();
 				await syncModule.syncLocal();
 				await syncModule.syncExternal(true);
 				// Update Highlight ?
@@ -248,7 +251,8 @@ class SyncDexOverview extends ServiceOverview {
 		this.refreshButton.addEventListener('click', async (event) => {
 			event.preventDefault();
 			await syncModule.title.refresh();
-			// TODO: Refresh active Services -- syncModule.initialize instead ?
+			syncModule.overview.reset();
+			syncModule.initialize();
 			await syncModule.syncLocal();
 			await syncModule.syncExternal(true);
 			// Update Highlight ?
@@ -381,6 +385,13 @@ export class TitleOverview extends Overview {
 			oldRating.replaceWith(rating);
 			this.mdScore.ratings.unshift(rating);
 		}
+	}
+
+	reset() {
+		DOM.clear(this.serviceList);
+		DOM.clear(this.bodies);
+		this.serviceList.appendChild(this.mainOverview.tab);
+		this.bodies.appendChild(this.mainOverview.body);
 	}
 
 	bindStatusUpdate = async (event: Event, syncModule: SyncModule, status: Status): Promise<void> => {
@@ -517,6 +528,12 @@ export class TitleOverview extends Overview {
 	};
 
 	createOverview = (key: ActivableKey): ServiceOverview => {
+		// Remove Previous if there is one
+		if (this.overviews[key] !== undefined) {
+			this.overviews[key]!.tab.remove();
+			this.overviews[key]!.body.remove();
+		}
+		// Create the new Overview
 		const overview = new ServiceOverview(key);
 		this.bindOverview(overview);
 		this.overviews[key] = overview;
@@ -594,11 +611,16 @@ export class ReadingOverview {
 		actionsRow.parentElement!.insertBefore(this.rowContainer, actionsRow);
 	}
 
+	reset() {
+		DOM.clear(this.rowContainer);
+	}
+
 	bind = (syncModule: SyncModule): void => {
 		this.editButton.addEventListener('click', async (event) => {
 			event.preventDefault();
 			SaveEditor.create(syncModule.title, async () => {
-				// TODO: Refresh active Services -- syncModule.initialize instead ?
+				this.reset();
+				syncModule.initialize();
 				await syncModule.syncLocal();
 				await syncModule.syncExternal(true);
 			}).show();
