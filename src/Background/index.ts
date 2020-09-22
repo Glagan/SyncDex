@@ -1,4 +1,4 @@
-import { setBrowser } from '../Core/Browser';
+import { isChrome, setBrowser } from '../Core/Browser';
 
 console.log('SyncDex :: Background');
 
@@ -19,7 +19,7 @@ const cooldowns: Record<string, number> = {
 	localhost: 250,
 };
 browser.runtime.onMessage.addListener(
-	async (message: Message): Promise<RequestResponse | void> => {
+	async (message: Message, sender: MessageSender): Promise<RequestResponse | void> => {
 		if (message.action == MessageAction.request) {
 			const msg = message as RequestMessage;
 			// Cooldown
@@ -62,6 +62,16 @@ browser.runtime.onMessage.addListener(
 				body = msg.body;
 			}
 			// Fetch
+			if (
+				(!isChrome && msg.credentials == 'same-origin') ||
+				(msg.credentials == 'include' && sender?.tab?.cookieStoreId !== undefined)
+			) {
+				const cookieStoreId = sender!.tab!.cookieStoreId;
+				const cookies = await browser.cookies.getAll({ url: message.url, storeId: cookieStoreId });
+				(msg.headers as Record<string, string>)['X-Cookie'] = cookies
+					.map((c) => `${c.name}=${c.value}`)
+					.join('; ');
+			}
 			return fetch(msg.url, {
 				...message,
 				body,
@@ -100,3 +110,33 @@ browser.runtime.onMessage.addListener(
 browser.browserAction.onClicked.addListener(() => {
 	browser.runtime.openOptionsPage();
 });
+
+if (!isChrome) {
+	function setContainersCookies(details: WebRequestDetails): BlockingResponse {
+		// Only update requests sent by MyMangaDex
+		if (details.originUrl.indexOf('moz-extension://') < 0) {
+			return { requestHeaders: details.requestHeaders };
+		}
+		console.log('replacing cookies for', details.originUrl, details.requestHeaders);
+		// Replace Cookie headers by X-Cookie value
+		const headers: HttpHeader[] = [];
+		for (const header of details.requestHeaders) {
+			const headerName = header.name.toLowerCase();
+			if (headerName === 'x-cookie') {
+				headers.push({
+					name: 'Cookie',
+					value: header.value,
+				});
+			} else if (headerName !== 'cookie') {
+				headers.push(header);
+			}
+		}
+		return { requestHeaders: headers };
+	}
+
+	// prettier-ignore
+	browser.webRequest.onBeforeSendHeaders.addListener(setContainersCookies,
+		{ urls: ['https://myanimelist.net/*'] },
+		[ 'blocking', 'requestHeaders' ]
+	);
+}

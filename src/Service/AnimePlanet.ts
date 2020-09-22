@@ -65,14 +65,16 @@ export class AnimePlanetTitle extends ExternalTitle {
 			values.loggedIn = true;
 			values.token = tokenArr[1];
 		} else values.loggedIn = false;
-		// Maximum chapter and volume
-		const chapterSelect = body.querySelector<HTMLElement>("select[name='chapters']");
-		const volumeSelect = body.querySelector<HTMLElement>("select[name='volumes']");
-		values.max = {
-			chapter: parseInt(chapterSelect?.dataset?.eps ?? '') || undefined,
-			volume: parseInt(volumeSelect?.dataset?.eps ?? '') || undefined,
-		};
-		console.debug(values.max);
+		// Maximum chapter and volume -- only if the title is finished, or else it would return invalid max chapter
+		if (document.querySelector('select.changeStatus > option[value="1"]')) {
+			const chapterSelect = body.querySelector<HTMLElement>("select[name='chapters']");
+			const volumeSelect = body.querySelector<HTMLElement>("select[name='volumes']");
+			values.max = {
+				chapter: parseInt(chapterSelect?.dataset?.eps ?? '') || undefined,
+				volume: parseInt(volumeSelect?.dataset?.eps ?? '') || undefined,
+			};
+			console.debug(values.max);
+		}
 		// No need to be logged in to have api ID
 		const mediaEntryForm = body.querySelector<HTMLFormElement>('form[id^=manga]')!;
 		const api = parseInt(mediaEntryForm.dataset.id!);

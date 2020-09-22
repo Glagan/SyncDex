@@ -24,10 +24,16 @@ export const setBrowser = ((): (() => void) => {
 			return new Promise((resolve) => chromeClear(resolve));
 		};
 		const chromeOnMessage = chrome.runtime.onMessage.addListener.bind(chrome.runtime.onMessage);
-		browser.runtime.onMessage.addListener = (fnct: (message: Message) => Promise<any>): void => {
+		browser.runtime.onMessage.addListener = (
+			fnct: (message: Message, sender: MessageSender) => Promise<any>
+		): void => {
 			chromeOnMessage(
-				(message: Message, _sender: any, sendResponse: (response?: RequestResponse | void) => void): true => {
-					fnct(message).then((response) => sendResponse(response));
+				(
+					message: Message,
+					sender: MessageSender,
+					sendResponse: (response?: RequestResponse | void) => void
+				): true => {
+					fnct(message, sender).then((response) => sendResponse(response));
 					return true;
 				}
 			);

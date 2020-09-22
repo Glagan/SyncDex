@@ -472,7 +472,6 @@ export class SyncDex {
 				else title.max.volume = parseInt(volume[1]);
 			}
 		}
-		console.debug('MangaDex max Progress', title.max);
 
 		// Always Find Services
 		let fallback = false;
@@ -565,6 +564,8 @@ export class SyncDex {
 		// Load each Services to Sync
 		const syncModule = new SyncModule(title, new TitleOverview());
 		syncModule.initialize();
+		// Find if logged in on MangaDex
+		syncModule.loggedIn = !!document.querySelector('button[title="You need to log in to use this function."]');
 		// Check current online Status
 		const imported = await syncModule.syncLocal();
 

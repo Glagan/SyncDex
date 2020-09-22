@@ -94,6 +94,163 @@ interface JSONResponse<T extends {} = Record<string, any>> extends RequestRespon
 
 interface RawResponse extends RequestResponse<string> {}
 
+interface MessageSender {
+	tab?: {
+		active: boolean;
+		attention?: boolean;
+		audible?: boolean;
+		autoDiscardable?: boolean;
+		cookieStoreId?: string;
+		discarded?: boolean;
+		favIconUrl?: string;
+		height?: number;
+		hidden: boolean;
+		highlighted: boolean;
+		id?: number;
+		incognito: boolean;
+		index: number;
+		isArticle: boolean;
+		isInReaderMode: boolean;
+		lastAccessed: number;
+		mutedInfo?: any;
+		openerTabId?: number;
+		pinned: boolean;
+		selected: boolean;
+		sessionId?: string;
+		status?: string;
+		successorTabId?: number;
+		title?: string;
+		url?: string;
+		width?: number;
+		windowId: number;
+	};
+	frameId?: number;
+	id?: string;
+	url?: string;
+	tlsChannelId?: string;
+}
+
+interface Cookie {
+	domain: string;
+	expirationDate?: number;
+	firstPartyDomain: string;
+	hostOnly: boolean;
+	httpOnly: boolean;
+	name: string;
+	path: string;
+	secure: boolean;
+	session: boolean;
+	sameSite: boolean;
+	storeId: string;
+	value: string;
+}
+
+interface CookiesAPI {
+	get: (details: {}) => Cookie;
+	getAll: (details: {
+		domain?: string;
+		firstPartyDomain?: string;
+		name?: string;
+		path?: string;
+		secure?: boolean;
+		session?: boolean;
+		storeId?: string;
+		url?: string;
+	}) => Promise<Cookie[]>;
+	set: (details: {}) => Promise<Cookie>;
+	remove: (details: {}) => Promise<Cookie>;
+	getAllCookieStores: () => Promise<
+		{
+			id: string;
+			incognito: boolean;
+			tabIds: number[];
+		}[]
+	>;
+}
+
+interface HttpHeader {
+	name: string;
+	value?: string;
+	binaryValue?: number[];
+}
+
+type ResourceType =
+	| 'beacon'
+	| 'csp_report'
+	| 'font'
+	| 'image'
+	| 'imageset'
+	| 'main_frame'
+	| 'media'
+	| 'object'
+	| 'object_subrequest'
+	| 'ping'
+	| 'script'
+	| 'speculative'
+	| 'stylesheet'
+	| 'sub_frame'
+	| 'web_manifest'
+	| 'websocket'
+	| 'xbl'
+	| 'xml_dtd'
+	| 'xmlhttprequest'
+	| 'xslt'
+	| 'other';
+
+interface WebRequestDetails {
+	cookieStoreId: string;
+	documentUrl: string;
+	frameId: number;
+	incognito: boolean;
+	method: string;
+	originUrl: string;
+	parentFrameId: number;
+	proxyInfo: {};
+	requestHeaders: HttpHeader[];
+	requestId: string;
+	tabId: number;
+	thirdParty: boolean;
+	timeStamp: number;
+	type: ResourceType;
+	url: string;
+	urlClassification: {};
+}
+
+interface BlockingResponse {
+	authCredentials?: {};
+	cancel?: boolean;
+	redirectUrl?: string;
+	requestHeaders?: HttpHeader[];
+	responseHeaders?: HttpHeader[];
+	upgradeToSecure?: boolean;
+}
+
+interface WebRequestAPI {
+	onBeforeRequest: {};
+	onBeforeSendHeaders: {
+		addListener: (
+			callback: (details: WebRequestDetails) => BlockingResponse | void,
+			filter: {
+				urls: string[];
+				types?: ResourceType[];
+				tabId?: number;
+				windowId?: number;
+				incognito?: boolean;
+			},
+			extraInfoSpec?: ('blocking' | 'requestHeaders')[]
+		) => void;
+		removeListener: () => void;
+		hasListener: () => void;
+	};
+	onSendHeaders: {};
+	onHeadersReceived: {};
+	onAuthRequired: {};
+	onResponseStarted: {};
+	onBeforeRedirect: {};
+	onCompleted: {};
+	onErrorOccurred: {};
+}
+
 declare const chrome: {
 	runtime: {
 		getManifest: () => {
@@ -106,7 +263,11 @@ declare const chrome: {
 		) => Promise<any>;
 		onMessage: {
 			addListener: (
-				fnct: (message: Message, _sender: any, sendResponse: (response?: RequestResponse | void) => void) => any
+				fnct: (
+					message: Message,
+					sender: MessageSender,
+					sendResponse: (response?: RequestResponse | void) => void
+				) => any
 			) => void;
 		};
 		getURL: (path: string) => string;
@@ -124,6 +285,8 @@ declare const chrome: {
 			addListener: (callback: () => void) => void;
 		};
 	};
+	cookies: CookiesAPI;
+	webRequest: WebRequestAPI;
 };
 
 declare const browser: {
@@ -132,7 +295,7 @@ declare const browser: {
 		openOptionsPage: () => Promise<void>;
 		sendMessage: <T extends RequestResponse | void>(message: Message) => Promise<T>;
 		onMessage: {
-			addListener: (fnct: (message: Message) => Promise<RequestResponse | void>) => void;
+			addListener: (fnct: (message: Message, sender: MessageSender) => Promise<RequestResponse | void>) => void;
 		};
 		getURL: (path: string) => string;
 	};
@@ -149,6 +312,8 @@ declare const browser: {
 			addListener: (callback: () => void) => void;
 		};
 	};
+	cookies: CookiesAPI;
+	webRequest: WebRequestAPI;
 };
 
 type ExportOptions = {

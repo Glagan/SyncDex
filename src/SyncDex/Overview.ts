@@ -98,19 +98,13 @@ class ServiceOverview {
 					ServiceOverview.alert('danger', [
 						DOM.text('Missing Token, check your Login Status in the Options.'),
 						DOM.space(),
-						this.refreshButton,
-						DOM.space(),
 						ServiceOverview.openOptionsButton(),
 					])
 				);
 				break;
 			case RequestStatus.BAD_REQUEST:
 				this.content.appendChild(
-					ServiceOverview.alert('danger', [
-						DOM.text('Bad Request, if this happen again open an issue.'),
-						DOM.space(),
-						this.refreshButton,
-					])
+					ServiceOverview.alert('danger', 'Bad Request, if this happen again open an issue.')
 				);
 				break;
 			case RequestStatus.NOT_FOUND:
@@ -121,11 +115,7 @@ class ServiceOverview {
 			case RequestStatus.FAIL:
 			case RequestStatus.SERVER_ERROR:
 				this.content.appendChild(
-					ServiceOverview.alert('danger', [
-						DOM.text('Server Error, the Service might be down, retry later.'),
-						DOM.space(),
-						this.refreshButton,
-					])
+					ServiceOverview.alert('danger', 'Server Error, the Service might be down, retry later.')
 				);
 				break;
 		}
@@ -146,7 +136,6 @@ class ServiceOverview {
 		this.clear();
 		if (typeof res === 'object') {
 			res.overview(this.content, title);
-			this.manage.appendChild(this.refreshButton);
 			// Display *Sync* button only if the title is out of sync, with auto sync disabled and if the title is in a list
 			if (!Options.autoSync && !res.isSynced(title) && title.status !== Status.NONE && res.loggedIn) {
 				this.setTabIcon('sync has-error');
@@ -161,6 +150,7 @@ class ServiceOverview {
 			this.setTabIcon('times has-error');
 			this.setErrorMessage(res);
 		}
+		this.manage.appendChild(this.refreshButton);
 	};
 
 	synced = (): void => {
@@ -291,7 +281,7 @@ export class TitleOverview extends Overview {
 	mainOverview: SyncDexOverview;
 	overviews: Partial<{ [key in ActivableKey]: ServiceOverview }> = {};
 	// MangaDex Status and Score
-	mdStatus: {
+	mdStatus?: {
 		followButton: HTMLButtonElement;
 		button: HTMLButtonElement;
 		dropdown: HTMLElement;
@@ -329,48 +319,50 @@ export class TitleOverview extends Overview {
 		this.mainOverview = new SyncDexOverview();
 		this.bindOverview(this.mainOverview);
 		this.activateOverview(this.mainOverview);
-		// Update Status selector
+		// Update Status selector if logged in
 		const statusButtons = document.querySelectorAll<HTMLAnchorElement>('a.manga_follow_button');
-		this.mdStatus = {
-			followButton: DOM.create('button'),
-			button: statusButtons[0].parentElement!.previousElementSibling as HTMLButtonElement,
-			dropdown: statusButtons[0].parentElement!,
-			unfollow: DOM.create('a'),
-			list: Array.from(statusButtons),
-		};
-		// Replace old node to remove all events
-		for (const idx in this.mdStatus.list) {
-			const oldStatus = this.mdStatus.list[idx];
-			const status = oldStatus.cloneNode(true) as HTMLAnchorElement;
-			oldStatus.replaceWith(status);
-			this.mdStatus.list[idx] = status;
-		}
-		// Create Follow button if it doesn't exist
-		const followButton = document.querySelector<HTMLButtonElement>('button.manga_follow_button');
-		if (followButton) {
-			const newFollow = followButton.cloneNode(true) as HTMLButtonElement;
-			followButton.replaceWith(newFollow);
-			this.mdStatus.followButton = newFollow;
-		} else {
-			this.mdStatus.followButton.className = 'btn btn-secondary';
-			this.mdStatus.followButton.style.display = 'none';
-			DOM.append(
-				this.mdStatus.followButton,
-				DOM.icon('bookmark fa-fw'),
-				DOM.space(),
-				DOM.create('span', { class: 'd-none d-xl-inline', textContent: 'Follow' })
-			);
-		}
-		// Create Unfollow button if it doesn't exist
-		const unfollowButton = document.querySelector<HTMLAnchorElement>('a.manga_unfollow_button');
-		if (unfollowButton) {
-			const newUnfollow = unfollowButton.cloneNode(true) as HTMLAnchorElement;
-			unfollowButton.replaceWith(newUnfollow);
-			this.mdStatus.unfollow = newUnfollow;
-		} else {
-			this.mdStatus.unfollow.className = 'dropdown-item';
-			this.mdStatus.unfollow.href = '#';
-			DOM.append(this.mdStatus.unfollow, DOM.icon('bookmark fa-fw'), DOM.text('Unfollow'));
+		if (statusButtons.length > 0) {
+			this.mdStatus = {
+				followButton: DOM.create('button'),
+				button: statusButtons[0].parentElement!.previousElementSibling as HTMLButtonElement,
+				dropdown: statusButtons[0].parentElement!,
+				unfollow: DOM.create('a'),
+				list: Array.from(statusButtons),
+			};
+			// Replace old node to remove all events
+			for (const idx in this.mdStatus.list) {
+				const oldStatus = this.mdStatus.list[idx];
+				const status = oldStatus.cloneNode(true) as HTMLAnchorElement;
+				oldStatus.replaceWith(status);
+				this.mdStatus.list[idx] = status;
+			}
+			// Create Follow button if it doesn't exist
+			const followButton = document.querySelector<HTMLButtonElement>('button.manga_follow_button');
+			if (followButton) {
+				const newFollow = followButton.cloneNode(true) as HTMLButtonElement;
+				followButton.replaceWith(newFollow);
+				this.mdStatus.followButton = newFollow;
+			} else {
+				this.mdStatus.followButton.className = 'btn btn-secondary';
+				this.mdStatus.followButton.style.display = 'none';
+				DOM.append(
+					this.mdStatus.followButton,
+					DOM.icon('bookmark fa-fw'),
+					DOM.space(),
+					DOM.create('span', { class: 'd-none d-xl-inline', textContent: 'Follow' })
+				);
+			}
+			// Create Unfollow button if it doesn't exist
+			const unfollowButton = document.querySelector<HTMLAnchorElement>('a.manga_unfollow_button');
+			if (unfollowButton) {
+				const newUnfollow = unfollowButton.cloneNode(true) as HTMLAnchorElement;
+				unfollowButton.replaceWith(newUnfollow);
+				this.mdStatus.unfollow = newUnfollow;
+			} else {
+				this.mdStatus.unfollow.className = 'dropdown-item';
+				this.mdStatus.unfollow.href = '#';
+				DOM.append(this.mdStatus.unfollow, DOM.icon('bookmark fa-fw'), DOM.text('Unfollow'));
+			}
 		}
 		// Update Score selector
 		const ratingButtons = document.querySelectorAll<HTMLAnchorElement>('a.manga_rating_button');
@@ -419,20 +411,22 @@ export class TitleOverview extends Overview {
 	bind = (syncModule: SyncModule): void => {
 		this.mainOverview.bind(syncModule);
 		// Replace Status
-		this.mdStatus.followButton.addEventListener('click', (event) => {
-			this.bindStatusUpdate(event, syncModule, Status.READING);
-		});
-		this.mdStatus.unfollow.addEventListener('click', (event) => {
-			if (confirm('This will remove all Read chapters from MangaDex (the eye icon).\nAre you sure ?')) {
-				this.bindStatusUpdate(event, syncModule, Status.NONE);
-			}
-		});
-		for (const row of this.mdStatus.list) {
-			const status = parseInt(row.id);
-			row.addEventListener('click', async (event) => {
-				if (row.classList.contains('disabled')) return;
-				this.bindStatusUpdate(event, syncModule, status);
+		if (this.mdStatus) {
+			this.mdStatus.followButton.addEventListener('click', (event) => {
+				this.bindStatusUpdate(event, syncModule, Status.READING);
 			});
+			this.mdStatus.unfollow.addEventListener('click', (event) => {
+				if (confirm('This will remove all Read chapters from MangaDex (the eye icon).\nAre you sure ?')) {
+					this.bindStatusUpdate(event, syncModule, Status.NONE);
+				}
+			});
+			for (const row of this.mdStatus.list) {
+				const status = parseInt(row.id);
+				row.addEventListener('click', async (event) => {
+					if (row.classList.contains('disabled')) return;
+					this.bindStatusUpdate(event, syncModule, status);
+				});
+			}
 		}
 		// Replace ratings
 		for (const row of this.mdScore.ratings) {
@@ -550,19 +544,20 @@ export class TitleOverview extends Overview {
 	};
 
 	syncedMangaDex = (type: 'unfollow' | 'status' | 'score', title: Title): void => {
-		const dropdown = type == 'score' ? this.mdScore.dropdown : this.mdStatus.dropdown;
+		const dropdown = type == 'score' ? this.mdScore.dropdown : this.mdStatus?.dropdown;
+		if (!dropdown) return;
 		// Remove old value
 		const previous = dropdown.querySelector('.disabled');
 		if (previous) previous.classList.remove('disabled');
 		// Activate new Status or Rating
 		// If we're unfollowing, hide Unfollow and revert to default
-		if (type == 'unfollow') {
+		if (this.mdStatus && type == 'unfollow') {
 			this.mdStatus.dropdown.parentElement!.insertBefore(this.mdStatus.followButton, this.mdStatus.button);
 			this.mdStatus.button.className = 'btn btn-secondary dropdown-toggle dropdown-toggle-split';
 			DOM.clear(this.mdStatus.button);
 			this.mdStatus.button.appendChild(DOM.create('span', { class: 'sr-only', textContent: 'Toggle Dropdown' }));
 			this.mdStatus.unfollow.remove();
-		} else if (type == 'status') {
+		} else if (this.mdStatus && type == 'status') {
 			if (title.mdStatus !== Status.NONE) {
 				const status = dropdown.querySelector(`[id='${title.mdStatus}']`);
 				if (!title.mdStatus || !status) return;

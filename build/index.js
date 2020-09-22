@@ -100,6 +100,7 @@ let browser_manifests = {
 			page: 'options/index.html',
 			open_in_tab: true,
 		},
+		permissions: ['webRequest', 'webRequestBlocking', 'cookies'],
 	},
 	chrome: {
 		options_ui: {
@@ -277,7 +278,19 @@ async function buildExtension(browser, nonVerbose) {
 	fs.mkdirSync(folderName);
 
 	// Merge manifests
-	let manifest = Object.assign({}, mainManifest, browser_manifests[browser]);
+	let manifest = Object.assign({}, mainManifest);
+	for (const key in browser_manifests[browser]) {
+		const value = browser_manifests[browser][key];
+		if (manifest[key] === undefined) {
+			manifest[key] = value;
+		} else if (Array.isArray(manifest[key])) {
+			manifest[key].push(...value);
+		} else if (typeof manifest[key] === 'object') {
+			Object.assign(manifest[key], value);
+		} else {
+			manifest[key] = value;
+		}
+	}
 	// Write in file
 	let bundleManifestStream = fs.createWriteStream(`${folderName}/manifest.json`, {
 		flags: 'w+',

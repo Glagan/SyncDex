@@ -24,6 +24,7 @@ export class SyncModule {
 	overview: Overview;
 	loadingServices: Promise<BaseTitle | RequestStatus>[] = [];
 	services: { [key in ActivableKey]?: BaseTitle | RequestStatus } = {};
+	loggedIn: boolean = true; // Logged in on MangaDex
 
 	constructor(title: Title, overview: Overview) {
 		this.title = title;
@@ -148,22 +149,31 @@ export class SyncModule {
 				// Always update the overview to check against possible imported ServiceTitle
 			} else this.overview.syncedService(key, service, this.title);
 		}
-		// Update MangaDex List Status and Score -- TODO: Check if logged in
-		if (Options.updateMD) {
+		// Update MangaDex List Status and Score
+		if (Options.updateMD && this.loggedIn) {
 			const strings: { success: string[]; error: string[] } = { success: [], error: [] };
 			if (this.title.mdStatus != this.title.status) {
 				this.title.mdStatus = this.title.status;
 				const response = await this.syncMangaDex(this.title.mdStatus == Status.NONE ? 'unfollow' : 'status');
 				if (response.ok) {
-					strings.success.push('**MangaDex Status** updated.');
-					if (this.overview.syncedMangaDex) {
-						this.overview.syncedMangaDex('status', this.title);
+					// MangaDex returns an empty response if not logged in
+					if (response.body.length == 0) {
+						this.loggedIn = false;
+					} else {
+						strings.success.push('**MangaDex Status** updated.');
+						if (this.overview.syncedMangaDex) {
+							this.overview.syncedMangaDex('status', this.title);
+						}
 					}
 				} else {
 					strings.error.push(`Error while updating **MangaDex Status**.\ncode: ${response.code}`);
 				}
 			}
-			if (this.title.score > 0 && Math.round(this.title.mdScore / 10) != Math.round(this.title.score / 10)) {
+			if (
+				this.loggedIn &&
+				this.title.score > 0 &&
+				Math.round(this.title.mdScore / 10) != Math.round(this.title.score / 10)
+			) {
 				// Convert 0-100 SyncDex Score to 0-10
 				this.title.mdScore = this.title.score;
 				const response = await this.syncMangaDex('score');
