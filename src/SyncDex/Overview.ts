@@ -4,6 +4,7 @@ import { Runtime } from '../Core/Runtime';
 import { Options } from '../Core/Options';
 import { SyncModule } from './SyncModule';
 import { SaveEditor } from '../Core/SaveEditor';
+import { ChapterList } from './ChapterList';
 
 export abstract class Overview {
 	bind?(syncModule: SyncModule): void;
@@ -293,6 +294,7 @@ export class TitleOverview extends Overview {
 		dropdown: HTMLElement;
 		ratings: HTMLAnchorElement[];
 	};
+	chapterList: ChapterList;
 
 	static statusDescription: Partial<{ [key in Status]: [string, string] }> = {
 		[Status.READING]: ['eye', 'success'],
@@ -377,6 +379,7 @@ export class TitleOverview extends Overview {
 			oldRating.replaceWith(rating);
 			this.mdScore.ratings.unshift(rating);
 		}
+		this.chapterList = new ChapterList();
 	}
 
 	reset() {
@@ -453,6 +456,7 @@ export class TitleOverview extends Overview {
 				}
 			});
 		}
+		this.chapterList.bind(syncModule);
 	};
 
 	hasNoServices = (): void => {
@@ -509,6 +513,7 @@ export class TitleOverview extends Overview {
 	syncedLocal = (title: Title): void => {
 		this.mainOverview.update(RequestStatus.SUCCESS, title);
 		this.mainOverview.synced();
+		this.chapterList.highlight(title);
 	};
 
 	activateOverview = (overview: ServiceOverview): void => {

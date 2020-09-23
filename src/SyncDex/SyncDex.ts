@@ -26,16 +26,6 @@ interface ReadingState {
 	title?: Title;
 }
 
-interface ChapterRow {
-	next?: ChapterRow;
-	isNext: boolean;
-	node: HTMLElement;
-	manage: HTMLElement;
-	toggleIcon?: HTMLElement;
-	previous?: ChapterRow;
-	chapter: number;
-}
-
 interface FollowPageResult {
 	titles: { [key: number]: number };
 	isLastPage: boolean;
@@ -447,7 +437,6 @@ export class SyncDex {
 			const headerTitle = document.querySelector('h6.card-header');
 			if (headerTitle) title.name = headerTitle.textContent!.trim();
 		}
-		const chapterRows = document.querySelectorAll<HTMLElement>('.chapter-row');
 		// Get MangaDex Status
 		const statusButton = document.querySelector('.manga_follow_button.disabled');
 		if (statusButton) title.mdStatus = parseInt(statusButton.id.trim());
@@ -561,159 +550,28 @@ export class SyncDex {
 			}
 		}
 
+		const overview = new TitleOverview();
 		// Load each Services to Sync
-		const syncModule = new SyncModule(title, new TitleOverview());
+		const syncModule = new SyncModule(title, overview);
 		syncModule.initialize();
 		// Find if logged in on MangaDex
 		syncModule.loggedIn = !!document.querySelector('button[title="You need to log in to use this function."]');
-		// Check current online Status
 		const imported = await syncModule.syncLocal();
-
-		// Do everything related to the chapter list
 		if (Options.saveOpenedChapters && imported) title.addChapter(title.progress.chapter);
-		// First pass to get all previous and next rows used in events
-		let highest = 0;
-		const rows: ChapterRow[] = [];
-		let previousRow: ChapterRow | undefined;
-		for (const row of chapterRows) {
-			const chapter = row.dataset.title == 'Oneshot' ? 0 : parseFloat(row.dataset.chapter!);
-			if (!isNaN(chapter)) {
-				const chapterRow = {
-					next: previousRow,
-					isNext: false,
-					node: row,
-					manage: DOM.create('div'),
-					chapter: chapter,
-				};
-				if (previousRow) {
-					previousRow.previous = chapterRow;
+
+		// Add all chapters from the ChapterList if it's a new Title
+		if (Options.saveOpenedChapters && imported) {
+			for (const row of overview.chapterList.rows) {
+				if (row.chapter < title.progress.chapter) {
+					title.addChapter(row.chapter);
 				}
-				rows.unshift(chapterRow);
-				previousRow = chapterRow;
-				// Calculate highest chapter
-				if (chapter > highest) highest = chapter;
 			}
+			// Highlight again if the chapter list needs update
+			overview.chapterList.highlight(title);
 		}
-		// Highlight chapters -- and add a list of previous opened chapters if we just imported
-		let foundNext = false;
-		for (const row of rows) {
-			let added = false;
-			if (Options.saveOpenedChapters && imported && row.chapter < title.progress.chapter) {
-				title.addChapter(row.chapter);
-				added = true;
-			}
-			// Remove previous Highlight
-			const parentRow = row.node.querySelector(`a[href^='/chapter']`)!.parentElement!;
-			parentRow.classList.add('title-column');
-			// Add Highlight if needed
-			row.node.classList.add('has-transition', 'chapter-row');
-			row.node.style.backgroundColor = '';
-			// Next Chapter is 0 if it exists and it's a new Title or the first next closest
-			const isOpened = added || title.chapters.indexOf(row.chapter) >= 0;
-			if (
-				!foundNext &&
-				((row.chapter > title.progress.chapter && row.chapter < Math.floor(title.progress.chapter) + 2) ||
-					(row.chapter == 0 && title.progress.chapter == 0 && title.status !== Status.COMPLETED))
-			) {
-				row.node.style.backgroundColor = Options.colors.nextChapter;
-				row.isNext = true;
-				foundNext = true;
-			} else if (isOpened) {
-				row.node.style.backgroundColor = Options.colors.openedChapter;
-			}
-			// Add buttons to add or remove from openedChapters
-			if (Options.saveOpenedChapters) {
-				row.toggleIcon = DOM.icon(isOpened ? 'minus' : 'plus');
-				const toggleOpened = DOM.create('button', {
-					class: 'btn btn-secondary btn-sm toggle-open',
-					childs: [row.toggleIcon],
-					events: {
-						click: async (event) => {
-							event.preventDefault();
-							if (row.toggleIcon!.classList.contains('fa-minus')) {
-								title.removeChapter(row.chapter);
-								if (!row.isNext) row.node.style.backgroundColor = '';
-							} else {
-								title.addChapter(row.chapter);
-								if (!row.isNext) row.node.style.backgroundColor = Options.colors.openedChapter;
-							}
-							await title.persist();
-							// Switch to add/remove
-							row.toggleIcon!.classList.toggle('fa-minus');
-							row.toggleIcon!.classList.toggle('fa-plus');
-						},
-					},
-				});
-				row.manage.appendChild(toggleOpened);
-			}
-			// Add Set Latest button
-			if (row.chapter == title.progress.chapter) {
-				parentRow.classList.add('current');
-			}
-			const markButton = DOM.create('button', {
-				class: 'btn btn-secondary btn-sm set-latest',
-				childs: [DOM.icon('book'), DOM.space(), DOM.text('Set Latest')],
-				events: {
-					click: async (event) => {
-						event.preventDefault();
-						if (row.chapter == title.progress.chapter) return;
-						// Remove everything above current -- highligth and from opened
-						let higherRow = row;
-						while (higherRow.next && higherRow.next.chapter <= title.progress.chapter) {
-							title.removeChapter(higherRow.next.chapter);
-							higherRow.next.node.style.backgroundColor = '';
-							higherRow.next.isNext = false;
-							if (higherRow.next.toggleIcon) {
-								higherRow.next.toggleIcon.classList.remove('fa-minus');
-								higherRow.next.toggleIcon.classList.add('fa-plus');
-							}
-							higherRow = higherRow.next;
-						}
-						// Remove next highlight
-						if (higherRow.next) {
-							higherRow.next.node.style.backgroundColor = '';
-							higherRow.next.isNext = false;
-							if (higherRow.next.toggleIcon) {
-								higherRow.next.toggleIcon.classList.remove('fa-minus');
-								higherRow.next.toggleIcon.classList.add('fa-plus');
-							}
-						}
-						// Mark everything up to current as read and highlight
-						let currentRow: ChapterRow | undefined = row;
-						while (currentRow) {
-							title.addChapter(currentRow.chapter);
-							currentRow.node.style.backgroundColor = Options.colors.openedChapter;
-							currentRow.isNext = false;
-							if (currentRow.toggleIcon) {
-								currentRow.toggleIcon.classList.add('fa-minus');
-								currentRow.toggleIcon.classList.remove('fa-plus');
-							}
-							currentRow = currentRow.previous;
-						}
-						// Highlight
-						const previousCurrent = document.querySelector<HTMLElement>('.col.current');
-						if (previousCurrent) previousCurrent.classList.remove('current');
-						parentRow.classList.add('current');
-						if (row.next) {
-							row.next.node.style.backgroundColor = Options.colors.nextChapter;
-							row.next.isNext = true;
-						}
-						// Update Title
-						title.progress.chapter = row.chapter;
-						if (title.status == Status.NONE) {
-							title.status = Status.READING;
-							title.start = new Date();
-						}
-						await title.persist();
-						syncModule.overview.syncedLocal(title);
-						await syncModule.syncExternal(true);
-					},
-				},
-			});
-			row.manage.insertBefore(markButton, row.manage.lastElementChild);
-			parentRow.appendChild(row.manage);
-		}
+
 		// Save added previous opened chapters and highest chapter
+		const highest = overview.chapterList.highest;
 		if (Options.biggerHistory && (!title.highest || title.highest < highest)) {
 			title.highest = highest;
 		}
