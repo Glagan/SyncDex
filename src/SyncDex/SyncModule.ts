@@ -75,17 +75,13 @@ export class SyncModule {
 					if (!this.title.max) {
 						this.title.max = { chapter: undefined, volume: undefined };
 					}
-					if (
-						!this.title.max.chapter ||
-						(response.max.chapter && response.max.chapter < this.title.max.chapter)
-					) {
-						this.title.max.chapter = response.max.chapter;
+					const chapter = response.max.chapter;
+					if (!this.title.max.chapter || (chapter && chapter < this.title.max.chapter)) {
+						this.title.max.chapter = chapter;
 					}
-					if (
-						!this.title.max.volume ||
-						(response.max.volume && response.max.volume < this.title.max.volume)
-					) {
-						this.title.max.volume = response.max.volume;
+					const volume = response.max.volume;
+					if (!this.title.max.volume || (volume && volume < this.title.max.volume)) {
+						this.title.max.volume = volume;
 					}
 				}
 			}

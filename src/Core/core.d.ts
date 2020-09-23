@@ -418,6 +418,8 @@ interface ChapterChangeEventDetails {
 			lang_flag: string;
 			lang_name: string;
 			last_chapter: string;
+			last_volume: number;
+			last_updated: number;
 			links: { [key in MangaDexExternalKeys]: string };
 			rating: {
 				bayesian: string;
@@ -425,7 +427,12 @@ interface ChapterChangeEventDetails {
 				users: string;
 			};
 			status: number;
+			demographic: number;
 			title: string;
+			views: number;
+			follows: number;
+			comments: number;
+			covers: string[];
 		};
 		chapterList: MangaDexChapter[]; // Available for selected languages
 		chapters: MangaDexChapter[]; // Everything available

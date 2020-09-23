@@ -117,7 +117,6 @@ if (!isChrome) {
 		if (details.originUrl.indexOf('moz-extension://') < 0) {
 			return { requestHeaders: details.requestHeaders };
 		}
-		console.log('replacing cookies for', details.originUrl, details.requestHeaders);
 		// Replace Cookie headers by X-Cookie value
 		const headers: HttpHeader[] = [];
 		for (const header of details.requestHeaders) {

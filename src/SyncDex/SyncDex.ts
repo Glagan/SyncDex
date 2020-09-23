@@ -223,6 +223,14 @@ export class SyncDex {
 					if (score) state.title.mdScore = parseInt(score[1]) * 10;
 				}
 			}
+			// Find max
+			const lastChapter = parseFloat(details.manga._data.last_chapter);
+			if (!isNaN(lastChapter) && lastChapter > 0) {
+				state.title.max = {
+					chapter: lastChapter,
+					volume: details.manga._data.last_volume ? details.manga._data.last_volume : undefined,
+				};
+			}
 		}
 		// Send initial requests -- Another if block to tell Typescript state.syncModule does exist
 		if (state.syncModule == undefined) {
