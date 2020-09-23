@@ -60,13 +60,11 @@ class ServiceOverview {
 			this.syncing();
 			await Options.load();
 			await syncModule.refreshService(this.key as ActivableKey);
-			this.synced();
 		});
 		this.syncButton.addEventListener('click', async (event) => {
 			event.preventDefault();
 			this.syncing();
 			await syncModule.serviceImport(this.key as ActivableKey);
-			this.synced();
 		});
 	};
 
@@ -236,7 +234,6 @@ class SyncDexOverview extends ServiceOverview {
 				syncModule.initialize();
 				await syncModule.syncLocal();
 				await syncModule.syncExternal(true);
-				// Update Highlight ?
 			}).show();
 		});
 		this.refreshButton.addEventListener('click', async (event) => {
@@ -246,7 +243,6 @@ class SyncDexOverview extends ServiceOverview {
 			syncModule.initialize();
 			await syncModule.syncLocal();
 			await syncModule.syncExternal(true);
-			// Update Highlight ?
 		});
 		const quickBind = async (event: Event, status: Status): Promise<void> => {
 			event.preventDefault();

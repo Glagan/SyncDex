@@ -152,7 +152,6 @@ export class ChapterList {
 	}
 
 	highlight(title: Title): void {
-		console.debug('updating highlight');
 		let foundNext = false;
 		for (const row of this.rows) {
 			// Reset
