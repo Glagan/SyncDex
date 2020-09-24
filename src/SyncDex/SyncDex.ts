@@ -176,6 +176,7 @@ export class SyncDex {
 		// console.log(details);
 		// Get the Title and Services initial state on the first chapter change
 		const id = details.manga._data.id;
+		let loggedInMangaDex = false;
 		let firstRequest = false;
 		if (state.title == undefined) {
 			state.title = await Title.get(id);
@@ -201,7 +202,7 @@ export class SyncDex {
 					}
 				}
 			}
-			// Find MangaDex status if needed -- TODO: Check if logged in
+			// Find MangaDex status if needed
 			if (Options.updateOnlyInList || Options.updateMD) {
 				const response = await Runtime.request<RawResponse>({
 					method: 'GET',
@@ -213,14 +214,18 @@ export class SyncDex {
 						text: `Error while getting **MangaDex** Status.\ncode: **${response.code}**`,
 					});
 				} else {
-					// Find mdStatus
-					const status = /disabled dropdown-item manga_follow_button'\s*data-manga-id='\d+'\s*id='(\d+)'/.exec(
-						response.body
-					);
-					if (status) state.title.mdStatus = parseInt(status[1]);
-					// Find mdScore
-					const score = /disabled dropdown-item manga_rating_button'\s*id='(\d+)'/.exec(response.body);
-					if (score) state.title.mdScore = parseInt(score[1]) * 10;
+					// Check login status
+					loggedInMangaDex = !/You need to log in to use this function./.exec(response.body);
+					if (loggedInMangaDex) {
+						// Find mdStatus
+						const status = /disabled dropdown-item manga_follow_button'\s*data-manga-id='\d+'\s*id='(\d+)'/.exec(
+							response.body
+						);
+						if (status) state.title.mdStatus = parseInt(status[1]);
+						// Find mdScore
+						const score = /disabled dropdown-item manga_rating_button'\s*id='(\d+)'/.exec(response.body);
+						if (score) state.title.mdScore = parseInt(score[1]) * 10;
+					}
 				}
 			}
 			// Find max
@@ -235,6 +240,7 @@ export class SyncDex {
 		// Send initial requests -- Another if block to tell Typescript state.syncModule does exist
 		if (state.syncModule == undefined) {
 			state.syncModule = new SyncModule(state.title, new ReadingOverview());
+			state.syncModule.loggedIn = loggedInMangaDex;
 			state.syncModule.initialize();
 		}
 		// Check initial Status if it's the first time
@@ -286,6 +292,12 @@ export class SyncDex {
 		// Check if the title is in list if required
 		let canUpdate = true;
 		if (Options.updateOnlyInList) {
+			if (!state.syncModule.loggedIn) {
+				SimpleNotification.error({
+					title: 'Not Logged In',
+					text: `You are not logged in on **MangaDex** but you have the *Update Only in List** option enabled.\nDisable it or login on **MangaDex** !`,
+				});
+			}
 			canUpdate = state.title.mdStatus !== undefined && state.title.mdStatus !== Status.NONE;
 			if (!canUpdate && Options.confirmChapter) {
 				SimpleNotification.warning({
@@ -563,7 +575,7 @@ export class SyncDex {
 		const syncModule = new SyncModule(title, overview);
 		syncModule.initialize();
 		// Find if logged in on MangaDex
-		syncModule.loggedIn = !!document.querySelector('button[title="You need to log in to use this function."]');
+		syncModule.loggedIn = !document.querySelector('button[title="You need to log in to use this function."]');
 		const imported = await syncModule.syncLocal();
 		if (Options.saveOpenedChapters && imported) title.addChapter(title.progress.chapter);
 

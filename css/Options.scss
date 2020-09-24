@@ -1,43 +1,14 @@
 @use 'sass:map';
+@import 'Reset.scss';
 @import 'Photon.scss';
 @import 'Animations.scss';
 @import 'Services.scss';
-@import 'Card.scss';
 @import 'Modal.scss';
+@import 'Card.scss';
 @import 'Editor.scss';
 @import 'Buttons.scss';
 @import 'Form.scss';
-
-// Reset
-* {
-	margin: 0;
-	padding: 0;
-}
-
-*:disabled,
-*.disabled {
-	opacity: 0.4;
-}
-
-// Links
-*[href] {
-	color: $blue-60;
-	text-decoration: none;
-}
-*[href] img,
-*[href] i {
-	vertical-align: middle;
-}
-*[href]:hover {
-	text-decoration: underline;
-}
-*[href]:active {
-	color: $blue-70;
-	text-decoration: underline;
-}
-*[href]:focus {
-	box-shadow: $focus;
-}
+@import 'Elements.scss';
 
 // Color Input and Options only input
 .dependency {
@@ -219,29 +190,6 @@ table {
 	}
 }
 
-// Utility
-.helper {
-	font-size: $caption-30;
-	font-weight: $regular;
-	color: $grey-50;
-}
-
-// SyncDex
-html {
-	font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
-		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-	font-size: $body-20;
-	font-weight: $regular;
-}
-body {
-	min-height: 100vh;
-	display: grid;
-	grid-template-columns: 20% 80%;
-	background-color: $grey-10;
-	color: $grey-90;
-	transition: all 250ms $animation;
-}
-
 // Navigation
 nav {
 	padding: 16px;
@@ -278,36 +226,18 @@ nav {
 }
 
 // Body
+body {
+	min-height: 100vh;
+	display: grid;
+	grid-template-columns: 20% 80%;
+	background-color: $grey-10;
+	color: $grey-90;
+	transition: all 250ms $animation;
+}
 main {
 	max-height: 100vh;
 	overflow-y: auto;
 	overflow-x: auto;
-}
-h1 {
-	font-size: $title-40;
-	font-weight: $medium;
-	margin: 16px 0;
-}
-h2 {
-	font-size: $title-20;
-	font-weight: $medium;
-	margin-bottom: 4px;
-}
-.section {
-	margin-bottom: 64px;
-}
-.block {
-	margin-bottom: 32px;
-}
-.paragraph {
-	margin-bottom: 4px;
-}
-.center {
-	text-align: center;
-	align-self: center;
-}
-.right {
-	text-align: right;
 }
 
 // Services
@@ -335,6 +265,7 @@ h2 {
 }
 
 @each $key in map.keys($services) {
+	.scs.modal .card .header.#{$key},
 	.card .header.#{$key} {
 		background: url('/icons/#{$key}.png') 8px center / 16px no-repeat, map.get($services-bg, $key);
 		color: map.get($services-color, $key);
@@ -449,45 +380,21 @@ h2 {
 	}
 }
 
-// Dark Theme
-body:not(.light) {
-	background-color: $grey-70;
-	color: $white-100;
+// Changelog
+ul.changelog {
+	list-style-type: disclosure-closed;
+	padding-left: 1rem;
+}
+ul.changelog {
+	ul {
+		list-style-type: initial;
+	}
 
-	.scs {
-		&.modal .card .body {
-			color: $grey-90;
-		}
-		&.card {
-			box-shadow: $light-shadow-10;
-		}
-		&.card:hover {
-			box-shadow: $light-shadow-20;
-		}
-	}
-	table {
-		border: 1px solid $grey-80;
-		background-color: $grey-60;
-		color: $white-100;
-		box-shadow: $light-shadow-10;
-	}
-	table thead {
-		background-color: $grey-70;
-		border: 1px solid $grey-80;
-	}
-	table thead th {
-		border-bottom: 1px solid $grey-80;
-	}
-	table tbody tr:nth-child(even) {
-		background-color: $grey-50;
-	}
-	table tr td.mangadex a[href] {
-		color: $white-100;
-	}
-	table tbody td.actions button {
-		color: $grey-10;
-	}
-	button.paging {
-		color: $white-100;
+	ul,
+	li {
+		margin: revert;
+		padding: revert;
 	}
 }
+
+@import 'DarkTheme.scss';

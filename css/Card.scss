@@ -11,13 +11,13 @@
 	&:hover {
 		box-shadow: $shadow-20;
 	}
-	& > .header {
+	& .header {
 		font-size: $title-30;
 		text-align: center;
 		padding: 32px;
 	}
-	& > .body,
-	& > .footer {
+	& .body,
+	& .footer {
 		background-color: $white-100;
 		overflow: auto;
 
@@ -25,15 +25,15 @@
 			padding: 8px;
 		}
 	}
-	& > .footer {
+	& .footer {
 		flex-shrink: 0;
 		border: 0;
 	}
-	&.large > .body:not(:empty),
-	&.large > .footer:not(:empty) {
+	&.large .body:not(:empty),
+	&.large .footer:not(:empty) {
 		padding: 20px;
 	}
-	// & > .body:not(:empty) + .footer:not(:empty) {
+	// & .body:not(:empty) + .footer:not(:empty) {
 	// 	padding-top: 0;
 	// }
 }

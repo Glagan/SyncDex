@@ -9,6 +9,7 @@ import { SaveViewer } from './SaveViewer';
 import { ImportExportManager } from './Manager/ImportExport';
 import { SaveOptions } from './Utility';
 import { Options } from '../Core/Options';
+import { Changelog } from './Changelog';
 
 export class OptionsManager {
 	highlightsManager: HighlightsManager;
@@ -31,6 +32,7 @@ export class OptionsManager {
 		this.serviceManager = new ServiceManager();
 		this.importExport = new ImportExportManager();
 		this.saveViewer = new SaveViewer();
+
 		// Delete save event
 		const deleteSave = document.getElementById('delete-save');
 		if (deleteSave) {
@@ -65,22 +67,15 @@ export class OptionsManager {
 				}
 			});
 		}
-		// Change theme button
-		const prefersColorScheme = window.matchMedia('(prefers-color-scheme: dark)');
-		const themeRow = document.getElementById('switch-theme')!;
-		const themeButton = themeRow.querySelector('i')!;
-		if (prefersColorScheme.matches) {
-			document.body.classList.add('dark');
-			themeButton.className = 'fas fa-sun';
+
+		// Changelog button
+		const changelogLink = document.getElementById('open-changelog');
+		if (changelogLink) {
+			changelogLink.addEventListener('click', (event) => {
+				event.preventDefault();
+				Changelog.openModal(false);
+			});
 		}
-		const toggleTheme = (): void => {
-			themeButton.classList.toggle('fa-sun');
-			themeButton.classList.toggle('fa-moon');
-			document.body.classList.toggle('dark');
-			document.body.classList.toggle('light');
-		};
-		themeRow.addEventListener('click', toggleTheme);
-		prefersColorScheme.addEventListener('change', toggleTheme);
 	}
 
 	reload = (): void => {

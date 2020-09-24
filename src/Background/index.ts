@@ -1,4 +1,5 @@
 import { isChrome, setBrowser } from '../Core/Browser';
+import { DefaultOptions, Options } from '../Core/Options';
 
 console.log('SyncDex :: Background');
 
@@ -139,3 +140,27 @@ if (!isChrome) {
 		[ 'blocking', 'requestHeaders' ]
 	);
 }
+
+interface Update {
+	version: number;
+	fnct: () => void;
+}
+const updates: Update[] = [];
+
+browser.runtime.onInstalled.addListener((details) => {
+	// Apply each needed Updates
+	if (details.reason === 'update') {
+		for (const update of updates) {
+			if (update.version >= Options.version) {
+				update.fnct();
+				Options.version = update.version;
+			}
+		}
+		Options.version = DefaultOptions.version;
+	}
+
+	// Open the options with a Modal
+	if (details.reason === 'install' || details.reason === 'update') {
+		browser.tabs.create({ url: chrome.runtime.getURL(`options/index.html#${details.reason}`) });
+	}
+});

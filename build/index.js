@@ -6,6 +6,7 @@ const path = require('path');
 const rollup = require('rollup');
 const sass = require('sass');
 const typescript = require('@rollup/plugin-typescript');
+const json = require('@rollup/plugin-json');
 const { terser } = require('rollup-plugin-terser');
 const options = require('minimist')(process.argv.slice(2), {
 	default: {
@@ -171,7 +172,7 @@ const bundles = bundleList.map((bundle) => {
 		input: bundle.input,
 		// external: ['SimpleNotification'],
 		plugins: (() => {
-			let list = [typescript()];
+			let list = [typescript(), json({ preferConst: true })];
 			if (options.mode == 'prod' || options.mode == 'production') {
 				list.push(terser());
 			}

@@ -17,7 +17,7 @@
 		user-select: none;
 		animation: fade-out 150ms $animation 1 forwards;
 	}
-	& > .card {
+	& .card {
 		margin: auto;
 		max-width: 60vw;
 		overflow: hidden;
@@ -27,25 +27,27 @@
 		flex-flow: column nowrap;
 		width: 100%;
 
-		& > .header {
+		& .header {
 			flex-shrink: 0;
 			font-size: $title-40;
 			font-weight: $light;
 			padding: 16px 0;
+			background-color: $grey-90-a90;
+			color: $white-100;
 		}
-		& > .footer {
+		& .footer {
 			position: relative;
 			height: auto;
 		}
 		form .primary,
-		& > .footer .primary {
+		& .footer .primary {
 			margin-right: 8px;
 		}
 	}
-	&.small > .card {
+	&.small .card {
 		max-width: 25rem;
 	}
-	&.medium > .card {
+	&.medium .card {
 		max-width: 40rem;
 	}
 }

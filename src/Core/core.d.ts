@@ -225,6 +225,15 @@ interface BlockingResponse {
 	upgradeToSecure?: boolean;
 }
 
+interface onInstallDetails {
+	id?: number;
+	previousVersion?: string;
+	reason: 'install' | 'update' | 'browser_update' | 'shared_module_update';
+	temporary: boolean;
+}
+
+type onInstallListener = (details: onInstallDetails) => void;
+
 interface WebRequestAPI {
 	onBeforeRequest: {};
 	onBeforeSendHeaders: {
@@ -251,19 +260,30 @@ interface WebRequestAPI {
 	onErrorOccurred: {};
 }
 
+interface Tab {
+	active?: boolean;
+	cookieStoreId?: string;
+	discarded?: boolean;
+	index?: number;
+	openerTabId?: number;
+	openInReaderMode?: boolean;
+	pinned?: boolean;
+	selected?: boolean;
+	title?: string;
+	url?: string;
+	windowId?: number;
+}
+
 declare const chrome: {
 	runtime: {
 		getManifest: () => {
 			version: string;
 		};
-		openOptionsPage: (resolve?: () => void) => Promise<void>;
-		sendMessage: <T extends RequestResponse | void>(
-			message: Message,
-			resolve?: (response?: T) => void
-		) => Promise<any>;
+		openOptionsPage: (resolve?: () => void) => void;
+		sendMessage: <T extends RequestResponse | void>(message: Message, resolve?: (response?: T) => void) => void;
 		onMessage: {
 			addListener: (
-				fnct: (
+				callback: (
 					message: Message,
 					sender: MessageSender,
 					sendResponse: (response?: RequestResponse | void) => void
@@ -271,13 +291,16 @@ declare const chrome: {
 			) => void;
 		};
 		getURL: (path: string) => string;
+		onInstalled: {
+			addListener: (callback: onInstallListener) => void;
+		};
 	};
 	storage: {
 		local: {
-			get: <T>(key: string[] | string | null, resolve?: () => void) => Promise<Record<string, T> | undefined>;
-			set: (data: Object, resolve?: () => void) => Promise<void>;
-			remove: (key: string, resolve?: () => void) => Promise<void>;
-			clear: (resolve?: () => void) => Promise<void>;
+			get: <T>(key: string[] | string | null, callback?: (value: Record<string, T> | undefined) => void) => void;
+			set: (data: Object, callback?: () => void) => void;
+			remove: (key: string, callback?: () => void) => void;
+			clear: (callback?: () => void) => void;
 		};
 	};
 	browserAction: {
@@ -287,6 +310,9 @@ declare const chrome: {
 	};
 	cookies: CookiesAPI;
 	webRequest: WebRequestAPI;
+	tabs: {
+		create: (details: Tab, callback?: (tab: Tab) => void) => void;
+	};
 };
 
 declare const browser: {
@@ -298,6 +324,9 @@ declare const browser: {
 			addListener: (fnct: (message: Message, sender: MessageSender) => Promise<RequestResponse | void>) => void;
 		};
 		getURL: (path: string) => string;
+		onInstalled: {
+			addListener: (callback: onInstallListener) => void;
+		};
 	};
 	storage: {
 		local: {
@@ -314,6 +343,9 @@ declare const browser: {
 	};
 	cookies: CookiesAPI;
 	webRequest: WebRequestAPI;
+	tabs: {
+		create: (properties: Tab) => Promise<Tab>;
+	};
 };
 
 type ExportOptions = {

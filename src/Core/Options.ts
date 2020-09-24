@@ -105,36 +105,23 @@ export const DefaultOptions: AvailableOptions = {
 	version: parseFloat(browser.runtime.getManifest().version),
 };
 
-interface Update {
-	version: number;
-	fnct: (options: AvailableOptions) => void;
-}
-const updates: Update[] = [];
-
 interface ManageOptions {
 	load: () => Promise<void>;
 	reloadTokens: () => Promise<void>;
-	checkUpdate: () => boolean;
-	update: () => void;
 	save: () => Promise<void>;
 	reset: () => void;
 }
 
 export const Options: AvailableOptions & ManageOptions = Object.assign(
+	JSON.parse(JSON.stringify(DefaultOptions)), // Avoid references
 	{
 		load: async (): Promise<void> => {
 			const options = await LocalStorage.get<AvailableOptions>('options');
 			if (options !== undefined) {
 				Object.assign(Options, options);
+			} else {
+				return await Options.save();
 			}
-			const needUpdate = Options.checkUpdate();
-			if (needUpdate) {
-				Options.update();
-			}
-			if (!options || needUpdate) {
-				return Options.save();
-			}
-			return new Promise<void>((resolve) => resolve());
 		},
 
 		reloadTokens: async (): Promise<void> => {
@@ -145,29 +132,10 @@ export const Options: AvailableOptions & ManageOptions = Object.assign(
 			}
 		},
 
-		checkUpdate: (): boolean => {
-			if (Options.version !== DefaultOptions.version) {
-				return true;
-			}
-			return false;
-		},
-
-		update: (): void => {
-			for (const update of updates) {
-				if (update.version >= Options.version) {
-					update.fnct(Options);
-					Options.version = update.version;
-				}
-			}
-			Options.version = DefaultOptions.version;
-		},
-
 		save: async (): Promise<void> => {
 			const values = Object.assign({}, Options) as AvailableOptions & Partial<ManageOptions>;
 			delete values.load;
 			delete values.reloadTokens;
-			delete values.checkUpdate;
-			delete values.update;
 			delete values.save;
 			delete values.reset;
 			return await LocalStorage.set('options', values);
@@ -176,6 +144,5 @@ export const Options: AvailableOptions & ManageOptions = Object.assign(
 		reset: (): void => {
 			Object.assign(Options, JSON.parse(JSON.stringify(DefaultOptions)));
 		},
-	},
-	JSON.parse(JSON.stringify(DefaultOptions)) // Avoid references
+	}
 );

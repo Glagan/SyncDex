@@ -4,7 +4,11 @@ export const isChrome = window.chrome && window.browser === undefined;
 // Promisify Chrome
 export const setBrowser = ((): (() => void) => {
 	if (isChrome) {
+		// Types are fixed later
+		/// @ts-ignore
 		window.browser = window.chrome;
+
+		// Storage
 		const chromeGet = chrome.storage.local.get.bind(chrome.storage.local);
 		browser.storage.local.get = <T>(
 			key: string[] | string | null
@@ -23,6 +27,8 @@ export const setBrowser = ((): (() => void) => {
 		browser.storage.local.clear = (): Promise<void> => {
 			return new Promise((resolve) => chromeClear(resolve));
 		};
+
+		// Runtime
 		const chromeOnMessage = chrome.runtime.onMessage.addListener.bind(chrome.runtime.onMessage);
 		browser.runtime.onMessage.addListener = (
 			fnct: (message: Message, sender: MessageSender) => Promise<any>
@@ -41,6 +47,12 @@ export const setBrowser = ((): (() => void) => {
 		const chromeSendMessage = chrome.runtime.sendMessage;
 		browser.runtime.sendMessage = (message: Message): Promise<any> => {
 			return new Promise((resolve) => chromeSendMessage(message, resolve));
+		};
+
+		// Tabs
+		const chromeOpenTab = chrome.tabs.create;
+		browser.tabs.create = (details: Tab): Promise<Tab> => {
+			return new Promise((resolve) => chromeOpenTab(details, resolve));
 		};
 	}
 	return () => {};

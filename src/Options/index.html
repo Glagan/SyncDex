@@ -28,6 +28,7 @@
 			<li data-link="import"><i class="fas fa-download"></i> Import</li>
 			<li data-link="export"><i class="fas fa-upload"></i> Export</li>
 			<li data-link="delete"><i class="fas fa-trash"></i> Delete</li>
+			<li id="open-changelog"><i class="fas fa-list-ol"></i> Changelog</li>
 			<li data-link="credits"><i class="fas fa-at"></i> Credits</li>
 		</ul>
 	</nav>
@@ -222,8 +223,11 @@
 			<div class="parameter">
 				<input type="checkbox" id="ck_biggerHistory" data-name="biggerHistory" />
 				<label for="ck_biggerHistory">Save each titles you read and display a bigger history than the original 20 that <b>MangaDex</b> save.</label>
+				<p class="helper">
+					This will also <b>Highlight</b> your each cards in the <b>History</b> page to hint your status for the Title.<br />
+					<b>Green</b> if you read the <b>Highest available chapter</b> or <b>Blue</b> if there is a new chapter.</p>
 				<input type="checkbox" id="ck_chapterStatus" data-name="chapterStatus" data-dependency="biggerHistory" />
-				<label for="ck_chapterStatus">Highlight Covers to quickly see if you read the last chapter for a title.</label>
+				<label for="ck_chapterStatus">Update the <b>History</b> page every 30min while it's keep opened to update <b>Highlight</b>.</label>
 			</div>
 		</div>
 		<h1 id="other"><i class="fas fa-ellipsis-h"></i> Other</h1>
