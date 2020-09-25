@@ -12,6 +12,8 @@ export interface AvailableOptions {
 	thumbnail: boolean;
 	originalThumbnail: boolean;
 	thumbnailMaxHeight: number;
+	separateLanguages: boolean;
+	favoriteLanguage: string;
 	// Reading
 	saveOpenedChapters: boolean;
 	chaptersSaved: number;
@@ -63,6 +65,8 @@ export const DefaultOptions: AvailableOptions = {
 	thumbnail: true,
 	originalThumbnail: false,
 	thumbnailMaxHeight: 80,
+	separateLanguages: true,
+	favoriteLanguage: 'all',
 	// Reading
 	saveOpenedChapters: true,
 	chaptersSaved: 400,

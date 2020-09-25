@@ -9,11 +9,32 @@ type BooleanOptions = Pick<
 	}[keyof AvailableOptions]
 >;
 
+class RawDependency {
+	header: HTMLElement | null;
+	input: HTMLInputElement;
+
+	constructor(input: HTMLInputElement, header: HTMLElement | null) {
+		this.header = header;
+		this.input = input;
+	}
+
+	enable = (): void => {
+		if (this.header) this.header.classList.remove('disabled');
+		this.input.disabled = false;
+	};
+
+	disable = (): void => {
+		if (this.header) this.header.classList.add('disabled');
+		this.input.disabled = true;
+	};
+}
+
 export class Checkbox {
 	enabled: boolean = true;
 	node: HTMLInputElement;
 	label: HTMLLabelElement;
 	dependencies: Checkbox[] = [];
+	rawDependencies: RawDependency[] = [];
 	optionName: keyof BooleanOptions;
 	parent?: keyof BooleanOptions;
 
@@ -59,9 +80,15 @@ export class Checkbox {
 			for (const dependency of this.dependencies) {
 				dependency.enable();
 			}
+			for (const dependency of this.rawDependencies) {
+				dependency.enable();
+			}
 		} else {
 			this.node.checked = false;
 			for (const dependency of this.dependencies) {
+				dependency.disable();
+			}
+			for (const dependency of this.rawDependencies) {
 				dependency.disable();
 			}
 		}
@@ -77,6 +104,7 @@ export class CheckboxManager {
 			const checkbox = new Checkbox(node);
 			checkbox.bind();
 			this.checkboxes.push(checkbox);
+
 			// Add dependencies
 			if (checkbox.parent !== undefined) {
 				for (const parent of this.checkboxes) {
@@ -85,6 +113,23 @@ export class CheckboxManager {
 						parent.toggle(Options[parent.optionName]);
 						break;
 					}
+				}
+			}
+
+			// Add Raw Dependencies -- input but not checkbox
+			let currentNode: Element | null = checkbox.label.nextElementSibling;
+			if (currentNode && currentNode.classList.contains('dependency')) {
+				let header: Element | null = currentNode;
+				while (currentNode) {
+					if (currentNode.tagName == 'INPUT') {
+						const dependency = new RawDependency(currentNode as HTMLInputElement, header as HTMLElement);
+						if (!Options[checkbox.optionName]) dependency.disable();
+						checkbox.rawDependencies.push(dependency);
+						header = null;
+					} else if (currentNode.tagName == 'H2') {
+						header = currentNode as HTMLElement;
+					}
+					currentNode = currentNode.nextElementSibling;
 				}
 			}
 		}

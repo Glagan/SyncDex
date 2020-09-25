@@ -176,6 +176,15 @@
 				<label for="ck_originalThumbnail">Display the full size original cover of the title instead of a thumbnail.</label>
 				<p class="helper">Do not enable this if you don't have a somehow good connection, some images can be big.</p>
 			</div>
+			<h2>Separate Languages</h2>
+			<div class="parameter">
+				<input type="checkbox" id="ck_separateLanguages" data-name="separateLanguages" />
+				<label for="ck_separateLanguages">Separate languages in lists if there are multiple and display your favorite <b>Language</b> by default if it's available.</label>
+				<h2 class="dependency">Favorite Language</h2>
+				<label for="ck_favoriteLanguage">Default active <b>Language</b> if available. Use <b>country code</b>. use <b>all</b> to not have any favorite by default.</label>
+				<input type="text" id="ck_favoriteLanguage" data-input="favoriteLanguage" data-dependency="separateLanguages">
+				<p class="helper">You can find the country code of your language by hovering the displayed flag of a chapter in your language.</p>
+			</div>
 		</div>
 		<h1 id="title-page"><i class="fas fa-book"></i> Title Page</h1>
 		<div class="section">

@@ -15,7 +15,7 @@ setBrowser();
 
 	// Check if SyncDex was updated or installed
 	const reason = window.location.hash.substr(1);
-	if (reason === 'installed') {
+	if (reason === 'install') {
 		const modal = new Modal('medium');
 		modal.header.textContent = 'Thank you for installing SyncDex !';
 		DOM.append(
