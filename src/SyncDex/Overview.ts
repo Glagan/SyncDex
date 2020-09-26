@@ -5,6 +5,7 @@ import { Options } from '../Core/Options';
 import { SyncModule } from './SyncModule';
 import { SaveEditor } from '../Core/SaveEditor';
 import { ChapterList } from './ChapterList';
+import { ChapterRow } from './ChapterRow';
 
 export abstract class Overview {
 	bind?(syncModule: SyncModule): void;
@@ -375,7 +376,11 @@ export class TitleOverview extends Overview {
 			oldRating.replaceWith(rating);
 			this.mdScore.ratings.unshift(rating);
 		}
+
 		this.chapterList = new ChapterList();
+		// Add Language buttons
+		const navTabs = document.querySelector<HTMLElement>('ul.edit.nav.nav-tabs');
+		ChapterRow.generateLanguageButtons(navTabs);
 	}
 
 	reset() {

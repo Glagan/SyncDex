@@ -2,12 +2,7 @@ import { DOM } from '../Core/DOM';
 import { Options } from '../Core/Options';
 import { Thumbnail } from './Thumbnail';
 import { Title } from '../Core/Title';
-
-interface ChapterRow {
-	progress: Progress | undefined;
-	node: HTMLElement;
-	hidden: boolean;
-}
+import { ChapterRow } from './ChapterRow';
 
 export class ChapterGroup {
 	id: number = 0;
@@ -100,7 +95,6 @@ export class ChapterGroup {
 	};
 
 	setThumbnails = (): void => {
-		// Add events
 		for (const group of this.rows) {
 			new Thumbnail(this.id, group.node);
 		}
@@ -137,16 +131,15 @@ export class ChapterGroup {
 	};
 
 	static getGroups = (): ChapterGroup[] => {
-		let chapterContainer = document.querySelector<HTMLElement>('.chapter-container');
-		if (!chapterContainer) return [];
-		let nodes = chapterContainer.children;
-		let groups: ChapterGroup[] = [];
-		if (nodes.length > 1) {
+		const groups: ChapterGroup[] = [];
+		let fullRows = document.querySelectorAll<HTMLElement>('.chapter-container > .row');
+		if (fullRows.length > 1) {
 			let currentGroup = new ChapterGroup();
-			for (const row of nodes) {
-				const chapterRow = row.querySelector<HTMLElement>('[data-chapter]');
-				const firstChild = row.firstElementChild!;
-				if (chapterRow && chapterRow.dataset.mangaId && firstChild) {
+			for (const row of fullRows) {
+				const chapterRow = row.querySelector<HTMLElement>('.chapter-row');
+				if (!chapterRow || !chapterRow.dataset.mangaId) continue;
+				const firstChild = row.firstElementChild;
+				if (firstChild) {
 					const id = Math.floor(parseInt(chapterRow.dataset.mangaId));
 					const isFirstRow = firstChild && firstChild.childElementCount > 0;
 					// Is this is a new entry push the current group and create a new one
@@ -160,21 +153,10 @@ export class ChapterGroup {
 						}
 						currentGroup = new ChapterGroup(id, firstChild.textContent!.trim());
 					}
-					const chapter: ChapterRow = {
-						progress: (() => {
-							const oneshot = chapterRow.dataset.title == 'Oneshot';
-							return {
-								chapter: oneshot ? 0 : parseFloat(chapterRow.dataset.chapter!),
-								volume: parseFloat(chapterRow.dataset?.volume || '') || undefined,
-								oneshot: oneshot,
-							};
-						})(),
-						node: row as HTMLElement,
-						hidden: false,
-					};
+					const currentChapterRow = new ChapterRow(chapterRow);
 					// Don't add empty chapters
-					if (chapter.progress) {
-						currentGroup.rows.push(chapter);
+					if (!isNaN(currentChapterRow.progress.chapter)) {
+						currentGroup.rows.push(currentChapterRow);
 					}
 				}
 			}

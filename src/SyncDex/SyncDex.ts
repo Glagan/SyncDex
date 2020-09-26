@@ -20,6 +20,7 @@ import { Thumbnail } from './Thumbnail';
 import { SyncModule } from './SyncModule';
 import { TitleGroup } from './TitleGroup';
 import { History } from './History';
+import { ChapterRow } from './ChapterRow';
 
 interface ReadingState {
 	syncModule?: SyncModule;
@@ -104,33 +105,41 @@ export class SyncDex {
 		// Button to toggle hidden chapters
 		const rows = document.querySelectorAll('.hidden');
 		const hiddenCount = rows.length;
-		const navBar = document.querySelector<HTMLElement>('ul.nav.nav-tabs');
-		if (navBar && hiddenCount > 0) {
-			const icon = DOM.icon('eye');
-			const linkContent = DOM.create('span', { textContent: `Show Hidden ${hiddenCount}` });
-			const link = DOM.create('a', {
-				class: 'nav-link',
-				href: '#',
-				childs: [icon, DOM.space(), linkContent],
-			});
-			let active = false;
-			link.addEventListener('click', (event) => {
-				event.preventDefault();
-				rows.forEach((row) => {
-					row.classList.toggle('visible');
+		const navBar = document.querySelector<HTMLElement>('#content ul.nav.nav-tabs');
+		if (navBar) {
+			if (hiddenCount > 0 && !navBar.classList.contains('hide-loaded')) {
+				navBar.classList.add('hide-loaded');
+				const icon = DOM.icon('eye');
+				const linkContent = DOM.create('span', { textContent: `Show Hidden ${hiddenCount}` });
+				const link = DOM.create('a', {
+					class: 'nav-link',
+					href: '#',
+					childs: [icon, DOM.space(), linkContent],
 				});
-				icon.classList.toggle('fa-eye');
-				icon.classList.toggle('fa-eye-slash');
-				if (active) linkContent.textContent = `Show Hidden (${hiddenCount})`;
-				else linkContent.textContent = `Hide Hidden (${hiddenCount})`;
-				active = !active;
-			});
-			const button = DOM.create('li', { class: 'nav-item', childs: [link] });
-			if (navBar.lastElementChild!.classList.contains('ml-auto')) {
-				navBar.insertBefore(button, navBar.lastElementChild);
-			} else {
-				navBar.appendChild(button);
+				let active = false;
+				link.addEventListener('click', (event) => {
+					event.preventDefault();
+					rows.forEach((row) => {
+						row.classList.toggle('visible');
+					});
+					icon.classList.toggle('fa-eye');
+					icon.classList.toggle('fa-eye-slash');
+					if (active) linkContent.textContent = `Show Hidden (${hiddenCount})`;
+					else linkContent.textContent = `Hide Hidden (${hiddenCount})`;
+					active = !active;
+				});
+				const button = DOM.create('li', { class: 'nav-item', childs: [link] });
+				if (navBar.lastElementChild!.classList.contains('ml-auto')) {
+					navBar.insertBefore(button, navBar.lastElementChild);
+				} else {
+					navBar.appendChild(button);
+				}
 			}
+
+			// Add Language buttons
+			ChapterRow.generateLanguageButtons(navBar, (parent, tab) => {
+				parent.insertBefore(tab, parent.lastElementChild);
+			});
 		}
 	};
 

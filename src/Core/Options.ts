@@ -100,8 +100,8 @@ export const DefaultOptions: AvailableOptions = {
 	},
 	// Colors
 	colors: {
-		highlights: ['rgba(28, 135, 141, 0.5)', 'rgba(22, 65, 87, 0.5)', 'rgba(28, 103, 141, 0.5)'],
-		nextChapter: 'rgba(199, 146, 2, 0.4)',
+		highlights: ['rgba(82, 190, 90, 0.6)', 'rgba(107, 177, 95, 0.6)', 'rgba(55, 168, 61, 0.6)'],
+		nextChapter: 'rgba(104, 115, 251, 0.4)',
 		higherChapter: 'transparent',
 		lowerChapter: 'rgba(180, 102, 75, 0.5)',
 		openedChapter: 'rgba(28, 135, 141, 0.4)', // Title Page
