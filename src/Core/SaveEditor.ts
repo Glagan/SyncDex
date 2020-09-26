@@ -31,6 +31,7 @@ export class SaveEditor {
 		}
 		return select;
 	}
+
 	static create(title: Title, postSubmit?: () => void): Modal {
 		const modal = new Modal('medium');
 		modal.header.classList.add('title');
@@ -58,14 +59,19 @@ export class SaveEditor {
 		for (const sn in ActivableName) {
 			const serviceName = sn as ActivableName;
 			const serviceKey = ServiceKey[serviceName];
+			const link = DOM.create('a', {
+				href: '#',
+				title: serviceName,
+				childs: [DOM.create('img', { src: Runtime.icon(serviceKey), title: serviceName })],
+			});
+			if (title.services[serviceKey]) {
+				link.href = GetService(serviceName).link(title.services[serviceKey]!);
+				link.target = '_blank';
+			}
 			services.appendChild(
 				DOM.create('div', {
 					class: 'service',
-					childs: [
-						DOM.create('img', { src: Runtime.icon(serviceKey), title: serviceName }),
-						DOM.space(),
-						...GetService(serviceName).SaveInput(title.services[serviceKey]!),
-					],
+					childs: [link, DOM.space(), ...GetService(serviceName).SaveInput(title.services[serviceKey]!)],
 				})
 			);
 		}

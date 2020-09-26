@@ -242,6 +242,10 @@ main {
 
 // Services
 .services {
+	display: flex;
+	flex-flow: row wrap;
+	align-items: flex-start;
+
 	&.selectable .card {
 		cursor: pointer;
 	}
@@ -359,6 +363,7 @@ main {
 					text-overflow: ellipsis;
 					overflow: hidden;
 					white-space: nowrap;
+					text-align: left;
 				}
 			}
 		}

@@ -1,12 +1,12 @@
 @import 'Photon.scss';
 
 .scs.card {
-	border-radius: 4px;
 	box-shadow: $shadow-10;
 	min-width: 15%;
 	overflow: hidden;
 	margin: 32px;
 	transition: all 150ms $animation;
+	border-radius: 4px;
 
 	&:hover {
 		box-shadow: $shadow-20;
@@ -15,6 +15,13 @@
 		font-size: $title-30;
 		text-align: center;
 		padding: 32px;
+
+		&:first-of-type:not(:nth-last-of-type(1)) {
+			border-top-left-radius: 4px;
+			border-top-right-radius: 4px;
+			border: 1px solid $white-100;
+			border-bottom: 0;
+		}
 	}
 	& .body,
 	& .footer {

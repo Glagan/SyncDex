@@ -6,10 +6,22 @@
 		background: map.get($services-bg, 'sc');
 		color: $grey-90;
 	}
+
+	.services {
+		display: flex;
+		flex-flow: column wrap;
+		align-items: flex-start;
+	}
+
 	.service {
 		display: flex;
 		align-items: center;
 		width: 50%;
+		margin-bottom: 4px;
+
+		input {
+			margin-right: 4px;
+		}
 
 		img {
 			flex-shrink: 0;

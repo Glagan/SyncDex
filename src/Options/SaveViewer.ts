@@ -81,8 +81,8 @@ export class SaveViewer {
 	};
 
 	createRow = (title: Title): HTMLElement => {
-		const editButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('edit')] });
-		const deleteButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('trash')] });
+		const editButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('edit')], title: 'Edit' });
+		const deleteButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('trash')], title: 'Delete' });
 		const row = DOM.create('tr', {
 			childs: [
 				DOM.create('td', {
@@ -119,29 +119,46 @@ export class SaveViewer {
 				this.loadPage(this.currentPage);
 			}).show();
 		});
+		let deletePrevention: [number, SimpleNotification] | undefined = undefined;
 		deleteButton.addEventListener('click', async (event) => {
 			event.preventDefault();
-			deleteButton.disabled = true;
-			deleteButton.classList.add('loading');
-			await LocalStorage.remove(title.id);
-			this.titles.remove(title.id);
-			row.remove();
-			// Remove page buttons and load new pages if necessary
-			const oldMax = this.maxPage;
-			this.maxPage = Math.ceil(this.titles.length / SaveViewer.perPage);
-			if (oldMax > this.maxPage) {
-				this.pages[oldMax].remove();
-				delete this.pages[oldMax];
+			if (deletePrevention !== undefined) {
+				clearTimeout(deletePrevention[0]);
+				deletePrevention[1].close();
+				deleteButton.classList.add('loading');
+				await LocalStorage.remove(title.id);
+				this.titles.remove(title.id);
+				row.remove();
+				// Remove page buttons and load new pages if necessary
+				const oldMax = this.maxPage;
+				this.maxPage = Math.ceil(this.titles.length / SaveViewer.perPage);
+				if (oldMax > this.maxPage) {
+					this.pages[oldMax].remove();
+					delete this.pages[oldMax];
+				}
+				if (this.maxPage > 1 && oldMax > this.maxPage && this.currentPage == oldMax) {
+					this.previousPage = this.pages[this.maxPage];
+					this.previousPage.classList.add('active');
+					this.previousPage.disabled = true;
+					this.loadPage(this.currentPage - 1);
+				} else if (this.currentPage <= this.maxPage) {
+					this.loadPage(this.currentPage);
+				}
+				if (this.titles.length == 0) this.body.appendChild(this.emptySave);
+			} else {
+				deletePrevention = [
+					setTimeout(() => {
+						deletePrevention = undefined;
+					}, 3000),
+					SimpleNotification.warning(
+						{
+							title: 'Confirm',
+							text: 'Click the **Delete** button again to confirm.',
+						},
+						{ duration: 3000 }
+					),
+				];
 			}
-			if (this.maxPage > 1 && oldMax > this.maxPage && this.currentPage == oldMax) {
-				this.previousPage = this.pages[this.maxPage];
-				this.previousPage.classList.add('active');
-				this.previousPage.disabled = true;
-				this.loadPage(this.currentPage - 1);
-			} else if (this.currentPage <= this.maxPage) {
-				this.loadPage(this.currentPage);
-			}
-			if (this.titles.length == 0) this.body.appendChild(this.emptySave);
 		});
 		return row;
 	};
