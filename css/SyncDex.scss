@@ -10,7 +10,8 @@
 @import 'Form.scss';
 
 // Meta
-.hidden {
+.hidden,
+.hidden-lang {
 	overflow: hidden;
 	max-height: 0;
 	transform: scaleY(0);
@@ -19,7 +20,9 @@
 .hidden.full {
 	display: none;
 }
-.hidden.visible {
+.hidden.visible:not(.hidden-lang),
+.hidden.visible.hidden-lang.visible-lang,
+.hidden-lang.visible-lang:not(.hidden) {
 	transform: scaleY(1);
 	max-height: 100px;
 }

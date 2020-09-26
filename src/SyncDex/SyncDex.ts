@@ -582,8 +582,8 @@ export class SyncDex {
 		// Add all chapters from the ChapterList if it's a new Title
 		if (Options.saveOpenedChapters && imported) {
 			for (const row of overview.chapterList.rows) {
-				if (row.chapter < title.progress.chapter) {
-					title.addChapter(row.chapter);
+				if (row.progress.chapter < title.progress.chapter) {
+					title.addChapter(row.progress.chapter);
 				}
 			}
 			// Highlight again if the chapter list needs update
