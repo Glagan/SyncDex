@@ -3,6 +3,9 @@ import { Title } from '../Core/Title';
 import { ChapterRow } from './ChapterRow';
 import { SyncModule } from './SyncModule';
 
+/**
+ * Helper class for the chapter list in a Title Page
+ */
 export class ChapterList {
 	highest: number = 0;
 	rows: ChapterRow[] = [];
@@ -26,8 +29,63 @@ export class ChapterList {
 	}
 
 	bind(syncModule: SyncModule): void {
+		const title = syncModule.title;
 		for (const row of this.rows) {
-			row.bind(syncModule, this.rows);
+			// Bind chapter list button -- saveOpenedChapters is enabled if it exist
+			row.toggleButton?.addEventListener('click', async (event) => {
+				event.preventDefault();
+				if (row.toggleIcon!.classList.contains('fa-minus')) {
+					title.removeChapter(row.progress.chapter);
+					// Toggle all rows with the same chapter value
+					for (const otherRow of this.rows) {
+						if (otherRow.progress.chapter == row.progress.chapter) {
+							if (!otherRow.isNext) otherRow.node.style.backgroundColor = '';
+							otherRow.disableToggleButton();
+						}
+					}
+				} else {
+					title.addChapter(row.progress.chapter);
+					// Toggle all rows with the same chapter value
+					for (const otherRow of this.rows) {
+						if (otherRow.progress.chapter == row.progress.chapter) {
+							if (!otherRow.isNext) otherRow.node.style.backgroundColor = Options.colors.openedChapter;
+							otherRow.enableToggleButton();
+						}
+					}
+				}
+			});
+
+			// Bind Set as Latest button
+			let loading = false;
+			row.markButton.addEventListener('click', async (event) => {
+				event.preventDefault();
+				if (loading) return;
+				row.markButton.classList.add('loading');
+				loading = true;
+				if (row.progress.chapter == title.progress.chapter) return;
+				// No need to do anything here, only add or remove chapters from the list
+				// Highlight on syncedLocal will fix everything
+				if (Options.saveOpenedChapters) {
+					for (const otherRow of this.rows) {
+						if (otherRow.progress.chapter > row.progress.chapter) {
+							title.removeChapter(otherRow.progress.chapter);
+						} else if (otherRow.progress.chapter <= row.progress.chapter) {
+							title.addChapter(otherRow.progress.chapter);
+						}
+					}
+				}
+				// Update Title
+				title.progress.chapter = row.progress.chapter;
+				if (title.status == Status.NONE) {
+					title.status = Status.READING;
+					title.start = new Date();
+				}
+				await title.persist();
+				syncModule.overview?.syncedLocal(title);
+				await syncModule.syncExternal(true);
+				row.markButton.classList.remove('loading');
+				loading = false;
+			});
 		}
 	}
 
@@ -65,16 +123,12 @@ export class ChapterList {
 			// Set current state of the Toggle button
 			if (row.toggleButton && row.toggleIcon) {
 				if (isOpened) {
-					row.toggleButton!.title = 'Remove from chapter list';
-					row.toggleIcon!.classList.add('fa-minus');
-					row.toggleIcon!.classList.remove('fa-plus');
+					row.enableToggleButton();
 				} else {
-					row.toggleButton!.title = 'Add to chapter list';
-					row.toggleIcon!.classList.add('fa-plus');
-					row.toggleIcon!.classList.remove('fa-minus');
+					row.disableToggleButton();
 				}
 			}
-			// Add Set Latest button
+			// Hide Set Latest button
 			if (row.progress.chapter == title.progress.chapter) {
 				row.parent.classList.add('current');
 			}

@@ -231,7 +231,7 @@ class SyncDexOverview extends ServiceOverview {
 		this.editButton.addEventListener('click', async (event) => {
 			event.preventDefault();
 			SaveEditor.create(syncModule.title, async () => {
-				syncModule.overview.reset();
+				syncModule.overview?.reset();
 				syncModule.initialize();
 				await syncModule.syncLocal();
 				await syncModule.syncExternal(true);
@@ -240,7 +240,7 @@ class SyncDexOverview extends ServiceOverview {
 		this.refreshButton.addEventListener('click', async (event) => {
 			event.preventDefault();
 			await syncModule.title.refresh();
-			syncModule.overview.reset();
+			syncModule.overview?.reset();
 			syncModule.initialize();
 			await syncModule.syncLocal();
 			await syncModule.syncExternal(true);

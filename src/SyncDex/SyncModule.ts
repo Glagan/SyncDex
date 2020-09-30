@@ -21,15 +21,15 @@ export type SyncReport = {
 
 export class SyncModule {
 	title: Title;
-	overview: Overview;
+	overview?: Overview;
 	loadingServices: Promise<BaseTitle | RequestStatus>[] = [];
 	services: { [key in ActivableKey]?: BaseTitle | RequestStatus } = {};
 	loggedIn: boolean = true; // Logged in on MangaDex
 
-	constructor(title: Title, overview: Overview) {
+	constructor(title: Title, overview?: Overview) {
 		this.title = title;
 		this.overview = overview;
-		if (this.overview.bind) this.overview.bind(this);
+		if (this.overview?.bind) this.overview.bind(this);
 	}
 
 	/**
@@ -38,7 +38,7 @@ export class SyncModule {
 	initialize = (): void => {
 		this.services = {}; // Reset services
 		if (Options.services.length == 0) {
-			this.overview.hasNoServices();
+			this.overview?.hasNoServices();
 			return;
 		}
 		const activeServices = Object.keys(this.title.services).filter(
@@ -47,12 +47,12 @@ export class SyncModule {
 		// Add Services ordered by Options.services to check Main Service first
 		for (const key of Options.services) {
 			const hasId = activeServices.indexOf(key) >= 0;
-			this.overview.initializeService(key, hasId);
+			this.overview?.initializeService(key, hasId);
 			if (hasId) {
 				const initialRequest = GetService(ReverseActivableName[key]).get(this.title.services[key]!);
 				this.loadingServices.push(initialRequest);
 				initialRequest.then((res) => {
-					this.overview.receivedInitialRequest(key, res, this);
+					this.overview?.receivedInitialRequest(key, res, this);
 					this.services[key] = res;
 					return res;
 				});
@@ -88,7 +88,7 @@ export class SyncModule {
 		}
 		// Sync Title with the most recent ServiceTitle ordered by User choice
 		// Services are reversed to select the first choice last
-		this.overview.syncingLocal();
+		this.overview?.syncingLocal();
 		let doSave = false;
 		for (const key of [...Options.services].reverse()) {
 			if (this.services[key] === undefined) continue;
@@ -111,7 +111,7 @@ export class SyncModule {
 			}
 		}
 		if (doSave) await this.title.persist();
-		this.overview.syncedLocal(this.title);
+		this.overview?.syncedLocal(this.title);
 		return doSave;
 	};
 
@@ -133,17 +133,17 @@ export class SyncModule {
 			// If Auto Sync is on, import from now up to date Title and persist
 			if ((!checkAutoSyncOption || Options.autoSync) && (!service.inList || !service.synced)) {
 				service.import(this.title);
-				this.overview.syncingService(key);
+				this.overview?.syncingService(key);
 				const promise = service.persist();
 				promises.push(promise);
 				promise.then((res) => {
 					if (res > RequestStatus.CREATED) {
-						this.overview.syncedService(key, res, this.title);
-					} else this.overview.syncedService(key, service, this.title);
+						this.overview?.syncedService(key, res, this.title);
+					} else this.overview?.syncedService(key, service, this.title);
 					report[key] = res;
 				});
 				// Always update the overview to check against possible imported ServiceTitle
-			} else this.overview.syncedService(key, service, this.title);
+			} else this.overview?.syncedService(key, service, this.title);
 		}
 		// Update MangaDex List Status and Score
 		if (Options.updateMD && this.loggedIn) {
@@ -157,8 +157,8 @@ export class SyncModule {
 						this.loggedIn = false;
 					} else {
 						strings.success.push('**MangaDex Status** updated.');
-						if (this.overview.syncedMangaDex) {
-							this.overview.syncedMangaDex('status', this.title);
+						if (this.overview?.syncedMangaDex) {
+							this.overview?.syncedMangaDex('status', this.title);
 						}
 					}
 				} else {
@@ -175,8 +175,8 @@ export class SyncModule {
 				const response = await this.syncMangaDex('score');
 				if (response.ok) {
 					strings.success.push('**MangaDex Score** updated.');
-					if (this.overview.syncedMangaDex) {
-						this.overview.syncedMangaDex('score', this.title);
+					if (this.overview?.syncedMangaDex) {
+						this.overview?.syncedMangaDex('score', this.title);
 					}
 				} else {
 					strings.error.push(`Error while updating **MangaDex Score**.\ncode: ${response.code}`);
@@ -230,8 +230,8 @@ export class SyncModule {
 				'X-Requested-With': 'XMLHttpRequest',
 			},
 		});
-		if (this.overview.syncedMangaDex) {
-			this.overview.syncedMangaDex(fct, this.title);
+		if (this.overview?.syncedMangaDex) {
+			this.overview?.syncedMangaDex(fct, this.title);
 		}
 		return response;
 	};
@@ -316,10 +316,10 @@ export class SyncModule {
 		const service = this.services[key];
 		if (!service || typeof service === 'number') return;
 		service.import(this.title);
-		this.overview.syncingService(key);
+		this.overview?.syncingService(key);
 		const res = await service.persist();
 		if (res > RequestStatus.CREATED) {
-			this.overview.syncedService(key, res, this.title);
-		} else this.overview.syncedService(key, service, this.title);
+			this.overview?.syncedService(key, res, this.title);
+		} else this.overview?.syncedService(key, service, this.title);
 	};
 }

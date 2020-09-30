@@ -1,9 +1,7 @@
 import { DOM } from '../Core/DOM';
 import { Options } from '../Core/Options';
-import { SyncModule } from './SyncModule';
 
 export class ChapterRow {
-	next?: ChapterRow;
 	isNext: boolean;
 	node: HTMLElement;
 	parent: HTMLElement;
@@ -11,22 +9,16 @@ export class ChapterRow {
 	toggleButton?: HTMLButtonElement;
 	toggleIcon?: HTMLElement;
 	markButton: HTMLElement;
-	previous?: ChapterRow;
 	progress: Progress;
 	hidden: boolean;
 	language?: string;
 
-	static previousRow?: ChapterRow;
 	static languageMap: { [key: string]: string } = {};
 	static rowLanguages: { code: string; node: HTMLElement }[] = [];
+	static currentTab?: HTMLElement;
 
 	constructor(chapterRow: HTMLElement) {
 		const fullRow = chapterRow.parentElement!.parentElement!;
-		if (ChapterRow.previousRow) {
-			this.next = this.previous;
-			ChapterRow.previousRow.previous = this;
-		}
-		ChapterRow.previousRow = this;
 		this.isNext = false;
 		this.node = fullRow;
 		this.parent = chapterRow.querySelector(`a[href^='/chapter']`)!.parentElement!;
@@ -77,95 +69,65 @@ export class ChapterRow {
 		}
 	}
 
-	bind = (syncModule: SyncModule, rows: ChapterRow[]): void => {
-		const title = syncModule.title;
+	enableToggleButton = (): void => {
+		this.toggleButton!.title = 'Remove from chapter list';
+		this.toggleIcon!.classList.add('fa-minus');
+		this.toggleIcon!.classList.remove('fa-plus');
+	};
 
-		// Bind the +/- button for the Chapter list of the Title
-		if (this.toggleButton) {
-			this.toggleButton.addEventListener('click', async (event) => {
-				event.preventDefault();
-				if (this.toggleIcon!.classList.contains('fa-minus')) {
-					title.removeChapter(this.progress.chapter);
-					// Toggle all rows with the same chapter value
-					for (const otherRow of rows) {
-						if (otherRow.progress.chapter == this.progress.chapter) {
-							if (!otherRow.isNext) otherRow.node.style.backgroundColor = '';
-							otherRow.toggleButton!.title = 'Add to chapter list';
-							otherRow.toggleIcon!.classList.remove('fa-minus');
-							otherRow.toggleIcon!.classList.add('fa-plus');
-						}
-					}
-				} else {
-					title.addChapter(this.progress.chapter);
-					// Toggle all rows with the same chapter value
-					for (const otherRow of rows) {
-						if (otherRow.progress.chapter == this.progress.chapter) {
-							if (!otherRow.isNext) otherRow.node.style.backgroundColor = Options.colors.openedChapter;
-							otherRow.toggleButton!.title = 'Remove from chapter list';
-							otherRow.toggleIcon!.classList.add('fa-minus');
-							otherRow.toggleIcon!.classList.remove('fa-plus');
-						}
-					}
-				}
-				await title.persist();
-			});
+	disableToggleButton = (): void => {
+		this.toggleButton!.title = 'Add to chapter list';
+		this.toggleIcon!.classList.remove('fa-minus');
+		this.toggleIcon!.classList.add('fa-plus');
+	};
+
+	static hideAllExcept = (flag: string, tab: HTMLElement): void => {
+		for (const row of ChapterRow.rowLanguages) {
+			if (flag == 'all' || row.code == flag) {
+				row.node.classList.add('visible-lang');
+			} else {
+				row.node.classList.remove('visible-lang');
+			}
 		}
+		if (ChapterRow.currentTab) ChapterRow.currentTab.classList.remove('active');
+		ChapterRow.currentTab = tab;
+		ChapterRow.currentTab.classList.add('active');
+	};
 
-		// Bind the 'Set as Latest' button
-		this.markButton.addEventListener('click', async (event) => {
-			event.preventDefault();
-			if (this.progress.chapter == title.progress.chapter) return;
-			// Remove everything above current -- highligth and from opened
-			let higherRow: ChapterRow = this;
-			while (higherRow.next && higherRow.next.progress.chapter <= title.progress.chapter) {
-				title.removeChapter(higherRow.next.progress.chapter);
-				higherRow.next.node.style.backgroundColor = '';
-				higherRow.next.isNext = false;
-				if (higherRow.next.toggleIcon) {
-					higherRow.next.toggleIcon.classList.remove('fa-minus');
-					higherRow.next.toggleIcon.classList.add('fa-plus');
-				}
-				higherRow = higherRow.next;
-			}
-			// Remove next highlight
-			if (higherRow.next) {
-				higherRow.next.node.style.backgroundColor = '';
-				higherRow.next.isNext = false;
-				if (higherRow.next.toggleIcon) {
-					higherRow.next.toggleIcon.classList.remove('fa-minus');
-					higherRow.next.toggleIcon.classList.add('fa-plus');
-				}
-			}
-			// Mark everything up to current as read and highlight
-			let currentRow: ChapterRow | undefined = this;
-			while (currentRow) {
-				title.addChapter(currentRow.progress.chapter);
-				currentRow.node.style.backgroundColor = Options.colors.openedChapter;
-				currentRow.isNext = false;
-				if (currentRow.toggleIcon) {
-					currentRow.toggleIcon.classList.add('fa-minus');
-					currentRow.toggleIcon.classList.remove('fa-plus');
-				}
-				currentRow = currentRow.previous;
-			}
-			// Highlight
-			const previousCurrent = document.querySelector<HTMLElement>('.col.current');
-			if (previousCurrent) previousCurrent.classList.remove('current');
-			this.parent.classList.add('current');
-			if (this.next) {
-				this.next.node.style.backgroundColor = Options.colors.nextChapter;
-				this.next.isNext = true;
-			}
-			// Update Title
-			title.progress.chapter = this.progress.chapter;
-			if (title.status == Status.NONE) {
-				title.status = Status.READING;
-				title.start = new Date();
-			}
-			await title.persist();
-			syncModule.overview.syncedLocal(title);
-			await syncModule.syncExternal(true);
+	static createTab = (
+		parent: HTMLElement,
+		flag: string,
+		name: string,
+		title: string,
+		appendFunction?: (parent: HTMLElement, tab: HTMLElement) => void
+	): HTMLElement => {
+		const tabLink = DOM.create('a', {
+			class: `nav-link tab-${flag} ${flag == Options.favoriteLanguage ? 'active' : ''}`,
+			href: '#',
+			title: title,
+			events: {
+				click: (event) => {
+					event.preventDefault();
+					ChapterRow.hideAllExcept(flag, tabLink);
+				},
+			},
+			childs: [
+				DOM.create('span', { class: `rounded flag flag-${flag}`, childs: [] }),
+				DOM.space(),
+				DOM.create('span', {
+					class: 'd-none d-md-inline',
+					textContent: name,
+				}),
+			],
 		});
+		const tab = DOM.create('li', {
+			class: 'nav-item',
+			childs: [tabLink],
+		});
+		if (appendFunction) {
+			appendFunction(parent, tab);
+		} else parent.appendChild(tab);
+		return tab;
 	};
 
 	static generateLanguageButtons = (
@@ -187,59 +149,23 @@ export class ChapterRow {
 			}
 
 			// Add languages buttons
-			let currentTab: HTMLElement | undefined = undefined;
-			const hideAllExcept = (flag: string, tab: HTMLElement): void => {
-				for (const row of ChapterRow.rowLanguages) {
-					if (flag == 'all' || row.code == flag) {
-						row.node.classList.add('visible-lang');
-					} else {
-						row.node.classList.remove('visible-lang');
-					}
-				}
-				if (currentTab) currentTab.classList.remove('active');
-				currentTab = tab;
-				currentTab.classList.add('active');
-			};
-			const createTab = (parent: HTMLElement, flag: string, name: string, title: string): HTMLElement => {
-				const tabLink = DOM.create('a', {
-					class: `nav-link tab-${flag} ${flag == Options.favoriteLanguage ? 'active' : ''}`,
-					href: '#',
-					title: title,
-					events: {
-						click: (event) => {
-							event.preventDefault();
-							hideAllExcept(flag, tabLink);
-						},
-					},
-					childs: [
-						DOM.create('span', { class: `rounded flag flag-${flag}`, childs: [] }),
-						DOM.space(),
-						DOM.create('span', {
-							class: 'd-none d-md-inline',
-							textContent: name,
-						}),
-					],
-				});
-				const tab = DOM.create('li', {
-					class: 'nav-item',
-					childs: [tabLink],
-				});
-				if (appendFunction) {
-					appendFunction(parent, tab);
-				} else parent.appendChild(tab);
-				return tab;
-			};
-
-			const allTab = createTab(parent, 'all', 'All Languages', 'Display chapters in all Languages');
-			if (defaultLanguage == 'all') hideAllExcept(defaultLanguage, allTab);
+			const allTab = ChapterRow.createTab(
+				parent,
+				'all',
+				'All Languages',
+				'Display chapters in all Languages',
+				appendFunction
+			);
+			if (defaultLanguage == 'all') ChapterRow.hideAllExcept(defaultLanguage, allTab);
 			for (const language of availableLanguages) {
-				const tab = createTab(
+				const tab = ChapterRow.createTab(
 					parent,
 					language,
 					ChapterRow.languageMap[language],
-					`Show only chapters in ${ChapterRow.languageMap[language]}`
+					`Show only chapters in ${ChapterRow.languageMap[language]}`,
+					appendFunction
 				);
-				if (language == defaultLanguage) hideAllExcept(defaultLanguage, tab);
+				if (language == defaultLanguage) ChapterRow.hideAllExcept(defaultLanguage, tab);
 			}
 		}
 	};

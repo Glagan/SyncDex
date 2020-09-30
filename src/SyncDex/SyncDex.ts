@@ -94,45 +94,34 @@ export class SyncDex {
 		// Hide, Highlight and add Thumbnails to each row
 		for (const group of groups) {
 			const title = titles.find(group.id);
-			if (title !== undefined && title.inList) {
-				group.findNextChapter(title);
-				if (Options.hideHigher || Options.hideLast || Options.hideLower) group.hide(title);
+			if (title !== undefined) {
+				group.initialize(new SyncModule(title));
 				if (Options.highlight) group.highlight(title);
+				if (Options.hideHigher || Options.hideLast || Options.hideLower) group.hide(title);
 			}
-			if (Options.thumbnail) group.setThumbnails();
 		}
 
 		// Button to toggle hidden chapters
-		const rows = document.querySelectorAll('.hidden');
-		const hiddenCount = rows.length;
 		const navBar = document.querySelector<HTMLElement>('#content ul.nav.nav-tabs');
 		if (navBar) {
-			if (hiddenCount > 0 && !navBar.classList.contains('hide-loaded')) {
+			if (!navBar.classList.contains('hide-loaded')) {
 				navBar.classList.add('hide-loaded');
-				const icon = DOM.icon('eye');
-				const linkContent = DOM.create('span', { textContent: `Show Hidden ${hiddenCount}` });
-				const link = DOM.create('a', {
-					class: 'nav-link',
-					href: '#',
-					childs: [icon, DOM.space(), linkContent],
-				});
-				let active = false;
-				link.addEventListener('click', (event) => {
+				const toggleButton = ChapterGroup.toggleButton;
+				toggleButton.button.addEventListener('click', (event) => {
 					event.preventDefault();
-					rows.forEach((row) => {
-						row.classList.toggle('visible');
-					});
-					icon.classList.toggle('fa-eye');
-					icon.classList.toggle('fa-eye-slash');
-					if (active) linkContent.textContent = `Show Hidden (${hiddenCount})`;
-					else linkContent.textContent = `Hide Hidden (${hiddenCount})`;
-					active = !active;
+					let active = !toggleButton.button.classList.toggle('show-hidden');
+					for (const group of groups) {
+						group.toggleHidden();
+					}
+					toggleButton.icon.classList.toggle('fa-eye');
+					toggleButton.icon.classList.toggle('fa-eye-slash');
+					if (active) toggleButton.description.textContent = 'Show Hidden';
+					else toggleButton.description.textContent = 'Hide Hidden';
 				});
-				const button = DOM.create('li', { class: 'nav-item', childs: [link] });
 				if (navBar.lastElementChild!.classList.contains('ml-auto')) {
-					navBar.insertBefore(button, navBar.lastElementChild);
+					navBar.insertBefore(toggleButton.button, navBar.lastElementChild);
 				} else {
-					navBar.appendChild(button);
+					navBar.appendChild(toggleButton.button);
 				}
 			}
 
