@@ -94,10 +94,18 @@ export class SyncDex {
 		// Hide, Highlight and add Thumbnails to each row
 		for (const group of groups) {
 			const title = titles.find(group.id);
-			if (title !== undefined) {
+			if (title !== undefined && title.inList) {
 				group.initialize(new SyncModule(title));
 				if (Options.highlight) group.highlight(title);
 				if (Options.hideHigher || Options.hideLast || Options.hideLower) group.hide(title);
+			} else if (group.rows.length > 0) {
+				// Still add thumbnails and the Group title if it's no in list
+				if (Options.thumbnail) {
+					for (const row of group.rows) {
+						new Thumbnail(group.id, row.node);
+					}
+				}
+				group.rows[0].node.firstElementChild!.appendChild(group.titleLink());
 			}
 		}
 

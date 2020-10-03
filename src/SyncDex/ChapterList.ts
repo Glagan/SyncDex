@@ -31,6 +31,8 @@ export class ChapterList {
 	bind(syncModule: SyncModule): void {
 		const title = syncModule.title;
 		for (const row of this.rows) {
+			row.addManageButtons();
+
 			// Bind chapter list button -- saveOpenedChapters is enabled if it exist
 			row.toggleButton?.addEventListener('click', async (event) => {
 				event.preventDefault();

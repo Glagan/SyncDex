@@ -54,6 +54,10 @@
 		opacity: 1;
 	}
 
+	& > div {
+		position: relative;
+	}
+
 	.thumbnail {
 		max-width: 100%;
 		max-height: inherit;
@@ -67,8 +71,16 @@
 	}
 
 	.content {
+		position: absolute;
 		display: inline-block;
 		padding: 4px;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.6);
+		left: 0;
+		right: 0;
+		opacity: 0.8;
+		text-shadow: 0 0 1px black;
+		box-shadow: 0px 0 3px black;
 	}
 	&.loading .content {
 		display: none;

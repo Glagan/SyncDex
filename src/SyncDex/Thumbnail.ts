@@ -1,25 +1,31 @@
 import { DOM } from '../Core/DOM';
 import { Options } from '../Core/Options';
+import { Title } from '../Core/Title';
 
 export class Thumbnail {
 	static container?: HTMLElement;
 	row: HTMLElement;
 	thumbnail: HTMLElement;
+	container: HTMLElement;
+	content: HTMLElement;
 
-	constructor(id: number, row: HTMLElement) {
+	constructor(id: number, row: HTMLElement, title?: Title) {
 		this.row = row;
+
 		// Create tooltip
+		this.container = DOM.create('div');
 		this.thumbnail = DOM.create('div', {
 			class: 'tooltip loading',
 			css: {
 				left: `-${window.innerWidth}px`,
 				maxHeight: `${(window.innerHeight - 10) * (Options.thumbnailMaxHeight / 100)}px`,
 			},
+			childs: [this.container],
 		});
 		let spinner = DOM.create('i', {
 			class: 'fas fa-circle-notch fa-spin',
 		});
-		this.thumbnail.appendChild(spinner);
+		this.container.appendChild(spinner);
 		if (Thumbnail.container === undefined) {
 			Thumbnail.container = DOM.create('div', {
 				id: 'tooltip-container',
@@ -27,6 +33,7 @@ export class Thumbnail {
 			document.body.appendChild(Thumbnail.container);
 		}
 		Thumbnail.container.appendChild(this.thumbnail);
+
 		// Thumbnail
 		let tooltipThumb = DOM.create('img', {
 			class: 'thumbnail loading',
@@ -35,7 +42,8 @@ export class Thumbnail {
 			},
 		});
 		tooltipThumb.style.length;
-		this.thumbnail.appendChild(tooltipThumb);
+		this.container.appendChild(tooltipThumb);
+
 		// Load cover
 		tooltipThumb.addEventListener('load', () => {
 			delete this.row.dataset.loading;
@@ -64,6 +72,7 @@ export class Thumbnail {
 				}
 			}
 		});
+
 		// Events
 		let activateTooltip = (rightColumn: boolean) => {
 			this.thumbnail.dataset.column = rightColumn.toString();
@@ -88,6 +97,7 @@ export class Thumbnail {
 			this.thumbnail.classList.remove('active');
 			this.thumbnail.style.left = '-5000px';
 		};
+
 		// First column
 		if (this.row.firstElementChild) {
 			this.row.firstElementChild.addEventListener('mouseenter', (event) => {
@@ -95,6 +105,7 @@ export class Thumbnail {
 				activateTooltip(false);
 			});
 		}
+
 		// Second column
 		if (this.row.lastElementChild) {
 			this.row.lastElementChild.addEventListener('mouseenter', (event) => {
@@ -102,6 +113,7 @@ export class Thumbnail {
 				activateTooltip(true);
 			});
 		}
+
 		// Row
 		this.row.addEventListener('mouseleave', (event) => {
 			event.stopPropagation();
@@ -113,7 +125,35 @@ export class Thumbnail {
 				disableTooltip();
 			}
 		});
+
+		// Content (Chapter, Volume)
+		this.content = DOM.create('div', { class: 'content' });
+		if (title) this.updateContent(title);
 	}
+
+	updateContent = (title: Title): void => {
+		DOM.clear(this.content);
+		this.container.appendChild(this.content);
+		DOM.append(
+			this.content,
+			DOM.icon('bookmark'),
+			DOM.space(),
+			DOM.text('Chapter'),
+			DOM.space(),
+			DOM.text(`${title.progress.chapter}`)
+		);
+		if (title.progress.volume) {
+			DOM.append(
+				this.content,
+				DOM.create('br'),
+				DOM.icon('book'),
+				DOM.space(),
+				DOM.text('Volume'),
+				DOM.space(),
+				DOM.text(`${title.progress.volume}`)
+			);
+		}
+	};
 
 	updatePosition = (): void => {
 		let rightColumn = this.thumbnail.dataset.column == 'true';

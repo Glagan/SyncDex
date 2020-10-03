@@ -44,7 +44,6 @@ export class ChapterRow {
 			title: 'Set as the Latest chapter',
 		});
 		this.manage = DOM.create('div', { childs: [this.markButton] });
-		this.parent.appendChild(this.manage);
 		if (Options.saveOpenedChapters) {
 			this.toggleIcon = DOM.icon('plus');
 			this.toggleButton = DOM.create('button', {
@@ -68,6 +67,10 @@ export class ChapterRow {
 			}
 		}
 	}
+
+	addManageButtons = (): void => {
+		this.parent.appendChild(this.manage);
+	};
 
 	enableToggleButton = (): void => {
 		this.toggleButton!.title = 'Remove from chapter list';

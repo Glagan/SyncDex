@@ -16,6 +16,7 @@ export class ChapterGroup {
 	nextChapters: ChapterRow[] = [];
 	nextChapterRows: HTMLElement[] = [];
 	initializedSync: boolean = false;
+	thumbnail?: Thumbnail;
 	/**
 	 * List of rows for each rows indexed by a MangaDex Title ID
 	 */
@@ -49,6 +50,15 @@ export class ChapterGroup {
 		if (name) this.name = name;
 	}
 
+	titleLink = (): HTMLElement => {
+		return DOM.create('a', {
+			textContent: this.name,
+			class: 'text-truncate',
+			href: `/title/${this.id}`,
+			title: this.name,
+		});
+	};
+
 	/**
 	 * Find the next chapter for the group if it's available and bind events.
 	 * Also add required CSS to each rows.
@@ -59,105 +69,92 @@ export class ChapterGroup {
 
 		// Add back the name on the first row
 		if (this.rows.length > 0) {
-			this.rows[0].node.firstElementChild!.appendChild(
-				DOM.create('a', {
-					textContent: this.name,
-					class: 'text-truncate',
-					href: `/title/${this.id}`,
-					title: this.name,
-				})
-			);
-		}
+			this.rows[0].node.firstElementChild!.appendChild(this.titleLink());
 
-		// Bind each row and add current chapter class
-		for (const row of this.rows) {
-			if (Options.thumbnail) new Thumbnail(this.id, row.node);
-			if (row.progress.chapter == title.progress.chapter) {
-				row.parent.classList.add('current');
-			}
-			row.node.classList.add('has-fast-in-transition');
-
-			if (row.toggleButton && row.toggleIcon) {
-				// Set default toggleButton state
-				if (title.chapters.indexOf(row.progress.chapter) >= 0) {
-					row.enableToggleButton();
-				} else {
-					row.disableToggleButton();
+			// Bind each row and add current chapter class
+			for (const row of this.rows) {
+				row.addManageButtons();
+				if (Options.thumbnail) this.thumbnail = new Thumbnail(this.id, row.node, title);
+				if (row.progress.chapter == title.progress.chapter) {
+					row.parent.classList.add('current');
 				}
+				row.node.classList.add('has-fast-in-transition');
 
-				// Bind chapter list button -- saveOpenedChapters is enabled if it exist
-				row.toggleButton.addEventListener('click', async (event) => {
-					event.preventDefault();
-					if (row.toggleIcon!.classList.contains('fa-minus')) {
-						title.removeChapter(row.progress.chapter);
-						// Toggle all rows with the same chapter value
-						for (const otherRow of this.rows) {
-							if (otherRow.progress.chapter == row.progress.chapter) {
-								otherRow.disableToggleButton();
+				if (row.toggleButton && row.toggleIcon) {
+					// Set default toggleButton state
+					if (title.chapters.indexOf(row.progress.chapter) >= 0) {
+						row.enableToggleButton();
+					} else {
+						row.disableToggleButton();
+					}
+
+					// Bind chapter list button -- saveOpenedChapters is enabled if it exist
+					row.toggleButton.addEventListener('click', async (event) => {
+						event.preventDefault();
+						if (row.toggleIcon!.classList.contains('fa-minus')) {
+							title.removeChapter(row.progress.chapter);
+							// Toggle all rows with the same chapter value
+							for (const otherRow of this.rows) {
+								if (otherRow.progress.chapter == row.progress.chapter) {
+									otherRow.disableToggleButton();
+								}
+							}
+						} else {
+							title.addChapter(row.progress.chapter);
+							// Toggle all rows with the same chapter value
+							for (const otherRow of this.rows) {
+								if (otherRow.progress.chapter == row.progress.chapter) {
+									otherRow.enableToggleButton();
+								}
 							}
 						}
-					} else {
-						title.addChapter(row.progress.chapter);
-						// Toggle all rows with the same chapter value
+					});
+				}
+
+				// Bind Set as Latest button
+				row.markButton.addEventListener('click', async (event) => {
+					event.preventDefault();
+					if (!this.initializedSync) {
+						syncModule?.initialize();
+						await syncModule.syncLocal();
+						this.initializedSync = true;
+					}
+					if (row.progress.chapter == title.progress.chapter) return;
+					row.parent.classList.add('current');
+					// No need to do anything here, only add or remove chapters from the list
+					// Highlight will fix everything
+					if (Options.saveOpenedChapters) {
 						for (const otherRow of this.rows) {
-							if (otherRow.progress.chapter == row.progress.chapter) {
-								otherRow.enableToggleButton();
+							if (otherRow.progress.chapter > row.progress.chapter) {
+								otherRow.parent.classList.remove('current');
+								title.removeChapter(otherRow.progress.chapter);
+								row.disableToggleButton();
+							} else if (otherRow.progress.chapter < row.progress.chapter) {
+								otherRow.parent.classList.remove('current');
+								title.addChapter(otherRow.progress.chapter);
+								row.enableToggleButton();
+							} else {
+								otherRow.parent.classList.add('current');
+								title.addChapter(otherRow.progress.chapter);
+								row.enableToggleButton();
 							}
 						}
 					}
+					// Update Title
+					title.progress.chapter = row.progress.chapter;
+					if (title.status == Status.NONE) {
+						title.status = Status.READING;
+						title.start = new Date();
+					}
+					await title.persist();
+					this.findNextChapter(title);
+					if (Options.highlight) this.highlight(title);
+					if (Options.hideHigher || Options.hideLast || Options.hideLower) this.hide(title);
+					this.thumbnail?.updateContent(title);
+					await syncModule!.syncExternal(true);
 				});
 			}
-
-			// Bind Set as Latest button
-			row.markButton.addEventListener('click', async (event) => {
-				event.preventDefault();
-				if (!this.initializedSync) {
-					syncModule?.initialize();
-					this.initializedSync = true;
-				}
-				if (row.progress.chapter == title.progress.chapter) return;
-				row.parent.classList.add('current');
-				// No need to do anything here, only add or remove chapters from the list
-				// Highlight will fix everything
-				if (Options.saveOpenedChapters) {
-					for (const otherRow of this.rows) {
-						if (otherRow.progress.chapter > row.progress.chapter) {
-							otherRow.parent.classList.remove('current');
-							title.removeChapter(otherRow.progress.chapter);
-							row.disableToggleButton();
-						} else if (otherRow.progress.chapter < row.progress.chapter) {
-							otherRow.parent.classList.remove('current');
-							title.addChapter(otherRow.progress.chapter);
-							row.enableToggleButton();
-						} else {
-							otherRow.parent.classList.add('current');
-							title.addChapter(otherRow.progress.chapter);
-							row.enableToggleButton();
-						}
-					}
-				}
-				// Update Title
-				title.progress.chapter = row.progress.chapter;
-				if (title.status == Status.NONE) {
-					title.status = Status.READING;
-					title.start = new Date();
-				}
-				await title.persist();
-				this.findNextChapter(title);
-				if (Options.highlight) this.highlight(title);
-				if (Options.hideHigher || Options.hideLast || Options.hideLower) this.hide(title);
-				await syncModule!.syncExternal(true);
-			});
 		}
-	};
-
-	titleLink = (): HTMLElement => {
-		return DOM.create('a', {
-			textContent: this.name,
-			class: 'text-truncate',
-			href: `/title/${this.id}`,
-			title: this.name,
-		});
 	};
 
 	toggleHidden = (): void => {

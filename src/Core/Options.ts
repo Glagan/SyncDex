@@ -77,7 +77,7 @@ export const DefaultOptions: AvailableOptions = {
 	// Title
 	linkToServices: true,
 	overviewMainOnly: true,
-	autoSync: false,
+	autoSync: true,
 	mdUpdateSyncDex: false,
 	// History
 	biggerHistory: true,
