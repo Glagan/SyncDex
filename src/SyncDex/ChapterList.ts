@@ -76,6 +76,8 @@ export class ChapterList {
 						}
 					}
 				}
+				// Add missing chapters to fill the possible gap between the new current and the old one
+				// TODO
 				// Update Title
 				title.progress.chapter = row.progress.chapter;
 				if (title.status == Status.NONE) {

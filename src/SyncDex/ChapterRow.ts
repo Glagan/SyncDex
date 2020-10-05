@@ -133,6 +133,7 @@ export class ChapterRow {
 		return tab;
 	};
 
+	// TODO: Move out to TitleChapterGroup to display rows on first line
 	static generateLanguageButtons = (
 		parent: HTMLElement | null,
 		appendFunction?: (parent: HTMLElement, tab: HTMLElement) => void

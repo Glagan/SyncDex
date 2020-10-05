@@ -9,8 +9,10 @@ export interface AvailableOptions {
 	hideLower: boolean;
 	hideLast: boolean;
 	highlight: boolean;
+	groupTitlesInLists: boolean;
 	thumbnail: boolean;
 	originalThumbnail: boolean;
+	progressInThumbnail: boolean;
 	thumbnailMaxHeight: number;
 	separateLanguages: boolean;
 	favoriteLanguage: string;
@@ -62,8 +64,10 @@ export const DefaultOptions: AvailableOptions = {
 	hideLower: true,
 	hideLast: false,
 	highlight: true,
+	groupTitlesInLists: true,
 	thumbnail: true,
 	originalThumbnail: false,
+	progressInThumbnail: true,
 	thumbnailMaxHeight: 80,
 	separateLanguages: true,
 	favoriteLanguage: 'all',

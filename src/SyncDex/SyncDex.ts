@@ -1,6 +1,5 @@
 import { Router } from './Router';
 import { Options } from '../Core/Options';
-import { ChapterGroup } from './ChapterGroup';
 import { DOM } from '../Core/DOM';
 import {
 	TitleCollection,
@@ -18,7 +17,8 @@ import { injectScript, stringToProgress, progressToString } from '../Core/Utilit
 import { Runtime } from '../Core/Runtime';
 import { Thumbnail } from './Thumbnail';
 import { SyncModule } from './SyncModule';
-import { TitleGroup } from './TitleGroup';
+import { UpdateGroup } from './UpdateGroup';
+import { TitleChapterGroup } from './TitleChapterGroup';
 import { History } from './History';
 import { ChapterRow } from './ChapterRow';
 
@@ -84,12 +84,14 @@ export class SyncDex {
 		if (!Options.hideHigher && !Options.hideLast && !Options.hideLower && !Options.thumbnail && !Options.highlight)
 			return;
 
-		const groups = ChapterGroup.getGroups();
-		const titles = await TitleCollection.get(
-			groups.map((group) => {
-				return group.id;
-			})
-		);
+		const groups = TitleChapterGroup.getGroups();
+		const titles = await TitleCollection.get([
+			...new Set(
+				groups.map((group) => {
+					return group.id;
+				})
+			),
+		]);
 
 		// Hide, Highlight and add Thumbnails to each row
 		for (const group of groups) {
@@ -99,6 +101,7 @@ export class SyncDex {
 				if (Options.highlight) group.highlight(title);
 				if (Options.hideHigher || Options.hideLast || Options.hideLower) group.hide(title);
 			} else if (group.rows.length > 0) {
+				// !
 				// Still add thumbnails and the Group title if it's no in list
 				if (Options.thumbnail) {
 					for (const row of group.rows) {
@@ -114,7 +117,7 @@ export class SyncDex {
 		if (navBar) {
 			if (!navBar.classList.contains('hide-loaded')) {
 				navBar.classList.add('hide-loaded');
-				const toggleButton = ChapterGroup.toggleButton;
+				const toggleButton = TitleChapterGroup.toggleButton;
 				toggleButton.button.addEventListener('click', (event) => {
 					event.preventDefault();
 					let active = !toggleButton.button.classList.toggle('show-hidden');
@@ -612,7 +615,7 @@ export class SyncDex {
 
 		if (!Options.hideHigher && !Options.hideLast && !Options.hideLower && !Options.highlight) return;
 
-		const groups = TitleGroup.getGroups();
+		const groups = UpdateGroup.getGroups();
 		const ids = groups.map((group) => group.id);
 		const titles = await TitleCollection.get(ids);
 

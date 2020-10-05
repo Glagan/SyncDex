@@ -10,7 +10,7 @@ interface ChapterRow {
 /**
  * Helper class to get and easily highlight or hide chapters and titles in the Updates page.
  */
-export class TitleGroup {
+export class UpdateGroup {
 	id: number = 0;
 	titleRow: HTMLTableDataCellElement;
 	chapters: ChapterRow[] = [];
@@ -85,19 +85,19 @@ export class TitleGroup {
 				row.node.style.backgroundColor = Options.colors.lowerChapter;
 			} else if (progress.chapter == row.progress.chapter) {
 				// * Current Chapter
-				row.node.style.backgroundColor = Options.colors.highlights[TitleGroup.currentColor];
+				row.node.style.backgroundColor = Options.colors.highlights[UpdateGroup.currentColor];
 				if (!foundNext) {
-					bgColumn.style.backgroundColor = Options.colors.highlights[TitleGroup.currentColor];
+					bgColumn.style.backgroundColor = Options.colors.highlights[UpdateGroup.currentColor];
 				}
 			}
 		}
-		TitleGroup.currentColor = (TitleGroup.currentColor + 1) % lastColor;
+		UpdateGroup.currentColor = (UpdateGroup.currentColor + 1) % lastColor;
 	};
 
-	static getGroups = (): TitleGroup[] => {
-		const groups: TitleGroup[] = [];
+	static getGroups = (): UpdateGroup[] => {
+		const groups: UpdateGroup[] = [];
 		const rows = document.querySelectorAll<HTMLTableDataCellElement>('table tbody tr');
-		let currentGroup: TitleGroup | undefined = undefined;
+		let currentGroup: UpdateGroup | undefined = undefined;
 		for (const row of rows) {
 			const mangaTitle = row.querySelector<HTMLAnchorElement>('.manga_title');
 			if (mangaTitle !== null) {
@@ -108,7 +108,7 @@ export class TitleGroup {
 					continue;
 				}
 				const id = parseInt(idReg[1]);
-				currentGroup = new TitleGroup(id, row);
+				currentGroup = new UpdateGroup(id, row);
 			} else if (currentGroup != undefined) {
 				const chapterLink = row.querySelector<HTMLAnchorElement>(`a[href^='/chapter/'`);
 				if (!chapterLink) continue;

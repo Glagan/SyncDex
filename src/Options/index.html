@@ -169,12 +169,17 @@
 			<div class="parameter">
 				<input type="checkbox" id="ck_thumbnail" data-name="thumbnail" />
 				<label for="ck_thumbnail">Display the cover of the title when hovering a row inside lists.</label>
-			</div>
-			<h2>Original cover</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_originalThumbnail" data-name="originalThumbnail" />
+				<input type="checkbox" id="ck_originalThumbnail" data-name="originalThumbnail" data-dependency="thumbnail" />
 				<label for="ck_originalThumbnail">Display the full size original cover of the title instead of a thumbnail.</label>
 				<p class="helper">Do not enable this if you don't have a somehow good connection, some images can be big.</p>
+				<input type="checkbox" id="ck_progressInThumbnail" data-name="progressInThumbnail" data-dependency="thumbnail" />
+				<label for="ck_progressInThumbnail">Display the current progress of the <b>Title</b> in it's thumbnail.</label>
+			</div>
+			<h2>Group Titles</h2>
+			<div class="parameter">
+				<input type="checkbox" id="ck_groupTitlesInLists" data-name="groupTitlesInLists" />
+				<label for="ck_groupTitlesInLists">Group all rows of a Title in <b>Chapter Lists</b> to avoid multiple groups for a single Title.</label>
+				<p class="helper">Rows will be ordered by the <b>Chapter</b> value and not by <b>Publish Date</b>, but the transformed unique Groups will be ordered by the Publish Date of the first found row of the group.</p>
 			</div>
 			<h2>Separate Languages</h2>
 			<div class="parameter">
@@ -234,7 +239,8 @@
 				<label for="ck_biggerHistory">Save each titles you read and display a bigger history than the original 20 that <b>MangaDex</b> save.</label>
 				<p class="helper">
 					This will also <b>Highlight</b> your each cards in the <b>History</b> page to hint your status for the Title.<br />
-					<b>Green</b> if you read the <b>Highest available chapter</b> or <b>Blue</b> if there is a new chapter.</p>
+					<b>Green</b> if you read the <b>Highest available chapter</b> or <b>Blue</b> if there is a new chapter.
+				</p>
 				<input type="checkbox" id="ck_chapterStatus" data-name="chapterStatus" data-dependency="biggerHistory" />
 				<label for="ck_chapterStatus">Update the <b>History</b> page every 30min while it's keep opened to update <b>Highlight</b>.</label>
 			</div>

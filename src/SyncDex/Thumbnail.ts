@@ -128,7 +128,7 @@ export class Thumbnail {
 
 		// Content (Chapter, Volume)
 		this.content = DOM.create('div', { class: 'content' });
-		if (title) this.updateContent(title);
+		if (title && Options.progressInThumbnail) this.updateContent(title);
 	}
 
 	updateContent = (title: Title): void => {

@@ -147,9 +147,10 @@ interface Update {
 }
 const updates: Update[] = [];
 
-browser.runtime.onInstalled.addListener((details) => {
+browser.runtime.onInstalled.addListener(async (details) => {
 	// Apply each needed Updates
 	if (details.reason === 'update') {
+		await Options.load();
 		for (const update of updates) {
 			if (update.version >= Options.version) {
 				update.fnct();
@@ -157,6 +158,7 @@ browser.runtime.onInstalled.addListener((details) => {
 			}
 		}
 		Options.version = DefaultOptions.version;
+		await Options.save();
 	}
 
 	// Open the options with a Modal
