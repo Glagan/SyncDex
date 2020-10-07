@@ -101,7 +101,6 @@ export class SyncDex {
 				if (Options.highlight) group.highlight(title);
 				if (Options.hideHigher || Options.hideLast || Options.hideLower) group.hide(title);
 			} else if (group.rows.length > 0) {
-				// !
 				// Still add thumbnails and the Group title if it's no in list
 				if (Options.thumbnail) {
 					for (const row of group.rows) {
@@ -120,13 +119,13 @@ export class SyncDex {
 				const toggleButton = TitleChapterGroup.toggleButton;
 				toggleButton.button.addEventListener('click', (event) => {
 					event.preventDefault();
-					let active = !toggleButton.button.classList.toggle('show-hidden');
+					let hidden = !toggleButton.button.classList.toggle('show-hidden');
 					for (const group of groups) {
-						group.toggleHidden();
+						group.toggleHidden(hidden);
 					}
 					toggleButton.icon.classList.toggle('fa-eye');
 					toggleButton.icon.classList.toggle('fa-eye-slash');
-					if (active) toggleButton.description.textContent = 'Show Hidden';
+					if (hidden) toggleButton.description.textContent = 'Show Hidden';
 					else toggleButton.description.textContent = 'Hide Hidden';
 				});
 				if (navBar.lastElementChild!.classList.contains('ml-auto')) {
@@ -137,9 +136,32 @@ export class SyncDex {
 			}
 
 			// Add Language buttons
-			ChapterRow.generateLanguageButtons(navBar, (parent, tab) => {
-				parent.insertBefore(tab, parent.lastElementChild);
-			});
+			ChapterRow.generateLanguageButtons(
+				navBar,
+				(parent, tab) => {
+					parent.insertBefore(tab, parent.lastElementChild);
+				},
+				() => {
+					// Add the Title name in the first column after toggling languages
+					let rawVisible = TitleChapterGroup.toggleButton.button.classList.contains('show-hidden');
+					for (const titleGroup of groups) {
+						for (const group of titleGroup.groups) {
+							let addedTitle = false;
+							for (const row of group) {
+								row.node.firstElementChild!.textContent = '';
+								if (
+									!addedTitle &&
+									(rawVisible || !row.hidden) &&
+									row.node.classList.contains('visible-lang')
+								) {
+									row.node.firstElementChild!.appendChild(titleGroup.titleLink());
+									addedTitle = true;
+								}
+							}
+						}
+					}
+				}
+			);
 		}
 	};
 

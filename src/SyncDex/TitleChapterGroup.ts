@@ -166,16 +166,25 @@ export class TitleChapterGroup {
 		}
 	};
 
-	toggleHidden = (): void => {
+	toggleHidden = (hidden: boolean): void => {
 		for (const group of this.groups) {
 			if (group.length == 0) continue;
+			let addedTitle = false;
 			for (const row of group) {
+				row.node.firstElementChild!.textContent = '';
 				if (row.hidden) {
 					row.node.classList.toggle('visible');
 				}
-				row.node.firstElementChild!.textContent = '';
+				// Add back title in the first column
+				if (
+					!addedTitle &&
+					(!hidden || !row.hidden) &&
+					(!Options.separateLanguages || row.node.classList.contains('visible-lang'))
+				) {
+					row.node.firstElementChild!.appendChild(this.titleLink());
+					addedTitle = true;
+				}
 			}
-			group[0].node.firstElementChild!.appendChild(this.titleLink());
 		}
 	};
 
@@ -186,11 +195,13 @@ export class TitleChapterGroup {
 		const showHidden = TitleChapterGroup.toggleButton.button.classList.contains('show-hidden');
 		for (const group of this.groups) {
 			if (group.length == 0) continue;
+			let addedTitle = false;
 			for (const row of group) {
 				if (!row.progress) continue;
 				// Reset
 				row.hidden = false;
-				row.node.classList.remove('hidden');
+				row.node.classList.remove('hidden', 'visible');
+				row.node.firstElementChild!.textContent = '';
 				// Hide Lower and Last, avoid hiding next Chapter (0 is the next of 0)
 				if (
 					(Options.hideHigher &&
@@ -204,20 +215,14 @@ export class TitleChapterGroup {
 					row.hidden = true;
 					this.hiddenRows++;
 				}
-				row.node.firstElementChild!.textContent = '';
-			}
-			// Display the title on the first not hidden chapter
-			for (const row of group) {
-				if (!row.hidden) {
-					row.node.firstElementChild!.appendChild(
-						DOM.create('a', {
-							textContent: this.name,
-							class: 'text-truncate',
-							href: `/title/${this.id}`,
-							title: this.name,
-						})
-					);
-					break;
+				// Add back title in the first column
+				if (
+					!addedTitle &&
+					!row.hidden &&
+					(!Options.separateLanguages || row.node.classList.contains('visible-lang'))
+				) {
+					row.node.firstElementChild!.appendChild(this.titleLink());
+					addedTitle = true;
 				}
 			}
 		}
@@ -328,10 +333,10 @@ export class TitleChapterGroup {
 							}
 						}
 					}
-					firstChild.textContent = '';
 					const currentChapterRow = new ChapterRow(chapterRow);
 					// Don't add empty chapters
 					if (!isNaN(currentChapterRow.progress.chapter)) {
+						firstChild.textContent = '';
 						// Move the chapters to a single group
 						if (Options.groupTitlesInLists) {
 							const max = currentChapterGroup.length;

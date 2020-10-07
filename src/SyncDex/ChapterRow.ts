@@ -84,7 +84,7 @@ export class ChapterRow {
 		this.toggleIcon!.classList.add('fa-plus');
 	};
 
-	static hideAllExcept = (flag: string, tab: HTMLElement): void => {
+	static hideAllExcept = (flag: string, tab: HTMLElement, afterToggle?: () => void): void => {
 		for (const row of ChapterRow.rowLanguages) {
 			if (flag == 'all' || row.code == flag) {
 				row.node.classList.add('visible-lang');
@@ -95,25 +95,21 @@ export class ChapterRow {
 		if (ChapterRow.currentTab) ChapterRow.currentTab.classList.remove('active');
 		ChapterRow.currentTab = tab;
 		ChapterRow.currentTab.classList.add('active');
+		if (afterToggle) afterToggle();
 	};
 
-	static createTab = (
+	static createLanguageTab = (
 		parent: HTMLElement,
 		flag: string,
 		name: string,
 		title: string,
-		appendFunction?: (parent: HTMLElement, tab: HTMLElement) => void
+		appendFunction?: (parent: HTMLElement, tab: HTMLElement) => void,
+		afterToggle?: () => void
 	): HTMLElement => {
 		const tabLink = DOM.create('a', {
 			class: `nav-link tab-${flag} ${flag == Options.favoriteLanguage ? 'active' : ''}`,
 			href: '#',
 			title: title,
-			events: {
-				click: (event) => {
-					event.preventDefault();
-					ChapterRow.hideAllExcept(flag, tabLink);
-				},
-			},
 			childs: [
 				DOM.create('span', { class: `rounded flag flag-${flag}`, childs: [] }),
 				DOM.space(),
@@ -127,16 +123,20 @@ export class ChapterRow {
 			class: 'nav-item',
 			childs: [tabLink],
 		});
+		tabLink.addEventListener('click', (event) => {
+			event.preventDefault();
+			ChapterRow.hideAllExcept(flag, tab, afterToggle);
+		});
 		if (appendFunction) {
 			appendFunction(parent, tab);
 		} else parent.appendChild(tab);
 		return tab;
 	};
 
-	// TODO: Move out to TitleChapterGroup to display rows on first line
 	static generateLanguageButtons = (
 		parent: HTMLElement | null,
-		appendFunction?: (parent: HTMLElement, tab: HTMLElement) => void
+		appendFunction?: (parent: HTMLElement, tab: HTMLElement) => void,
+		afterToggle?: () => void
 	): void => {
 		const langLoaded = parent ? parent.classList.contains('lang-loaded') : true;
 		if (Options.separateLanguages && parent && !langLoaded) {
@@ -153,23 +153,25 @@ export class ChapterRow {
 			}
 
 			// Add languages buttons
-			const allTab = ChapterRow.createTab(
+			const allTab = ChapterRow.createLanguageTab(
 				parent,
 				'all',
 				'All Languages',
 				'Display chapters in all Languages',
-				appendFunction
+				appendFunction,
+				afterToggle
 			);
-			if (defaultLanguage == 'all') ChapterRow.hideAllExcept(defaultLanguage, allTab);
+			if (defaultLanguage == 'all') ChapterRow.hideAllExcept(defaultLanguage, allTab, afterToggle);
 			for (const language of availableLanguages) {
-				const tab = ChapterRow.createTab(
+				const tab = ChapterRow.createLanguageTab(
 					parent,
 					language,
 					ChapterRow.languageMap[language],
 					`Show only chapters in ${ChapterRow.languageMap[language]}`,
-					appendFunction
+					appendFunction,
+					afterToggle
 				);
-				if (language == defaultLanguage) ChapterRow.hideAllExcept(defaultLanguage, tab);
+				if (language == defaultLanguage) ChapterRow.hideAllExcept(defaultLanguage, tab, afterToggle);
 			}
 		}
 	};
