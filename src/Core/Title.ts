@@ -703,30 +703,49 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 	};
 
 	addChapter = (chapter: number): boolean => {
-		let index = this.chapters.indexOf(chapter);
-		if (index >= 0) return false;
-		// Sorted insert
-		const max = this.chapters.length;
-		index = 0;
-		for (; index <= max; index++) {
-			if (index == max) {
-				this.chapters.push(chapter);
-			} else if (chapter < this.chapters[index]) {
-				this.chapters.splice(index, 0, chapter);
-				break;
+		let max = this.chapters.length;
+		let hasChapter = this.chapters.indexOf(chapter) < 0;
+		let index = 0;
+		// Add to chapter list only if it's not already in
+		if (hasChapter) {
+			// Sorted insert
+			for (; index <= max; index++) {
+				if (index == max) {
+					this.chapters.push(chapter);
+				} else if (chapter < this.chapters[index]) {
+					this.chapters.splice(index, 0, chapter);
+					break;
+				}
 			}
 		}
-		// We only save 100 chapters
-		if (max == 99) {
-			if (index >= 50) this.chapters.unshift();
+		// Prune chapters
+		const half = Options.chaptersSaved / 2;
+		while (max >= Options.chaptersSaved) {
+			if (index <= half) this.chapters.unshift();
 			else this.chapters.pop();
+			max--;
 		}
-		return true;
+		return hasChapter;
 	};
 
 	removeChapter = (chapter: number): void => {
 		let index = this.chapters.indexOf(chapter);
 		if (index >= 0) this.chapters.splice(index, 1);
+	};
+
+	/**
+	 * Remove all chapters above the current progress and
+	 * 	fill possible gap in chapters between the current progress and a new chapter.
+	 */
+	updateChapterList = (chapter: number): void => {
+		// Prune chapters
+		this.chapters = this.chapters.filter((c) => c <= chapter);
+		this.addChapter(chapter);
+		// Add between gaps
+		const limit = Math.max(0, chapter - Options.chaptersSaved - 1);
+		for (let i = chapter; i > limit; i--) {
+			this.addChapter(i);
+		}
 	};
 
 	refresh = async (): Promise<boolean> => {

@@ -68,16 +68,13 @@ export class ChapterList {
 				// No need to do anything here, only add or remove chapters from the list
 				// Highlight on syncedLocal will fix everything
 				if (Options.saveOpenedChapters) {
+					title.updateChapterList(row.progress.chapter);
 					for (const otherRow of this.rows) {
-						if (otherRow.progress.chapter > row.progress.chapter) {
-							title.removeChapter(otherRow.progress.chapter);
-						} else if (otherRow.progress.chapter <= row.progress.chapter) {
+						if (otherRow.progress.chapter < row.progress.chapter) {
 							title.addChapter(otherRow.progress.chapter);
 						}
 					}
 				}
-				// Add missing chapters to fill the possible gap between the new current and the old one
-				// TODO
 				// Update Title
 				title.progress.chapter = row.progress.chapter;
 				if (title.status == Status.NONE) {

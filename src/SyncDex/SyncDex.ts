@@ -608,10 +608,10 @@ export class SyncDex {
 		// Find if logged in on MangaDex
 		syncModule.loggedIn = !document.querySelector('button[title="You need to log in to use this function."]');
 		const imported = await syncModule.syncLocal();
-		if (Options.saveOpenedChapters && imported) title.addChapter(title.progress.chapter);
 
 		// Add all chapters from the ChapterList if it's a new Title
 		if (Options.saveOpenedChapters && imported) {
+			title.updateChapterList(title.progress.chapter);
 			for (const row of overview.chapterList.rows) {
 				if (row.progress.chapter < title.progress.chapter) {
 					title.addChapter(row.progress.chapter);

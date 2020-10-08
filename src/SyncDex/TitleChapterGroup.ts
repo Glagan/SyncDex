@@ -130,10 +130,11 @@ export class TitleChapterGroup {
 						// No need to do anything here, only add or remove chapters from the list
 						// Highlight will fix everything
 						if (Options.saveOpenedChapters) {
+							title.updateChapterList(row.progress.chapter);
+							// Update visible rows and add possible subchapters to the chapter list
 							for (const otherRow of this.rows) {
 								if (otherRow.progress.chapter > row.progress.chapter) {
 									otherRow.parent.classList.remove('current');
-									title.removeChapter(otherRow.progress.chapter);
 									row.disableToggleButton();
 								} else if (otherRow.progress.chapter < row.progress.chapter) {
 									otherRow.parent.classList.remove('current');
@@ -141,13 +142,10 @@ export class TitleChapterGroup {
 									row.enableToggleButton();
 								} else {
 									otherRow.parent.classList.add('current');
-									title.addChapter(otherRow.progress.chapter);
 									row.enableToggleButton();
 								}
 							}
 						}
-						// Add missing chapters to fill the possible gap between the new current and the old one
-						// TODO
 						// Update Title
 						title.progress.chapter = row.progress.chapter;
 						if (title.status == Status.NONE) {

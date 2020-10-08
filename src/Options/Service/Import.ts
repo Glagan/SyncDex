@@ -209,7 +209,7 @@ export abstract class FileImportableModule<T extends Object | Document, R extend
 			for (const title of collection.collection) {
 				if (title.progress.chapter > 0) {
 					title.chapters = [];
-					let index = Math.max(title.progress.chapter - 500, 1);
+					let index = Math.max(title.progress.chapter - Options.chaptersSaved, 1);
 					for (; index <= title.progress.chapter; index++) {
 						title.chapters.push(index);
 					}
@@ -377,7 +377,7 @@ export abstract class APIImportableModule extends ImportableModule {
 			for (const title of collection.collection) {
 				if (title.progress.chapter > 0) {
 					title.chapters = [];
-					let index = Math.max(title.progress.chapter - 500, 1);
+					let index = Math.max(title.progress.chapter - Options.chaptersSaved, 1);
 					for (; index <= title.progress.chapter; index++) {
 						title.chapters.push(index);
 					}
