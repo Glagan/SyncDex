@@ -4,6 +4,7 @@ import { LocalStorage } from '../Core/Storage';
 import { GetService } from './Manager/Service';
 import { dateFormat, progressToString } from '../Core/Utility';
 import { SaveEditor } from '../Core/SaveEditor';
+import { SyncModule } from '../Core/SyncModule';
 
 export class SaveViewer {
 	paging: HTMLElement;
@@ -80,6 +81,27 @@ export class SaveViewer {
 		return icons;
 	};
 
+	/**
+	 * Remove page buttons and load new pages if necessary
+	 */
+	updateDisplayedPage = (): void => {
+		const oldMax = this.maxPage;
+		this.maxPage = Math.ceil(this.titles.length / SaveViewer.perPage);
+		if (oldMax > this.maxPage) {
+			this.pages[oldMax].remove();
+			delete this.pages[oldMax];
+		}
+		if (this.maxPage > 1 && oldMax > this.maxPage && this.currentPage == oldMax) {
+			this.previousPage = this.pages[this.maxPage];
+			this.previousPage.classList.add('active');
+			this.previousPage.disabled = true;
+			this.loadPage(this.currentPage - 1);
+		} else if (this.currentPage <= this.maxPage) {
+			this.loadPage(this.currentPage);
+		}
+		if (this.titles.length == 0) this.body.appendChild(this.emptySave);
+	};
+
 	createRow = (title: Title): HTMLElement => {
 		const editButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('edit')], title: 'Edit' });
 		const deleteButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('trash')], title: 'Delete' });
@@ -115,10 +137,20 @@ export class SaveViewer {
 		});
 		editButton.addEventListener('click', async (event) => {
 			event.preventDefault();
-			SaveEditor.create(title, () => {
-				this.loadPage(this.currentPage);
-			}).show();
+			const syncModule = new SyncModule(title);
+			syncModule.initialize();
+			SaveEditor.create(
+				syncModule,
+				() => {
+					this.loadPage(this.currentPage);
+				},
+				() => {
+					this.titles.remove(title.id);
+					this.updateDisplayedPage();
+				}
+			).show();
 		});
+		// Delete button in list only delete in Local Storage
 		let deletePrevention: [number, SimpleNotification] | undefined = undefined;
 		deleteButton.addEventListener('click', async (event) => {
 			event.preventDefault();
@@ -129,33 +161,18 @@ export class SaveViewer {
 				await LocalStorage.remove(title.id);
 				this.titles.remove(title.id);
 				row.remove();
-				// Remove page buttons and load new pages if necessary
-				const oldMax = this.maxPage;
-				this.maxPage = Math.ceil(this.titles.length / SaveViewer.perPage);
-				if (oldMax > this.maxPage) {
-					this.pages[oldMax].remove();
-					delete this.pages[oldMax];
-				}
-				if (this.maxPage > 1 && oldMax > this.maxPage && this.currentPage == oldMax) {
-					this.previousPage = this.pages[this.maxPage];
-					this.previousPage.classList.add('active');
-					this.previousPage.disabled = true;
-					this.loadPage(this.currentPage - 1);
-				} else if (this.currentPage <= this.maxPage) {
-					this.loadPage(this.currentPage);
-				}
-				if (this.titles.length == 0) this.body.appendChild(this.emptySave);
+				this.updateDisplayedPage();
 			} else {
 				deletePrevention = [
 					setTimeout(() => {
 						deletePrevention = undefined;
-					}, 3000),
+					}, 4000),
 					SimpleNotification.warning(
 						{
 							title: 'Confirm',
 							text: 'Click the **Delete** button again to confirm.',
 						},
-						{ duration: 3000 }
+						{ duration: 4000, pauseOnHover: false }
 					),
 				];
 			}

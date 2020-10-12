@@ -9,11 +9,11 @@ import {
 	ReverseServiceName,
 	ServiceKey,
 	StaticKey,
-} from '../Core/Title';
-import { Options } from '../Core/Options';
-import { GetService } from './Service';
-import { Runtime } from '../Core/Runtime';
-import { Overview } from './Overview';
+} from './Title';
+import { Options } from './Options';
+import { GetService } from '../SyncDex/Service';
+import { Runtime } from './Runtime';
+import { Overview } from '../SyncDex/Overview';
 
 export type SyncReport = {
 	[key in ActivableKey]?: RequestStatus | false;
@@ -60,11 +60,7 @@ export class SyncModule {
 		}
 	};
 
-	/**
-	 * Check if any Service in services is available, in the list and more recent that the local Title.
-	 * If an external Service is more recent, sync with it and sync all other Services with the then synced Title.
-	 */
-	syncLocal = async (): Promise<boolean> => {
+	waitInitialize = async (): Promise<void> => {
 		if (this.loadingServices.length > 0) {
 			await Promise.all(this.loadingServices);
 			this.loadingServices = [];
@@ -85,7 +81,16 @@ export class SyncModule {
 					}
 				}
 			}
+			if (this.overview?.receivedAllInitialRequests) this.overview.receivedAllInitialRequests(this);
 		}
+	};
+
+	/**
+	 * Check if any Service in services is available, in the list and more recent that the local Title.
+	 * If an external Service is more recent, sync with it and sync all other Services with the then synced Title.
+	 */
+	syncLocal = async (): Promise<boolean> => {
+		await this.waitInitialize();
 		// Sync Title with the most recent ServiceTitle ordered by User choice
 		// Services are reversed to select the first choice last
 		this.overview?.syncingLocal();
@@ -116,6 +121,7 @@ export class SyncModule {
 	};
 
 	syncExternal = async (checkAutoSyncOption: boolean = false): Promise<SyncReport> => {
+		await this.waitInitialize();
 		const promises: Promise<RequestStatus>[] = [];
 		const report: SyncReport = {};
 		for (const key of Options.services) {
@@ -155,15 +161,8 @@ export class SyncModule {
 					// MangaDex returns an empty response if not logged in
 					if (response.body.length == 0) {
 						this.loggedIn = false;
-					} else {
-						strings.success.push('**MangaDex Status** updated.');
-						if (this.overview?.syncedMangaDex) {
-							this.overview?.syncedMangaDex('status', this.title);
-						}
-					}
-				} else {
-					strings.error.push(`Error while updating **MangaDex Status**.\ncode: ${response.code}`);
-				}
+					} else strings.success.push('**MangaDex Status** updated.');
+				} else strings.error.push(`Error while updating **MangaDex Status**.\ncode: ${response.code}`);
 			}
 			if (
 				this.loggedIn &&
@@ -173,14 +172,8 @@ export class SyncModule {
 				// Convert 0-100 SyncDex Score to 0-10
 				this.title.mdScore = this.title.score;
 				const response = await this.syncMangaDex('score');
-				if (response.ok) {
-					strings.success.push('**MangaDex Score** updated.');
-					if (this.overview?.syncedMangaDex) {
-						this.overview?.syncedMangaDex('score', this.title);
-					}
-				} else {
-					strings.error.push(`Error while updating **MangaDex Score**.\ncode: ${response.code}`);
-				}
+				if (response.ok) strings.success.push('**MangaDex Score** updated.');
+				else strings.error.push(`Error while updating **MangaDex Score**.\ncode: ${response.code}`);
 			}
 			if (strings.success.length > 0) {
 				SimpleNotification.success({ text: strings.success.join('\n') });
@@ -193,7 +186,48 @@ export class SyncModule {
 		return report;
 	};
 
-	mangaDexFunctionValues = (fct: 'unfollow' | 'status' | 'score'): string => {
+	deleteExternal = async (): Promise<SyncReport> => {
+		await this.waitInitialize();
+		const promises: Promise<RequestStatus>[] = [];
+		const report: SyncReport = {};
+		for (const key of Options.services) {
+			const service = this.services[key];
+			if (service === undefined) continue;
+			if (!(service instanceof BaseTitle) || !service.loggedIn) {
+				report[key] = false;
+				continue;
+			}
+			if (service.inList) {
+				this.overview?.syncingService(key);
+				const promise = service.delete();
+				promises.push(promise);
+				promise.then((res) => {
+					if (res != RequestStatus.SUCCESS) {
+						this.overview?.syncedService(key, res, this.title);
+					} else this.overview?.syncedService(key, service, this.title);
+					report[key] = res;
+				});
+				// Always update the overview to check against possible imported ServiceTitle
+			} else this.overview?.syncedService(key, service, this.title);
+		}
+		// Update MangaDex List Status and Score
+		if (Options.updateMD) {
+			this.title.mdStatus = Status.NONE;
+			const response = await this.syncMangaDex('unfollow');
+			if (response.ok) {
+				// MangaDex returns an empty response if not logged in
+				if (response.body.length == 0) {
+					this.loggedIn = false;
+				} else SimpleNotification.success({ text: '**MangaDex Status** updated.' });
+			} else {
+				SimpleNotification.error({ text: `Error while updating **MangaDex Status**.\ncode: ${response.code}` });
+			}
+		}
+		await Promise.all(promises);
+		return report;
+	};
+
+	mangaDexFunction = (fct: 'unfollow' | 'status' | 'score'): string => {
 		const baseAPI = 'https://mangadex.org/ajax/actions.ajax.php';
 		let action;
 		let field;
@@ -224,7 +258,7 @@ export class SyncModule {
 	syncMangaDex = async (fct: 'unfollow' | 'status' | 'score'): Promise<RequestResponse> => {
 		const response = await Runtime.request({
 			method: 'GET',
-			url: this.mangaDexFunctionValues(fct),
+			url: this.mangaDexFunction(fct),
 			credentials: 'include',
 			headers: {
 				'X-Requested-With': 'XMLHttpRequest',

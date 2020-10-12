@@ -2,7 +2,7 @@ import { DOM, AppendableElement } from '../Core/DOM';
 import { BaseTitle, ActivableKey, ServiceKey, ReverseServiceName, StaticKey, Title, StatusMap } from '../Core/Title';
 import { Runtime } from '../Core/Runtime';
 import { Options } from '../Core/Options';
-import { SyncModule } from './SyncModule';
+import { SyncModule } from '../Core/SyncModule';
 import { SaveEditor } from '../Core/SaveEditor';
 import { ChapterList } from './ChapterList';
 import { ChapterRow } from './ChapterRow';
@@ -13,6 +13,7 @@ export abstract class Overview {
 	abstract hasNoServices(): void;
 	abstract initializeService(key: ActivableKey, hasId: boolean): void;
 	abstract receivedInitialRequest(key: ActivableKey, res: BaseTitle | RequestStatus, syncModule: SyncModule): void;
+	receivedAllInitialRequests?(syncModule: SyncModule): void;
 	abstract syncingService(key: ServiceKey): void;
 	abstract syncedService(key: ServiceKey, res: BaseTitle | RequestStatus, title: Title): void;
 	abstract syncingLocal(): void;
@@ -203,11 +204,12 @@ class ServiceOverview {
 	};
 }
 
-class SyncDexOverview extends ServiceOverview {
+class LocalOverview extends ServiceOverview {
 	editButton: HTMLButtonElement;
 	quickButtons: HTMLElement;
 	startReading: HTMLButtonElement;
 	planToRead: HTMLButtonElement;
+	completed: HTMLButtonElement;
 
 	constructor() {
 		super(StaticKey.SyncDex);
@@ -224,14 +226,19 @@ class SyncDexOverview extends ServiceOverview {
 			class: 'btn btn-secondary',
 			childs: [DOM.icon('bookmark'), DOM.space(), DOM.text('Add to Plan to Read')],
 		});
+		this.completed = DOM.create('button', {
+			class: 'btn btn-success',
+			childs: [DOM.icon('book'), DOM.space(), DOM.text('Completed')],
+		});
 		DOM.append(this.quickButtons, this.startReading, DOM.space(), this.planToRead);
 	}
 
 	bind = (syncModule: SyncModule): void => {
 		this.editButton.addEventListener('click', async (event) => {
 			event.preventDefault();
-			SaveEditor.create(syncModule.title, async () => {
+			SaveEditor.create(syncModule, async () => {
 				syncModule.overview?.reset();
+				// Initialize SyncModule again if there is new Service IDs
 				syncModule.initialize();
 				await syncModule.syncLocal();
 				await syncModule.syncExternal(true);
@@ -241,6 +248,7 @@ class SyncDexOverview extends ServiceOverview {
 			event.preventDefault();
 			await syncModule.title.refresh();
 			syncModule.overview?.reset();
+			// Initialize SyncModule again if there is new Service IDs
 			syncModule.initialize();
 			await syncModule.syncLocal();
 			await syncModule.syncExternal(true);
@@ -248,13 +256,19 @@ class SyncDexOverview extends ServiceOverview {
 		const quickBind = async (event: Event, status: Status): Promise<void> => {
 			event.preventDefault();
 			syncModule.title.status = status;
-			if (status == Status.READING) syncModule.title.start = new Date();
+			if (status == Status.READING && !syncModule.title.start) {
+				syncModule.title.start = new Date();
+			} else if (status == Status.COMPLETED) {
+				if (!syncModule.title.start) syncModule.title.start = new Date();
+				if (!syncModule.title.end) syncModule.title.end = new Date();
+			}
 			await syncModule.title.persist();
 			await syncModule.syncLocal();
 			await syncModule.syncExternal(true);
 		};
 		this.startReading.addEventListener('click', (event) => quickBind(event, Status.READING));
 		this.planToRead.addEventListener('click', (event) => quickBind(event, Status.PLAN_TO_READ));
+		this.completed.addEventListener('click', (event) => quickBind(event, Status.COMPLETED));
 	};
 
 	update = (_res: BaseTitle | RequestStatus, title: Title): void => {
@@ -276,7 +290,7 @@ export class TitleOverview extends Overview {
 	serviceList: HTMLUListElement;
 	bodies: HTMLElement;
 	current?: ServiceOverview;
-	mainOverview: SyncDexOverview;
+	mainOverview: LocalOverview;
 	overviews: Partial<{ [key in ActivableKey]: ServiceOverview }> = {};
 	// MangaDex Status and Score
 	mdStatus?: {
@@ -315,7 +329,7 @@ export class TitleOverview extends Overview {
 		this.bodies = DOM.create('div', { class: 'bodies' });
 		DOM.append(this.column, this.serviceList, this.bodies);
 		// Always create SyncDex Overview
-		this.mainOverview = new SyncDexOverview();
+		this.mainOverview = new LocalOverview();
 		this.bindOverview(this.mainOverview);
 		this.activateOverview(this.mainOverview);
 		// Update Status selector if logged in
@@ -343,7 +357,6 @@ export class TitleOverview extends Overview {
 				this.mdStatus.followButton = newFollow;
 			} else {
 				this.mdStatus.followButton.className = 'btn btn-secondary';
-				this.mdStatus.followButton.style.display = 'none';
 				DOM.append(
 					this.mdStatus.followButton,
 					DOM.icon('bookmark fa-fw'),
@@ -495,6 +508,13 @@ export class TitleOverview extends Overview {
 		}
 	};
 
+	receivedAllInitialRequests = (syncModule: SyncModule): void => {
+		// Add the *Completed* button only if the title is complete
+		if (syncModule.title.max && syncModule.title.max.chapter) {
+			DOM.append(this.mainOverview.quickButtons, DOM.space(), this.mainOverview.completed);
+		}
+	};
+
 	syncingService = (key: ActivableKey): void => {
 		const overview = this.overviews[key];
 		if (overview) overview.syncing();
@@ -558,7 +578,8 @@ export class TitleOverview extends Overview {
 		// Activate new Status or Rating
 		// If we're unfollowing, hide Unfollow and revert to default
 		if (this.mdStatus && type == 'unfollow') {
-			this.mdStatus.dropdown.parentElement!.insertBefore(this.mdStatus.followButton, this.mdStatus.button);
+			const buttonContainer = this.mdStatus.dropdown.parentElement!;
+			buttonContainer.insertBefore(this.mdStatus.followButton, buttonContainer.firstElementChild);
 			this.mdStatus.button.className = 'btn btn-secondary dropdown-toggle dropdown-toggle-split';
 			DOM.clear(this.mdStatus.button);
 			this.mdStatus.button.appendChild(DOM.create('span', { class: 'sr-only', textContent: 'Toggle Dropdown' }));
@@ -619,7 +640,7 @@ export class ReadingOverview {
 	bind = (syncModule: SyncModule): void => {
 		this.editButton.addEventListener('click', async (event) => {
 			event.preventDefault();
-			SaveEditor.create(syncModule.title, async () => {
+			SaveEditor.create(syncModule, async () => {
 				this.reset();
 				syncModule.initialize();
 				await syncModule.syncLocal();
@@ -654,7 +675,7 @@ export class ReadingOverview {
 		this.icons[key] = icon;
 	};
 
-	receivedInitialRequest = (key: ActivableKey, res: BaseTitle | RequestStatus, _syncModule: SyncModule): void => {
+	receivedInitialRequest = (key: ActivableKey, res: BaseTitle | RequestStatus, syncModule: SyncModule): void => {
 		const icon = this.icons[key];
 		if (!icon) return;
 		icon.classList.remove('loading');
@@ -667,7 +688,7 @@ export class ReadingOverview {
 		icon.classList.add('loading');
 	};
 
-	syncedService = (key: ActivableKey, res: BaseTitle | RequestStatus, _title: Title): void => {
+	syncedService = (key: ActivableKey, res: BaseTitle | RequestStatus, title: Title): void => {
 		const icon = this.icons[key];
 		if (!icon) return;
 		icon.classList.remove('loading');
@@ -675,5 +696,5 @@ export class ReadingOverview {
 	};
 
 	syncingLocal = (): void => {};
-	syncedLocal = (_title: Title): void => {};
+	syncedLocal = (title: Title): void => {};
 }

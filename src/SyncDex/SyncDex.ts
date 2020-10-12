@@ -16,7 +16,7 @@ import { GetService } from './Service';
 import { injectScript, stringToProgress, progressToString } from '../Core/Utility';
 import { Runtime } from '../Core/Runtime';
 import { Thumbnail } from './Thumbnail';
-import { SyncModule } from './SyncModule';
+import { SyncModule } from '../Core/SyncModule';
 import { UpdateGroup } from './UpdateGroup';
 import { TitleChapterGroup } from './TitleChapterGroup';
 import { History } from './History';

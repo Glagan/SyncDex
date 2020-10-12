@@ -1,7 +1,7 @@
 import { Options } from '../Core/Options';
 import { Title } from '../Core/Title';
 import { ChapterRow } from './ChapterRow';
-import { SyncModule } from './SyncModule';
+import { SyncModule } from '../Core/SyncModule';
 
 /**
  * Helper class for the chapter list in a Title Page

@@ -675,6 +675,16 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 	};
 
 	delete = async (): Promise<RequestStatus> => {
+		// Reset
+		this.inList = false;
+		this.synced = false;
+		this.status = Status.NONE;
+		this.progress = { chapter: 0 };
+		this.score = 0;
+		this.start = undefined;
+		this.end = undefined;
+		this.name = undefined;
+		this.chapters = [];
 		await LocalStorage.remove(this.id as number | string);
 		return RequestStatus.SUCCESS;
 	};

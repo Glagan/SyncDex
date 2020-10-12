@@ -5,6 +5,7 @@ import { GetService } from '../SyncDex/Service';
 import { dateFormatInput } from './Utility';
 import { Runtime } from './Runtime';
 import { Options } from './Options';
+import { SyncModule } from './SyncModule';
 
 export class SaveEditor {
 	static modalRow(content: AppendableElement[]): HTMLElement {
@@ -25,6 +26,7 @@ export class SaveEditor {
 		const select = DOM.create('select', { id: 'ee_status', name: 'status', required: true });
 		let value = 0;
 		for (const status of Object.values(StatusMap)) {
+			if (status == '0') continue;
 			const option = DOM.create('option', { textContent: status, value: `${value}` });
 			if (title.status == value++) option.selected = true;
 			select.appendChild(option);
@@ -32,7 +34,8 @@ export class SaveEditor {
 		return select;
 	}
 
-	static create(title: Title, postSubmit?: () => void): Modal {
+	static create(syncModule: SyncModule, postSubmit?: () => void, postDelete?: () => void): Modal {
+		const title = syncModule.title;
 		const modal = new Modal('medium');
 		modal.header.classList.add('title');
 		modal.header.textContent = 'Edit Entry';
@@ -77,6 +80,7 @@ export class SaveEditor {
 		}
 		// Create form with every rows
 		const form = DOM.create('form', { class: 'save-entry', name: 'entry-form' });
+		const updateAllCheckbox = DOM.create('input', { type: 'checkbox', id: 'scs_updateAll', checked: true });
 		const realSubmit = DOM.create('button', {
 			type: 'submit',
 			css: { display: 'none' },
@@ -105,6 +109,8 @@ export class SaveEditor {
 						type: 'number',
 						placeholder: 'Chapter',
 						value: `${title.progress.chapter}`,
+						min: '0',
+						step: '0.01',
 						required: true,
 					}),
 				]),
@@ -154,6 +160,8 @@ export class SaveEditor {
 			]),
 			DOM.create('label', { textContent: 'Services' }),
 			services,
+			updateAllCheckbox,
+			DOM.create('label', { htmlFor: 'scs_updateAll', textContent: 'Update all Services' }),
 			realSubmit
 		);
 		form.addEventListener('submit', async (event) => {
@@ -161,6 +169,7 @@ export class SaveEditor {
 			modal.disableExit();
 			cancelButton.disabled = true;
 			submitButton.disabled = true;
+			deleteButton.disabled = true;
 			submitButton.classList.add('loading');
 			// Chapter and Status always required
 			let oldChapter = title.progress.chapter;
@@ -197,13 +206,17 @@ export class SaveEditor {
 				title.end = new Date(parts[0], parts[1] - 1, parts[2]);
 			} else delete title.end;
 			// Services
+			// TODO: Option to delete past Services on change, also applies when finding new ID with MangaDex or Mochi
 			for (const sn in ActivableName) {
 				GetService(sn as ActivableName).HandleInput(title, form);
 			}
 			// Save and close Modal
 			await title.persist();
-			SimpleNotification.info({ title: 'Title Saved' });
-			submitButton.classList.remove('loading');
+			SimpleNotification.success({ title: 'Title Saved' });
+			// Sync Services
+			if (updateAllCheckbox.checked) {
+				await syncModule.syncExternal();
+			}
 			modal.enableExit();
 			modal.remove();
 			if (postSubmit) postSubmit();
@@ -213,7 +226,51 @@ export class SaveEditor {
 			realSubmit.click();
 		});
 		modal.body.appendChild(form);
-		DOM.append(modal.footer, submitButton, cancelButton);
+		const deleteButton = DOM.create('button', {
+			class: 'danger',
+			childs: [DOM.icon('trash'), DOM.text('Delete')],
+		});
+		let timeout: number = -1;
+		let notification: SimpleNotification;
+		deleteButton.addEventListener('click', async (event) => {
+			event.preventDefault();
+			// Confirm before deleting
+			if (timeout < 0) {
+				notification = SimpleNotification.warning(
+					{
+						title: 'Confirm',
+						text: 'Click the **Delete** button again to confirm.',
+					},
+					{ position: 'bottom-center', duration: 4000, pauseOnHover: false }
+				);
+				timeout = setTimeout(() => {
+					timeout = -1;
+				}, 4000);
+				return;
+			}
+			// Clear
+			if (notification) notification.remove();
+			clearTimeout(timeout);
+			// Remove exit
+			if (syncModule.overview?.syncingLocal) syncModule.overview.syncingLocal();
+			modal.disableExit();
+			submitButton.disabled = true;
+			cancelButton.disabled = true;
+			deleteButton.disabled = true;
+			deleteButton.classList.add('loading');
+			// Delete Title from lists
+			await syncModule.deleteExternal();
+			await syncModule.title.delete();
+			if (syncModule.overview?.syncedLocal) syncModule.overview.syncedLocal(syncModule.title);
+			modal.enableExit();
+			modal.remove();
+			if (postDelete) postDelete();
+		});
+		DOM.append(
+			modal.footer,
+			DOM.create('div', { childs: [submitButton, cancelButton] }),
+			DOM.create('div', { childs: [deleteButton] })
+		);
 		return modal;
 	}
 }

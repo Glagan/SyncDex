@@ -57,6 +57,7 @@
  * @property {Position} position
  * @property {number} maxNotifications
  * @property {boolean} removeAllOnDisplay
+ * @property {boolean} pauseOnHover
  * @property {boolean} closeOnClick
  * @property {boolean} closeButton
  * @property {number} duration
@@ -64,7 +65,6 @@
  * @property {Events} events
  * @property {InsertAnimationDefinition} insertAnimation
  * @property {RemoveAnimationDefinition} removeAnimation
- * @property {boolean} display
  */
 
 /**
@@ -419,7 +419,7 @@ class SimpleNotification {
 			} else if (event.animationName == this.options.insertAnimation.name) {
 				this.node.classList.remove('gn-insert');
 				// Reset notification duration when hovering
-				if (!this.options.sticky) {
+				if (!this.options.sticky && this.options.pauseOnHover) {
 					this.node.addEventListener('mouseenter', this.removeExtinguish);
 					this.node.addEventListener('mouseleave', this.addExtinguish);
 				}
@@ -438,7 +438,7 @@ class SimpleNotification {
 					}
 				}
 			} else if (event.animationName == 'shorten' && this.progressBar) {
-				if (!this.options.sticky) {
+				if (!this.options.sticky && this.options.pauseOnHover) {
 					this.node.removeEventListener('mouseenter', this.removeExtinguish);
 					this.node.removeEventListener('mouseleave', this.addExtinguish);
 				}
@@ -448,6 +448,7 @@ class SimpleNotification {
 				} else {
 					this.disableButtons();
 					this.closeAnimated();
+					// TODO: Add event listener to pause closing
 				}
 			}
 		});
@@ -855,6 +856,7 @@ SimpleNotification._options = {
 	position: 'top-right',
 	maxNotifications: 0,
 	removeAllOnDisplay: false,
+	pauseOnHover: true,
 	closeOnClick: true,
 	closeButton: true,
 	duration: 4000,
@@ -926,12 +928,6 @@ SimpleNotification.tags = {
 		open: '**',
 		close: '**',
 	},
-	floatRight: {
-		type: 'span',
-		class: 'gn-float-right',
-		open: '>*>',
-		close: '<',
-	},
 	italic: {
 		type: 'span',
 		class: 'gn-italic',
@@ -950,5 +946,11 @@ SimpleNotification.tags = {
 		textContent: false,
 		open: '\n',
 		close: '',
+	},
+	floatRight: {
+		type: 'span',
+		class: 'gn-float-right',
+		open: '>*>',
+		close: '<',
 	},
 };

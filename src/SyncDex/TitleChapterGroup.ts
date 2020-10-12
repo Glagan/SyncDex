@@ -3,7 +3,7 @@ import { Options } from '../Core/Options';
 import { Thumbnail } from './Thumbnail';
 import { Title } from '../Core/Title';
 import { ChapterRow } from './ChapterRow';
-import { SyncModule } from './SyncModule';
+import { SyncModule } from '../Core/SyncModule';
 
 export class TitleChapterGroup {
 	id: number = 0;

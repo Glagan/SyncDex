@@ -115,7 +115,7 @@ export class AnilistTitle extends ExternalTitle {
 					}
 				}
 			}
-		}`;
+		}`.replace(/\n\t+/g, ' ');
 	static readonly persistQuery = `
 		mutation ($mediaId: Int, $status: MediaListStatus, $score: Float, $progress: Int, $progressVolumes: Int, $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput) {
 			SaveMediaListEntry (mediaId: $mediaId, status: $status, score: $score, progress: $progress, progressVolumes: $progressVolumes, startedAt: $startedAt, completedAt: $completedAt) {
@@ -136,13 +136,13 @@ export class AnilistTitle extends ExternalTitle {
 					day
 				}
 			}
-		}`;
+		}`.replace(/\n\t+/g, ' ');
 	static readonly deleteQuery = `
 		mutation ($id: Int) {
 			DeleteMediaListEntry (id: $id) {
 				deleted
 			}
-		}`;
+		}`.replace(/\n\t+/g, ' ');
 
 	constructor(id: ServiceKeyType, title?: Partial<AnilistTitle>) {
 		super(title);
@@ -181,7 +181,6 @@ export class AnilistTitle extends ExternalTitle {
 			loggedIn: true,
 			max: { chapter: body.data.Media.chapters ?? undefined, volume: body.data.Media.volumes ?? undefined },
 		};
-		console.debug(values.max);
 		if (mediaEntry) {
 			values.mediaEntryId = mediaEntry.id;
 			values.inList = true;
