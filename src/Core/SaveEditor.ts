@@ -259,8 +259,8 @@ export class SaveEditor {
 			deleteButton.disabled = true;
 			deleteButton.classList.add('loading');
 			// Delete Title from lists
-			await syncModule.deleteExternal();
 			await syncModule.title.delete();
+			await syncModule.syncExternal();
 			if (syncModule.overview?.syncedLocal) syncModule.overview.syncedLocal(syncModule.title);
 			modal.enableExit();
 			modal.remove();

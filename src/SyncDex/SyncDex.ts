@@ -9,6 +9,9 @@ import {
 	Title,
 	StatusMap,
 	iconToService,
+	ServiceKey,
+	ReverseServiceName,
+	StaticKey,
 } from '../Core/Title';
 import { TitleOverview, ReadingOverview } from './Overview';
 import { Mochi } from '../Core/Mochi';
@@ -16,7 +19,7 @@ import { GetService } from './Service';
 import { injectScript, stringToProgress, progressToString } from '../Core/Utility';
 import { Runtime } from '../Core/Runtime';
 import { Thumbnail } from './Thumbnail';
-import { SyncModule } from '../Core/SyncModule';
+import { SyncModule, SyncReport } from '../Core/SyncModule';
 import { UpdateGroup } from './UpdateGroup';
 import { TitleChapterGroup } from './TitleChapterGroup';
 import { History } from './History';
@@ -25,6 +28,13 @@ import { ChapterRow } from './ChapterRow';
 interface ReadingState {
 	syncModule?: SyncModule;
 	title?: Title;
+}
+
+interface ReportInformations {
+	created: boolean;
+	completed: boolean;
+	firstRequest: boolean;
+	localUpdated: boolean;
 }
 
 interface FollowPageResult {
@@ -165,16 +175,101 @@ export class SyncDex {
 		}
 	};
 
+	reportNotificationRow = (key: ServiceKey, status: string) =>
+		`![${ReverseServiceName[key]}|${Runtime.icon(key)}] **${ReverseServiceName[key]}**>*>[${status}]<`;
+
+	/**
+	 * Display result notification, one line per Service
+	 * {Icon} Name [Created] / [Synced] / [Imported]
+	 * Display another notification for errors, with the same template
+	 * {Icon} Name [Not Logged In] / [Bad Request] / [Server Error]
+	 */
+	displayReportNotifications = (
+		syncModule: SyncModule,
+		report: SyncReport,
+		informations: ReportInformations,
+		previousState: Title
+	): void => {
+		const updateRows: string[] = [];
+		const errorRows: string[] = [];
+		for (const key of Options.services) {
+			if (report[key] === undefined) continue;
+			if (report[key] === false) {
+				if (informations.firstRequest) errorRows.push(this.reportNotificationRow(key, 'Logged Out'));
+			} else if (syncModule.title.services[key] === undefined) {
+				if (informations.firstRequest) errorRows.push(this.reportNotificationRow(key, 'No ID'));
+			} else if (report[key]! <= RequestStatus.CREATED) {
+				updateRows.push(
+					this.reportNotificationRow(key, report[key] === RequestStatus.CREATED ? 'Created' : 'Synced')
+				);
+			} else {
+				errorRows.push(
+					this.reportNotificationRow(
+						key,
+						report[key] === RequestStatus.SERVER_ERROR ? 'Server Error' : 'Bad Request'
+					)
+				);
+			}
+		}
+		// Display Notifications
+		if (Options.notifications) {
+			let ending = '';
+			if (updateRows.length > 0) {
+				ending = updateRows.join('\n');
+			} else if (!informations.firstRequest || Options.services.length == 0 || informations.localUpdated) {
+				ending = this.reportNotificationRow(StaticKey.SyncDex, 'Synced');
+			}
+			SimpleNotification.success({
+				title: 'Progress Updated',
+				image: `https://mangadex.org/images/manga/${syncModule.title.id}.thumb.jpg`,
+				text: `Chapter ${syncModule.title.progress.chapter}\n${
+					informations.created ? '**Start Date** set to Today !\n' : ''
+				}${informations.completed ? '**End Date** set to Today !\n' : ''}${ending}`,
+				buttons: [
+					{
+						type: 'warning',
+						value: 'Cancel',
+						onClick: async (notification) => {
+							try {
+								notification.closeAnimated();
+								console.log('before', JSON.parse(JSON.stringify(syncModule.title)));
+								syncModule.restoreState(previousState);
+								await syncModule.title.persist();
+								console.log('restored', JSON.parse(JSON.stringify(syncModule.title)));
+								await syncModule.syncExternal();
+								SimpleNotification.success({
+									title: 'Cancelled',
+									text: `**${syncModule.title.name}** update cancelled.\nChapter ${syncModule.title.progress.chapter}`,
+								});
+							} catch (error) {
+								console.error(error);
+							}
+						},
+					},
+					{ type: 'message', value: 'Close', onClick: (notification) => notification.closeAnimated() },
+				],
+			});
+		}
+		if (Options.errorNotifications && errorRows.length > 0) {
+			SimpleNotification.error(
+				{
+					title: 'Error',
+					image: `https://mangadex.org/images/manga/${syncModule.title.id}.thumb.jpg`,
+					text: errorRows.join('\n'),
+				},
+				{ sticky: true }
+			);
+		}
+	};
+
 	syncShowResult = async (
 		state: ReadingState,
-		created: boolean,
-		completed: boolean,
-		firstRequest: boolean,
-		localUpdated: boolean
+		informations: ReportInformations,
+		previousState: Title
 	): Promise<void> => {
-		if (state.title == undefined) return;
-		const report = await state.syncModule!.syncExternal();
-		state.syncModule!.displayReportNotifications(report, created, completed, firstRequest, localUpdated);
+		if (state.syncModule === undefined) return;
+		const report = await state.syncModule.syncExternal();
+		this.displayReportNotifications(state.syncModule, report, informations, previousState);
 	};
 
 	setStateProgress = (state: ReadingState, progress: Progress, created: boolean): boolean => {
@@ -204,7 +299,6 @@ export class SyncDex {
 	};
 
 	chapterEvent = async (details: ChapterChangeEventDetails, state: ReadingState): Promise<void> => {
-		// console.log(details);
 		// Get the Title and Services initial state on the first chapter change
 		const id = details.manga._data.id;
 		let loggedInMangaDex = false;
@@ -259,7 +353,7 @@ export class SyncDex {
 					}
 				}
 			}
-			// Find max
+			// Find max from MangaDex
 			const lastChapter = parseFloat(details.manga._data.last_chapter);
 			if (!isNaN(lastChapter) && lastChapter > 0) {
 				state.title.max = {
@@ -278,6 +372,8 @@ export class SyncDex {
 		if (firstRequest && Options.services.length > 0) {
 			await state.syncModule.syncLocal();
 		}
+		// Save State for *Cancel* button
+		const previousState = state.syncModule.saveState();
 		// Find current Chapter Progress
 		const created = state.title.status == Status.NONE || state.title.status == Status.PLAN_TO_READ;
 		let completed = false;
@@ -287,22 +383,6 @@ export class SyncDex {
 			oneshot: oneshot,
 		};
 		if (details._data.volume !== '') currentProgress.volume = parseInt(details._data.volume);
-		const confirmButtons = (): Button[] => [
-			{
-				type: 'success',
-				value: 'Update',
-				onClick: async (notification: SimpleNotification) => {
-					notification.closeAnimated();
-					const completed = this.setStateProgress(state, currentProgress, created);
-					await state.title!.persist();
-					this.syncShowResult(state, created, completed, false, true);
-				},
-			},
-			{
-				type: 'message',
-				value: 'Close',
-			},
-		];
 		// Exit early if there is no progress
 		if (isNaN(currentProgress.chapter)) {
 			if (Options.errorNotifications) {
@@ -316,12 +396,58 @@ export class SyncDex {
 			await state.title.persist();
 			if (firstRequest && Options.services.length > 0 && state.title.status !== Status.NONE) {
 				const report = await state.syncModule.syncExternal();
-				state.syncModule.displayReportNotifications(report, created, false, firstRequest, false);
+				this.displayReportNotifications(
+					state.syncModule,
+					report,
+					{
+						created: created,
+						completed: false,
+						firstRequest: firstRequest,
+						localUpdated: false,
+					},
+					previousState
+				);
 			}
 			return;
 		}
+		// Confirms button if updateOnlyInList or updateHigherOnly/updateNextOnly is enabled
+		const confirmButtons = (): Button[] => [
+			{
+				type: 'success',
+				value: 'Update',
+				onClick: async (notification: SimpleNotification) => {
+					notification.closeAnimated();
+					const completed = this.setStateProgress(state, currentProgress, created);
+					await state.title!.persist();
+					this.syncShowResult(
+						state,
+						{
+							created: created,
+							completed: completed,
+							firstRequest: false,
+							localUpdated: true,
+						},
+						previousState
+					);
+				},
+			},
+			{
+				type: 'message',
+				value: 'Close',
+				onClick: (notification) => notification.closeAnimated(),
+			},
+		];
+		// Collect all warnings and reasons to not update to the current Chapter
+		let missingUpdateValidations: string[] = [];
+		// Update title state if not delayed -- Handle external titles as delayed
+		const delayed = details._data.status != 'OK'; // && details._data.status != 'external';
+		if (delayed && Options.confirmChapter) {
+			missingUpdateValidations.push(
+				`**${state.title.name}** Chapter **${details._data.chapter}** is delayed or external and has not been updated.`
+			);
+		}
 		// Check if the title is in list if required
-		let canUpdate = true;
+		let mdListOptionValid = true;
 		if (Options.updateOnlyInList) {
 			if (!state.syncModule.loggedIn) {
 				SimpleNotification.error({
@@ -329,44 +455,42 @@ export class SyncDex {
 					text: `You are not logged in on **MangaDex** but you have the *Update Only in List** option enabled.\nDisable it or login on **MangaDex** !`,
 				});
 			}
-			canUpdate = state.title.mdStatus !== undefined && state.title.mdStatus !== Status.NONE;
-			if (!canUpdate && Options.confirmChapter) {
-				SimpleNotification.warning({
-					title: 'Not in your List',
-					text: `**${state.title.name}** is not your **MangaDex** List and won't be updated.`,
-					buttons: confirmButtons(),
-				});
+			mdListOptionValid = state.title.mdStatus !== undefined && state.title.mdStatus !== Status.NONE;
+			if (!mdListOptionValid && Options.confirmChapter) {
+				missingUpdateValidations.push(
+					`**${state.title.name}** is not your **MangaDex** List and wasn't updated.`
+				);
 			}
 		}
-		// Update title state if not delayed -- Handle external titles as delayed
-		const delayed = details._data.status != 'OK'; // && details._data.status != 'external';
-		if (delayed && Options.confirmChapter) {
-			SimpleNotification.warning({
-				title: 'External or Delayed',
-				image: `https://mangadex.org/images/manga/${id}.thumb.jpg`,
-				text: `**${state.title.name}** Chapter **${details._data.chapter}** is delayed or external and has not been updated.`,
-				buttons: confirmButtons(),
-			});
-		}
-		// Check if currentProgress should be updated
-		let doUpdate = canUpdate && !delayed;
+		// Check if currentProgress should be updated and use setStateProgress if needed
+		let doUpdate = mdListOptionValid && !delayed;
 		if (doUpdate) {
 			const isFirstChapter = state.title.progress.chapter == 0 && currentProgress.chapter == 0;
 			if (
 				(!Options.saveOnlyNext && !Options.saveOnlyHigher) ||
 				(Options.saveOnlyNext && (isFirstChapter || state.title.isNextChapter(currentProgress))) ||
-				(Options.saveOnlyHigher && (isFirstChapter || state.title.progress.chapter < currentProgress.chapter))
+				(Options.saveOnlyHigher &&
+					!Options.saveOnlyNext &&
+					(isFirstChapter || state.title.progress.chapter < currentProgress.chapter))
 			) {
 				completed = this.setStateProgress(state, currentProgress, created);
 			} else if (Options.confirmChapter && (Options.saveOnlyNext || Options.saveOnlyHigher)) {
 				doUpdate = false;
-				SimpleNotification.info({
-					title: 'Chapter Not Higher',
-					image: `https://mangadex.org/images/manga/${id}.thumb.jpg`,
-					text: `**${state.title.name}** Chapter **${details._data.chapter}** is not the next or higher and hasn't been updated.`,
-					buttons: confirmButtons(),
-				});
+				missingUpdateValidations.push(
+					`**${state.title.name}** Chapter **${details._data.chapter}** is not ${
+						Options.saveOnlyNext ? 'the next' : 'higher'
+					} and hasn't been updated.`
+				);
 			}
+		}
+		// If there is reasons to NOT update automatically to the current progress, display all reasons in a single Notification
+		if (missingUpdateValidations.length > 0) {
+			SimpleNotification.info({
+				title: 'Not Updated',
+				image: `https://mangadex.org/images/manga/${id}.thumb.jpg`,
+				text: missingUpdateValidations.join(`\n`),
+				buttons: confirmButtons(),
+			});
 		}
 		// Always Update History values if enabled, do not look at other options
 		if (Options.biggerHistory) {
@@ -377,15 +501,27 @@ export class SyncDex {
 			History.save();
 		}
 		await state.title.persist(); // Always save
-		// Always Sync Services -- even if doUpdate is set to false, to sync any out of sync services
-		if ((firstRequest && Options.services.length > 0) || doUpdate) {
-			this.syncShowResult(state, created, completed, firstRequest, doUpdate);
+		// If all conditions are met we can sync to current progress
+		if (doUpdate) {
+			this.syncShowResult(
+				state,
+				{
+					created: created,
+					completed: completed,
+					firstRequest: firstRequest,
+					localUpdated: doUpdate,
+				},
+				previousState
+			);
 		}
+		// If we do not need to update, we still sync to the current non updated progress but no output
+		else if (firstRequest && Options.services.length > 0) await state.syncModule.syncExternal();
 	};
 
 	chapterPage = (): void => {
 		console.log('SyncDex :: Chapter');
 
+		// Check if there is no Services enabled -- Progress is still saved locally
 		if (Options.services.length == 0 && Options.errorNotifications) {
 			SimpleNotification.error({
 				title: 'No active Services',
@@ -402,6 +538,7 @@ export class SyncDex {
 					{
 						type: 'message',
 						value: 'Close',
+						onClick: (notification) => notification.closeAnimated(),
 					},
 				],
 			});

@@ -674,8 +674,10 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 		return RequestStatus.SUCCESS;
 	};
 
+	/**
+	 * Reset fields related to progress and save the Title.
+	 */
 	delete = async (): Promise<RequestStatus> => {
-		// Reset
 		this.inList = false;
 		this.synced = false;
 		this.status = Status.NONE;
