@@ -134,7 +134,7 @@ export class TitleChapterGroup {
 						if (row.progress.chapter == title.progress.chapter) return;
 						row.parent.classList.add('current');
 						const previousState = syncModule.saveState();
-						// TODO: Check max chapter to set to COMPLETED
+						const completed = title.setProgress(row.progress);
 						// No need to do anything here, only add or remove chapters from the list
 						// Highlight will fix everything
 						if (Options.saveOpenedChapters) {
@@ -163,25 +163,20 @@ export class TitleChapterGroup {
 						this.findNextChapter(title);
 						this.updateDisplayedRows(title);
 						const report = await syncModule!.syncExternal(true);
-						syncModule.displayReportNotifications(
-							report,
-							{ completed: title.status == Status.COMPLETED },
-							previousState,
-							() => {
-								this.findNextChapter(title);
-								this.updateDisplayedRows(title);
-								// Update toggle buttons
-								for (const row of this.rows) {
-									row.parent.classList.remove('current');
-									if (title.chapters.indexOf(title.progress.chapter) < 0) {
-										row.disableToggleButton();
-									} else row.enableToggleButton();
-									if (row.progress.chapter == title.progress.chapter) {
-										row.parent.classList.add('current');
-									}
+						syncModule.displayReportNotifications(report, { completed: completed }, previousState, () => {
+							this.findNextChapter(title);
+							this.updateDisplayedRows(title);
+							// Update toggle buttons
+							for (const row of this.rows) {
+								row.parent.classList.remove('current');
+								if (title.chapters.indexOf(title.progress.chapter) < 0) {
+									row.disableToggleButton();
+								} else row.enableToggleButton();
+								if (row.progress.chapter == title.progress.chapter) {
+									row.parent.classList.add('current');
 								}
 							}
-						);
+						});
 					});
 				}
 			}

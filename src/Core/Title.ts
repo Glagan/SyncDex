@@ -768,6 +768,30 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 		}
 		return false;
 	};
+
+	setProgress = (progress: Progress): boolean => {
+		let completed = false;
+		const created = this.status == Status.NONE || this.status == Status.PLAN_TO_READ;
+		if (
+			progress.oneshot ||
+			(this.max?.chapter && this.max.chapter <= progress.chapter) ||
+			(progress.volume && this.max?.volume && this.max.volume <= progress.volume)
+		) {
+			this.status = Status.COMPLETED;
+			if (!this.end) {
+				this.end = new Date();
+				completed = true;
+			}
+		} else this.status = Status.READING;
+		this.progress = progress;
+		if (created && !this.start) {
+			this.start = new Date();
+		}
+		if (Options.saveOpenedChapters) {
+			this.addChapter(progress.chapter);
+		}
+		return completed;
+	};
 }
 
 export class TitleCollection {

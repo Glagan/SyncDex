@@ -66,7 +66,7 @@ export class ChapterList {
 				loading = true;
 				if (row.progress.chapter == title.progress.chapter) return;
 				const previousState = syncModule.saveState();
-				// TODO: Check max chapter to set to COMPLETED
+				const completed = title.setProgress(row.progress);
 				// No need to do anything here, only add or remove chapters from the list
 				// Highlight on syncedLocal will fix everything
 				if (Options.saveOpenedChapters) {
@@ -86,11 +86,7 @@ export class ChapterList {
 				await title.persist();
 				syncModule.overview?.syncedLocal(title);
 				const report = await syncModule.syncExternal(true);
-				syncModule.displayReportNotifications(
-					report,
-					{ completed: title.status == Status.COMPLETED },
-					previousState
-				);
+				syncModule.displayReportNotifications(report, { completed: completed }, previousState);
 				row.markButton.classList.remove('loading');
 				loading = false;
 			});

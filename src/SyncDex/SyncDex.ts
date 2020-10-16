@@ -173,32 +173,6 @@ export class SyncDex {
 		syncModule.displayReportNotifications(report, informations, previousState);
 	};
 
-	setStateProgress = (state: ReadingState, progress: Progress, created: boolean): boolean => {
-		if (!state.title) return false;
-		let completed = false;
-		if (
-			progress.oneshot ||
-			(state.title.max?.chapter && state.title.max.chapter <= progress.chapter) ||
-			(progress.volume && state.title.max?.volume && state.title.max.volume <= progress.volume)
-		) {
-			state.title.status = Status.COMPLETED;
-			if (!state.title.end) {
-				state.title.end = new Date();
-				completed = true;
-			}
-		} else {
-			state.title.status = Status.READING;
-		}
-		state.title.progress = progress;
-		if (created && !state.title.start) {
-			state.title.start = new Date();
-		}
-		if (Options.saveOpenedChapters) {
-			state.title.addChapter(progress.chapter);
-		}
-		return completed;
-	};
-
 	chapterEvent = async (details: ChapterChangeEventDetails, state: ReadingState): Promise<void> => {
 		// Get the Title and Services initial state on the first chapter change
 		const id = details.manga._data.id;
@@ -316,7 +290,7 @@ export class SyncDex {
 				value: 'Update',
 				onClick: async (notification: SimpleNotification) => {
 					notification.closeAnimated();
-					const completed = this.setStateProgress(state, currentProgress, created);
+					const completed = state.title!.setProgress(currentProgress);
 					await state.title!.persist();
 					this.syncShowResult(
 						state.syncModule!,
@@ -371,7 +345,7 @@ export class SyncDex {
 					!Options.saveOnlyNext &&
 					(isFirstChapter || state.title.progress.chapter < currentProgress.chapter))
 			) {
-				completed = this.setStateProgress(state, currentProgress, created);
+				completed = state.title.setProgress(currentProgress);
 			} else if (Options.confirmChapter && (Options.saveOnlyNext || Options.saveOnlyHigher)) {
 				doUpdate = false;
 				missingUpdateValidations.push(
