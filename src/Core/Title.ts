@@ -777,11 +777,9 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 			(this.max?.chapter && this.max.chapter <= progress.chapter) ||
 			(progress.volume && this.max?.volume && this.max.volume <= progress.volume)
 		) {
+			completed = this.status !== Status.COMPLETED || !this.end;
 			this.status = Status.COMPLETED;
-			if (!this.end) {
-				this.end = new Date();
-				completed = true;
-			}
+			if (!this.end) this.end = new Date();
 		} else this.status = Status.READING;
 		this.progress = progress;
 		if (created && !this.start) {
