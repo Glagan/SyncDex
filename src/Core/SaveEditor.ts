@@ -22,6 +22,7 @@ export class SaveEditor {
 		});
 	}
 
+	// TODO: Select Max chapter if it's available when selecting COMPLETED
 	static statusOptions(title: Title): HTMLSelectElement {
 		const select = DOM.create('select', { id: 'ee_status', name: 'status', required: true });
 		let value = 0;
@@ -102,6 +103,7 @@ export class SaveEditor {
 				]),
 			]),
 			this.modalRow([
+				// TODO: Display Max Chapter if it's available
 				this.modalGroup('Chapter', 'ee_chapter', [
 					DOM.create('input', {
 						id: 'ee_chapter',
@@ -164,6 +166,7 @@ export class SaveEditor {
 			DOM.create('label', { htmlFor: 'scs_updateAll', textContent: 'Update all Services' }),
 			realSubmit
 		);
+		const previousState = syncModule.saveState();
 		form.addEventListener('submit', async (event) => {
 			event.preventDefault();
 			modal.disableExit();
@@ -212,11 +215,19 @@ export class SaveEditor {
 			}
 			// Save and close Modal
 			await title.persist();
-			SimpleNotification.success({ title: 'Title Saved' });
 			// Sync Services
+			const completed = previousState.status != Status.COMPLETED && title.status == Status.COMPLETED;
 			if (updateAllCheckbox.checked) {
-				await syncModule.syncExternal();
-			}
+				const report = await syncModule.syncExternal();
+				syncModule.displayReportNotifications(
+					report,
+					{
+						created: previousState.status == Status.NONE && title.status != Status.NONE,
+						completed: completed,
+					},
+					previousState
+				);
+			} else syncModule.displayReportNotifications({}, { completed: completed }, previousState);
 			modal.enableExit();
 			modal.remove();
 			if (postSubmit) postSubmit();
@@ -260,7 +271,8 @@ export class SaveEditor {
 			deleteButton.classList.add('loading');
 			// Delete Title from lists
 			await syncModule.title.delete();
-			await syncModule.syncExternal();
+			const report = await syncModule.syncExternal();
+			syncModule.displayReportNotifications(report, { completed: false }, previousState);
 			if (syncModule.overview?.syncedLocal) syncModule.overview.syncedLocal(syncModule.title);
 			modal.enableExit();
 			modal.remove();

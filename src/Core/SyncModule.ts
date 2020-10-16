@@ -1,4 +1,15 @@
-import { Title, ActivableKey, ReverseActivableName, BaseTitle, ExternalTitle, ServiceKeyType } from './Title';
+import {
+	Title,
+	ActivableKey,
+	ReverseActivableName,
+	BaseTitle,
+	ExternalTitle,
+	ServiceKeyType,
+	ReverseServiceName,
+	ServiceKey,
+	StaticKey,
+	StatusMap,
+} from './Title';
 import { Options } from './Options';
 import { GetService } from '../SyncDex/Service';
 import { Runtime } from './Runtime';
@@ -7,6 +18,13 @@ import { Overview } from '../SyncDex/Overview';
 export type SyncReport = {
 	[key in ActivableKey]?: RequestStatus | false;
 };
+
+export interface ReportInformations {
+	created?: boolean;
+	completed: boolean;
+	firstRequest?: boolean;
+	localUpdated?: boolean;
+}
 
 export class SyncModule {
 	title: Title;
@@ -136,7 +154,7 @@ export class SyncModule {
 				const promise = this.title.status == Status.NONE ? service.delete() : service.persist();
 				promises.push(promise);
 				promise.then((res) => {
-					if (res > RequestStatus.CREATED) {
+					if (res > RequestStatus.DELETED) {
 						this.overview?.syncedService(key, res, this.title);
 					} else this.overview?.syncedService(key, service, this.title);
 					report[key] = res;
@@ -266,5 +284,100 @@ export class SyncModule {
 		if (res > RequestStatus.CREATED) {
 			this.overview?.syncedService(key, res, this.title);
 		} else this.overview?.syncedService(key, service, this.title);
+	};
+
+	reportNotificationRow = (key: ServiceKey, status: string) =>
+		`![${ReverseServiceName[key]}|${Runtime.icon(key)}] **${ReverseServiceName[key]}**>*>[${status}]<`;
+
+	/**
+	 * Display result notification, one line per Service
+	 * {Icon} Name [Created] / [Synced] / [Imported]
+	 * Display another notification for errors, with the same template
+	 * {Icon} Name [Not Logged In] / [Bad Request] / [Server Error]
+	 */
+	displayReportNotifications = (
+		report: SyncReport,
+		informations: ReportInformations,
+		previousState: Title,
+		onCancel?: () => void
+	): void => {
+		const updateRows: string[] = [];
+		const errorRows: string[] = [];
+		for (const key of Options.services) {
+			if (report[key] === undefined) continue;
+			if (report[key] === false) {
+				if (informations.firstRequest) errorRows.push(this.reportNotificationRow(key, 'Logged Out'));
+			} else if (this.title.services[key] === undefined) {
+				if (informations.firstRequest) errorRows.push(this.reportNotificationRow(key, 'No ID'));
+			} else if (report[key]! <= RequestStatus.DELETED) {
+				updateRows.push(
+					this.reportNotificationRow(
+						key,
+						report[key] === RequestStatus.CREATED
+							? 'Created'
+							: report[key] === RequestStatus.DELETED
+							? 'Deleted'
+							: 'Synced'
+					)
+				);
+			} else {
+				errorRows.push(
+					this.reportNotificationRow(
+						key,
+						report[key] === RequestStatus.SERVER_ERROR ? 'Server Error' : 'Bad Request'
+					)
+				);
+			}
+		}
+		// Display Notifications
+		if (Options.notifications) {
+			let ending = '';
+			if (updateRows.length > 0) {
+				ending = updateRows.join('\n');
+			} else if (!informations.firstRequest || Options.services.length == 0 || informations.localUpdated) {
+				ending = this.reportNotificationRow(StaticKey.SyncDex, 'Synced');
+			}
+			SimpleNotification.success({
+				title: 'Progress Updated',
+				image: `https://mangadex.org/images/manga/${this.title.id}.thumb.jpg`,
+				text: `Chapter ${this.title.progress.chapter}\n${
+					informations.created ? '**Start Date** set to Today !\n' : ''
+				}${informations.completed ? '**End Date** set to Today !\n' : ''}${ending}`,
+				buttons: [
+					{
+						type: 'warning',
+						value: 'Cancel',
+						onClick: async (notification) => {
+							notification.closeAnimated();
+							this.restoreState(previousState);
+							await this.title.persist();
+							this.overview?.syncedLocal(this.title);
+							await this.syncExternal();
+							if (onCancel) onCancel();
+							SimpleNotification.success({
+								title: 'Cancelled',
+								image: `https://mangadex.org/images/manga/${this.title.id}.thumb.jpg`,
+								text: `**${this.title.name}** update cancelled.\n${
+									this.title.status == Status.NONE
+										? 'Removed from list'
+										: `[${StatusMap[this.title.status]}] Chapter ${this.title.progress.chapter}`
+								}`,
+							});
+						},
+					},
+					{ type: 'message', value: 'Close', onClick: (notification) => notification.closeAnimated() },
+				],
+			});
+		}
+		if (Options.errorNotifications && errorRows.length > 0) {
+			SimpleNotification.error(
+				{
+					title: 'Error',
+					image: `https://mangadex.org/images/manga/${this.title.id}.thumb.jpg`,
+					text: errorRows.join('\n'),
+				},
+				{ sticky: true }
+			);
+		}
 	};
 }

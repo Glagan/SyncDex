@@ -64,6 +64,12 @@ export class TitleChapterGroup {
 		});
 	};
 
+	updateDisplayedRows = (title: Title) => {
+		if (Options.highlight) this.highlight(title);
+		if (Options.hideHigher || Options.hideLast || Options.hideLower) this.hide(title);
+		if (Options.progressInThumbnail) this.thumbnail?.updateContent(title);
+	};
+
 	/**
 	 * Find the next chapter for the group if it's available and bind events.
 	 * Also add required CSS to each rows.
@@ -127,17 +133,18 @@ export class TitleChapterGroup {
 						}
 						if (row.progress.chapter == title.progress.chapter) return;
 						row.parent.classList.add('current');
+						const previousState = syncModule.saveState();
+						// TODO: Check max chapter to set to COMPLETED
 						// No need to do anything here, only add or remove chapters from the list
 						// Highlight will fix everything
 						if (Options.saveOpenedChapters) {
 							title.updateChapterList(row.progress.chapter);
 							// Update visible rows and add possible subchapters to the chapter list
 							for (const otherRow of this.rows) {
+								otherRow.parent.classList.remove('current');
 								if (otherRow.progress.chapter > row.progress.chapter) {
-									otherRow.parent.classList.remove('current');
 									row.disableToggleButton();
 								} else if (otherRow.progress.chapter < row.progress.chapter) {
-									otherRow.parent.classList.remove('current');
 									title.addChapter(otherRow.progress.chapter);
 									row.enableToggleButton();
 								} else {
@@ -150,14 +157,31 @@ export class TitleChapterGroup {
 						title.progress.chapter = row.progress.chapter;
 						if (title.status == Status.NONE) {
 							title.status = Status.READING;
-							title.start = new Date();
+							if (!title.start) title.start = new Date();
 						}
 						await title.persist();
 						this.findNextChapter(title);
-						if (Options.highlight) this.highlight(title);
-						if (Options.hideHigher || Options.hideLast || Options.hideLower) this.hide(title);
-						if (Options.progressInThumbnail) this.thumbnail?.updateContent(title);
-						await syncModule!.syncExternal(true);
+						this.updateDisplayedRows(title);
+						const report = await syncModule!.syncExternal(true);
+						syncModule.displayReportNotifications(
+							report,
+							{ completed: title.status == Status.COMPLETED },
+							previousState,
+							() => {
+								this.findNextChapter(title);
+								this.updateDisplayedRows(title);
+								// Update toggle buttons
+								for (const row of this.rows) {
+									row.parent.classList.remove('current');
+									if (title.chapters.indexOf(title.progress.chapter) < 0) {
+										row.disableToggleButton();
+									} else row.enableToggleButton();
+									if (row.progress.chapter == title.progress.chapter) {
+										row.parent.classList.add('current');
+									}
+								}
+							}
+						);
 					});
 				}
 			}

@@ -9,17 +9,14 @@ import {
 	Title,
 	StatusMap,
 	iconToService,
-	ServiceKey,
-	ReverseServiceName,
-	StaticKey,
 } from '../Core/Title';
 import { TitleOverview, ReadingOverview } from './Overview';
 import { Mochi } from '../Core/Mochi';
 import { GetService } from './Service';
-import { injectScript, stringToProgress, progressToString } from '../Core/Utility';
+import { injectScript, stringToProgress } from '../Core/Utility';
 import { Runtime } from '../Core/Runtime';
 import { Thumbnail } from './Thumbnail';
-import { SyncModule, SyncReport } from '../Core/SyncModule';
+import { SyncModule, ReportInformations } from '../Core/SyncModule';
 import { UpdateGroup } from './UpdateGroup';
 import { TitleChapterGroup } from './TitleChapterGroup';
 import { History } from './History';
@@ -28,13 +25,6 @@ import { ChapterRow } from './ChapterRow';
 interface ReadingState {
 	syncModule?: SyncModule;
 	title?: Title;
-}
-
-interface ReportInformations {
-	created: boolean;
-	completed: boolean;
-	firstRequest: boolean;
-	localUpdated: boolean;
 }
 
 interface FollowPageResult {
@@ -108,8 +98,7 @@ export class SyncDex {
 			const title = titles.find(group.id);
 			if (title !== undefined && title.inList) {
 				group.initialize(new SyncModule(title));
-				if (Options.highlight) group.highlight(title);
-				if (Options.hideHigher || Options.hideLast || Options.hideLower) group.hide(title);
+				group.updateDisplayedRows(title);
 			} else if (group.rows.length > 0) {
 				// Still add thumbnails and the Group title if it's no in list
 				if (Options.thumbnail) {
@@ -175,101 +164,13 @@ export class SyncDex {
 		}
 	};
 
-	reportNotificationRow = (key: ServiceKey, status: string) =>
-		`![${ReverseServiceName[key]}|${Runtime.icon(key)}] **${ReverseServiceName[key]}**>*>[${status}]<`;
-
-	/**
-	 * Display result notification, one line per Service
-	 * {Icon} Name [Created] / [Synced] / [Imported]
-	 * Display another notification for errors, with the same template
-	 * {Icon} Name [Not Logged In] / [Bad Request] / [Server Error]
-	 */
-	displayReportNotifications = (
-		syncModule: SyncModule,
-		report: SyncReport,
-		informations: ReportInformations,
-		previousState: Title
-	): void => {
-		const updateRows: string[] = [];
-		const errorRows: string[] = [];
-		for (const key of Options.services) {
-			if (report[key] === undefined) continue;
-			if (report[key] === false) {
-				if (informations.firstRequest) errorRows.push(this.reportNotificationRow(key, 'Logged Out'));
-			} else if (syncModule.title.services[key] === undefined) {
-				if (informations.firstRequest) errorRows.push(this.reportNotificationRow(key, 'No ID'));
-			} else if (report[key]! <= RequestStatus.CREATED) {
-				updateRows.push(
-					this.reportNotificationRow(key, report[key] === RequestStatus.CREATED ? 'Created' : 'Synced')
-				);
-			} else {
-				errorRows.push(
-					this.reportNotificationRow(
-						key,
-						report[key] === RequestStatus.SERVER_ERROR ? 'Server Error' : 'Bad Request'
-					)
-				);
-			}
-		}
-		// Display Notifications
-		if (Options.notifications) {
-			let ending = '';
-			if (updateRows.length > 0) {
-				ending = updateRows.join('\n');
-			} else if (!informations.firstRequest || Options.services.length == 0 || informations.localUpdated) {
-				ending = this.reportNotificationRow(StaticKey.SyncDex, 'Synced');
-			}
-			SimpleNotification.success({
-				title: 'Progress Updated',
-				image: `https://mangadex.org/images/manga/${syncModule.title.id}.thumb.jpg`,
-				text: `Chapter ${syncModule.title.progress.chapter}\n${
-					informations.created ? '**Start Date** set to Today !\n' : ''
-				}${informations.completed ? '**End Date** set to Today !\n' : ''}${ending}`,
-				buttons: [
-					{
-						type: 'warning',
-						value: 'Cancel',
-						onClick: async (notification) => {
-							try {
-								notification.closeAnimated();
-								console.log('before', JSON.parse(JSON.stringify(syncModule.title)));
-								syncModule.restoreState(previousState);
-								await syncModule.title.persist();
-								console.log('restored', JSON.parse(JSON.stringify(syncModule.title)));
-								await syncModule.syncExternal();
-								SimpleNotification.success({
-									title: 'Cancelled',
-									text: `**${syncModule.title.name}** update cancelled.\nChapter ${syncModule.title.progress.chapter}`,
-								});
-							} catch (error) {
-								console.error(error);
-							}
-						},
-					},
-					{ type: 'message', value: 'Close', onClick: (notification) => notification.closeAnimated() },
-				],
-			});
-		}
-		if (Options.errorNotifications && errorRows.length > 0) {
-			SimpleNotification.error(
-				{
-					title: 'Error',
-					image: `https://mangadex.org/images/manga/${syncModule.title.id}.thumb.jpg`,
-					text: errorRows.join('\n'),
-				},
-				{ sticky: true }
-			);
-		}
-	};
-
 	syncShowResult = async (
-		state: ReadingState,
+		syncModule: SyncModule,
 		informations: ReportInformations,
 		previousState: Title
 	): Promise<void> => {
-		if (state.syncModule === undefined) return;
-		const report = await state.syncModule.syncExternal();
-		this.displayReportNotifications(state.syncModule, report, informations, previousState);
+		const report = await syncModule.syncExternal();
+		syncModule.displayReportNotifications(report, informations, previousState);
 	};
 
 	setStateProgress = (state: ReadingState, progress: Progress, created: boolean): boolean => {
@@ -396,14 +297,12 @@ export class SyncDex {
 			await state.title.persist();
 			if (firstRequest && Options.services.length > 0 && state.title.status !== Status.NONE) {
 				const report = await state.syncModule.syncExternal();
-				this.displayReportNotifications(
-					state.syncModule,
+				state.syncModule.displayReportNotifications(
 					report,
 					{
 						created: created,
 						completed: false,
 						firstRequest: firstRequest,
-						localUpdated: false,
 					},
 					previousState
 				);
@@ -420,11 +319,10 @@ export class SyncDex {
 					const completed = this.setStateProgress(state, currentProgress, created);
 					await state.title!.persist();
 					this.syncShowResult(
-						state,
+						state.syncModule!,
 						{
 							created: created,
 							completed: completed,
-							firstRequest: false,
 							localUpdated: true,
 						},
 						previousState
@@ -504,7 +402,7 @@ export class SyncDex {
 		// If all conditions are met we can sync to current progress
 		if (doUpdate) {
 			this.syncShowResult(
-				state,
+				state.syncModule,
 				{
 					created: created,
 					completed: completed,
@@ -594,6 +492,7 @@ export class SyncDex {
 					class: `st${title.status}`,
 					textContent: StatusMap[title.status],
 				});
+				// TODO: Add "Reading"/"Plan To Read" buttons ?
 				if (listType == ListType.Grid) {
 					const bottomRow = row.querySelector('.float-right');
 					if (bottomRow) {

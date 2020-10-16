@@ -247,7 +247,7 @@ export class AnilistTitle extends ExternalTitle {
 		if (!response.ok) return Runtime.responseStatus(response);
 		this.mediaEntryId = 0;
 		this.inList = false;
-		return RequestStatus.SUCCESS;
+		return RequestStatus.DELETED;
 	};
 
 	static toStatus = (status: AnilistStatus): Status => {

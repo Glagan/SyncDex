@@ -206,7 +206,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		this.inList = true;
-		return RequestStatus.SUCCESS;
+		return RequestStatus.DELETED;
 	};
 
 	// Convert a YYYY-MM-DD MyAnimeList date to a Date timestamp

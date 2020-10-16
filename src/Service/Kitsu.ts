@@ -202,7 +202,7 @@ export class KitsuTitle extends ExternalTitle {
 		if (!response.ok) return Runtime.responseStatus(response);
 		this.libraryEntryId = 0;
 		this.inList = false;
-		return RequestStatus.SUCCESS;
+		return RequestStatus.DELETED;
 	};
 
 	static toStatus = (status: KitsuStatus): Status => {

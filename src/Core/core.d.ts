@@ -45,6 +45,7 @@ interface FormDataProxy {
 declare const enum RequestStatus {
 	SUCCESS,
 	CREATED,
+	DELETED,
 	MISSING_TOKEN,
 	FAIL,
 	SERVER_ERROR,
