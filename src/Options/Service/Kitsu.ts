@@ -137,6 +137,7 @@ class KitsuImport extends APIImportableModule {
 		for (const title of body.data) {
 			if (!title.relationships.manga.data) continue;
 			const manga = this.findManga(body.included, title.relationships.manga.data.id);
+			// TODO: Find Max Chapter
 			titles.push(
 				new KitsuTitle(parseInt(title.relationships.manga.data.id), {
 					id: parseInt(title.relationships.manga.data.id),

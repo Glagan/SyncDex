@@ -160,6 +160,7 @@ class AnilistImport extends APIImportableModule {
 		const body = response.body;
 		for (const list of body.data.MediaListCollection.lists) {
 			for (const entry of list.entries) {
+				// TODO: Find Max Chapter
 				titles.push(
 					new AnilistTitle(entry.mediaId, {
 						id: entry.mediaId,

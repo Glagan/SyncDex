@@ -65,6 +65,7 @@ class MyMangaDexImport extends FileImportableModule<MyMangaDexSave, MyMangaDexTi
 
 	convertTitles = async (titles: TitleCollection, titleList: MyMangaDexTitle[]): Promise<number> => {
 		for (const title of titleList) {
+			// TODO: Import Max Chapter
 			titles.add(
 				new Title(title.id, {
 					services: {

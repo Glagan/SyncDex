@@ -162,6 +162,7 @@ class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListXMLTit
 		let titles: MyAnimeListXMLTitle[] = [];
 		const mangaList = save.querySelectorAll<HTMLElement>('manga');
 		for (const manga of mangaList) {
+			// TODO: Find Max Chapter
 			const title: MyAnimeListXMLTitle = {
 				id: parseInt(manga.querySelector('manga_mangadb_id')?.textContent || '0'),
 				chapters: parseInt(manga.querySelector('my_read_chapters')?.textContent || '0'),

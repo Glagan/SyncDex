@@ -65,6 +65,7 @@ class MangaUpdatesImport extends APIImportableModule {
 					if (isNaN(score)) score = undefined;
 				}
 				const name = row.querySelector(`a[title='Series Info']`) as HTMLElement;
+				// TODO: Find Max Chapter
 				titles.push(
 					new MangaUpdatesTitle(parseInt(row.id.slice(1)), {
 						progress: {

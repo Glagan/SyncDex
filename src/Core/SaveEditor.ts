@@ -22,7 +22,6 @@ export class SaveEditor {
 		});
 	}
 
-	// TODO: Select Max chapter if it's available when selecting COMPLETED
 	static statusOptions(title: Title): HTMLSelectElement {
 		const select = DOM.create('select', { id: 'ee_status', name: 'status', required: true });
 		let value = 0;
@@ -86,6 +85,86 @@ export class SaveEditor {
 			type: 'submit',
 			css: { display: 'none' },
 		});
+		// Chapter and Volume inputs can be updated with the Max Chapter/Volume if there is one
+		const statusSelect = this.statusOptions(title);
+		let previousChapterVolume: [string, string] | undefined = undefined;
+		const chapterInput = DOM.create('input', {
+			id: 'ee_chapter',
+			name: 'chapter',
+			type: 'number',
+			placeholder: 'Chapter',
+			value: `${title.progress.chapter}`,
+			min: '0',
+			step: 'any',
+			required: true,
+			events: {
+				change: () => (previousChapterVolume = undefined),
+			},
+		});
+		const chapterColumn = this.modalGroup('Chapter', 'ee_chapter', [chapterInput]);
+		const volumeInput = DOM.create('input', {
+			id: 'ee_volume',
+			name: 'volume',
+			type: 'number',
+			placeholder: 'Volume',
+			value: title.progress.volume ? `${title.progress.volume}` : '',
+			events: { change: () => (previousChapterVolume = undefined) },
+		});
+		const volumeColumn = this.modalGroup('Volume', 'ee_volume', [volumeInput]);
+		if (title.max?.chapter) {
+			DOM.append(
+				chapterColumn.firstElementChild as HTMLElement,
+				DOM.space(),
+				DOM.text('('),
+				DOM.create('b', {
+					textContent: `${title.max.chapter}`,
+					title: 'Max Chapter - Click to set as Completed',
+					events: {
+						click: () => {
+							previousChapterVolume = [chapterInput.value, volumeInput.value];
+							statusSelect.value = `${Status.COMPLETED}`;
+							chapterInput.value = `${title.max!.chapter}`;
+							if (title.max!.volume) volumeInput.value = `${title.max!.volume}`;
+						},
+					},
+				}),
+				DOM.text(')')
+			);
+		}
+		if (title.max?.volume) {
+			DOM.append(
+				volumeColumn.firstElementChild as HTMLElement,
+				DOM.space(),
+				DOM.text('('),
+				DOM.create('b', {
+					textContent: `${title.max.volume}`,
+					title: 'Max Volume - Click to set as Completed',
+					events: {
+						click: () => {
+							previousChapterVolume = [chapterInput.value, volumeInput.value];
+							statusSelect.value = `${Status.COMPLETED}`;
+							if (title.max!.chapter) chapterInput.value = `${title.max!.chapter}`;
+							volumeInput.value = `${title.max!.volume}`;
+						},
+					},
+				}),
+				DOM.text(')')
+			);
+		}
+		// Update Chapter/Volume on COMPLETED select
+		statusSelect.addEventListener('change', () => {
+			if (!title.max?.chapter) return;
+			if (statusSelect.value == `${Status.COMPLETED}`) {
+				previousChapterVolume = [chapterInput.value, volumeInput.value];
+				chapterInput.value = `${title.max.chapter}`;
+				if (title.max.volume) volumeInput.value = `${title.max.volume}`;
+			} else if (previousChapterVolume) {
+				chapterInput.value = previousChapterVolume[0];
+				volumeInput.value = previousChapterVolume[1];
+				previousChapterVolume = undefined;
+			}
+		});
+		// Create all rows
 		DOM.append(
 			form,
 			this.modalRow([
@@ -102,32 +181,9 @@ export class SaveEditor {
 					}),
 				]),
 			]),
+			this.modalRow([chapterColumn, volumeColumn]),
 			this.modalRow([
-				// TODO: Display Max Chapter if it's available
-				this.modalGroup('Chapter', 'ee_chapter', [
-					DOM.create('input', {
-						id: 'ee_chapter',
-						name: 'chapter',
-						type: 'number',
-						placeholder: 'Chapter',
-						value: `${title.progress.chapter}`,
-						min: '0',
-						step: '0.01',
-						required: true,
-					}),
-				]),
-				this.modalGroup('Volume', 'ee_volume', [
-					DOM.create('input', {
-						id: 'ee_volume',
-						name: 'volume',
-						type: 'number',
-						placeholder: 'Volume',
-						value: title.progress.volume ? `${title.progress.volume}` : '',
-					}),
-				]),
-			]),
-			this.modalRow([
-				this.modalGroup('Status', 'status', [this.statusOptions(title)]),
+				this.modalGroup('Status', 'status', [statusSelect]),
 				this.modalGroup('Score (0-100)', 'ee_score', [
 					DOM.create('input', {
 						id: 'ee_score',
@@ -166,6 +222,7 @@ export class SaveEditor {
 			DOM.create('label', { htmlFor: 'scs_updateAll', textContent: 'Update all Services' }),
 			realSubmit
 		);
+		// Submit event
 		const previousState = syncModule.saveState();
 		form.addEventListener('submit', async (event) => {
 			event.preventDefault();

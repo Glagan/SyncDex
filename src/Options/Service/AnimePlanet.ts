@@ -79,6 +79,7 @@ class AnimePlanetImport extends APIImportableModule {
 				const status = row.querySelector('select.changeStatus') as HTMLSelectElement;
 				// Score range: 0-5 with increments of 0.5
 				const score = row.querySelector('div.starrating > div[name]') as HTMLElement;
+				// TODO: Find Max Chapter
 				titles.push(
 					new AnimePlanetTitle(
 						{

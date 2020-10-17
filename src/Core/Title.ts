@@ -110,6 +110,7 @@ export interface StorageTitle {
 	st: Status; // status
 	sc?: number; // score
 	p: SaveProgress; // progress
+	m?: Partial<SaveProgress>; // max progress
 	c?: number[]; // chapters
 	sd?: number; // start
 	ed?: number; // end
@@ -128,6 +129,7 @@ export interface TitleProperties {
 	status: Status;
 	score: number;
 	progress: Progress;
+	max?: Partial<Progress>;
 	start?: Date;
 	end?: Date;
 	name?: string;
@@ -158,6 +160,7 @@ export class StorageTitle {
 			typeof title.p === 'object' &&
 			title.p.c !== undefined &&
 			(title.sc === undefined || typeof title.sc === 'number') &&
+			(title.m === undefined || typeof title.m === 'object') &&
 			(title.c === undefined || Array.isArray(title.c)) &&
 			(title.sd === undefined || typeof title.sd === 'number') &&
 			(title.ed === undefined || typeof title.ed === 'number') &&
@@ -171,6 +174,7 @@ export class StorageTitle {
 	}
 }
 
+// Fields that can be missing on a Service
 export type MissableField = 'volume' | 'score' | 'start' | 'end';
 
 export abstract class BaseTitle implements TitleProperties, ExternalTitleProperties {
@@ -182,17 +186,13 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 	synced: boolean = false;
 	status: Status = Status.NONE;
 	progress: Progress = { chapter: 0 };
+	max?: Partial<Progress>;
 	score: number = 0;
 	start?: Date;
 	end?: Date;
 	name?: string;
 	loggedIn: boolean = false;
 	mangaDex?: number;
-
-	max?: {
-		chapter?: number;
-		volume?: number;
-	} = undefined;
 
 	static readonly missingFields: MissableField[] = [];
 	static readonly missingFieldsMap: { [key in MissableField]: string } = {
@@ -609,6 +609,12 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 			name: title.n,
 			lastRead: title.lr,
 		};
+		if (title.m) {
+			mapped.max = {
+				chapter: title.m.c,
+				volume: title.m.v,
+			};
+		}
 		if (title.h) {
 			mapped.history = {
 				chapter: title.h.c,
@@ -655,6 +661,12 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 		if (this.end) mapped.ed = this.end.getTime();
 		if (this.chapters.length > 0) {
 			mapped.c = this.chapters;
+		}
+		if (this.max) {
+			mapped.m = {
+				c: this.max.chapter,
+				v: this.max.volume,
+			};
 		}
 		if (this.history) {
 			mapped.h = {
