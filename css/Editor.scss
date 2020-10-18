@@ -1,6 +1,18 @@
 @import 'Photon.scss';
 @import 'Services.scss';
 
+@keyframes flashing {
+	0% {
+		background-color: $grey-90;
+		color: $grey-20;
+	}
+
+	100% {
+		background-color: $grey-20;
+		color: $grey-90;
+	}
+}
+
 .entry-edit {
 	.header.title {
 		background: map.get($services-bg, 'sc');
@@ -19,12 +31,64 @@
 		width: 50%;
 		margin-bottom: 4px;
 
+		& > a {
+			display: inherit;
+		}
+
 		input {
 			margin-right: 4px;
 		}
 
 		img {
 			flex-shrink: 0;
+		}
+	}
+
+	.group.history {
+		.hidden {
+			overflow: hidden;
+			max-height: 0;
+			transform: scaleY(0);
+			transform-origin: top;
+		}
+		.hidden.visible {
+			transform: scaleY(1);
+			max-height: 400px;
+			overflow-y: auto;
+		}
+		input {
+			display: inline-block;
+		}
+		button.primary {
+			margin-right: 0;
+		}
+	}
+
+	.chapter {
+		border: 1px solid $grey-90-a20;
+		background-color: $grey-20;
+		color: $grey-90;
+		padding: 4px;
+		margin-right: 4px;
+		margin-bottom: 4px;
+		display: inline-block;
+		border-radius: 2px;
+		cursor: pointer;
+		transition: all 200ms $animation;
+
+		&:hover {
+			background-color: $grey-90-a20;
+			border: 1px solid $grey-90-a40;
+		}
+
+		&.flashing {
+			animation: flashing;
+			animation-duration: 1s;
+		}
+
+		&:last-child {
+			position: sticky;
+			bottom: 0;
 		}
 	}
 

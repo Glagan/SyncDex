@@ -28,7 +28,11 @@ setBrowser();
 				class: 'paragraph',
 				textContent: `If you want a new feature or found a bug, `,
 				childs: [
-					DOM.create('a', { href: 'https://github.com/Glagan/SyncDex/issues', textContent: 'Open an issue' }),
+					DOM.create('a', {
+						href: 'https://github.com/Glagan/SyncDex/issues',
+						textContent: 'Open an issue',
+						childs: [DOM.space(), DOM.icon('external-link-alt')],
+					}),
 					DOM.text('.'),
 				],
 			})

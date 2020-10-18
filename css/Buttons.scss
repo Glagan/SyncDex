@@ -98,6 +98,9 @@
 			font-size: 11px;
 			font-weight: 400;
 		}
+		&.small {
+			min-width: 48px;
+		}
 		&.puffy {
 			border-radius: 4px;
 			height: 48px;

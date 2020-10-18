@@ -9,6 +9,7 @@
 @import 'Buttons.scss';
 @import 'Form.scss';
 @import 'Elements.scss';
+@import 'Messages.scss';
 
 // Color Input and Options only input
 .dependency {
@@ -35,128 +36,6 @@
 }
 .color-input button:first-child {
 	margin-right: 4px;
-}
-
-// Messages
-.message {
-	border-radius: 4px;
-	width: auto;
-	font-size: $body-10;
-	font-weight: $regular;
-	color: $grey-90;
-	background: $grey-20;
-	margin-bottom: 8px;
-	transition: all $animation;
-	display: grid;
-	grid-gap: 4px;
-	grid-template-columns: min-content auto;
-	padding: 4px;
-
-	& > div.icon {
-		font-family: 'Font Awesome 5 Free';
-		font-size: 16px;
-		line-height: 16px;
-		height: 16px;
-		width: 16px;
-		margin: 4px;
-		padding: 4px;
-	}
-	& > div.icon::before {
-		content: '\f05a';
-	}
-	& .content {
-		align-self: center;
-	}
-	& .content > p {
-		padding: 4px 0;
-		white-space: pre-wrap;
-	}
-	&.hidden {
-		min-height: 0px;
-		max-height: 0px;
-		overflow: hidden;
-		margin-bottom: 0;
-		padding: 0;
-	}
-	&.large {
-		width: 100%;
-	}
-	&.loading > div.icon {
-		animation: fa-spin 2s linear infinite;
-		transform-origin: center center;
-
-		&::before {
-			content: '\f1ce';
-		}
-	}
-	&.warning {
-		color: $yellow-90;
-		background: $yellow-50;
-
-		& > div.icon::before {
-			content: '\f071';
-		}
-	}
-	&.success {
-		color: $green-90;
-		background: $green-50;
-		& > div.icon::before {
-			content: '\f00c';
-		}
-	}
-	&.error {
-		color: $white-100;
-		background: $red-60;
-
-		& > div.icon::before {
-			content: '\f06a';
-		}
-	}
-	& button,
-	& .button {
-		background-color: $grey-60;
-		margin: 0 8px;
-
-		&:hover {
-			background-color: $grey-70;
-		}
-		&:active {
-			background-color: $grey-80;
-		}
-	}
-	&.warning button,
-	&.warning .button {
-		background-color: $yellow-60;
-
-		&:hover {
-			background-color: $yellow-70;
-		}
-		&:active {
-			background-color: $yellow-80;
-		}
-	}
-	&.success button,
-	&.success .button {
-		background-color: $green-60;
-
-		&:hover {
-			background-color: $green-70;
-		}
-		&:active {
-			background-color: $green-80;
-		}
-	}
-	&.error button,
-	&.error .button {
-		background-color: $red-60;
-
-		&:hover {
-			background-color: $red-70;
-		}
-		&:active {
-			background-color: $red-80;
-		}
-	}
 }
 
 // Table

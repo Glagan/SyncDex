@@ -7,6 +7,11 @@ import { Runtime } from './Runtime';
 import { Options } from './Options';
 import { SyncModule } from './SyncModule';
 
+interface HistoryChapter {
+	node: HTMLElement;
+	chapter: number;
+}
+
 export class SaveEditor {
 	static modalRow(content: AppendableElement[]): HTMLElement {
 		return DOM.create('div', { class: 'row', childs: content });
@@ -33,6 +38,24 @@ export class SaveEditor {
 		}
 		return select;
 	}
+
+	static createHistoryChapter = (nodes: HistoryChapter[], chapter: number): HTMLElement => {
+		const chapterNode = DOM.create('div', {
+			class: 'chapter',
+			textContent: `${chapter}`,
+			events: {
+				click: (event) => {
+					event.preventDefault();
+					const index = nodes.findIndex((n) => n.chapter == chapter);
+					if (index >= 0) {
+						nodes.splice(index, 1);
+						chapterNode.remove();
+					}
+				},
+			},
+		});
+		return chapterNode;
+	};
 
 	static create(syncModule: SyncModule, postSubmit?: () => void, postDelete?: () => void): Modal {
 		const title = syncModule.title;
@@ -164,6 +187,63 @@ export class SaveEditor {
 				previousChapterVolume = undefined;
 			}
 		});
+		// History
+		const history = DOM.create('div', {
+			class: 'hidden',
+			childs: [
+				DOM.create('div', {
+					class: 'message',
+					childs: [
+						DOM.create('div', { class: 'icon' }),
+						DOM.create('div', { class: 'content', textContent: 'Click on a chapter to delete it.' }),
+					],
+				}),
+			],
+		});
+		let historyChapters: { node: HTMLElement; chapter: number }[] = [];
+		for (const chapter of title.chapters) {
+			const chapterNode = this.createHistoryChapter(historyChapters, chapter);
+			historyChapters.push({ node: chapterNode, chapter: chapter });
+			history.appendChild(chapterNode);
+		}
+		const historyForm = DOM.create('form', {
+			class: 'chapter',
+			childs: [
+				DOM.create('input', { type: 'number', min: '0', step: 'any', name: 'chapter', placeholder: 'Chapter' }),
+				DOM.create('button', { type: 'submit', class: 'primary small', textContent: 'Add' }),
+			],
+			events: {
+				submit: (event) => {
+					event.preventDefault();
+					const input = historyForm.chapter;
+					const chapter = parseFloat(input.value);
+					if (!isNaN(chapter)) {
+						const max = historyChapters.length;
+						const historyChapter = {
+							node: this.createHistoryChapter(historyChapters, chapter),
+							chapter: chapter,
+						};
+						historyChapter.node.classList.add('flashing');
+						for (let i = 0; i <= max; i++) {
+							if (i == max) {
+								historyChapters.push(historyChapter);
+								history.insertBefore(historyChapter.node, history.lastElementChild);
+								break;
+							} else if (historyChapters[i].chapter == chapter) {
+								break;
+							} else if (chapter < historyChapters[i].chapter) {
+								history.insertBefore(historyChapter.node, historyChapters[i].node);
+								historyChapters.splice(i, 0, historyChapter);
+								break;
+							}
+						}
+					}
+					input.value = '';
+				},
+			},
+		});
+		history.appendChild(historyForm);
+		const showHistory = DOM.icon('angle-down');
 		// Create all rows
 		DOM.append(
 			form,
@@ -216,10 +296,34 @@ export class SaveEditor {
 					}),
 				]),
 			]),
-			DOM.create('label', { textContent: 'Services' }),
-			services,
-			updateAllCheckbox,
-			DOM.create('label', { htmlFor: 'scs_updateAll', textContent: 'Update all Services' }),
+			this.modalRow([
+				this.modalGroup('Services', 'ee_services', [
+					services,
+					updateAllCheckbox,
+					DOM.create('label', { htmlFor: 'scs_updateAll', textContent: 'Update all Services' }),
+				]),
+			]),
+			DOM.create('div', {
+				class: 'group history',
+				title: 'Click to show the Chapter List for the Title.',
+				childs: [
+					DOM.create('label', {
+						textContent: 'History',
+						childs: [DOM.space(), showHistory],
+						events: {
+							click: (event) => {
+								event.preventDefault();
+								showHistory.classList.toggle('fa-angle-down');
+								showHistory.classList.toggle('fa-angle-up');
+								if (history.classList.toggle('visible')) {
+									modal.body.scrollTo({ top: modal.body.scrollHeight, behavior: 'smooth' });
+								}
+							},
+						},
+					}),
+					history,
+				],
+			}),
 			realSubmit
 		);
 		// Submit event
@@ -270,6 +374,8 @@ export class SaveEditor {
 			for (const sn in ActivableName) {
 				GetService(sn as ActivableName).HandleInput(title, form);
 			}
+			// Chapters
+			title.chapters = historyChapters.map((h) => h.chapter);
 			// Save and close Modal
 			await title.persist();
 			// Sync Services
