@@ -87,6 +87,6 @@ export class OptionsManager {
 		this.checkboxManager.updateAll();
 		this.inputManager.updateAll();
 		this.serviceManager.refreshActive();
-		this.saveViewer.updateAll();
+		this.saveViewer.updateAll(true);
 	};
 }

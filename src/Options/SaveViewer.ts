@@ -18,16 +18,27 @@ export class SaveViewer {
 	pagingPages: HTMLElement;
 	body: HTMLElement;
 	reloadButton: HTMLButtonElement;
+	realTitles: TitleCollection = new TitleCollection();
 	titles: TitleCollection = new TitleCollection();
 	currentPage: number = 1;
 	maxPage: number = 1;
 	previousPage: HTMLButtonElement;
 	pages: { [key: number]: HTMLButtonElement } = {};
-	static perPage = 10;
+	static perPage = 15;
+	emptySaveMessage: HTMLElement;
 	emptySave: HTMLElement;
 	selectAllCheckbox: HTMLInputElement;
 	deleteSelected: HTMLElement;
 	displayedRows: SaveRow[] = [];
+	searchInput: HTMLInputElement;
+	resetSearch: HTMLElement;
+	idColumn: HTMLElement;
+	sortFieldIcon: HTMLElement;
+	sortBy: { search: string; field: keyof Title; order: 'ASC' | 'DESC' } = {
+		search: '',
+		field: 'id',
+		order: 'ASC',
+	};
 
 	constructor() {
 		this.paging = document.getElementById('save-paging')!;
@@ -35,29 +46,24 @@ export class SaveViewer {
 		this.body = document.getElementById('save-body')!;
 		this.reloadButton = document.getElementById('reload-save-viewer') as HTMLButtonElement;
 		this.previousPage = DOM.create('button');
+		this.emptySaveMessage = DOM.create('div', {
+			class: 'content',
+			textContent: 'Nothing in your Save.',
+		});
 		this.emptySave = DOM.create('tr', {
 			childs: [
 				DOM.create('td', {
-					colSpan: 9,
+					colSpan: 10,
 					childs: [
 						DOM.create('div', {
 							class: 'message',
-							childs: [
-								DOM.create('div', { class: 'icon' }),
-								DOM.create('div', {
-									class: 'content',
-									textContent: 'Nothing in your Save.',
-								}),
-							],
+							childs: [DOM.create('div', { class: 'icon' }), this.emptySaveMessage],
 						}),
 					],
 				}),
 			],
 		});
-		this.reloadButton.addEventListener('click', (event) => {
-			event.preventDefault();
-			this.updateAll();
-		});
+
 		this.selectAllCheckbox = document.getElementById('save_all') as HTMLInputElement;
 		this.selectAllCheckbox.addEventListener('change', () => {
 			for (const row of this.displayedRows) {
@@ -73,12 +79,65 @@ export class SaveViewer {
 			for (const row of this.displayedRows) {
 				if (row.selected) {
 					await LocalStorage.remove(row.title.id);
+					this.realTitles.remove(row.title.id);
 					this.titles.remove(row.title.id);
 				}
 			}
 			this.updateDisplayedPage();
 		});
-		this.updateAll();
+
+		this.searchInput = document.getElementById('save-search') as HTMLInputElement;
+		let timeout = 0;
+		this.searchInput.addEventListener('input', (event) => {
+			clearTimeout(timeout);
+			timeout = setTimeout(() => {
+				this.sortBy.search = this.searchInput.value;
+				this.updateAll(false);
+			}, 200);
+		});
+		this.resetSearch = document.getElementById('reset-search') as HTMLElement;
+		this.resetSearch.addEventListener('click', (event) => {
+			event.preventDefault();
+			if (this.searchInput.value != '') {
+				this.searchInput.value = '';
+				this.sortBy.search = '';
+				this.updateAll(false);
+			}
+		});
+
+		this.sortFieldIcon = DOM.icon('angle-up');
+		this.idColumn = document.querySelector<HTMLElement>('th[data-field="id"]')!;
+		this.idColumn.appendChild(this.sortFieldIcon);
+		const sortColumns = document.querySelectorAll<HTMLElement>('th[data-field]');
+		for (const column of sortColumns) {
+			const field = column.dataset.field!;
+			column.addEventListener('click', (event) => {
+				if (this.sortBy.field == field) {
+					this.sortBy.order = this.sortBy.order == 'ASC' ? 'DESC' : 'ASC';
+					this.sortFieldIcon.classList.toggle('fa-angle-down');
+					this.sortFieldIcon.classList.toggle('fa-angle-up');
+				} else {
+					column.appendChild(this.sortFieldIcon);
+					this.sortFieldIcon.classList.remove('fa-angle-down');
+					this.sortFieldIcon.classList.add('fa-angle-up');
+					this.sortBy.field = field as keyof Title;
+					this.sortBy.order = 'ASC';
+				}
+				this.sortTitles();
+				this.updateDisplayedPage();
+			});
+		}
+
+		this.reloadButton.addEventListener('click', (event) => {
+			event.preventDefault();
+			this.sortBy = { search: '', field: 'id', order: 'ASC' };
+			this.idColumn.appendChild(this.sortFieldIcon);
+			this.sortFieldIcon.classList.remove('fa-angle-down');
+			this.sortFieldIcon.classList.add('fa-angle-up');
+			this.updateAll(true);
+		});
+
+		this.updateAll(true);
 	}
 
 	loadPage = (page: number): void => {
@@ -184,6 +243,7 @@ export class SaveViewer {
 					this.loadPage(this.currentPage);
 				},
 				() => {
+					this.realTitles.remove(title.id);
 					this.titles.remove(title.id);
 					this.updateDisplayedPage();
 				}
@@ -237,10 +297,35 @@ export class SaveViewer {
 		return saveRow;
 	};
 
-	updateAll = async (): Promise<void> => {
+	sortTitles = (): void => {
+		const order = this.sortBy.order == 'ASC' ? 1 : -1;
+		if (this.sortBy.field == 'start' || this.sortBy.field == 'end') {
+			this.titles.collection.sort((a, b) => {
+				if (a[this.sortBy.field] === undefined && b[this.sortBy.field] === undefined) {
+					return 0;
+				} else if (a[this.sortBy.field] == undefined) {
+					return 1;
+				} else if (b[this.sortBy.field] == undefined) {
+					return -1;
+				}
+				return a[this.sortBy.field]! > b[this.sortBy.field]! ? order : -order;
+			});
+		} else this.titles.collection.sort((a, b) => (a[this.sortBy.field]! > b[this.sortBy.field]! ? order : -order));
+	};
+
+	updateAll = async (reload: boolean): Promise<void> => {
 		DOM.clear(this.pagingPages);
 		DOM.clear(this.body);
-		this.titles = await TitleCollection.get();
+		if (reload) {
+			this.realTitles = await TitleCollection.get();
+		}
+		this.titles.collection = Array.from(this.realTitles.collection);
+		if (this.sortBy.search !== '') {
+			this.titles.collection = this.titles.collection.filter((t) => t.name && t.name.match(this.sortBy.search));
+		}
+		if (this.sortBy.field != 'id' || this.sortBy.order != 'DESC') {
+			this.sortTitles();
+		}
 		this.currentPage = 1;
 		this.pages = {};
 		this.maxPage = Math.ceil(this.titles.length / SaveViewer.perPage);
@@ -264,6 +349,13 @@ export class SaveViewer {
 				this.pagingPages.appendChild(button);
 			}
 			this.loadPage(1);
-		} else this.body.appendChild(this.emptySave);
+		} else {
+			if (this.sortBy.search == '') {
+				this.emptySaveMessage.textContent = 'Nothing in your Save.';
+			} else {
+				this.emptySaveMessage.textContent = 'Nothing found in your Save !';
+			}
+			this.body.appendChild(this.emptySave);
+		}
 	};
 }

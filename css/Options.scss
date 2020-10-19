@@ -225,6 +225,8 @@ main {
 // Save Viewer
 .save-viewer {
 	table {
+		width: 100%;
+
 		tr {
 			th {
 				&.name {
@@ -232,6 +234,13 @@ main {
 				}
 				&.actions {
 					width: 5%;
+				}
+				&[data-field] {
+					cursor: pointer;
+
+					& i {
+						margin-left: 4px;
+					}
 				}
 			}
 			td {
@@ -258,11 +267,19 @@ main {
 #save-paging {
 	display: flex;
 	justify-content: space-between;
+	align-items: center;
 	margin-right: 8px;
 	margin-bottom: 8px;
 }
-#save-search input {
+#save-search-wrapper {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+#save-search {
 	display: inline-block;
+	margin-left: 4px;
+	margin-right: 4px;
 }
 #save-body .message {
 	margin-bottom: 0;
