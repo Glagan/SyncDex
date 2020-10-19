@@ -6,6 +6,13 @@ import { dateFormat, progressToString } from '../Core/Utility';
 import { SaveEditor } from '../Core/SaveEditor';
 import { SyncModule } from '../Core/SyncModule';
 
+interface SaveRow {
+	title: Title;
+	node: HTMLElement;
+	checkbox: HTMLInputElement;
+	selected: boolean;
+}
+
 export class SaveViewer {
 	paging: HTMLElement;
 	pagingPages: HTMLElement;
@@ -18,6 +25,9 @@ export class SaveViewer {
 	pages: { [key: number]: HTMLButtonElement } = {};
 	static perPage = 10;
 	emptySave: HTMLElement;
+	selectAllCheckbox: HTMLInputElement;
+	deleteSelected: HTMLElement;
+	displayedRows: SaveRow[] = [];
 
 	constructor() {
 		this.paging = document.getElementById('save-paging')!;
@@ -48,16 +58,41 @@ export class SaveViewer {
 			event.preventDefault();
 			this.updateAll();
 		});
+		this.selectAllCheckbox = document.getElementById('save_all') as HTMLInputElement;
+		this.selectAllCheckbox.addEventListener('change', () => {
+			for (const row of this.displayedRows) {
+				row.selected = this.selectAllCheckbox.checked;
+				row.checkbox.checked = this.selectAllCheckbox.checked;
+			}
+			if (this.selectAllCheckbox.checked) {
+				this.deleteSelected.style.display = 'block';
+			} else this.deleteSelected.style.display = 'none';
+		});
+		this.deleteSelected = document.getElementById('delete-selected') as HTMLElement;
+		this.deleteSelected.addEventListener('click', async (event) => {
+			for (const row of this.displayedRows) {
+				if (row.selected) {
+					await LocalStorage.remove(row.title.id);
+					this.titles.remove(row.title.id);
+				}
+			}
+			this.updateDisplayedPage();
+		});
 		this.updateAll();
 	}
 
 	loadPage = (page: number): void => {
 		DOM.clear(this.body);
+		this.selectAllCheckbox.checked = false;
+		this.deleteSelected.style.display = 'none';
 		this.currentPage = page;
+		this.displayedRows = [];
 		let titles = this.titles.collection.slice(SaveViewer.perPage * (page - 1), page * SaveViewer.perPage);
 		const fragment = document.createDocumentFragment();
 		for (const title of titles) {
-			fragment.appendChild(this.createRow(title));
+			const row = this.createRow(title);
+			this.displayedRows.push(row);
+			fragment.appendChild(row.node);
 		}
 		this.body.appendChild(fragment);
 	};
@@ -102,11 +137,15 @@ export class SaveViewer {
 		if (this.titles.length == 0) this.body.appendChild(this.emptySave);
 	};
 
-	createRow = (title: Title): HTMLElement => {
+	createRow = (title: Title): SaveRow => {
+		const selectCheckbox = DOM.create('input', { type: 'checkbox', id: `save_${title.id}` });
 		const editButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('edit')], title: 'Edit' });
 		const deleteButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('trash')], title: 'Delete' });
 		const row = DOM.create('tr', {
 			childs: [
+				DOM.create('td', {
+					childs: [selectCheckbox, DOM.create('label', { htmlFor: `save_${title.id}` })],
+				}),
 				DOM.create('td', {
 					class: 'mangadex',
 					childs: [
@@ -177,7 +216,25 @@ export class SaveViewer {
 				];
 			}
 		});
-		return row;
+		const saveRow: SaveRow = {
+			title: title,
+			node: row,
+			checkbox: selectCheckbox,
+			selected: false,
+		};
+		selectCheckbox.addEventListener('change', (event) => {
+			saveRow.selected = selectCheckbox.checked;
+			if (selectCheckbox.checked) {
+				this.deleteSelected.style.display = 'block';
+			} else {
+				this.selectAllCheckbox.checked = false;
+				for (const row of this.displayedRows) {
+					if (row.selected) return;
+				}
+				this.deleteSelected.style.display = 'none';
+			}
+		});
+		return saveRow;
 	};
 
 	updateAll = async (): Promise<void> => {

@@ -99,7 +99,7 @@ export class CheckboxManager {
 	checkboxes: Checkbox[] = [];
 
 	constructor() {
-		const checkboxes = document.querySelectorAll<HTMLInputElement>(`input[type='checkbox']`);
+		const checkboxes = document.querySelectorAll<HTMLInputElement>(`input[type='checkbox'][data-name]`);
 		for (const node of checkboxes) {
 			const checkbox = new Checkbox(node);
 			checkbox.bind();

@@ -273,26 +273,31 @@
 					<p>Scores in <b>SyncDex</b> go from 0 to 100 and are automatically converted when sent to Services.</p>
 				</div>
 			</div>
+			<div id="save-paging">
+				<div>
+					<button class="ghost primary" id="reload-save-viewer" title="Reload Titles"><i class="fas fa-sync-alt"></i></button>
+					<input type="text" id="save-search" />
+				</div>
+				<button id="delete-selected" class="danger"><i class="fas fa-trash"></i> Delete Selected</button>
+				<div id="paging-pages"></div>
+			</div>
 			<table class="block">
 				<thead>
 					<tr>
-						<th class="mangadex">MangaDex</th>
-						<th class="name">Name</th>
+						<th><input type="checkbox" id="save_all" /><label for="save_all"></label></th>
+						<th class="mangadex" data-field="id">MangaDex</th>
+						<th class="name" data-field="name">Name</th>
 						<th>Services</th>
-						<th>Status</th>
-						<th>Score</th>
+						<th data-field="status">Status</th>
+						<th data-field="score">Score</th>
 						<th>Progress</th>
-						<th>Start</th>
-						<th>End</th>
+						<th data-field="start">Start</th>
+						<th data-field="end">End</th>
 						<th class="actions">Action</th>
 					</tr>
 				</thead>
 				<tbody id="save-body"></tbody>
 			</table>
-			<div id="save-paging">
-				<button class="primary" id="reload-save-viewer"><i class="fas fa-sync-alt"></i> Reload</button>
-				<div id="paging-pages"></div>
-			</div>
 		</div>
 		<h1 id="import"><i class="fas fa-download"></i> Import</h1>
 		<div class="block message default">

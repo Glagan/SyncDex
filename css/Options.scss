@@ -40,7 +40,6 @@
 
 // Table
 table {
-	width: calc(100% - 16px - 2px);
 	border: 1px solid $grey-20;
 	border-radius: 2px;
 	background-color: $white-100;
@@ -49,6 +48,7 @@ table {
 	border-collapse: collapse;
 	table-layout: fixed;
 	box-shadow: $shadow-10;
+	margin-bottom: 16px;
 
 	& thead {
 		background-color: $grey-30;
@@ -254,14 +254,18 @@ main {
 		background-color: $grey-90-a30;
 		font-weight: $bold;
 	}
-	#save-paging {
-		display: grid;
-		grid-template-columns: min-content auto;
-		grid-gap: 4px;
-	}
-	#save-body .message {
-		margin-bottom: 0;
-	}
+}
+#save-paging {
+	display: flex;
+	justify-content: space-between;
+	margin-right: 8px;
+	margin-bottom: 8px;
+}
+#save-search input {
+	display: inline-block;
+}
+#save-body .message {
+	margin-bottom: 0;
 }
 
 // Changelog

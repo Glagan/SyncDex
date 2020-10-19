@@ -33,6 +33,23 @@
 		}
 
 		// Styles
+		&.ghost {
+			color: $grey-90-a30;
+			background: transparent;
+			height: 32px;
+			min-width: 32px;
+			width: 32px;
+			padding: 8px;
+		}
+		&.ghost:hover {
+			background-color: $grey-90-a10;
+		}
+		&.ghost:active {
+			background-color: $grey-90-a20;
+		}
+		&.ghost:focus {
+			box-shadow: $focus;
+		}
 		&.primary {
 			color: $white-100;
 			background-color: $blue-60;
@@ -57,23 +74,6 @@
 			background-color: $grey-90-a30;
 		}
 		&.default:focus {
-			box-shadow: $focus;
-		}
-		&.ghost {
-			color: $grey-90-a30;
-			background: transparent;
-			height: 32px;
-			min-width: 32px;
-			width: 32px;
-			padding: 8px;
-		}
-		&.ghost:hover {
-			background-color: $grey-90-a10;
-		}
-		&.ghost:active {
-			background-color: $grey-90-a20;
-		}
-		&.ghost:focus {
 			box-shadow: $focus;
 		}
 		&.danger {
