@@ -38,6 +38,7 @@ export interface AvailableOptions {
 	useMochi: boolean;
 	acceptLowScore: boolean;
 	updateMD: boolean;
+	checkOnStartup: boolean;
 	// Services
 	services: ActivableKey[];
 	mainService: ActivableKey | undefined;
@@ -93,6 +94,7 @@ export const DefaultOptions: AvailableOptions = {
 	useMochi: true,
 	acceptLowScore: false,
 	updateMD: false,
+	checkOnStartup: false,
 	// Services
 	services: [],
 	mainService: undefined,

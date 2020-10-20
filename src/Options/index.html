@@ -264,6 +264,14 @@
 					Out of sync <b>MangaDex Status</b> will also be updated when visiting a <b>Title Page</b>.
 				</p>
 			</div>
+			<h2>Check Lists on Startup</h2>
+			<div class="parameter">
+				<input type="checkbox" id="ck_checkOnStartup" data-name="checkOnStartup" />
+				<label for="ck_checkOnStartup">Check your lists on all <b>Services</b> you activated when you start your browser and update your <b>Local Save</b>.</label>
+				<p class="helper">
+					This option is useful if you read on your phone with <b>Tachiyomi</b> for example and it directly updates your list on a <b>Service</b>.
+				</p>
+			</div>
 		</div>
 		<h1 id="save"><i class="fas fa-save"></i> Save Viewer</h1>
 		<div class="section save-viewer">
@@ -273,15 +281,18 @@
 					<p>Scores in <b>SyncDex</b> go from 0 to 100 and are automatically converted when sent to Services.</p>
 				</div>
 			</div>
-			<div id="save-paging">
+			<div id="search-toolbar">
 				<div id="save-search-wrapper">
 					<button class="ghost primary" id="reload-save-viewer" title="Reload Titles"><i class="fas fa-sync-alt"></i></button>
+					<select id="save-status">
+						<option value="-1">All</option>
+					</select>
 					<input type="text" id="save-search" />
 					<button class="ghost default" id="reset-search" title="Reset Search"><i class="fas fa-times"></i></button>
 				</div>
 				<button id="delete-selected" class="danger"><i class="fas fa-trash"></i> Delete Selected</button>
-				<div id="paging-pages"></div>
 			</div>
+			<div id="paging-pages"></div>
 			<table class="block">
 				<thead>
 					<tr>

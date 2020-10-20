@@ -264,10 +264,14 @@ main {
 		font-weight: $bold;
 	}
 }
-#save-paging {
+#search-toolbar {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	margin-right: 8px;
+	margin-bottom: 8px;
+}
+#paging-pages:not(:empty) {
 	margin-right: 8px;
 	margin-bottom: 8px;
 }
@@ -275,6 +279,9 @@ main {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+}
+#save-status {
+	margin-left: 4px;
 }
 #save-search {
 	display: inline-block;

@@ -14,7 +14,6 @@ interface SaveRow {
 }
 
 export class SaveViewer {
-	paging: HTMLElement;
 	pagingPages: HTMLElement;
 	body: HTMLElement;
 	reloadButton: HTMLButtonElement;
@@ -30,18 +29,19 @@ export class SaveViewer {
 	selectAllCheckbox: HTMLInputElement;
 	deleteSelected: HTMLElement;
 	displayedRows: SaveRow[] = [];
+	statusSelect: HTMLSelectElement;
 	searchInput: HTMLInputElement;
 	resetSearch: HTMLElement;
 	idColumn: HTMLElement;
 	sortFieldIcon: HTMLElement;
-	sortBy: { search: string; field: keyof Title; order: 'ASC' | 'DESC' } = {
+	sortBy: { search: string; status: Status | undefined; field: keyof Title; order: 'ASC' | 'DESC' } = {
 		search: '',
+		status: undefined,
 		field: 'id',
 		order: 'ASC',
 	};
 
 	constructor() {
-		this.paging = document.getElementById('save-paging')!;
 		this.pagingPages = document.getElementById('paging-pages')!;
 		this.body = document.getElementById('save-body')!;
 		this.reloadButton = document.getElementById('reload-save-viewer') as HTMLButtonElement;
@@ -84,6 +84,19 @@ export class SaveViewer {
 				}
 			}
 			this.updateDisplayedPage();
+		});
+
+		this.statusSelect = document.getElementById('save-status') as HTMLSelectElement;
+		let value = 0;
+		for (const status of Object.values(StatusMap)) {
+			const option = DOM.create('option', { textContent: status, value: `${value++}` });
+			this.statusSelect.appendChild(option);
+		}
+		this.statusSelect.addEventListener('change', () => {
+			if (this.statusSelect.value == '-1') {
+				this.sortBy.status = undefined;
+			} else this.sortBy.status = parseInt(this.statusSelect.value);
+			this.updateAll(false);
 		});
 
 		this.searchInput = document.getElementById('save-search') as HTMLInputElement;
@@ -130,7 +143,7 @@ export class SaveViewer {
 
 		this.reloadButton.addEventListener('click', (event) => {
 			event.preventDefault();
-			this.sortBy = { search: '', field: 'id', order: 'ASC' };
+			this.sortBy = { search: '', status: undefined, field: 'id', order: 'ASC' };
 			this.idColumn.appendChild(this.sortFieldIcon);
 			this.sortFieldIcon.classList.remove('fa-angle-down');
 			this.sortFieldIcon.classList.add('fa-angle-up');
@@ -322,6 +335,9 @@ export class SaveViewer {
 		this.titles.collection = Array.from(this.realTitles.collection);
 		if (this.sortBy.search !== '') {
 			this.titles.collection = this.titles.collection.filter((t) => t.name && t.name.match(this.sortBy.search));
+		}
+		if (this.sortBy.status !== undefined) {
+			this.titles.collection = this.titles.collection.filter((t) => t.status === this.sortBy.status);
 		}
 		if (this.sortBy.field != 'id' || this.sortBy.order != 'DESC') {
 			this.sortTitles();
