@@ -1,10 +1,9 @@
 import { DOM } from '../../Core/DOM';
-import { TitleCollection, Title, ServiceName, ServiceKey, ServiceKeyType } from '../../Core/Title';
-import { Mochi } from '../../Core/Mochi';
+import { Title, ServiceName, ServiceKey, ServiceKeyType } from '../../Core/Title';
 import { Service, Summary, LoginMethod, ActivableModule, LoginModule, ActivableService } from './Service';
 import { Runtime } from '../../Core/Runtime';
 import { MyAnimeListTitle } from '../../Service/MyAnimeList';
-import { FileImportFormat, FileImportableModule } from './Import';
+import { FileImportFormat, APIImportableModule } from './Import';
 import { BatchExportableModule } from './Export';
 import { dateFormatInput } from '../../Core/Utility';
 
@@ -15,6 +14,21 @@ enum MyAnimeListExportStatus {
 	PAUSED = 'On-Hold',
 	DROPPED = 'Dropped',
 	NONE = 'Invalid',
+}
+
+interface MyAnimeListAPITitle {
+	id: number;
+	status: MyAnimeListExportStatus;
+	score: number;
+	num_read_chapters: number;
+	num_read_volumes: number;
+	manga_title: string;
+	manga_num_chapters: number;
+	manga_num_volumes: number;
+	manga_publishing_status: number;
+	manga_id: number;
+	start_date_string: string | null;
+	finish_date_string: string | null;
 }
 
 interface MyAnimeListXMLTitle {
@@ -29,15 +43,26 @@ interface MyAnimeListXMLTitle {
 }
 
 class MyAnimeListLogin extends LoginModule {
+	username: string = '';
+
 	loggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: 'https://myanimelist.net/login.php',
 			method: 'GET',
 			credentials: 'include',
+			redirect: 'follow',
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		if (response.body == '') return RequestStatus.SERVER_ERROR;
-		if (response.body && response.url.indexOf('login.php') < 0) return RequestStatus.SUCCESS;
+		if (response.body && response.url.indexOf('login.php') < 0) {
+			const parser = new DOMParser();
+			const body = parser.parseFromString(response.body, 'text/html');
+			const header = body.querySelector<HTMLElement>('a.header-profile-link');
+			if (header) {
+				this.username = header.textContent!.trim();
+				return RequestStatus.SUCCESS;
+			}
+		}
 		return RequestStatus.FAIL;
 	};
 }
@@ -45,6 +70,119 @@ class MyAnimeListLogin extends LoginModule {
 class MyAnimeListActive extends ActivableModule {
 	loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	loginUrl: string = 'https://myanimelist.net/login.php';
+}
+
+class MyAnimeListImport extends APIImportableModule {
+	fileType: FileImportFormat = 'XML';
+	handleHistory = undefined;
+	handleOptions = undefined;
+	static api = (username: string, offset: number) =>
+		`https://myanimelist.net/mangalist/${username}/load.json?offset=${offset}&status=7`;
+
+	toStatus = (status: MyAnimeListExportStatus): Status => {
+		switch (status) {
+			case MyAnimeListExportStatus.READING:
+				return Status.READING;
+			case MyAnimeListExportStatus.COMPLETED:
+				return Status.COMPLETED;
+			case MyAnimeListExportStatus.PLAN_TO_READ:
+				return Status.PLAN_TO_READ;
+			case MyAnimeListExportStatus.PAUSED:
+				return Status.PAUSED;
+			case MyAnimeListExportStatus.DROPPED:
+				return Status.DROPPED;
+		}
+		return Status.NONE;
+	};
+
+	handlePage = async (): Promise<MyAnimeListTitle[] | false> => {
+		const response = await Runtime.jsonRequest<MyAnimeListAPITitle[]>({
+			url: MyAnimeListImport.api(
+				(this.service as MyAnimeList).loginModule.username,
+				(this.state.current - 1) * 300
+			),
+		});
+		if (!response.ok) {
+			this.notification('warning', 'The request failed, maybe MyAnimeList is having problems, retry later.');
+			return false;
+		}
+		let titles: MyAnimeListTitle[] = [];
+		const body = response.body;
+		// Each row has a data-id field
+		for (const title of body) {
+			const found = new MyAnimeListTitle(title.manga_id, {
+				progress: {
+					chapter: title.num_read_chapters,
+					volume: title.num_read_volumes === 0 ? undefined : title.num_read_volumes,
+				},
+				status: this.toStatus(title.status),
+				score: title.score * 10,
+				start: this.dateToTime(title.start_date_string ?? undefined),
+				end: this.dateToTime(title.finish_date_string ?? undefined),
+				name: title.manga_title,
+			});
+			// Find Max Chapter if the Title is Completed
+			if (title.manga_publishing_status == 2) {
+				found.max = {
+					chapter: title.manga_num_chapters,
+					volume: title.manga_num_volumes,
+				};
+			}
+			titles.push(found);
+		}
+		// It's the last page if there is less than 300 titles
+		this.state.max = body.length == 300 ? this.state.current + 1 : this.state.current;
+		return titles;
+	};
+
+	validMyAnimeListTitle = (title: MyAnimeListXMLTitle): boolean => {
+		return (
+			!isNaN(+title.id) &&
+			!isNaN(+title.chapters) &&
+			!isNaN(+title.volumes) &&
+			!isNaN(+title.score) &&
+			typeof title.start === 'string' &&
+			typeof title.end === 'string' &&
+			this.toStatus(title.status) !== Status.NONE
+		);
+	};
+
+	// Convert a YYYY-MM-DD MyAnimeList date to a Date timestamp
+	dateToTime = (date?: string): Date | undefined => {
+		if (date === undefined) return undefined;
+		const d = new Date(date);
+		if (isNaN(d.getFullYear()) || d.getFullYear() === 0) return undefined;
+		return d;
+	};
+
+	handleTitles = async (save: Document): Promise<MyAnimeListXMLTitle[]> => {
+		let titles: MyAnimeListXMLTitle[] = [];
+		const mangaList = save.querySelectorAll<HTMLElement>('manga');
+		for (const manga of mangaList) {
+			const title: MyAnimeListXMLTitle = {
+				id: parseInt(manga.querySelector('manga_mangadb_id')?.textContent || '0'),
+				chapters: parseInt(manga.querySelector('my_read_chapters')?.textContent || '0'),
+				volumes: parseInt(manga.querySelector('my_read_volumes')?.textContent || '0'),
+				status: (manga.querySelector('my_status')?.textContent || 'Invalid') as MyAnimeListExportStatus,
+				score: parseInt(manga.querySelector('my_score')?.textContent || '0'),
+				start: '0000-00-00',
+				end: '0000-00-00',
+				name: manga.querySelector('manga_title')?.textContent || undefined,
+			};
+			const start = manga.querySelector('my_start_date');
+			if (start !== null && start.textContent !== null) {
+				title.start = start.textContent;
+			}
+			const end = manga.querySelector('my_finish_date');
+			if (end && end.textContent !== null) {
+				title.end = end.textContent;
+			}
+			if (this.validMyAnimeListTitle(title)) {
+				titles.push(title);
+			}
+		}
+		return titles;
+	};
 }
 
 /**
@@ -82,159 +220,7 @@ class MyAnimeListActive extends ActivableModule {
  * 			 update_on_import: number, 0 to not edit, 1 to edit
  * 		</manga>
  * </myanimelist>
- */
-class MyAnimeListImport extends FileImportableModule<Document, MyAnimeListXMLTitle> {
-	fileType: FileImportFormat = 'XML';
-	handleHistory = undefined;
-	handleOptions = undefined;
-
-	acceptedFileType = () => {
-		return 'application/xml';
-	};
-
-	postForm = (form: HTMLFormElement): void => {
-		const fileInput = form.querySelector(`input[type='file']`);
-		if (fileInput && fileInput.parentElement) {
-			// Link to the export panel on MyAnimeList
-			let notification = this.notification('default', [
-				DOM.text('You can download your Manga list'),
-				DOM.space(),
-				DOM.create('a', {
-					textContent: 'here',
-					href: 'https://myanimelist.net/panel.php?go=export',
-					target: '_blank',
-					childs: [DOM.space(), DOM.icon('external-link-alt')],
-				}),
-				DOM.text('.'),
-			]);
-			notification.classList.add('in-place');
-			fileInput.parentElement.insertBefore(notification, fileInput);
-			// Compression notification
-			notification = this.notification('warning', [
-				DOM.text('You need to extract the downloaded file. The extension need to be '),
-				DOM.create('b', { textContent: '.xml' }),
-				DOM.text(' and not '),
-				DOM.create('b', { textContent: '.xml.gz' }),
-				DOM.text('.'),
-			]);
-			notification.classList.add('in-place');
-			fileInput.parentElement.insertBefore(notification, fileInput);
-		}
-	};
-
-	toStatus = (status: MyAnimeListExportStatus): Status => {
-		switch (status) {
-			case MyAnimeListExportStatus.READING:
-				return Status.READING;
-			case MyAnimeListExportStatus.COMPLETED:
-				return Status.COMPLETED;
-			case MyAnimeListExportStatus.PLAN_TO_READ:
-				return Status.PLAN_TO_READ;
-			case MyAnimeListExportStatus.PAUSED:
-				return Status.PAUSED;
-			case MyAnimeListExportStatus.DROPPED:
-				return Status.DROPPED;
-		}
-		return Status.NONE;
-	};
-
-	validMyAnimeListTitle = (title: MyAnimeListXMLTitle): boolean => {
-		return (
-			!isNaN(+title.id) &&
-			!isNaN(+title.chapters) &&
-			!isNaN(+title.volumes) &&
-			!isNaN(+title.score) &&
-			typeof title.start === 'string' &&
-			typeof title.end === 'string' &&
-			this.toStatus(title.status) !== Status.NONE
-		);
-	};
-
-	// Convert a YYYY-MM-DD MyAnimeList date to a Date timestamp
-	dateToTime = (date?: string): Date | undefined => {
-		if (date === undefined) return undefined;
-		const d = new Date(date);
-		if (isNaN(d.getFullYear()) || d.getFullYear() === 0) return undefined;
-		return d;
-	};
-
-	handleTitles = async (save: Document): Promise<MyAnimeListXMLTitle[]> => {
-		let titles: MyAnimeListXMLTitle[] = [];
-		const mangaList = save.querySelectorAll<HTMLElement>('manga');
-		for (const manga of mangaList) {
-			// TODO: Find Max Chapter
-			const title: MyAnimeListXMLTitle = {
-				id: parseInt(manga.querySelector('manga_mangadb_id')?.textContent || '0'),
-				chapters: parseInt(manga.querySelector('my_read_chapters')?.textContent || '0'),
-				volumes: parseInt(manga.querySelector('my_read_volumes')?.textContent || '0'),
-				status: (manga.querySelector('my_status')?.textContent || 'Invalid') as MyAnimeListExportStatus,
-				score: parseInt(manga.querySelector('my_score')?.textContent || '0'),
-				start: '0000-00-00',
-				end: '0000-00-00',
-				name: manga.querySelector('manga_title')?.textContent || undefined,
-			};
-			const start = manga.querySelector('my_start_date');
-			if (start !== null && start.textContent !== null) {
-				title.start = start.textContent;
-			}
-			const end = manga.querySelector('my_finish_date');
-			if (end && end.textContent !== null) {
-				title.end = end.textContent;
-			}
-			if (this.validMyAnimeListTitle(title)) {
-				titles.push(title);
-			}
-		}
-		return titles;
-	};
-
-	convertTitles = async (titles: TitleCollection, titleList: MyAnimeListXMLTitle[]): Promise<number> => {
-		const ids = titleList
-			.filter((title) => {
-				return title.id > 0 && title.chapters >= 0 && title.status != MyAnimeListExportStatus.NONE;
-			})
-			.map((t) => t.id);
-		const connections = await Mochi.findMany(ids, this.service.serviceName);
-		const found: number[] = [];
-		let total = 0;
-		if (connections !== undefined) {
-			for (const key in connections) {
-				const connection = connections[key];
-				if (connection !== undefined) {
-					const id = parseInt(key);
-					const title = titleList.find((t) => t.id == id);
-					if (title && connection['md']) {
-						titles.add(
-							new Title(connection['md'] as number, {
-								services: { mal: title.id },
-								progress: {
-									chapter: title.chapters,
-									volume: title.volumes,
-								},
-								status: this.toStatus(title.status),
-								// Convert MyAnimeList 0-10 range to 0-100
-								score: title.score > 0 ? title.score * 10 : undefined,
-								start: this.dateToTime(title.start),
-								end: this.dateToTime(title.end),
-								chapters: [],
-								name: title.name,
-							})
-						);
-						found.push(title.id);
-						total++;
-					}
-				}
-			}
-			// Find title that don't have a connection
-			const noIds = titleList.filter((mt) => found.indexOf(mt.id) < 0);
-			this.summary.failed.push(...noIds.filter((mt) => mt.name !== undefined).map((mt) => mt.name as string));
-		}
-		return total;
-	};
-}
-
-/**
- * Export format is the same as the Import XML file.
+ *
  * Only user_export_type set to 2 is require in myinfo
  * The only two required fields in each manga are manga_mangadb_id and update_on_import set to 1
  * XMLHeader: <?xml version="1.0" encoding="UTF-8" ?>
