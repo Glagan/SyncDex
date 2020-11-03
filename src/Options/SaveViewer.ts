@@ -1,13 +1,13 @@
-import { TitleCollection, ReverseServiceName, ActivableKey, StatusMap, Title } from '../Core/Title';
+import { TitleCollection, StatusMap, LocalTitle } from '../Core/Title';
 import { DOM, AppendableElement } from '../Core/DOM';
 import { LocalStorage } from '../Core/Storage';
-import { GetService } from './Manager/Service';
 import { dateFormat, progressToString } from '../Core/Utility';
 import { SaveEditor } from '../Core/SaveEditor';
 import { SyncModule } from '../Core/SyncModule';
+import { ActivableKey, Services } from '../Core/Service';
 
 interface SaveRow {
-	title: Title;
+	title: LocalTitle;
 	node: HTMLElement;
 	checkbox: HTMLInputElement;
 	selected: boolean;
@@ -34,10 +34,10 @@ export class SaveViewer {
 	resetSearch: HTMLElement;
 	idColumn: HTMLElement;
 	sortFieldIcon: HTMLElement;
-	sortBy: { search: string; status: Status | undefined; field: keyof Title; order: 'ASC' | 'DESC' } = {
+	sortBy: { search: string; status: Status | undefined; field: keyof LocalTitle; order: 'ASC' | 'DESC' } = {
 		search: '',
 		status: undefined,
-		field: 'id',
+		field: 'key',
 		order: 'ASC',
 	};
 
@@ -78,9 +78,9 @@ export class SaveViewer {
 		this.deleteSelected.addEventListener('click', async (event) => {
 			for (const row of this.displayedRows) {
 				if (row.selected) {
-					await LocalStorage.remove(row.title.id);
-					this.realTitles.remove(row.title.id);
-					this.titles.remove(row.title.id);
+					await LocalStorage.remove(row.title.key.id!);
+					this.realTitles.remove(row.title.key.id!);
+					this.titles.remove(row.title.key.id!);
 				}
 			}
 			this.updateDisplayedPage();
@@ -119,7 +119,7 @@ export class SaveViewer {
 		});
 
 		this.sortFieldIcon = DOM.icon('angle-up');
-		this.idColumn = document.querySelector<HTMLElement>('th[data-field="id"]')!;
+		this.idColumn = document.querySelector<HTMLElement>('th[data-field="key"]')!;
 		this.idColumn.appendChild(this.sortFieldIcon);
 		const sortColumns = document.querySelectorAll<HTMLElement>('th[data-field]');
 		for (const column of sortColumns) {
@@ -133,7 +133,7 @@ export class SaveViewer {
 					column.appendChild(this.sortFieldIcon);
 					this.sortFieldIcon.classList.remove('fa-angle-down');
 					this.sortFieldIcon.classList.add('fa-angle-up');
-					this.sortBy.field = field as keyof Title;
+					this.sortBy.field = field as keyof LocalTitle;
 					this.sortBy.order = 'ASC';
 				}
 				this.sortTitles();
@@ -143,7 +143,7 @@ export class SaveViewer {
 
 		this.reloadButton.addEventListener('click', (event) => {
 			event.preventDefault();
-			this.sortBy = { search: '', status: undefined, field: 'id', order: 'ASC' };
+			this.sortBy = { search: '', status: undefined, field: 'key', order: 'ASC' };
 			this.idColumn.appendChild(this.sortFieldIcon);
 			this.sortFieldIcon.classList.remove('fa-angle-down');
 			this.sortFieldIcon.classList.add('fa-angle-up');
@@ -169,15 +169,14 @@ export class SaveViewer {
 		this.body.appendChild(fragment);
 	};
 
-	titleServices = (title: Title): AppendableElement[] => {
+	titleServices = (title: LocalTitle): AppendableElement[] => {
 		const icons: AppendableElement[] = [];
 		for (const serviceKey in title.services) {
 			const key = serviceKey as ActivableKey;
-			const name = ReverseServiceName[key];
 			icons.push(
 				DOM.create('a', {
 					target: '_blank',
-					href: GetService(name).link(title.services[key]!),
+					href: Services[key].link(title.services[key]!),
 					childs: [DOM.create('img', { src: `/icons/${serviceKey}.png` })],
 				})
 			);
@@ -209,22 +208,22 @@ export class SaveViewer {
 		if (this.titles.length == 0) this.body.appendChild(this.emptySave);
 	};
 
-	createRow = (title: Title): SaveRow => {
-		const selectCheckbox = DOM.create('input', { type: 'checkbox', id: `save_${title.id}` });
+	createRow = (title: LocalTitle): SaveRow => {
+		const selectCheckbox = DOM.create('input', { type: 'checkbox', id: `save_${title.key}` });
 		const editButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('edit')], title: 'Edit' });
 		const deleteButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('trash')], title: 'Delete' });
 		const row = DOM.create('tr', {
 			childs: [
 				DOM.create('td', {
-					childs: [selectCheckbox, DOM.create('label', { htmlFor: `save_${title.id}` })],
+					childs: [selectCheckbox, DOM.create('label', { htmlFor: `save_${title.key}` })],
 				}),
 				DOM.create('td', {
 					class: 'mangadex',
 					childs: [
 						DOM.create('a', {
-							textContent: title.id.toString(),
+							textContent: title.key.toString(),
 							target: '_blank',
-							href: `https://mangadex.org/title/${title.id}`,
+							href: `https://mangadex.org/title/${title.key}`,
 							childs: [DOM.space(), DOM.icon('external-link-alt')],
 						}),
 					],
@@ -256,8 +255,8 @@ export class SaveViewer {
 					this.loadPage(this.currentPage);
 				},
 				() => {
-					this.realTitles.remove(title.id);
-					this.titles.remove(title.id);
+					this.realTitles.remove(title.key.id!);
+					this.titles.remove(title.key.id!);
 					this.updateDisplayedPage();
 				}
 			).show();
@@ -270,8 +269,8 @@ export class SaveViewer {
 				clearTimeout(deletePrevention[0]);
 				deletePrevention[1].close();
 				deleteButton.classList.add('loading');
-				await LocalStorage.remove(title.id);
-				this.titles.remove(title.id);
+				await LocalStorage.remove(title.key.id!);
+				this.titles.remove(title.key.id!);
 				row.remove();
 				this.updateDisplayedPage();
 			} else {
@@ -312,7 +311,9 @@ export class SaveViewer {
 
 	sortTitles = (): void => {
 		const order = this.sortBy.order == 'ASC' ? 1 : -1;
-		if (this.sortBy.field == 'start' || this.sortBy.field == 'end') {
+		if (this.sortBy.field == 'key') {
+			this.titles.collection.sort((a, b) => (a.key.id! > b.key.id! ? order : -order));
+		} else if (this.sortBy.field == 'start' || this.sortBy.field == 'end') {
 			this.titles.collection.sort((a, b) => {
 				if (a[this.sortBy.field] === undefined && b[this.sortBy.field] === undefined) {
 					return 0;
@@ -339,7 +340,7 @@ export class SaveViewer {
 		if (this.sortBy.status !== undefined) {
 			this.titles.collection = this.titles.collection.filter((t) => t.status === this.sortBy.status);
 		}
-		if (this.sortBy.field != 'id' || this.sortBy.order != 'DESC') {
+		if (this.sortBy.field != 'key' || this.sortBy.order != 'DESC') {
 			this.sortTitles();
 		}
 		this.currentPage = 1;

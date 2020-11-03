@@ -1,6 +1,7 @@
 import { Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
-import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle } from '../Core/Title';
+import { ActivableKey, ActivableName, Service, Services } from '../Core/Service';
+import { ExternalTitle, ExternalTitles } from '../Core/Title';
 
 interface KitsuHeaders {
 	Accept: string;
@@ -91,36 +92,32 @@ export const KitsuHeaders = (): KitsuHeaders => {
 	};
 };
 
-export class KitsuTitle extends ExternalTitle {
+export class Kitsu extends Service {
 	static readonly serviceName: ActivableName = ActivableName.Kitsu;
 	static readonly serviceKey: ActivableKey = ActivableKey.Kitsu;
 
-	static link(id: ServiceKeyType): string {
-		return `https://kitsu.io/manga/${id}`;
+	static link(key: MediaKey): string {
+		return `https://kitsu.io/manga/${key.id}`;
 	}
+}
 
-	id: number;
-	libraryEntryId: number;
+Services[ActivableKey.Kitsu] = Kitsu;
 
-	constructor(id: ServiceKeyType, title?: Partial<KitsuTitle>) {
-		super(title);
-		if (typeof id !== 'number') throw 'Kitsu ID can only be a number';
-		this.id = id;
-		this.status = title && title.status !== undefined ? title.status : Status.NONE;
-		this.libraryEntryId = title && title.libraryEntryId !== undefined ? title.libraryEntryId : 0;
-	}
+export class KitsuTitle extends ExternalTitle {
+	static service = Kitsu;
+	libraryEntryId: number = 0;
 
 	// abstract static get(id): RequestStatus
-	static get = async (id: ServiceKeyType): Promise<ExternalTitle | RequestStatus> => {
+	static get = async (key: MediaKey): Promise<ExternalTitle | RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<KitsuResponse>({
-			url: `${KitsuAPI}?filter[manga_id]=${id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=chapterCount,volumeCount,canonicalTitle`,
+			url: `${KitsuAPI}?filter[manga_id]=${key.id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=chapterCount,volumeCount,canonicalTitle`,
 			method: 'GET',
 			headers: KitsuHeaders(),
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		const body = response.body;
-		const values: Partial<KitsuTitle> = { loggedIn: true };
+		const values: Partial<KitsuTitle> = { loggedIn: true, key: key };
 		if (body.data.length == 1) {
 			values.max = {
 				chapter: body.included[0].attributes.chapterCount,
@@ -140,7 +137,7 @@ export class KitsuTitle extends ExternalTitle {
 			if (attributes.finishedAt && attributes.finishedAt !== null) values.end = new Date(attributes.finishedAt);
 			values.name = body.included[0].attributes.canonicalTitle;
 		} else values.inList = false;
-		return new KitsuTitle(id as number, values);
+		return new KitsuTitle(values);
 	};
 
 	persist = async (): Promise<RequestStatus> => {
@@ -168,7 +165,7 @@ export class KitsuTitle extends ExternalTitle {
 						manga: {
 							data: {
 								type: 'manga',
-								id: this.id,
+								id: this.key,
 							},
 						},
 						user: {
@@ -238,17 +235,19 @@ export class KitsuTitle extends ExternalTitle {
 		return KitsuStatus.NONE;
 	};
 
-	static idFromLink = (href: string): number => {
+	static idFromLink = (href: string): MediaKey => {
 		const regexp = /https:\/\/(?:www\.)?kitsu\.io\/manga\/(\d+)\/?/.exec(href);
-		if (regexp !== null) return parseInt(regexp[1]);
-		return 0;
+		if (regexp !== null) return { id: parseInt(regexp[1]) };
+		return { id: 0 };
 	};
 
-	static idFromString = (str: string): number => {
-		return parseInt(str);
+	static idFromString = (str: string): MediaKey => {
+		return { id: parseInt(str) };
 	};
 
 	get mochi(): number {
-		return this.id;
+		return this.key.id!;
 	}
 }
+
+ExternalTitles[ActivableKey.Kitsu] = KitsuTitle;

@@ -1,11 +1,11 @@
-import { ServiceKey, ActivableName, StatusMap, Title } from './Title';
+import { LocalTitle, StatusMap, Title } from './Title';
 import { DOM, AppendableElement } from './DOM';
 import { Modal } from './Modal';
-import { GetService } from '../SyncDex/Service';
 import { dateFormatInput } from './Utility';
 import { Runtime } from './Runtime';
 import { Options } from './Options';
 import { SyncModule } from './SyncModule';
+import { ActivableKey, ActivableName, Service, ServiceKey, Services } from './Service';
 
 interface HistoryChapter {
 	node: HTMLElement;
@@ -57,6 +57,46 @@ export class SaveEditor {
 		return chapterNode;
 	};
 
+	static createServiceInput = (service: typeof Service, value: MediaKey): HTMLElement[] => {
+		const inputs: HTMLElement[] = [
+			DOM.create('input', {
+				type: 'number',
+				name: `${service.key}_id`,
+				placeholder: `${service.name} ID`,
+				value: `${value.id ?? ''}`,
+			}),
+		];
+		if (service.usesSlug) {
+			inputs.push(
+				DOM.create('input', {
+					type: 'string',
+					name: `${service.key}_slug`,
+					placeholder: `${service.name} Slug`,
+					value: `${value.slug ?? ''}`,
+				})
+			);
+		}
+		return inputs;
+	};
+
+	static saveServiceInput = (key: ActivableKey, title: LocalTitle, form: HTMLFormElement): void => {
+		let found: boolean = false;
+		if (form[`${key}_id`] !== undefined) {
+			const id = parseInt(form[`${key}_id`].value);
+			if (!isNaN(id)) {
+				if (title.services[key] === undefined) title.services[key] = { id: id };
+				else title.services[key]!.id = id;
+				found = true;
+			}
+		}
+		if (form[`${key}_slug`] !== undefined) {
+			const slug = form[`${key}_slug`].value;
+			if (title.services[key] === undefined) title.services[key] = { slug: slug };
+			else title.services[key]!.slug = slug;
+		}
+		if (!found) delete title.services[key];
+	};
+
 	static create(syncModule: SyncModule, postSubmit?: () => void, postDelete?: () => void): Modal {
 		const title = syncModule.title;
 		const modal = new Modal('medium');
@@ -91,13 +131,17 @@ export class SaveEditor {
 				childs: [DOM.create('img', { src: Runtime.icon(serviceKey), title: serviceName })],
 			});
 			if (title.services[serviceKey]) {
-				link.href = GetService(serviceName).link(title.services[serviceKey]!);
+				link.href = Services[serviceKey].link(title.services[serviceKey]!);
 				link.target = '_blank';
 			}
 			services.appendChild(
 				DOM.create('div', {
 					class: 'service',
-					childs: [link, DOM.space(), ...GetService(serviceName).SaveInput(title.services[serviceKey]!)],
+					childs: [
+						link,
+						DOM.space(),
+						...this.createServiceInput(Services[serviceKey], title.services[serviceKey]!),
+					],
 				})
 			);
 		}
@@ -249,7 +293,7 @@ export class SaveEditor {
 			form,
 			this.modalRow([
 				this.modalGroup('MangaDex', '', [
-					DOM.create('span', { class: 'helper', textContent: `# ${title.id}` }),
+					DOM.create('span', { class: 'helper', textContent: `# ${title.key}` }),
 				]),
 				this.modalGroup('Name', 'ee_name', [
 					DOM.create('input', {
@@ -371,8 +415,8 @@ export class SaveEditor {
 			} else delete title.end;
 			// Services
 			// TODO: Option to delete past Services on change, also applies when finding new ID with MangaDex or Mochi
-			for (const sn in ActivableName) {
-				GetService(sn as ActivableName).HandleInput(title, form);
+			for (const key in ActivableKey) {
+				this.saveServiceInput(key as ActivableKey, title, form);
 			}
 			// Chapters
 			title.chapters = historyChapters.map((h) => h.chapter);

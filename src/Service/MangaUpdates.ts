@@ -1,5 +1,6 @@
 import { Runtime } from '../Core/Runtime';
-import { ServiceKeyType, ActivableName, ActivableKey, MissableField, ExternalTitle } from '../Core/Title';
+import { ActivableKey, ActivableName, Service, Services } from '../Core/Service';
+import { MissableField, ExternalTitle, ExternalTitles } from '../Core/Title';
 
 export const enum MangaUpdatesStatus {
 	NONE = -1,
@@ -10,28 +11,26 @@ export const enum MangaUpdatesStatus {
 	PAUSED = 4,
 }
 
-export class MangaUpdatesTitle extends ExternalTitle {
+export class MangaUpdates extends Service {
 	static readonly serviceName: ActivableName = ActivableName.MangaUpdates;
 	static readonly serviceKey: ActivableKey = ActivableKey.MangaUpdates;
+
+	static link(key: MediaKey): string {
+		return `https://www.mangaupdates.com/series.html?id=${key.id}`;
+	}
+}
+
+Services[ActivableKey.MangaUpdates] = MangaUpdates;
+
+export class MangaUpdatesTitle extends ExternalTitle {
+	static service = MangaUpdates;
 	static readonly missingFields: MissableField[] = ['start', 'end'];
 
-	static link(id: ServiceKeyType): string {
-		return `https://www.mangaupdates.com/series.html?id=${id}`;
-	}
-
-	id: number;
 	current: {
 		progress: Progress;
 		status: Status;
 		score?: number;
 	} = { progress: { chapter: 0 }, status: Status.NONE };
-
-	constructor(id: ServiceKeyType, title?: Partial<MangaUpdatesTitle>) {
-		super(title);
-		if (typeof id !== 'number') throw 'Anilist ID can only be a number';
-		this.id = id;
-		this.status = title && title.status !== undefined ? title.status : Status.NONE;
-	}
 
 	static listToStatus = (list?: string): MangaUpdatesStatus => {
 		if (!list) return MangaUpdatesStatus.READING;
@@ -50,16 +49,16 @@ export class MangaUpdatesTitle extends ExternalTitle {
 		return MangaUpdatesStatus.NONE;
 	};
 
-	static get = async (id: ServiceKeyType): Promise<ExternalTitle | RequestStatus> => {
+	static get = async (key: MediaKey): Promise<ExternalTitle | RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
-			url: MangaUpdatesTitle.link(id),
+			url: MangaUpdatesTitle.link(key),
 			method: 'GET',
 			credentials: 'include',
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		const parser = new DOMParser();
 		const body = parser.parseFromString(response.body, 'text/html');
-		const values: Partial<MangaUpdatesTitle> = { progress: { chapter: 0 } };
+		const values: Partial<MangaUpdatesTitle> = { progress: { chapter: 0 }, key: key };
 		values.current = { progress: { chapter: 0 }, status: Status.NONE };
 		const showList = body.getElementById('showList');
 		if (showList !== null) {
@@ -90,7 +89,7 @@ export class MangaUpdatesTitle extends ExternalTitle {
 		} else values.loggedIn = false;
 		const title = body.querySelector('span.releasestitle');
 		values.name = title ? title.textContent! : undefined;
-		return new MangaUpdatesTitle(id as number, values);
+		return new MangaUpdatesTitle(values);
 	};
 
 	// Get a list of status to go through to be able to update to the wanted status
@@ -132,7 +131,7 @@ export class MangaUpdatesTitle extends ExternalTitle {
 
 	updateStatus = async (status: MangaUpdatesStatus): Promise<RawResponse> => {
 		return await Runtime.request<RawResponse>({
-			url: `https://www.mangaupdates.com/ajax/list_update.php?s=${this.id}&l=${status}`,
+			url: `https://www.mangaupdates.com/ajax/list_update.php?s=${this.key.id}&l=${status}`,
 			method: 'GET',
 			credentials: 'include',
 		});
@@ -166,7 +165,7 @@ export class MangaUpdatesTitle extends ExternalTitle {
 			const volume =
 				this.progress.volume !== undefined && this.progress.volume > 0 ? `&set_v=${this.progress.volume}` : '';
 			const response = await Runtime.request<RawResponse>({
-				url: `https://www.mangaupdates.com/ajax/chap_update.php?s=${this.id}${volume}&set_c=${Math.floor(
+				url: `https://www.mangaupdates.com/ajax/chap_update.php?s=${this.key.id}${volume}&set_c=${Math.floor(
 					this.progress.chapter
 				)}`,
 				credentials: 'include',
@@ -185,7 +184,7 @@ export class MangaUpdatesTitle extends ExternalTitle {
 			// Convert back to the MangaUpdates 0-10 range
 			const muScore = Math.round(this.score / 10);
 			const response = await Runtime.request<RawResponse>({
-				url: `https://www.mangaupdates.com/ajax/update_rating.php?s=${this.id}&r=${muScore}`,
+				url: `https://www.mangaupdates.com/ajax/update_rating.php?s=${this.key.id}&r=${muScore}`,
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);
@@ -200,7 +199,7 @@ export class MangaUpdatesTitle extends ExternalTitle {
 
 	delete = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
-			url: `https://www.mangaupdates.com/ajax/list_update.php?s=${this.id}&r=1`,
+			url: `https://www.mangaupdates.com/ajax/list_update.php?s=${this.key.id}&r=1`,
 			credentials: 'include',
 		});
 		this.inList = false;
@@ -241,17 +240,19 @@ export class MangaUpdatesTitle extends ExternalTitle {
 		return MangaUpdatesStatus.NONE;
 	};
 
-	static idFromLink = (href: string): number => {
+	static idFromLink = (href: string): MediaKey => {
 		const regexp = /https:\/\/(?:www\.)?mangaupdates\.com\/series.html\?id=(\d+)/.exec(href);
-		if (regexp !== null) return parseInt(regexp[1]);
-		return 0;
+		if (regexp !== null) return { id: parseInt(regexp[1]) };
+		return { id: 0 };
 	};
 
-	static idFromString = (str: string): number => {
-		return parseInt(str);
+	static idFromString = (str: string): MediaKey => {
+		return { id: parseInt(str) };
 	};
 
 	get mochi(): number {
-		return this.id;
+		return this.key.id!;
 	}
 }
+
+ExternalTitles[ActivableKey.MangaUpdates] = MangaUpdatesTitle;

@@ -1,5 +1,5 @@
 import { LocalStorage } from '../Core/Storage';
-import { Title } from '../Core/Title';
+import { LocalTitle } from '../Core/Title';
 import { DOM } from '../Core/DOM';
 import { progressToString, dateFormat } from '../Core/Utility';
 
@@ -40,7 +40,7 @@ export class History {
 		});
 	}
 
-	static buildCard = (title: Title): HTMLElement => {
+	static buildCard = (title: LocalTitle): HTMLElement => {
 		return DOM.create('div', {
 			class: 'large_logo rounded position-relative mx-1 my-2 has-transition',
 			childs: [
@@ -48,12 +48,12 @@ export class History {
 					class: 'hover',
 					childs: [
 						DOM.create('a', {
-							href: `/title/${title.id}`,
+							href: `/title/${title.key}`,
 							childs: [
 								DOM.create('img', {
 									class: 'rounded',
 									title: title.name,
-									src: `/images/manga/${title.id}.large.jpg`,
+									src: `/images/manga/${title.key}.large.jpg`,
 									css: { width: '100%' },
 								}),
 							],
@@ -69,7 +69,7 @@ export class History {
 								DOM.create('a', {
 									class: 'manga_title white',
 									title: title.name,
-									href: `/title/${title.id}`,
+									href: `/title/${title.key}`,
 									textContent: title.name,
 								}),
 							],
@@ -90,7 +90,7 @@ export class History {
 		});
 	};
 
-	static updateCard(card: HTMLElement, title: Title) {
+	static updateCard(card: HTMLElement, title: LocalTitle) {
 		card.dataset.toggle = 'tooltip';
 		card.dataset.placement = 'bottom';
 		card.dataset.html = 'true';
@@ -107,7 +107,7 @@ export class History {
 		card.title = content.join('<br>');
 	}
 
-	static highlight(card: HTMLElement, title: Title) {
+	static highlight(card: HTMLElement, title: LocalTitle) {
 		if (title.highest) {
 			if (title.highest <= title.progress.chapter) {
 				card.classList.add('history-up');

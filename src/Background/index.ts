@@ -4,6 +4,16 @@ import { DefaultOptions, Options } from '../Core/Options';
 console.log('SyncDex :: Background');
 
 setBrowser();
+
+async function onStartup() {}
+
+(async () => {
+	await Options.load();
+	if (Options.checkOnStartup) {
+		browser.runtime.onStartup.addListener(onStartup);
+	}
+})();
+
 function findDomain(url: string): string {
 	// Simple domain search - not the best but simple
 	const res = /https?:\/\/(?:.+\.)?([-\w\d]+\.(?:\w{2,5})|localhost)(?:$|\/)/i.exec(url);

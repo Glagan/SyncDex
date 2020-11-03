@@ -1,7 +1,7 @@
 import { LocalStorage } from './Storage';
-import { Options, AvailableOptions } from './Options';
-import { DOM } from './DOM';
-import { dateFormat, dateCompare, isDate } from './Utility';
+import { Options } from './Options';
+import { dateCompare } from './Utility';
+import { ActivableKey, Service, ServiceList } from './Service';
 
 export const StatusMap: { [key in Status]: string } = {
 	[Status.NONE]: 'No Status',
@@ -13,76 +13,6 @@ export const StatusMap: { [key in Status]: string } = {
 	[Status.REREADING]: 'Re-reading',
 	[Status.WONT_READ]: "Won't Read",
 };
-
-export enum StaticName {
-	'MyMangaDex' = 'MyMangaDex',
-	'SyncDex' = 'SyncDex',
-	'MangaDex' = 'MangaDex',
-}
-
-export enum ActivableName {
-	'MyAnimeList' = 'MyAnimeList',
-	'MangaUpdates' = 'MangaUpdates',
-	'Anilist' = 'Anilist',
-	'Kitsu' = 'Kitsu',
-	'AnimePlanet' = 'AnimePlanet',
-}
-
-export const ServiceName = {
-	...StaticName,
-	...ActivableName,
-};
-export type ServiceName = StaticName | ActivableName;
-
-export enum StaticKey {
-	'MyMangaDex' = 'mmd',
-	'SyncDex' = 'sc',
-	'MangaDex' = 'md',
-}
-
-export enum ActivableKey {
-	'MyAnimeList' = 'mal',
-	'MangaUpdates' = 'mu',
-	'Anilist' = 'al',
-	'Kitsu' = 'ku',
-	'AnimePlanet' = 'ap',
-}
-
-export const ServiceKey = {
-	...StaticKey,
-	...ActivableKey,
-};
-export type ServiceKey = StaticKey | ActivableKey;
-
-export interface ServiceKeyMap {
-	[ServiceKey.MyMangaDex]: number;
-	[ServiceKey.SyncDex]: number;
-	[ServiceKey.MangaDex]: number;
-	[ServiceKey.MyAnimeList]: number;
-	[ServiceKey.MangaUpdates]: number;
-	[ServiceKey.Anilist]: number;
-	[ServiceKey.Kitsu]: number;
-	[ServiceKey.AnimePlanet]: AnimePlanetReference;
-}
-
-export type ServiceList = { [key in ActivableKey]?: ServiceKeyMap[key] };
-export type ServiceKeyType = number | string | AnimePlanetReference;
-
-export const ReverseActivableName: { [key in ActivableKey]: ActivableName } = (() => {
-	const res: Partial<{ [key in ActivableKey]: ActivableName }> = {};
-	for (const key in ActivableKey) {
-		res[ActivableKey[key as ActivableName] as ActivableKey] = key as ActivableName;
-	}
-	return res as { [key in ActivableKey]: ActivableName };
-})();
-
-export const ReverseServiceName: { [key in ServiceKey]: ServiceName } = (() => {
-	const res: Partial<{ [key in ServiceKey]: ServiceName }> = {};
-	for (const key in ServiceKey) {
-		res[ServiceKey[key as ServiceName] as ServiceKey] = key as ServiceName;
-	}
-	return res as { [key in ServiceKey]: ServiceName };
-})();
 
 export function iconToService(src: string): ActivableKey | undefined {
 	const key = /https:\/\/(?:www\.)?mangadex\.org\/images\/misc\/(.+)\.png/.exec(src);
@@ -106,7 +36,7 @@ interface SaveProgress {
 }
 
 export interface StorageTitle {
-	s: ServiceList; // services
+	s: { [key in ActivableKey]?: { s?: string; i?: number } | number }; // services
 	st: Status; // status
 	sc?: number; // score
 	p: SaveProgress; // progress
@@ -177,11 +107,20 @@ export class StorageTitle {
 // Fields that can be missing on a Service
 export type MissableField = 'volume' | 'score' | 'start' | 'end';
 
-export abstract class BaseTitle implements TitleProperties, ExternalTitleProperties {
-	static readonly serviceName: ServiceName;
-	static readonly serviceKey: ServiceKey;
+export interface FoundTitle {
+	name?: string;
+	mangaDex?: number;
+	status?: Status;
+	progress?: Progress;
+	max?: Partial<Progress>;
+	score?: number;
+	start?: Date;
+	end?: Date;
+	mochi: number | string;
+}
 
-	abstract id: ServiceKeyType;
+export abstract class Title {
+	key: MediaKey = { id: 0 };
 	inList: boolean = false;
 	synced: boolean = false;
 	status: Status = Status.NONE;
@@ -195,11 +134,18 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 	mangaDex?: number;
 
 	static readonly missingFields: MissableField[] = [];
-	static readonly missingFieldsMap: { [key in MissableField]: string } = {
-		volume: 'Volume',
-		start: 'Start Date',
-		end: 'Finish Date',
-		score: 'Score',
+
+	constructor(title?: Partial<Title>) {
+		if (title != undefined) Object.assign(this, title);
+	}
+
+	/**
+	 * Pull the current status of the Media identified by ID.
+	 * Return a `RequestStatus` on error.
+	 */
+	static get = async (id: MediaKey): Promise<Title | RequestStatus> => {
+		throw 'Title.get is an abstract function';
+		return RequestStatus.FAIL;
 	};
 
 	/**
@@ -213,130 +159,11 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 	abstract delete(): Promise<RequestStatus>;
 
 	/**
-	 * Pull the current status of the Media identified by ID.
-	 * Return a `RequestStatus` on error.
-	 */
-	static get = async (id: ServiceKeyType): Promise<BaseTitle | RequestStatus> => {
-		throw 'BaseTitle.get is an abstract function';
-	};
-
-	overviewRow = <K = Date | number | string>(icon: string, name: string, content?: K, original?: K): HTMLElement => {
-		const nameHeader = DOM.create('span', { textContent: name });
-		const row = DOM.create('div', {
-			class: icon == 'ban' ? 'helper' : undefined,
-			childs: [DOM.create('i', { class: `fas fa-${icon}` }), DOM.space(), nameHeader],
-		});
-		// Display value
-		if (content !== undefined) {
-			DOM.append(
-				row,
-				DOM.space(),
-				DOM.create('span', {
-					textContent: `${isDate(content) ? dateFormat(content) : content}`,
-				})
-			);
-			// Helper with message if there is no value
-		} else nameHeader.className = 'helper';
-		// Display difference between synced value
-		if (
-			original !== undefined &&
-			(content === undefined ||
-				(isDate(content) && isDate(original) && !dateCompare(content, original)) ||
-				(typeof content === 'number' &&
-					typeof original === 'number' &&
-					Math.floor(content) != Math.floor(original)) ||
-				(typeof content === 'string' && typeof original === 'string' && content != original))
-		) {
-			row.lastElementChild!.classList.add('not-synced');
-			// Append synced value next to the not synced value
-			DOM.append(
-				row,
-				DOM.space(),
-				DOM.create('span', {
-					textContent: `${
-						isDate(original)
-							? dateFormat(original)
-							: typeof original === 'number'
-							? Math.floor(original)
-							: original
-					}`,
-					class: 'synced',
-				})
-			);
-		}
-		return row;
-	};
-
-	/**
-	 * Create a list of all values for the Media.
-	 */
-	overview = (parent: HTMLElement, title?: BaseTitle): void => {
-		if (!this.loggedIn) {
-			parent.appendChild(
-				DOM.create('div', {
-					class: 'alert alert-danger',
-					textContent: 'You are not Logged In.',
-				})
-			);
-			return;
-		}
-		if (this.inList || this instanceof Title) {
-			const missingFields = (<typeof BaseTitle>this.constructor).missingFields;
-			const rows: HTMLElement[] = [
-				DOM.create('div', { class: `status st${this.status}`, textContent: StatusMap[this.status] }),
-			];
-			rows.push(this.overviewRow('bookmark', 'Chapter', this.progress.chapter, title?.progress.chapter));
-			if (missingFields.indexOf('volume') < 0 && this.progress.volume) {
-				rows.push(this.overviewRow('book', 'Volume', this.progress.volume, title?.progress.volume));
-			}
-			if (this.start) {
-				rows.push(this.overviewRow('calendar-plus', 'Started', this.start, title?.start));
-			} else if (missingFields.indexOf('start') < 0) {
-				rows.push(this.overviewRow('calendar-plus', 'No Start Date', undefined, title?.start));
-			}
-			if (this.end) {
-				rows.push(this.overviewRow('calendar-check', 'Completed', this.end, title?.end));
-			} else if (missingFields.indexOf('end') < 0) {
-				rows.push(this.overviewRow('calendar-check', 'No Completion Date', undefined, title?.end));
-			}
-			if (this.score) {
-				rows.push(
-					this.overviewRow(
-						'star',
-						'Scored',
-						`${this.score} out of 100`,
-						title && title.score > 0 ? `${title.score} out of 100` : undefined
-					)
-				);
-			} else if (missingFields.indexOf('score') < 0)
-				rows.push(
-					this.overviewRow(
-						'star',
-						'Not Scored yet',
-						undefined,
-						title && title.score > 0 ? `${title.score} out of 100` : undefined
-					)
-				);
-			for (const missingField of missingFields) {
-				rows.push(
-					this.overviewRow(
-						'ban',
-						`No ${BaseTitle.missingFieldsMap[missingField]} available on ${
-							(<typeof BaseTitle>this.constructor).serviceName
-						}`
-					)
-				);
-			}
-			DOM.append(parent, ...rows);
-		} else DOM.append(parent, DOM.text('Not in List.'));
-	};
-
-	/**
-	 * Check if *this* BaseTitle is more recent that the other BaseTitle.
+	 * Check if *this* Title is more recent that the other Title.
 	 * A different score always trigger a true, since higher Services are tested last.
 	 */
-	isMoreRecent = (other: BaseTitle): boolean => {
-		const missingFields = (<typeof BaseTitle>this.constructor).missingFields;
+	isMoreRecent = (other: Title): boolean => {
+		const missingFields = (<typeof Title>this.constructor).missingFields;
 		return (
 			this.progress.chapter > other.progress.chapter ||
 			(missingFields.indexOf('volume') < 0 &&
@@ -356,8 +183,8 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 	 * Compare the Media on the Service to a Title to check if it has the same progress.
 	 * Avoid checking fields that cannot exist on the Service.
 	 */
-	isSynced = (title: BaseTitle): boolean => {
-		const missingFields = (<typeof BaseTitle>this.constructor).missingFields;
+	isSynced = (title: Title): boolean => {
+		const missingFields = (<typeof Title>this.constructor).missingFields;
 		this.synced =
 			title.status === this.status &&
 			Math.floor(title.progress.chapter) === Math.floor(this.progress.chapter) &&
@@ -375,8 +202,8 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 	/**
 	 * Assign all values from the Title to *this*.
 	 */
-	import = (title: BaseTitle): void => {
-		const missingFields = (<typeof BaseTitle>this.constructor).missingFields;
+	import = (title: Title): void => {
+		const missingFields = (<typeof Title>this.constructor).missingFields;
 		this.synced = true;
 		this.status = title.status;
 		this.progress.chapter = title.progress.chapter;
@@ -396,8 +223,8 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 	 * Select all higher (or lower for dates) values from both Titles and assign them to *this*.
 	 * Score is always export to the Title if it exists.
 	 */
-	merge = (title: BaseTitle): void => {
-		const missingFields = (<typeof BaseTitle>title.constructor).missingFields;
+	merge = (title: Title): void => {
+		const missingFields = (<typeof Title>title.constructor).missingFields;
 		this.synced = true;
 		if (title.status !== Status.NONE) {
 			this.status = title.status;
@@ -424,117 +251,21 @@ export abstract class BaseTitle implements TitleProperties, ExternalTitlePropert
 		if (this.name && this.name != '') title.name = title.name;
 	};
 
-	/**
-	 * Link to a single Media page.
-	 */
-	static link = (id: ServiceKeyType): string => {
-		throw 'BaseTitle.link is an abstract function';
+	static link = (id: MediaKey): string => {
+		throw 'Title.link is an abstract function';
+		return '#';
 	};
 
-	link(): string {
-		return (<typeof BaseTitle>this.constructor).link(this.id);
-	}
+	getLink = (): string => {
+		return (<typeof Title>this.constructor).link(this.key);
+	};
 
 	isNextChapter = (progress: Progress): boolean => {
 		return progress.chapter > this.progress.chapter && progress.chapter < Math.floor(this.progress.chapter) + 2;
 	};
-
-	static compareId = <K extends ServiceKeyType>(id1: K, id2: K): boolean => {
-		if (typeof id1 === 'number' || typeof id2 === 'string') {
-			return id1 == id2;
-		}
-		// if the id is not a string or number, the Child Class must check it
-		return false;
-	};
 }
 
-export abstract class ExternalTitle extends BaseTitle {
-	static readonly serviceName: ActivableName;
-	static readonly serviceKey: ActivableKey;
-	static readonly requireIdQuery: boolean = false;
-
-	constructor(title?: Partial<ExternalTitle>) {
-		super();
-		if (title !== undefined) Object.assign(this, title);
-	}
-
-	/**
-	 * Get the ID used by Mochi that can only be a number or a string.
-	 */
-	abstract get mochi(): number | string;
-
-	/**
-	 * Get a list of input elements used in the Save Viewer.
-	 */
-	static SaveInput(value?: ServiceKeyType): HTMLInputElement[] {
-		const serviceName = (<typeof ExternalTitle>this.prototype.constructor).serviceName;
-		return [
-			DOM.create('input', {
-				type: 'number',
-				name: serviceName,
-				placeholder: `${serviceName} ID`,
-				value: `${value ? value : ''}`,
-			}),
-		];
-	}
-
-	/**
-	 * Handle Inputs created from SaveInput to update Title.services.
-	 */
-	static HandleInput(title: Title, form: HTMLFormElement): void {
-		const serviceName = (<typeof ExternalTitle>this.prototype.constructor).serviceName;
-		const key = (<typeof ExternalTitle>this.prototype.constructor).serviceKey;
-		if (form[serviceName].value != '') {
-			const id = parseInt(form[serviceName].value as string);
-			if (!isNaN(id)) (title.services[key] as number) = id;
-		} else delete title.services[key];
-	}
-
-	toLocalTitle(): Title | undefined {
-		if (!this.mangaDex) return undefined;
-		return new Title(this.mangaDex, {
-			inList: this.inList,
-			synced: this.synced,
-			services: { [(<typeof ExternalTitle>this.constructor).serviceKey]: this.id },
-			chapters: [],
-			progress: this.progress,
-			status: this.status,
-			score: this.score,
-			start: this.start ? this.start : undefined,
-			end: this.end ? this.end : undefined,
-			name: this.name,
-		});
-	}
-
-	static fromLocalTitle(title: Title): ExternalTitle | undefined {
-		const Service = <typeof ExternalTitle>this.constructor;
-		const key = Service.serviceKey;
-		if (title.services[key] === undefined) return undefined;
-		/// @ts-ignore
-		return new Service(title.services[key]!, {
-			progress: title.progress,
-			status: title.status,
-			score: title.score ? title.score : undefined,
-			start: title.start ? new Date(title.start) : undefined,
-			end: title.end ? new Date(title.end) : undefined,
-			name: title.name,
-		});
-	}
-
-	static idFromLink = (str: string): ServiceKeyType => {
-		throw 'ExternalTitle.idFromLink is an abstract function';
-	};
-
-	static idFromString = (str: string): ServiceKeyType => {
-		throw 'ExternalTitle.idFromString is an abstract function';
-	};
-}
-
-export class Title extends BaseTitle implements LocalTitleProperties {
-	static readonly serviceName: ServiceName = StaticName.SyncDex;
-	static readonly serviceKey: ServiceKey = StaticKey.SyncDex;
-
-	id: number;
+export class LocalTitle extends Title {
 	/**
 	 * External MangaDex List Status
 	 */
@@ -576,23 +307,22 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 	 */
 	lastRead?: number;
 
-	constructor(id: number, title?: Partial<LocalTitleProperties & TitleProperties>) {
-		super();
-		this.id = id;
+	constructor(id: number, title?: Partial<LocalTitle>) {
+		super(title);
+		this.key = { id: id };
 		this.inList = title !== undefined;
 		this.synced = true;
 		this.loggedIn = true;
-		if (title != undefined) Object.assign(this, title);
 	}
 
 	/**
 	 * Convert a SaveTitle to a full length Title
 	 */
-	static fromSave(title: StorageTitle): LocalTitleProperties & TitleProperties {
-		const mapped: LocalTitleProperties & TitleProperties = {
+	static fromSave(title: StorageTitle): Partial<LocalTitle> {
+		const mapped: Partial<LocalTitle> = {
 			inList: true,
 			synced: true,
-			services: title.s,
+			services: {},
 			progress: {
 				chapter: title.p.c,
 				volume: title.p.v,
@@ -609,6 +339,17 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 			name: title.n,
 			lastRead: title.lr,
 		};
+		for (const key in title.s) {
+			const id = title.s[key as keyof ServiceList];
+			if (typeof id === 'number') {
+				mapped.services![key as keyof ServiceList] = { id: id };
+			} else {
+				mapped.services![key as keyof ServiceList] = {
+					id: id?.i ?? undefined,
+					slug: id?.s ?? undefined,
+				} as MediaKey;
+			}
+		}
 		if (title.m) {
 			mapped.max = {
 				chapter: title.m.c,
@@ -627,14 +368,14 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 	/**
 	 * Retrieve a Title by it's MangaDex ID from Local Storage.
 	 */
-	static async get(id: ServiceKeyType): Promise<Title> {
+	static async get(id: number | string | object): Promise<LocalTitle> {
 		if (typeof id !== 'number' && typeof id !== 'string') throw 'LocalTitle.id need to be a number or a string.';
 		const title: StorageTitle | undefined = await LocalStorage.get<StorageTitle>(id);
 		const rid = typeof id === 'number' ? id : parseInt(id);
 		if (title === undefined) {
-			return new Title(rid);
+			return new LocalTitle(rid);
 		}
-		return new Title(rid, Title.fromSave(title));
+		return new LocalTitle(rid, LocalTitle.fromSave(title));
 	}
 
 	/**
@@ -643,7 +384,7 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 	 */
 	toSave = (): StorageTitle => {
 		const mapped: StorageTitle = {
-			s: this.services,
+			s: {},
 			st: this.status,
 			sc: this.score > 0 ? this.score : undefined,
 			p: {
@@ -657,6 +398,14 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 			n: this.name,
 			lr: this.lastRead,
 		};
+		for (const key in this.services) {
+			const id = this.services[key as keyof ServiceList]!;
+			if (id.id !== undefined && id.slug === undefined) {
+				mapped.s[key as keyof ServiceList] = id.id;
+			} else {
+				mapped.s[key as keyof ServiceList] = { i: id.id, s: id.slug };
+			}
+		}
 		if (this.start) mapped.sd = this.start.getTime();
 		if (this.end) mapped.ed = this.end.getTime();
 		if (this.chapters.length > 0) {
@@ -682,7 +431,7 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 	 */
 	persist = async (): Promise<RequestStatus> => {
 		this.inList = true;
-		await LocalStorage.set(this.id as number | string, this.toSave());
+		await LocalStorage.set(this.key.id!, this.toSave());
 		return RequestStatus.SUCCESS;
 	};
 
@@ -699,14 +448,14 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 		this.end = undefined;
 		this.name = undefined;
 		this.chapters = [];
-		await LocalStorage.remove(this.id as number | string);
+		await LocalStorage.remove(this.key.id!);
 		return RequestStatus.SUCCESS;
 	};
 
 	/**
 	 * Select highest values of both Titles and assign them to the receiving Title.
 	 */
-	localMerge = (other: Title): void => {
+	localMerge = (other: LocalTitle): void => {
 		// Update all 'number' properties to select the highest ones -- except for dates
 		for (let k in this) {
 			const key = k as keyof Title;
@@ -773,9 +522,9 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 	};
 
 	refresh = async (): Promise<boolean> => {
-		const reloaded = await LocalStorage.get<StorageTitle>(this.id);
+		const reloaded = await LocalStorage.get<StorageTitle>(this.key.id!);
 		if (reloaded) {
-			Object.assign(this, Title.fromSave(reloaded));
+			Object.assign(this, LocalTitle.fromSave(reloaded));
 			return true;
 		}
 		return false;
@@ -802,24 +551,53 @@ export class Title extends BaseTitle implements LocalTitleProperties {
 		}
 		return completed;
 	};
+
+	static link = (key: MediaKey): string => {
+		return `https://mangadex.org/title/${key.id}`;
+	};
 }
 
-export class TitleCollection {
-	collection: Title[] = [];
+export abstract class ExternalTitle extends Title {
+	static readonly service: typeof Service = Service;
+	static readonly requireIdQuery: boolean = false;
 
-	constructor(titles: Title[] = []) {
+	static idFromLink = (href: string): MediaKey => {
+		throw 'ExternalTitle.idFromLink is an abstract function';
+		return { id: 0 };
+	};
+	static idFromString = (str: string): MediaKey => {
+		throw 'ExternalTitle.idFromString is an abstract function';
+		return { id: 0 };
+	};
+
+	static link(key: MediaKey): string {
+		return (<typeof ExternalTitle>this.constructor).service.link(key);
+	}
+
+	/**
+	 * Get the ID used by Mochi that can only be a number or a string.
+	 */
+	abstract get mochi(): number | string;
+}
+
+export const ExternalTitles = {} as { [key in ActivableKey]: typeof ExternalTitle };
+
+export class TitleCollection {
+	collection: LocalTitle[] = [];
+
+	constructor(titles: LocalTitle[] = []) {
 		this.collection = titles;
 	}
 
 	/**
 	 * Add Title(s) to the Collection.
 	 */
-	add = (...title: Title[]): void => {
+	add = (...title: LocalTitle[]): void => {
 		this.collection.push(...title);
 	};
 
 	remove = (id: number): void => {
-		const index = this.collection.findIndex((t) => t.id == id);
+		const index = this.collection.findIndex((t) => t.key.id == id);
 		if (index !== undefined) {
 			this.collection.splice(index, 1);
 		}
@@ -830,7 +608,7 @@ export class TitleCollection {
 	 */
 	get ids(): number[] {
 		return this.collection.map((title) => {
-			return title.id;
+			return title.key.id!;
 		});
 	}
 
@@ -851,7 +629,7 @@ export class TitleCollection {
 			const localTitles = (await LocalStorage.getAll()) as ExportedSave;
 			for (const key in localTitles) {
 				if (key !== 'options' && key != 'history') {
-					collection.add(new Title(parseInt(key), Title.fromSave(localTitles[key])));
+					collection.add(new LocalTitle(parseInt(key), LocalTitle.fromSave(localTitles[key])));
 				}
 			}
 		} else {
@@ -860,9 +638,9 @@ export class TitleCollection {
 				for (const id of list) {
 					const titleId = typeof id === 'number' ? id : parseInt(id);
 					if (localTitles[titleId] === undefined) {
-						collection.add(new Title(titleId));
+						collection.add(new LocalTitle(titleId));
 					} else {
-						collection.add(new Title(titleId, Title.fromSave(localTitles[titleId])));
+						collection.add(new LocalTitle(titleId, LocalTitle.fromSave(localTitles[titleId])));
 					}
 				}
 			}
@@ -873,9 +651,9 @@ export class TitleCollection {
 	/**
 	 * Find the title with the MangaDex ID `id` inside the Collection.
 	 */
-	find = (id: number): Title | undefined => {
+	find = (id: number): LocalTitle | undefined => {
 		for (const title of this.collection) {
-			if (title.id === id) return title;
+			if (title.key.id === id) return title;
 		}
 		return undefined;
 	};
@@ -886,7 +664,7 @@ export class TitleCollection {
 	 */
 	merge = (other: TitleCollection): void => {
 		for (const title of other.collection) {
-			let found = this.find(title.id);
+			let found = this.find(title.key.id!);
 			if (found !== undefined) {
 				found.localMerge(title);
 			} else {
@@ -898,13 +676,11 @@ export class TitleCollection {
 	/**
 	 * Persist the Collection to Local Storage.
 	 */
-	save = async (): Promise<void> => {
+	persist = async (): Promise<void> => {
 		const mapped: { [key: number]: StorageTitle } = {};
 		for (const title of this.collection) {
-			mapped[title.id] = title.toSave();
+			mapped[title.key.id!] = title.toSave();
 		}
 		return LocalStorage.raw(mapped);
 	};
 }
-
-export type ExternalTitleList = Partial<{ [key in ActivableKey]: Promise<BaseTitle | RequestStatus> }>;

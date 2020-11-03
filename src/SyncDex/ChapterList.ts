@@ -1,5 +1,5 @@
 import { Options } from '../Core/Options';
-import { Title } from '../Core/Title';
+import { LocalTitle } from '../Core/Title';
 import { ChapterRow } from './ChapterRow';
 import { SyncModule } from '../Core/SyncModule';
 
@@ -93,7 +93,7 @@ export class ChapterList {
 		}
 	}
 
-	highlight(title: Title): void {
+	highlight(title: LocalTitle): void {
 		let foundNext = false;
 		let nextChapterValue = 0;
 		for (const row of this.rows) {

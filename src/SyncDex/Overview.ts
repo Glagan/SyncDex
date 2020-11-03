@@ -1,24 +1,26 @@
 import { DOM, AppendableElement } from '../Core/DOM';
-import { BaseTitle, ActivableKey, ServiceKey, ReverseServiceName, StaticKey, Title, StatusMap } from '../Core/Title';
+import { LocalTitle, Title, StatusMap, MissableField, ExternalTitle } from '../Core/Title';
 import { Runtime } from '../Core/Runtime';
 import { Options } from '../Core/Options';
 import { SyncModule } from '../Core/SyncModule';
 import { SaveEditor } from '../Core/SaveEditor';
 import { ChapterList } from './ChapterList';
 import { ChapterRow } from './ChapterRow';
+import { dateCompare, dateFormat, isDate } from '../Core/Utility';
+import { ActivableKey, ServiceKey, Services, StaticKey } from '../Core/Service';
 
 export abstract class Overview {
 	bind?(syncModule: SyncModule): void;
 	abstract reset(): void;
 	abstract hasNoServices(): void;
 	abstract initializeService(key: ActivableKey, hasId: boolean): void;
-	abstract receivedInitialRequest(key: ActivableKey, res: BaseTitle | RequestStatus, syncModule: SyncModule): void;
+	abstract receivedInitialRequest(key: ActivableKey, res: Title | RequestStatus, syncModule: SyncModule): void;
 	receivedAllInitialRequests?(syncModule: SyncModule): void;
 	abstract syncingService(key: ServiceKey): void;
-	abstract syncedService(key: ServiceKey, res: BaseTitle | RequestStatus, title: Title): void;
+	abstract syncedService(key: ServiceKey, res: Title | RequestStatus, title: LocalTitle): void;
 	abstract syncingLocal(): void;
-	abstract syncedLocal(title: Title): void;
-	syncedMangaDex?(type: 'unfollow' | 'status' | 'score', title: Title): void;
+	abstract syncedLocal(title: LocalTitle): void;
+	syncedMangaDex?(type: 'unfollow' | 'status' | 'score', title: LocalTitle): void;
 }
 
 type OverviewKey = ActivableKey | StaticKey.SyncDex;
@@ -35,11 +37,22 @@ class ServiceOverview {
 	tabIcon?: HTMLElement;
 	syncOverlay?: HTMLElement;
 
+	static readonly missingFieldsMap: { [key in MissableField]: string } = {
+		volume: 'Volume',
+		start: 'Start Date',
+		end: 'Finish Date',
+		score: 'Score',
+	};
+
 	constructor(key: OverviewKey) {
 		this.key = key;
 		this.tab = DOM.create('li', {
 			class: `tab ${key}`,
-			childs: [DOM.create('img', { src: Runtime.icon(key) }), DOM.space(), DOM.text(ReverseServiceName[key])],
+			childs: [
+				DOM.create('img', { src: Runtime.icon(key) }),
+				DOM.space(),
+				DOM.text(key == StaticKey.SyncDex ? 'SyncDex' : Services[key].name),
+			],
 		});
 		this.content = DOM.create('div', { class: 'content', textContent: 'Loading...' });
 		this.manage = DOM.create('div', { class: 'manage' });
@@ -55,6 +68,117 @@ class ServiceOverview {
 			childs: [DOM.icon('sync-alt'), DOM.space(), DOM.text('Sync')],
 		});
 	}
+
+	overviewRow = <K = Date | number | string>(icon: string, name: string, content?: K, original?: K): HTMLElement => {
+		const nameHeader = DOM.create('span', { textContent: name });
+		const row = DOM.create('div', {
+			class: icon == 'ban' ? 'helper' : undefined,
+			childs: [DOM.create('i', { class: `fas fa-${icon}` }), DOM.space(), nameHeader],
+		});
+		// Display value
+		if (content !== undefined) {
+			DOM.append(
+				row,
+				DOM.space(),
+				DOM.create('span', {
+					textContent: `${isDate(content) ? dateFormat(content) : content}`,
+				})
+			);
+			// Helper with message if there is no value
+		} else nameHeader.className = 'helper';
+		// Display difference between synced value
+		if (
+			original !== undefined &&
+			(content === undefined ||
+				(isDate(content) && isDate(original) && !dateCompare(content, original)) ||
+				(typeof content === 'number' &&
+					typeof original === 'number' &&
+					Math.floor(content) != Math.floor(original)) ||
+				(typeof content === 'string' && typeof original === 'string' && content != original))
+		) {
+			row.lastElementChild!.classList.add('not-synced');
+			// Append synced value next to the not synced value
+			DOM.append(
+				row,
+				DOM.space(),
+				DOM.create('span', {
+					textContent: `${
+						isDate(original)
+							? dateFormat(original)
+							: typeof original === 'number'
+							? Math.floor(original)
+							: original
+					}`,
+					class: 'synced',
+				})
+			);
+		}
+		return row;
+	};
+
+	/**
+	 * Create a list of all values for the Media.
+	 */
+	overview = (title: Title, parent: HTMLElement): void => {
+		if (!title.loggedIn) {
+			parent.appendChild(
+				DOM.create('div', {
+					class: 'alert alert-danger',
+					textContent: 'You are not Logged In.',
+				})
+			);
+			return;
+		}
+		if (title.inList || this instanceof Title) {
+			const missingFields = (<typeof Title>title.constructor).missingFields;
+			const rows: HTMLElement[] = [
+				DOM.create('div', { class: `status st${title.status}`, textContent: StatusMap[title.status] }),
+			];
+			rows.push(this.overviewRow('bookmark', 'Chapter', title.progress.chapter, title?.progress.chapter));
+			if (missingFields.indexOf('volume') < 0 && title.progress.volume) {
+				rows.push(this.overviewRow('book', 'Volume', title.progress.volume, title?.progress.volume));
+			}
+			if (title.start) {
+				rows.push(this.overviewRow('calendar-plus', 'Started', title.start, title?.start));
+			} else if (missingFields.indexOf('start') < 0) {
+				rows.push(this.overviewRow('calendar-plus', 'No Start Date', undefined, title?.start));
+			}
+			if (title.end) {
+				rows.push(this.overviewRow('calendar-check', 'Completed', title.end, title?.end));
+			} else if (missingFields.indexOf('end') < 0) {
+				rows.push(this.overviewRow('calendar-check', 'No Completion Date', undefined, title?.end));
+			}
+			if (title.score) {
+				rows.push(
+					this.overviewRow(
+						'star',
+						'Scored',
+						`${title.score} out of 100`,
+						title && title.score > 0 ? `${title.score} out of 100` : undefined
+					)
+				);
+			} else if (missingFields.indexOf('score') < 0)
+				rows.push(
+					this.overviewRow(
+						'star',
+						'Not Scored yet',
+						undefined,
+						title && title.score > 0 ? `${title.score} out of 100` : undefined
+					)
+				);
+			for (const missingField of missingFields) {
+				rows.push(
+					this.overviewRow(
+						'ban',
+						`No ${ServiceOverview.missingFieldsMap[missingField]} available on ${
+							(<typeof ExternalTitle>title.constructor).service.name
+						}`
+					)
+				);
+			}
+			DOM.append(parent, ...rows);
+		} else DOM.append(parent, DOM.text('Not in List.'));
+	};
 
 	bind = (syncModule: SyncModule): void => {
 		this.refreshButton.addEventListener('click', async (event) => {
@@ -133,10 +257,10 @@ class ServiceOverview {
 		}
 	};
 
-	update = (res: BaseTitle | RequestStatus, title: Title): void => {
+	update = (res: Title | RequestStatus, title: LocalTitle): void => {
 		this.clear();
 		if (typeof res === 'object') {
-			res.overview(this.content, title);
+			this.overview(title, this.content);
 			// Display *Sync* button only if the title is out of sync, with auto sync disabled and if the title is in a list
 			if (!Options.autoSync && !res.isSynced(title) && title.status !== Status.NONE && res.loggedIn) {
 				this.setTabIcon('sync has-error');
@@ -271,14 +395,14 @@ class LocalOverview extends ServiceOverview {
 		this.completed.addEventListener('click', (event) => quickBind(event, Status.COMPLETED));
 	};
 
-	update = (_res: BaseTitle | RequestStatus, title: Title): void => {
+	update = (_res: Title | RequestStatus, title: LocalTitle): void => {
 		this.clear();
 		if (title.status == Status.NONE) {
 			if (title.progress.chapter > 0) {
-				title.overview(this.content);
+				this.overview(title, this.content);
 			}
 			this.content.appendChild(this.quickButtons);
-		} else title.overview(this.content);
+		} else this.overview(title, this.content);
 		this.manage.appendChild(this.editButton);
 		this.manage.appendChild(this.refreshButton);
 	};
@@ -493,14 +617,14 @@ export class TitleOverview extends Overview {
 			overview.content.appendChild(
 				ServiceOverview.alert(
 					'info',
-					`No ID for ${ReverseServiceName[key]}, you can manually add one in the Save Editor.`
+					`No ID for ${Services[key].name}, you can manually add one in the Save Editor.`
 				)
 			);
 			overview.setTabIcon('times has-error');
 		}
 	};
 
-	receivedInitialRequest = (key: ActivableKey, res: BaseTitle | RequestStatus, syncModule: SyncModule): void => {
+	receivedInitialRequest = (key: ActivableKey, res: Title | RequestStatus, syncModule: SyncModule): void => {
 		const overview = this.overviews[key];
 		if (overview) {
 			overview.bind(syncModule);
@@ -520,7 +644,7 @@ export class TitleOverview extends Overview {
 		if (overview) overview.syncing();
 	};
 
-	syncedService = (key: ActivableKey, res: BaseTitle | RequestStatus, title: Title): void => {
+	syncedService = (key: ActivableKey, res: Title | RequestStatus, title: LocalTitle): void => {
 		const overview = this.overviews[key];
 		if (!overview) return;
 		overview.synced();
@@ -531,7 +655,7 @@ export class TitleOverview extends Overview {
 		this.mainOverview.syncing();
 	};
 
-	syncedLocal = (title: Title): void => {
+	syncedLocal = (title: LocalTitle): void => {
 		this.mainOverview.update(RequestStatus.SUCCESS, title);
 		this.mainOverview.synced();
 		this.chapterList.highlight(title);
@@ -569,7 +693,7 @@ export class TitleOverview extends Overview {
 		});
 	};
 
-	syncedMangaDex = (type: 'unfollow' | 'status' | 'score', title: Title): void => {
+	syncedMangaDex = (type: 'unfollow' | 'status' | 'score', title: LocalTitle): void => {
 		const dropdown = type == 'score' ? this.mdScore.dropdown : this.mdStatus?.dropdown;
 		if (!dropdown) return;
 		// Remove old value
@@ -649,8 +773,8 @@ export class ReadingOverview {
 		});
 	};
 
-	updateIcon = (icon: HTMLImageElement, res: BaseTitle | RequestStatus): void => {
-		if (res instanceof BaseTitle) {
+	updateIcon = (icon: HTMLImageElement, res: Title | RequestStatus): void => {
+		if (res instanceof Title) {
 			if (!res.loggedIn) {
 				icon.classList.add('error');
 			} else {
@@ -666,7 +790,7 @@ export class ReadingOverview {
 	initializeService = (key: ActivableKey, hasId: boolean): void => {
 		const icon = DOM.create('img', {
 			src: Runtime.icon(key),
-			title: ReverseServiceName[key],
+			title: Services[key].name,
 		});
 		if (hasId) {
 			icon.classList.add('loading');
@@ -675,7 +799,7 @@ export class ReadingOverview {
 		this.icons[key] = icon;
 	};
 
-	receivedInitialRequest = (key: ActivableKey, res: BaseTitle | RequestStatus, syncModule: SyncModule): void => {
+	receivedInitialRequest = (key: ActivableKey, res: Title | RequestStatus, syncModule: SyncModule): void => {
 		const icon = this.icons[key];
 		if (!icon) return;
 		icon.classList.remove('loading');
@@ -688,7 +812,7 @@ export class ReadingOverview {
 		icon.classList.add('loading');
 	};
 
-	syncedService = (key: ActivableKey, res: BaseTitle | RequestStatus, title: Title): void => {
+	syncedService = (key: ActivableKey, res: Title | RequestStatus, title: Title): void => {
 		const icon = this.icons[key];
 		if (!icon) return;
 		icon.classList.remove('loading');

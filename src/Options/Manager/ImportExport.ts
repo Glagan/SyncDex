@@ -1,7 +1,4 @@
-import { DOM } from '../../Core/DOM';
-import { Service } from '../Service/Service';
-import { ServiceName } from '../../Core/Title';
-import { GetService } from './Service';
+import { Service, ServiceKey, ServiceName, Services } from '../../Core/Service';
 
 export class ImportExportManager {
 	services: Service[] = [];
@@ -13,19 +10,31 @@ export class ImportExportManager {
 		// Import/Export
 		this.importContainer = document.getElementById('import-container')!;
 		this.exportContainer = document.getElementById('export-container')!;
+
 		// Add Services
-		for (const serviceName in ServiceName) {
+		for (const key in ServiceKey) {
+			/*if (Services[key] === undefined) continue;
 			// `service` is *NOT* an abstract class
-			const ServiceConstructor = GetService(serviceName as ServiceName);
+			const ServiceConstructor = Services[key];
 			/// @ts-ignore
 			const service = new ServiceConstructor(this) as Service;
 			this.services.push(service);
 			if (service.importModule) {
-				DOM.append(this.importContainer, service.importModule.card);
+				const card = service.createCard(false);
+				card.addEventListener('click', () => {
+					service.importModule!.reset();
+					service.importModule!.modal.show();
+				});
+				DOM.append(this.importContainer, card);
 			}
 			if (service.exportModule) {
-				DOM.append(this.exportContainer, service.exportModule.card);
-			}
+				const card = service.createCard(false);
+				card.addEventListener('click', () => {
+					service.exportModule!.reset();
+					service.exportModule!.modal.show();
+				});
+				DOM.append(this.exportContainer, card);
+			}*/
 		}
 	}
 }

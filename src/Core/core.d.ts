@@ -21,10 +21,8 @@ declare const enum Status {
 	WONT_READ,
 }
 
-interface AnimePlanetReference {
-	s: string;
-	i: number;
-}
+//type ServiceID = { id: number } | { slug: string };
+type MediaKey = { id: number; slug?: string } | { id?: number; slug: string } | { id: number; slug: string };
 
 interface Progress {
 	chapter: number;
@@ -295,6 +293,11 @@ declare const chrome: {
 		onInstalled: {
 			addListener: (callback: onInstallListener) => void;
 		};
+		onStartup: {
+			addListener: (callback: () => void) => void;
+			hasListener: (callback: () => void) => void;
+			removeListener: (callback: () => void) => void;
+		};
 	};
 	storage: {
 		local: {
@@ -327,6 +330,11 @@ declare const browser: {
 		getURL: (path: string) => string;
 		onInstalled: {
 			addListener: (callback: onInstallListener) => void;
+		};
+		onStartup: {
+			addListener: (callback: () => void) => void;
+			hasListener: (callback: () => void) => void;
+			removeListener: (callback: () => void) => void;
 		};
 	};
 	storage: {

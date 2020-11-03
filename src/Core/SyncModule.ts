@@ -1,19 +1,8 @@
-import {
-	Title,
-	ActivableKey,
-	ReverseActivableName,
-	BaseTitle,
-	ExternalTitle,
-	ServiceKeyType,
-	ReverseServiceName,
-	ServiceKey,
-	StaticKey,
-	StatusMap,
-} from './Title';
+import { Title, LocalTitle, ExternalTitle, StatusMap, ExternalTitles } from './Title';
 import { Options } from './Options';
-import { GetService } from '../SyncDex/Service';
 import { Runtime } from './Runtime';
 import { Overview } from '../SyncDex/Overview';
+import { StaticKey, ActivableKey, Services } from './Service';
 
 export type SyncReport = {
 	[key in ActivableKey]?: RequestStatus | false;
@@ -27,13 +16,13 @@ export interface ReportInformations {
 }
 
 export class SyncModule {
-	title: Title;
+	title: LocalTitle;
 	overview?: Overview;
-	loadingServices: Promise<BaseTitle | RequestStatus>[] = [];
-	services: { [key in ActivableKey]?: BaseTitle | RequestStatus } = {};
+	loadingServices: Promise<Title | RequestStatus>[] = [];
+	services: { [key in ActivableKey]?: Title | RequestStatus } = {};
 	loggedIn: boolean = true; // Logged in on MangaDex
 
-	constructor(title: Title, overview?: Overview) {
+	constructor(title: LocalTitle, overview?: Overview) {
 		this.title = title;
 		this.overview = overview;
 		if (this.overview?.bind) this.overview.bind(this);
@@ -56,7 +45,7 @@ export class SyncModule {
 			const hasId = activeServices.indexOf(key) >= 0;
 			this.overview?.initializeService(key, hasId);
 			if (hasId) {
-				const initialRequest = GetService(ReverseActivableName[key]).get(this.title.services[key]!);
+				const initialRequest = ExternalTitles[key].get(this.title.services[key]!);
 				this.loadingServices.push(initialRequest);
 				initialRequest.then((res) => {
 					this.overview?.receivedInitialRequest(key, res, this);
@@ -74,7 +63,7 @@ export class SyncModule {
 			// Find pepper
 			for (const key in this.services) {
 				const response = this.services[key as ActivableKey];
-				if (response instanceof BaseTitle && response.max) {
+				if (response instanceof ExternalTitle && response.max) {
 					if (!this.title.max) {
 						this.title.max = { chapter: undefined, volume: undefined };
 					}
@@ -105,7 +94,7 @@ export class SyncModule {
 		for (const key of [...Options.services].reverse()) {
 			if (this.services[key] === undefined) continue;
 			const response = this.services[key];
-			if (response instanceof BaseTitle && response.loggedIn) {
+			if (response instanceof ExternalTitle && response.loggedIn) {
 				// Check if any of the ServiceTitle is more recent than the local Title
 				if (response.inList && (this.title.inList || response.isMoreRecent(this.title))) {
 					// If there is one, sync with it and save
@@ -115,9 +104,7 @@ export class SyncModule {
 				}
 				// Finish retrieving the ID if required -- AnimePlanet has 2 fields
 				if ((<typeof ExternalTitle>response.constructor).requireIdQuery) {
-					(this.title.services[
-						(<typeof ExternalTitle>response.constructor).serviceKey
-					] as ServiceKeyType) = response.id;
+					this.title.services[key] = response.key;
 					doSave = true;
 				}
 			}
@@ -138,7 +125,7 @@ export class SyncModule {
 		for (const key of Options.services) {
 			const service = this.services[key];
 			if (service === undefined) continue;
-			if (!(service instanceof BaseTitle)) {
+			if (!(service instanceof ExternalTitle)) {
 				report[key] = service as RequestStatus;
 				continue;
 			}
@@ -207,7 +194,7 @@ export class SyncModule {
 			case 'unfollow':
 				action = 'manga_unfollow';
 				field = 'type';
-				value = this.title.id;
+				value = this.title.key.id;
 				break;
 			case 'status':
 				action = 'manga_follow';
@@ -220,7 +207,7 @@ export class SyncModule {
 				value = Math.round(this.title.mdScore! / 10);
 				break;
 		}
-		return `${baseAPI}?function=${action}&id=${this.title.id}&${field}=${value}&_=${Date.now()}`;
+		return `${baseAPI}?function=${action}&id=${this.title.key.id}&${field}=${value}&_=${Date.now()}`;
 	};
 
 	/**
@@ -231,9 +218,7 @@ export class SyncModule {
 			method: 'GET',
 			url: this.mangaDexFunction(fct),
 			credentials: 'include',
-			headers: {
-				'X-Requested-With': 'XMLHttpRequest',
-			},
+			headers: { 'X-Requested-With': 'XMLHttpRequest' },
 		});
 		if (this.overview?.syncedMangaDex) {
 			this.overview?.syncedMangaDex(fct, this.title);
@@ -245,7 +230,7 @@ export class SyncModule {
 	 * Save a copy of the current Title to be able to restore some of it's value if the *Cancel* button is clicked
 	 * 	in the this.displayReportNotifications function.
 	 */
-	saveState = (): Title => {
+	saveState = (): LocalTitle => {
 		return JSON.parse(JSON.stringify(this.title)); // Deep copy
 	};
 
@@ -253,7 +238,7 @@ export class SyncModule {
 	 * Restore chapters, mdStatus, mdScore, lastChapter, lastRead,
 	 * 	inList, status, progress, score, start, end from previousState.
 	 */
-	restoreState = (title: Title): void => {
+	restoreState = (title: LocalTitle): void => {
 		this.title.progress = title.progress;
 		this.title.chapters = title.chapters;
 		this.title.mdStatus = title.mdStatus;
@@ -269,7 +254,7 @@ export class SyncModule {
 
 	refreshService = async (key: ActivableKey): Promise<void> => {
 		if (!this.title.services[key]) return;
-		const res = await GetService(ReverseActivableName[key]).get(this.title.services[key]!);
+		const res = await ExternalTitles[key].get(this.title.services[key]!);
 		this.services[key] = res;
 		await this.syncLocal();
 		await this.syncExternal(true);
@@ -286,8 +271,10 @@ export class SyncModule {
 		} else this.overview?.syncedService(key, service, this.title);
 	};
 
-	reportNotificationRow = (key: ServiceKey, status: string) =>
-		`![${ReverseServiceName[key]}|${Runtime.icon(key)}] **${ReverseServiceName[key]}**>*>[${status}]<`;
+	reportNotificationRow = (key: ActivableKey | StaticKey.SyncDex, status: string) => {
+		const name = key === StaticKey.SyncDex ? 'SyncDex' : Services[key].name;
+		return `![${name}|${Runtime.icon(key)}] **${name}**>*>[${status}]<`;
+	};
 
 	/**
 	 * Display result notification, one line per Service
@@ -298,7 +285,7 @@ export class SyncModule {
 	displayReportNotifications = (
 		report: SyncReport,
 		informations: ReportInformations,
-		previousState: Title,
+		previousState: LocalTitle,
 		onCancel?: () => void
 	): void => {
 		const updateRows: string[] = [];
@@ -339,7 +326,7 @@ export class SyncModule {
 			}
 			SimpleNotification.success({
 				title: 'Progress Updated',
-				image: `https://mangadex.org/images/manga/${this.title.id}.thumb.jpg`,
+				image: `https://mangadex.org/images/manga/${this.title.key.id}.thumb.jpg`,
 				text: `Chapter ${this.title.progress.chapter}\n${
 					informations.created ? '**Start Date** set to Today !\n' : ''
 				}${informations.completed ? '**End Date** set to Today !\n' : ''}${ending}`,
@@ -356,7 +343,7 @@ export class SyncModule {
 							if (onCancel) onCancel();
 							SimpleNotification.success({
 								title: 'Cancelled',
-								image: `https://mangadex.org/images/manga/${this.title.id}.thumb.jpg`,
+								image: `https://mangadex.org/images/manga/${this.title.key.id}.thumb.jpg`,
 								text: `**${this.title.name}** update cancelled.\n${
 									this.title.status == Status.NONE
 										? 'Removed from list'
@@ -373,7 +360,7 @@ export class SyncModule {
 			SimpleNotification.error(
 				{
 					title: 'Error',
-					image: `https://mangadex.org/images/manga/${this.title.id}.thumb.jpg`,
+					image: `https://mangadex.org/images/manga/${this.title.key.id}.thumb.jpg`,
 					text: errorRows.join('\n'),
 				},
 				{ sticky: true }

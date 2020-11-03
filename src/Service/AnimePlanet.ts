@@ -1,6 +1,8 @@
 import { Runtime } from '../Core/Runtime';
-import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle, MissableField, Title } from '../Core/Title';
-import { DOM } from '../Core/DOM';
+import { ActivableKey, ActivableName, LoginMethod, Service, Services } from '../Core/Service';
+import { ModuleInterface } from '../Core/ModuleInterface';
+import { ImportModule, ModuleOptions } from '../Core/Module';
+import { ExternalTitle, ExternalTitles, FoundTitle, MissableField } from '../Core/Title';
 
 export const enum AnimePlanetStatus {
 	NONE = 0,
@@ -19,44 +21,78 @@ interface AnimePlanetAPIResponse {
 	[key: string]: any;
 }
 
-export class AnimePlanetTitle extends ExternalTitle {
-	static readonly serviceName: ActivableName = ActivableName.AnimePlanet;
-	static readonly serviceKey: ActivableKey = ActivableKey.AnimePlanet;
-	static readonly missingFields: MissableField[] = ['volume', 'start', 'end'];
-	static readonly requireIdQuery: boolean = true;
-
-	static link(id: ServiceKeyType): string {
-		if (typeof id === 'string') return `https://www.anime-planet.com/manga/${id}`;
-		else if (typeof id === 'number') return '#';
-		return `https://www.anime-planet.com/manga/${id.s}`;
+export class AnimePlanetImport extends ImportModule {
+	constructor(moduleInterface?: ModuleInterface) {
+		super(AnimePlanet, moduleInterface);
 	}
 
-	id: AnimePlanetReference;
-	token: string;
+	execute = async (options: ModuleOptions): Promise<boolean | FoundTitle[]> => {
+		return false;
+	};
+}
+
+export class AnimePlanet extends Service {
+	static readonly serviceName = ActivableName.AnimePlanet;
+	static readonly serviceKey = ActivableKey.AnimePlanet;
+
+	static readonly usesSlug = true;
+	static readonly missingFields: MissableField[] = ['volume', 'start', 'end'];
+
+	static loginMethod: LoginMethod = LoginMethod.EXTERNAL;
+	static loginUrl: string = 'https://www.anime-planet.com/login';
+
+	static username: string = '';
+	static token: string = '';
+
+	static async loggedIn(): Promise<RequestStatus> {
+		const response = await Runtime.request<RawResponse>({
+			url: 'https://www.anime-planet.com/contact',
+			credentials: 'include',
+		});
+		if (!response.ok) return Runtime.responseStatus(response);
+		// Find username
+		const parser = new DOMParser();
+		const body = parser.parseFromString(response.body, 'text/html');
+		const profileLink = body.querySelector('.loggedIn a[href^="/users/"]');
+		if (profileLink !== null) {
+			this.username = profileLink.getAttribute('title') ?? '';
+			const token = /TOKEN\s*=\s*'(.{40})';/.exec(response.body);
+			if (token !== null) this.token = token[1];
+			return RequestStatus.SUCCESS;
+		}
+		return RequestStatus.FAIL;
+	}
+
+	static importModule = (moduleInterface?: ModuleInterface) => new AnimePlanetImport(moduleInterface);
+
+	static link(key: MediaKey) {
+		return `https://www.anime-planet.com/manga/${key.slug}`;
+	}
+}
+
+Services[ActivableKey.AnimePlanet] = AnimePlanet;
+
+export class AnimePlanetTitle extends ExternalTitle {
+	static readonly serviceName = ActivableName.AnimePlanet;
+	static readonly serviceKey = ActivableKey.AnimePlanet;
+	static readonly requireIdQuery: boolean = true;
+
+	token: string = '';
 	current: {
 		progress: Progress;
 		status: Status;
 		score?: number;
 	} = { progress: { chapter: 0 }, status: Status.NONE };
 
-	constructor(id: ServiceKeyType, title?: Partial<AnimePlanetTitle>) {
-		super(title);
-		if (typeof id !== 'object') throw 'AnimePlanet ID can only be a reference';
-		this.id = id;
-		this.status = title && title.status !== undefined ? title.status : Status.NONE;
-		this.token = title && title.token !== undefined ? title.token : '';
-	}
-
-	static get = async (id: ServiceKeyType): Promise<ExternalTitle | RequestStatus> => {
-		const slug = typeof id === 'string' ? id : (id as AnimePlanetReference).s;
+	static get = async (key: MediaKey): Promise<ExternalTitle | RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
-			url: AnimePlanetTitle.link(id),
+			url: AnimePlanetTitle.link(key),
 			method: 'GET',
 			credentials: 'include',
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		if (response.redirected) return RequestStatus.NOT_FOUND;
-		const values: Partial<AnimePlanetTitle> = { status: Status.NONE };
+		const values: Partial<AnimePlanetTitle> = { status: Status.NONE, key: key };
 		values.current = { progress: { chapter: 0 }, status: Status.NONE };
 		const tokenArr = /TOKEN\s*=\s*'(.{40})';/.exec(response.body);
 		const parser = new DOMParser();
@@ -77,7 +113,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 		}
 		// No need to be logged in to have api ID
 		const mediaEntryForm = body.querySelector<HTMLFormElement>('form[id^=manga]')!;
-		const api = parseInt(mediaEntryForm.dataset.id!);
+		values.key!.id = parseInt(mediaEntryForm.dataset.id!);
 		const statusSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.changeStatus [selected]');
 		if (statusSelector) {
 			values.status = AnimePlanetTitle.toStatus(parseInt(statusSelector.value));
@@ -104,18 +140,12 @@ export class AnimePlanetTitle extends ExternalTitle {
 			values.score = values.score;
 		}
 		values.name = body.querySelector(`h1[itemprop='name']`)!.textContent!;
-		return new AnimePlanetTitle(
-			{
-				s: slug,
-				i: api,
-			},
-			values
-		);
+		return new AnimePlanetTitle(values);
 	};
 
 	persist = async (): Promise<RequestStatus> => {
 		if (this.status === Status.NONE) return RequestStatus.BAD_REQUEST;
-		const id = this.id.i;
+		const id = this.key;
 		// Only update Status if it's different
 		if (this.current.status !== this.status) {
 			const response = await Runtime.jsonRequest({
@@ -158,7 +188,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 
 	delete = async (): Promise<RequestStatus> => {
 		if (this.token == '') return RequestStatus.BAD_REQUEST;
-		const id = this.id.i;
+		const id = this.key;
 		const response = await Runtime.jsonRequest({
 			url: `https://www.anime-planet.com/api/list/status/manga/${id}/0/${this.token}`,
 			method: 'GET',
@@ -206,56 +236,19 @@ export class AnimePlanetTitle extends ExternalTitle {
 		return AnimePlanetStatus.NONE;
 	};
 
-	static idFromLink = (href: string): AnimePlanetReference => {
+	static idFromLink = (href: string): MediaKey => {
 		const regexp = /https:\/\/(?:www\.)?anime-planet\.com\/manga\/(.+)\/?/.exec(href);
-		if (regexp !== null)
-			return {
-				s: regexp[1],
-				i: 0,
-			};
-		return { s: '', i: 0 };
+		if (regexp !== null) return { slug: regexp[1] };
+		return { slug: '', id: 0 };
 	};
 
-	static idFromString = (str: string): AnimePlanetReference => {
-		return { s: str, i: 0 };
+	static idFromString = (str: string): MediaKey => {
+		return { slug: str };
 	};
 
 	get mochi(): number {
-		return this.id.i;
+		return this.key.id!;
 	}
-
-	static SaveInput(value?: ServiceKeyType): HTMLInputElement[] {
-		const id = value as AnimePlanetReference | undefined;
-		return [
-			DOM.create('input', {
-				type: 'text',
-				name: `AnimePlanet_slug`,
-				value: `${id ? id.s : ''}`,
-				placeholder: 'AnimePlanet Slug',
-			}),
-			DOM.create('input', {
-				type: 'number',
-				name: `AnimePlanet_id`,
-				value: `${id ? id.i : ''}`,
-				placeholder: 'AnimePlanet ID',
-			}),
-		];
-	}
-
-	static HandleInput(title: Title, form: HTMLFormElement): void {
-		if (form.AnimePlanet_slug.value != '' && form.AnimePlanet_id.value) {
-			const id = parseInt(form.AnimePlanet_id.value as string);
-			if (!isNaN(id)) title.services.ap = { s: form.AnimePlanet_slug.value, i: id };
-		} else delete title.services.ap;
-	}
-
-	static compareId = <K extends ServiceKeyType>(id1: K, id2: K): boolean => {
-		if (typeof id1 === 'number' || typeof id2 === 'string') {
-			return id1 == id2;
-		}
-		if (typeof id1 == 'object') {
-			return (id1 as AnimePlanetReference).s == (id2 as AnimePlanetReference).s;
-		}
-		return false;
-	};
 }
+
+ExternalTitles[ActivableKey.AnimePlanet] = AnimePlanetTitle;

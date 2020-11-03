@@ -1,5 +1,6 @@
 import { Runtime } from '../Core/Runtime';
-import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle } from '../Core/Title';
+import { ActivableKey, ActivableName, Service } from '../Core/Service';
+import { ExternalTitle, ExternalTitles } from '../Core/Title';
 
 export enum MyAnimeListStatus {
 	NONE = 0,
@@ -14,16 +15,19 @@ const GetField = <T extends HTMLElement>(parent: Document, field: string): T => 
 	return parent.getElementById(field) as T;
 };
 
-export class MyAnimeListTitle extends ExternalTitle {
+export class MyAnimeList extends Service {
 	static readonly serviceName: ActivableName = ActivableName.MyAnimeList;
 	static readonly serviceKey: ActivableKey = ActivableKey.MyAnimeList;
 
-	static link(id: ServiceKeyType): string {
-		return `https://myanimelist.net/manga/${id}`;
+	static link(key: MediaKey): string {
+		return `https://myanimelist.net/manga/${key.id}`;
 	}
+}
 
-	id: number;
-	csrf: string;
+export class MyAnimeListTitle extends ExternalTitle {
+	static service = MyAnimeList;
+
+	csrf: string = '';
 
 	additional: {
 		tags: string;
@@ -47,14 +51,6 @@ export class MyAnimeListTitle extends ExternalTitle {
 		postToSns: '0',
 	};
 
-	constructor(id: ServiceKeyType, title?: Partial<MyAnimeListTitle>) {
-		super(title);
-		if (typeof id !== 'number') throw 'Anilist ID can only be a number';
-		this.id = id;
-		this.status = title && title.status !== undefined ? title.status : Status.NONE;
-		this.csrf = title && title.csrf !== undefined ? title.csrf : '';
-	}
-
 	static dateRowToDate = (body: Document, row: 'start' | 'finish'): Date | undefined => {
 		const year = body.getElementById(`add_manga_${row}_date_year`) as HTMLSelectElement,
 			month = body.getElementById(`add_manga_${row}_date_month`) as HTMLSelectElement,
@@ -65,16 +61,16 @@ export class MyAnimeListTitle extends ExternalTitle {
 		return new Date(parts[0], parts[1] - 1, parts[2]);
 	};
 
-	static get = async (id: ServiceKeyType): Promise<ExternalTitle | RequestStatus> => {
+	static get = async (key: MediaKey): Promise<ExternalTitle | RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
-			url: `https://myanimelist.net/ownlist/manga/${id}/edit?hideLayout`,
+			url: `https://myanimelist.net/ownlist/manga/${key.id}/edit?hideLayout`,
 			method: 'GET',
 			cache: 'no-cache',
 			credentials: 'include',
 			redirect: 'follow',
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
-		const values: Partial<MyAnimeListTitle> = {};
+		const values: Partial<MyAnimeListTitle> = { key: key };
 		const csrf = /'csrf_token'\scontent='(.{40})'/.exec(response.body);
 		if (csrf !== null) {
 			values.csrf = csrf[1];
@@ -122,15 +118,15 @@ export class MyAnimeListTitle extends ExternalTitle {
 				values.loggedIn = false;
 			} else values.loggedIn = true;
 		}
-		return new MyAnimeListTitle(id as number, values);
+		return new MyAnimeListTitle(values);
 	};
 
 	persist = async (): Promise<RequestStatus> => {
-		let url = `https://myanimelist.net/ownlist/manga/${this.id}/edit?hideLayout`;
-		if (!this.inList) url = `https://myanimelist.net/ownlist/manga/add?selected_manga_id=${this.id}&hideLayout`;
+		let url = `https://myanimelist.net/ownlist/manga/${this.key.id}/edit?hideLayout`;
+		if (!this.inList) url = `https://myanimelist.net/ownlist/manga/add?selected_manga_id=${this.key}&hideLayout`;
 		const body: Record<string, string | number> = {
 			entry_id: 0,
-			manga_id: this.id,
+			manga_id: this.key.id!,
 			'add_manga[status]': MyAnimeListTitle.fromStatus(this.status),
 		};
 		if (this.progress.volume) body['add_manga[num_read_volumes]'] = this.progress.volume;
@@ -196,7 +192,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 
 	delete = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
-			url: `https://myanimelist.net/ownlist/manga/${this.id}delete`,
+			url: `https://myanimelist.net/ownlist/manga/${this.key.id}delete`,
 			method: 'POST',
 			credentials: 'include',
 			headers: {
@@ -250,17 +246,19 @@ export class MyAnimeListTitle extends ExternalTitle {
 		return MyAnimeListStatus.NONE;
 	};
 
-	static idFromLink = (href: string): number => {
+	static idFromLink = (href: string): MediaKey => {
 		const regexp = /https:\/\/(?:www\.)?myanimelist\.net\/manga\/(\d+)\/?/.exec(href);
-		if (regexp !== null) return parseInt(regexp[1]);
-		return 0;
+		if (regexp !== null) return { id: parseInt(regexp[1]) };
+		return { id: 0 };
 	};
 
-	static idFromString = (str: string): number => {
-		return parseInt(str);
+	static idFromString = (str: string): MediaKey => {
+		return { id: parseInt(str) };
 	};
 
 	get mochi(): number {
-		return this.id;
+		return this.key.id!;
 	}
 }
+
+ExternalTitles[ActivableKey.MyAnimeList] = MyAnimeListTitle;

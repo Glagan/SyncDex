@@ -1,6 +1,11 @@
 import { Runtime } from '../Core/Runtime';
-import { ServiceKeyType, ActivableName, ActivableKey, ExternalTitle, Title } from '../Core/Title';
+import { ExternalTitle, ExternalTitles, FoundTitle } from '../Core/Title';
 import { Options } from '../Core/Options';
+import { ActivableKey, ActivableName, Service, Services } from '../Core/Service';
+import { ImportModule, ModuleOptions } from '../Core/Module';
+import { ModuleInterface } from '../Core/ModuleInterface';
+import { AppendableElement, DOM } from '../Core/DOM';
+import { LoginMethod } from '../Core/Service';
 
 export const enum AnilistStatus {
 	NONE = 'NONE',
@@ -16,6 +21,42 @@ export interface AnilistDate {
 	day: number | null;
 	month: number | null;
 	year: number | null;
+}
+
+interface AnilistViewerResponse {
+	data: {
+		Viewer: {
+			name: string;
+		};
+	};
+}
+
+interface AnilistListTitle {
+	mediaId: number;
+	status: AnilistStatus;
+	progress: number;
+	progressVolumes: number;
+	startedAt: AnilistDate;
+	completedAt: AnilistDate;
+	score: number | null;
+	media: {
+		title: {
+			userPreferred: string;
+		};
+		chapters: number | null;
+		volumes: number | null;
+	};
+}
+
+interface AnilistListResponse {
+	data: {
+		MediaListCollection: {
+			lists: {
+				name: string;
+				entries: AnilistListTitle[];
+			}[];
+		};
+	};
 }
 
 export interface SaveMediaListEntry {
@@ -74,20 +115,172 @@ export const AnilistHeaders = (): AnilistHeaders => {
 	};
 };
 
-/**
- * An Anilist MediaEntry.
- * Score are automatically converted in a 0-100 range.
- */
-export class AnilistTitle extends ExternalTitle {
+export class AnilistImport extends ImportModule {
+	static viewerQuery = `
+		query {
+			Viewer {
+				name
+			}
+		}`.replace(/\n\t+/g, ' ');
+
+	static listQuery = `
+		query ($userName: String) {
+			MediaListCollection(userName: $userName, type: MANGA) {
+				lists {
+					entries {
+						id
+						mediaId
+						status
+						score(format: POINT_100)
+						progress
+						progressVolumes
+						startedAt {
+							year
+							month
+							day
+						}
+						completedAt {
+							year
+							month
+							day
+						}
+						media {
+							title {
+								userPreferred
+							}
+							chapters
+							volumes
+						}
+					}
+				}
+			}
+		}`.replace(/\n\t+/g, ' '); // Require $userName
+	username: string = '';
+
+	constructor(moduleInterface?: ModuleInterface) {
+		super(Anilist, moduleInterface);
+	}
+
+	preExecute = async (): Promise<boolean> => {
+		// Find required username
+		const viewerResponse = await Runtime.jsonRequest({
+			url: AnilistAPI,
+			method: 'POST',
+			headers: AnilistHeaders(),
+			body: JSON.stringify({
+				query: AnilistImport.viewerQuery,
+			}),
+		});
+		if (!viewerResponse.ok) {
+			this.interface?.message(
+				'warning',
+				`The request failed, maybe Anilist is having problems or your token expired, retry later.`
+			);
+			return false;
+		}
+		this.username = (viewerResponse.body as AnilistViewerResponse).data.Viewer.name;
+		return true;
+	};
+
+	execute = async (options: ModuleOptions): Promise<boolean | FoundTitle[]> => {
+		// Get list of *all* titles
+		const response = await Runtime.jsonRequest<AnilistListResponse>({
+			url: AnilistAPI,
+			method: 'POST',
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				query: AnilistImport.listQuery,
+				variables: {
+					userName: this.username,
+				},
+			}),
+		});
+		if (response.code >= 500) {
+			this.interface?.message('warning', 'The request failed, maybe Anilist is having problems, retry later.');
+			return false;
+		} else if (response.code >= 400) {
+			this.interface?.message('warning', 'Bad Request, check if your token is valid.');
+			return false;
+		}
+
+		// Transform to array
+		const medias: FoundTitle[] = [];
+		const body = response.body;
+		for (const list of body.data.MediaListCollection.lists) {
+			for (const entry of list.entries) {
+				medias.push({
+					progress: {
+						chapter: entry.progress,
+						volume: entry.progressVolumes,
+					},
+					max: {
+						chapter: entry.media.chapters ?? undefined,
+						volume: entry.media.volumes ?? undefined,
+					},
+					name: entry.media.title.userPreferred,
+					status: AnilistTitle.toStatus(entry.status),
+					start: AnilistTitle.dateFromAnilist(entry.startedAt),
+					end: AnilistTitle.dateFromAnilist(entry.completedAt),
+					score: entry.score ? entry.score : 0,
+					mochi: entry.mediaId,
+				});
+			}
+		}
+		return medias;
+	};
+}
+
+export class Anilist extends Service {
 	static readonly serviceName: ActivableName = ActivableName.Anilist;
 	static readonly serviceKey: ActivableKey = ActivableKey.Anilist;
 
-	static link(id: ServiceKeyType): string {
-		return `https://anilist.co/manga/${id}`;
+	static loginMethod: LoginMethod = LoginMethod.EXTERNAL;
+	static loginUrl: string = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
+
+	static async loggedIn(): Promise<RequestStatus> {
+		if (Options.tokens.anilistToken === undefined) return RequestStatus.MISSING_TOKEN;
+		const response = await Runtime.jsonRequest({
+			method: 'POST',
+			url: AnilistAPI,
+			headers: AnilistHeaders(),
+			body: JSON.stringify({ query: `query { Viewer { id } }` }),
+		});
+		return Runtime.responseStatus(response);
 	}
 
-	id: number;
-	mediaEntryId: number;
+	static async logout(): Promise<void> {
+		delete Options.tokens.anilistToken;
+	}
+
+	static importModule = (moduleInterface?: ModuleInterface) => new AnilistImport(moduleInterface);
+
+	static link(key: MediaKey) {
+		return `https://anilist.co/manga/${key.id}`;
+	}
+
+	static createTitle(): AppendableElement {
+		return DOM.create('span', {
+			class: 'ani',
+			textContent: 'Ani',
+			childs: [
+				DOM.create('span', {
+					class: 'list',
+					textContent: 'List',
+				}),
+			],
+		});
+	}
+}
+
+Services[ActivableKey.Anilist] = Anilist;
+
+export class AnilistTitle extends ExternalTitle {
+	static service = Anilist;
+
+	mediaEntryId: number = 0;
 
 	static readonly getQuery = `
 		query ($mediaId: Int) {
@@ -116,6 +309,7 @@ export class AnilistTitle extends ExternalTitle {
 				}
 			}
 		}`.replace(/\n\t+/g, ' ');
+
 	static readonly persistQuery = `
 		mutation ($mediaId: Int, $status: MediaListStatus, $score: Float, $progress: Int, $progressVolumes: Int, $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput) {
 			SaveMediaListEntry (mediaId: $mediaId, status: $status, score: $score, progress: $progress, progressVolumes: $progressVolumes, startedAt: $startedAt, completedAt: $completedAt) {
@@ -137,20 +331,13 @@ export class AnilistTitle extends ExternalTitle {
 				}
 			}
 		}`.replace(/\n\t+/g, ' ');
+
 	static readonly deleteQuery = `
 		mutation ($id: Int) {
 			DeleteMediaListEntry (id: $id) {
 				deleted
 			}
 		}`.replace(/\n\t+/g, ' ');
-
-	constructor(id: ServiceKeyType, title?: Partial<AnilistTitle>) {
-		super(title);
-		if (typeof id !== 'number') throw 'Anilist ID can only be a number';
-		this.id = id;
-		this.status = title && title.status !== undefined ? title.status : Status.NONE;
-		this.mediaEntryId = title && title.mediaEntryId !== undefined ? title.mediaEntryId : 0;
-	}
 
 	static dateFromAnilist = (date: AnilistDate): Date | undefined => {
 		if (date.day !== null && date.month !== null && date.year !== null) {
@@ -159,7 +346,8 @@ export class AnilistTitle extends ExternalTitle {
 		return undefined;
 	};
 
-	static get = async (id: ServiceKeyType): Promise<AnilistTitle | RequestStatus> => {
+	static get = async (key: MediaKey): Promise<AnilistTitle | RequestStatus> => {
+		const id = key.id!;
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<AnilistGetResponse>({
 			url: AnilistAPI,
@@ -177,6 +365,7 @@ export class AnilistTitle extends ExternalTitle {
 		const body = response.body;
 		const mediaEntry = body.data.Media.mediaListEntry;
 		const values: Partial<AnilistTitle> = {
+			key: key,
 			name: body.data.Media.title.userPreferred,
 			loggedIn: true,
 			max: { chapter: body.data.Media.chapters ?? undefined, volume: body.data.Media.volumes ?? undefined },
@@ -191,7 +380,7 @@ export class AnilistTitle extends ExternalTitle {
 			values.start = AnilistTitle.dateFromAnilist(mediaEntry.startedAt);
 			values.end = AnilistTitle.dateFromAnilist(mediaEntry.completedAt);
 		} else values.inList = false;
-		return new AnilistTitle(id as number, values);
+		return new AnilistTitle(values);
 	};
 
 	static dateToAnilist = (date?: Date): AnilistDate | undefined => {
@@ -211,7 +400,7 @@ export class AnilistTitle extends ExternalTitle {
 			body: JSON.stringify({
 				query: AnilistTitle.persistQuery,
 				variables: <SaveMediaListEntry>{
-					mediaId: this.id,
+					mediaId: this.key.id,
 					status: AnilistTitle.fromStatus(this.status),
 					score: this.score !== undefined && this.score > 0 ? this.score : undefined,
 					progress: Math.floor(this.progress.chapter),
@@ -286,29 +475,19 @@ export class AnilistTitle extends ExternalTitle {
 		return AnilistStatus.NONE;
 	};
 
-	static fromTitle = (title: Title): AnilistTitle | undefined => {
-		if (!title.services.al) return undefined;
-		return new AnilistTitle(title.services.al, {
-			progress: title.progress,
-			status: title.status,
-			score: title.score ? title.score : undefined,
-			start: title.start ? new Date(title.start) : undefined,
-			end: title.end ? new Date(title.end) : undefined,
-			name: title.name,
-		});
-	};
-
-	static idFromLink = (href: string): number => {
+	static idFromLink = (href: string): MediaKey => {
 		const regexp = /https:\/\/(?:www\.)?anilist\.co\/manga\/(\d+)\/?/.exec(href);
-		if (regexp !== null) return parseInt(regexp[1]);
-		return 0;
+		if (regexp !== null) return { id: parseInt(regexp[1]) };
+		return { id: 0 };
 	};
 
-	static idFromString = (str: string): number => {
-		return parseInt(str);
+	static idFromString = (str: string): MediaKey => {
+		return { id: parseInt(str) };
 	};
 
 	get mochi(): number {
-		return this.id;
+		return this.key.id!;
 	}
 }
+
+ExternalTitles[ActivableKey.Anilist] = AnilistTitle;

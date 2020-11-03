@@ -1,18 +1,9 @@
 import { Router } from './Router';
 import { Options } from '../Core/Options';
 import { DOM } from '../Core/DOM';
-import {
-	TitleCollection,
-	ServiceKeyType,
-	ReverseActivableName,
-	ActivableKey,
-	Title,
-	StatusMap,
-	iconToService,
-} from '../Core/Title';
+import { TitleCollection, StatusMap, iconToService, LocalTitle, ExternalTitles } from '../Core/Title';
 import { TitleOverview, ReadingOverview } from './Overview';
 import { Mochi } from '../Core/Mochi';
-import { GetService } from './Service';
 import { injectScript, stringToProgress } from '../Core/Utility';
 import { Runtime } from '../Core/Runtime';
 import { Thumbnail } from './Thumbnail';
@@ -21,10 +12,11 @@ import { UpdateGroup } from './UpdateGroup';
 import { TitleChapterGroup } from './TitleChapterGroup';
 import { History } from './History';
 import { ChapterRow } from './ChapterRow';
+import { ActivableKey, Service, Services } from '../Core/Service';
 
 interface ReadingState {
 	syncModule?: SyncModule;
-	title?: Title;
+	title?: LocalTitle;
 }
 
 interface FollowPageResult {
@@ -167,7 +159,7 @@ export class SyncDex {
 	syncShowResult = async (
 		syncModule: SyncModule,
 		informations: ReportInformations,
-		previousState: Title
+		previousState: LocalTitle
 	): Promise<void> => {
 		const report = await syncModule.syncExternal();
 		syncModule.displayReportNotifications(report, informations, previousState);
@@ -179,7 +171,7 @@ export class SyncDex {
 		let loggedInMangaDex = false;
 		let firstRequest = false;
 		if (state.title == undefined) {
-			state.title = await Title.get(id);
+			state.title = await LocalTitle.get(id);
 			if (Options.biggerHistory) await History.load();
 			if (details.manga._data.title != '') state.title.name = details.manga._data.title;
 			firstRequest = true;
@@ -196,9 +188,9 @@ export class SyncDex {
 				for (const key in services) {
 					const serviceKey = iconToService(key);
 					if (serviceKey !== undefined) {
-						(state.title.services[serviceKey] as ServiceKeyType) = GetService(
-							ReverseActivableName[serviceKey]
-						).idFromString(services[key as MangaDexExternalKeys]);
+						state.title.services[serviceKey] = ExternalTitles[serviceKey].idFromString(
+							services[key as MangaDexExternalKeys]
+						);
 					}
 				}
 			}
@@ -369,7 +361,7 @@ export class SyncDex {
 			state.title.lastChapter = details._data.id;
 			state.title.lastRead = Date.now();
 			state.title.history = state.title.progress;
-			History.add(state.title.id);
+			History.add(state.title.key.id!);
 			History.save();
 		}
 		await state.title.persist(); // Always save
@@ -492,7 +484,7 @@ export class SyncDex {
 
 		// Get Title
 		const id = parseInt(document.querySelector<HTMLElement>('.row .fas.fa-hashtag')!.parentElement!.textContent!);
-		const title = await Title.get(id);
+		const title = await LocalTitle.get(id);
 		title.lastTitle = Date.now();
 		if (!title.inList || title.name === undefined || title.name == '') {
 			const headerTitle = document.querySelector('h6.card-header');
@@ -533,7 +525,7 @@ export class SyncDex {
 		}
 		// If Mochi failed or if it's disabled use displayed Services
 		const pickLocalServices = !Options.useMochi || fallback;
-		const localServices: { [key in ActivableKey]?: [HTMLElement, ServiceKeyType] } = {};
+		const localServices: { [key in ActivableKey]?: [HTMLElement, MediaKey] } = {};
 		const informationTable = document.querySelector('.col-xl-9.col-lg-8.col-md-7')!;
 		// Look for the "Information:" column
 		let informationRow = Array.from(informationTable.children).find(
@@ -547,11 +539,9 @@ export class SyncDex {
 					// Convert icon name to ServiceKey, only since kt is ku
 					const serviceKey = iconToService(serviceIcon.src);
 					if (serviceKey !== undefined) {
-						const id = GetService(ReverseActivableName[serviceKey]).idFromLink(serviceLink.href);
+						const id = ExternalTitles[serviceKey].idFromLink(serviceLink.href);
 						localServices[serviceKey] = [serviceLink.parentElement!, id];
-						if (pickLocalServices) {
-							(title.services[serviceKey] as ServiceKeyType) = id;
-						}
+						if (pickLocalServices) title.services[serviceKey] = id;
 					}
 				}
 			} // Nothing to do if there is no row
@@ -581,7 +571,7 @@ export class SyncDex {
 			for (const key of Object.values(ActivableKey)) {
 				const localService = localServices[key];
 				if (title.services[key] == undefined) continue;
-				const serviceName = ReverseActivableName[key];
+				const serviceName = Services[key].name;
 				// If there is no localService add a link
 				if (localService == undefined) {
 					const link = DOM.create('li', {
@@ -590,19 +580,19 @@ export class SyncDex {
 							DOM.create('img', { src: Runtime.icon(key), title: serviceName }),
 							DOM.space(),
 							DOM.create('a', {
-								href: GetService(serviceName).link(title.services[key]!),
+								href: Services[key].link(title.services[key]!),
 								target: '_blank',
 								textContent: `${serviceName} (SyncDex)`,
 							}),
 						],
 					});
 					serviceList.appendChild(link);
-				} else if (!GetService(serviceName).compareId(title.services[key]!, localService[1])) {
+				} else if (!Service.compareId(title.services[key]!, localService[1])) {
 					DOM.append(
 						localService[0],
 						DOM.space(),
 						DOM.create('a', {
-							href: GetService(serviceName).link(title.services[key]!),
+							href: Services[key].link(title.services[key]!),
 							target: '_blank',
 							textContent: '(SyncDex)',
 						})
@@ -773,7 +763,7 @@ export class SyncDex {
 			const id = parseInt(/\/title\/(\d+)(?:\/.+)?/.exec(titleLink.href)![1]);
 			const chapter = parseInt(/\/chapter\/(\d+)/.exec(chapterLink.href)![1]);
 			// Update lastChapter
-			const title = History.find(id) < 0 ? await Title.get(id) : titles.find(id);
+			const title = History.find(id) < 0 ? await LocalTitle.get(id) : titles.find(id);
 			if (title) {
 				if (!title.inList) {
 					title.name = node.querySelector<HTMLElement>('.manga_title')!.textContent!;
@@ -791,7 +781,7 @@ export class SyncDex {
 				}
 			}
 		}
-		await titles.save();
+		await titles.persist();
 		await History.save();
 
 		// Display History
@@ -921,7 +911,7 @@ export class SyncDex {
 								maxPage = res.maxPage;
 								// Save updated titles every loop if the user reload the History.page
 								if (toSave.length > 0) {
-									await toSave.save();
+									await toSave.persist();
 									toSave.collection = [];
 								}
 								await History.save();
@@ -1025,7 +1015,7 @@ export class SyncDex {
 					maxPage = res.maxPage;
 					// Save updated titles every loop if the page is reloaded
 					if (toSave.length > 0) {
-						await toSave.save();
+						await toSave.persist();
 						toSave.collection = [];
 					}
 					await History.save();

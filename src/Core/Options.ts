@@ -1,5 +1,5 @@
 import { LocalStorage } from './Storage';
-import { ActivableKey } from './Title';
+import { ActivableKey } from './Service';
 
 console.log('SyncDex :: Options');
 

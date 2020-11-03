@@ -7,7 +7,7 @@ console.log('SyncDex :: Anilist Token');
 	setBrowser();
 	await Options.load();
 	// Search token in URL
-	let found = /access_token=(.+)&token_type=Bearer/.exec(window.location.href);
+	const found = /access_token=(.+)&token_type=Bearer/.exec(window.location.href);
 	// Always display notifications here
 	if (found) {
 		Options.tokens.anilistToken = found[1];
@@ -20,9 +20,12 @@ console.log('SyncDex :: Anilist Token');
 			{ sticky: true }
 		);
 	} else {
-		SimpleNotification.error({
-			title: 'Token not saved',
-			text: 'There was an error while saving the token.',
-		});
+		SimpleNotification.error(
+			{
+				title: 'Token not saved',
+				text: 'There was an error while saving the token.',
+			},
+			{ sticky: true }
+		);
 	}
 })();
