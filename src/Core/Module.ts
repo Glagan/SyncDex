@@ -49,7 +49,6 @@ export abstract class Module {
 	interface?: ModuleInterface;
 	summary: Summary;
 	requireLogin: boolean = false;
-	requireMochi: boolean = true;
 	perConvert = 250;
 
 	constructor(service: typeof Service, moduleInterface?: ModuleInterface) {
@@ -71,7 +70,6 @@ export abstract class Module {
 
 	async preExecute?(): Promise<boolean>;
 	abstract async doExecute(): Promise<void>;
-	abstract async execute(options: ModuleOptions): Promise<boolean | FoundTitle[]>;
 	async postExecute?(): Promise<void>;
 
 	mochiCheck = async (collection: TitleCollection): Promise<void> => {
@@ -101,6 +99,8 @@ export abstract class Module {
 }
 
 export abstract class ImportModule extends Module {
+	abstract async execute(options: ModuleOptions): Promise<boolean | FoundTitle[]>;
+
 	doExecute = async (): Promise<void> => {
 		// Reset
 		this.summary = new Summary();
@@ -115,7 +115,7 @@ export abstract class ImportModule extends Module {
 			options.mochi = this.interface.form.mochi.checked;
 		}
 		if (this.requireLogin && (await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
-			this.interface?.message('error', `This function need you to be logged in on ${this.service.serviceName} !`);
+			this.interface?.message('error', `Importing need you to be logged in on ${this.service.serviceName} !`);
 			this.interface?.complete();
 			return;
 		}
@@ -128,7 +128,7 @@ export abstract class ImportModule extends Module {
 		}
 
 		// Find MangaDex ID for all FoundTitle
-		const titles: TitleCollection = new TitleCollection();
+		const titles: TitleCollection = await TitleCollection.get();
 		let current = 0;
 		let progress = DOM.create('p');
 		const notification = this.interface?.message('loading', [progress]);
@@ -137,36 +137,27 @@ export abstract class ImportModule extends Module {
 			const titleList = medias.slice(current, current + this.perConvert);
 			current += this.perConvert;
 			progress.textContent = `Converting title ${Math.min(max, current + this.perConvert)} out of ${max}.`;
-			if (!this.requireMochi) {
-				titles.add(
-					...titleList
-						.filter((title) => title.mangaDex !== undefined)
-						.map((title) => new LocalTitle(title.mangaDex!, title))
-				);
-				this.summary.valid += titleList.length;
-			} else {
-				const connections = await Mochi.findMany(
-					titleList.map((t) => t.mochi),
-					this.service.serviceName
-				);
-				const found: (number | string)[] = [];
-				if (connections !== undefined) {
-					for (const key in connections) {
-						const connection = connections[key];
-						if (connection['md'] !== undefined) {
-							const title = titleList.find((t) => t.mochi == key);
-							if (title) {
-								titles.add(new LocalTitle(connection['md'], title));
-								this.summary.valid++;
-								found.push(title.mochi);
-							}
+			const connections = await Mochi.findMany(
+				titleList.map((t) => t.mochi),
+				this.service.serviceName
+			);
+			const found: (number | string)[] = [];
+			if (connections !== undefined) {
+				for (const key in connections) {
+					const connection = connections[key];
+					if (connection['md'] !== undefined) {
+						const title = titleList.find((t) => t.mochi == key);
+						if (title) {
+							titles.add(new LocalTitle(connection['md'], title));
+							this.summary.valid++;
+							found.push(title.mochi);
 						}
 					}
 				}
-				// Add missing titles to the failed Summary
-				const noIds = titleList.filter((t) => found.indexOf(t.mochi) < 0);
-				this.summary.failed.push(...noIds.filter((t) => t.name !== undefined).map((t) => t.name as string));
 			}
+			// Add missing titles to the failed Summary
+			const noIds = titleList.filter((t) => found.indexOf(t.mochi) < 0);
+			this.summary.failed.push(...noIds.filter((t) => t.name !== undefined).map((t) => t.name as string));
 		}
 		notification?.classList.remove('loading');
 
@@ -174,8 +165,19 @@ export abstract class ImportModule extends Module {
 	};
 }
 
-// TODO:
 export abstract class ExportModule extends Module {
+	abstract async execute(filtered: LocalTitle[], options: ModuleOptions): Promise<boolean>;
+
+	selectTitles = (titles: TitleCollection): LocalTitle[] => {
+		const filtered: LocalTitle[] = [];
+		for (const title of titles.collection) {
+			if (title.services[this.service.key] !== undefined) {
+				filtered.push(title);
+			}
+		}
+		return filtered;
+	};
+
 	doExecute = async (): Promise<void> => {
 		// Reset
 		this.summary = new Summary();
@@ -191,60 +193,48 @@ export abstract class ExportModule extends Module {
 			options.mochi = this.interface.form.mochi.checked;
 		}
 		if (this.requireLogin && (await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
-			this.interface?.message('error', `This function need you to be logged in on ${this.service.serviceName} !`);
+			this.interface?.message('error', `Exporting need you to be logged in on ${this.service.serviceName} !`);
 			this.interface?.complete();
 			return;
 		}
 
-		// Execute
-		const medias: FoundTitle[] | boolean = await this.execute(options);
-		if (typeof medias === 'boolean') {
-			this.interface?.complete();
-			return;
-		}
-
-		// Find MangaDex ID for all FoundTitle
-		const titles: TitleCollection = new TitleCollection();
-		let current = 0;
-		let progress = DOM.create('p');
-		const notification = this.interface?.message('loading', [progress]);
-		const max = Math.ceil(this.summary.total / this.perConvert);
-		for (let i = 0; !this.interface?.doStop && i < max; i++) {
-			const titleList = medias.slice(current, current + this.perConvert);
-			current += this.perConvert;
-			progress.textContent = `Converting title ${Math.min(max, current + this.perConvert)} out of ${max}.`;
-			if (!this.requireMochi) {
-				titles.add(
-					...titleList
-						.filter((title) => title.mangaDex !== undefined)
-						.map((title) => new LocalTitle(title.mangaDex!, title))
-				);
-				this.summary.valid += titleList.length;
-			} else {
-				const connections = await Mochi.findMany(
-					titleList.map((t) => t.mochi),
-					this.service.serviceName
-				);
-				const found: (number | string)[] = [];
+		// Check Mochi
+		const titles: TitleCollection = await TitleCollection.get();
+		if (options.mochi) {
+			const titles: TitleCollection = await TitleCollection.get();
+			let current = 0;
+			let progress = DOM.create('p');
+			const notification = this.interface?.message('loading', [progress]);
+			const max = Math.ceil(this.summary.total / this.perConvert);
+			for (let i = 0; !this.interface?.doStop && i < max; i++) {
+				const titleList = titles.collection.slice(current, current + this.perConvert);
+				current += this.perConvert;
+				progress.textContent = `Finding ID for titles ${Math.min(
+					max,
+					current + this.perConvert
+				)} out of ${max}.`;
+				const connections = await Mochi.findMany(titleList.map((t) => t.key.id!));
 				if (connections !== undefined) {
-					for (const key in connections) {
-						const connection = connections[key];
-						if (connection['md'] !== undefined) {
-							const title = titleList.find((t) => t.mochi == key);
-							if (title) {
-								titles.add(new LocalTitle(connection['md'], title));
-								this.summary.valid++;
-								found.push(title.mochi);
-							}
-						}
+					for (const titleId in connections) {
+						const id = parseInt(titleId);
+						const title = titleList.find((t) => t.key.id! == id);
+						if (title) Mochi.assign(title, connections[titleId]);
 					}
 				}
-				// Add missing titles to the failed Summary
-				const noIds = titleList.filter((t) => found.indexOf(t.mochi) < 0);
-				this.summary.failed.push(...noIds.filter((t) => t.name !== undefined).map((t) => t.name as string));
 			}
+			notification?.classList.remove('loading');
+			if (this.interface?.doStop) return this.interface?.complete();
 		}
-		notification?.classList.remove('loading');
+
+		// Select Titles
+		const filteredTitles: LocalTitle[] = this.selectTitles(titles);
+
+		// Execute
+		const result: boolean = await this.execute(filteredTitles, options);
+		if (!result) {
+			this.interface?.complete();
+			return;
+		}
 
 		if (this.postExecute) await this.postExecute();
 	};

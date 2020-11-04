@@ -1,8 +1,8 @@
 import { Runtime } from '../Core/Runtime';
-import { ExternalTitle, ExternalTitles, FoundTitle } from '../Core/Title';
+import { ExternalTitle, ExternalTitles, FoundTitle, LocalTitle } from '../Core/Title';
 import { Options } from '../Core/Options';
 import { ActivableKey, ActivableName, Service, Services } from '../Core/Service';
-import { ImportModule, ModuleOptions } from '../Core/Module';
+import { duration, ExportModule, ImportModule, ModuleOptions } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { AppendableElement, DOM } from '../Core/DOM';
 import { LoginMethod } from '../Core/Service';
@@ -184,6 +184,7 @@ export class AnilistImport extends ImportModule {
 
 	execute = async (options: ModuleOptions): Promise<boolean | FoundTitle[]> => {
 		// Get list of *all* titles
+		const message = this.interface?.message('loading', 'Fetching all titles...');
 		const response = await Runtime.jsonRequest<AnilistListResponse>({
 			url: AnilistAPI,
 			method: 'POST',
@@ -198,6 +199,7 @@ export class AnilistImport extends ImportModule {
 				},
 			}),
 		});
+		message?.classList.remove('loading');
 		if (response.code >= 500) {
 			this.interface?.message('warning', 'The request failed, maybe Anilist is having problems, retry later.');
 			return false;
@@ -233,6 +235,35 @@ export class AnilistImport extends ImportModule {
 	};
 }
 
+export class AnilistExport extends ExportModule {
+	constructor(moduleInterface?: ModuleInterface) {
+		super(Anilist, moduleInterface);
+	}
+
+	execute = async (titles: LocalTitle[], options: ModuleOptions): Promise<boolean> => {
+		const max = titles.length;
+		this.interface?.message('default', `Exporting ${max} Titles...`);
+		const progress = DOM.create('p');
+		const message = this.interface?.message('loading', [progress]);
+		let average = 0;
+		for (let current = 0; !this.interface?.doStop && current < max; current++) {
+			const localTitle = titles[current];
+			let currentProgress = `Exporting Title ${current}/${max} (${localTitle.name})...`;
+			if (average > 0) currentProgress += `\nEstimated time remaining: ${duration((max - current) * average)}.`;
+			progress.textContent = currentProgress;
+			const before = Date.now();
+			const title = new AnilistTitle({ ...localTitle, key: localTitle.services[ActivableKey.Anilist] });
+			const response = await title.persist();
+			if (average == 0) average = Date.now() - before;
+			else average = (average + (Date.now() - before)) / 2;
+			if (response) this.summary.valid++;
+			else this.summary.failed.push(localTitle.name ?? `#${localTitle.key.id}`);
+		}
+		message?.classList.remove('loading');
+		return this.interface ? !this.interface.doStop : true;
+	};
+}
+
 export class Anilist extends Service {
 	static readonly serviceName: ActivableName = ActivableName.Anilist;
 	static readonly serviceKey: ActivableKey = ActivableKey.Anilist;
@@ -256,6 +287,7 @@ export class Anilist extends Service {
 	}
 
 	static importModule = (moduleInterface?: ModuleInterface) => new AnilistImport(moduleInterface);
+	static exportModule = (moduleInterface?: ModuleInterface) => new AnilistExport(moduleInterface);
 
 	static link(key: MediaKey) {
 		return `https://anilist.co/manga/${key.id}`;
