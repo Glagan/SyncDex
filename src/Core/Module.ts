@@ -68,9 +68,7 @@ export abstract class Module {
 		return loggedIn;
 	};
 
-	async preExecute?(): Promise<boolean>;
 	abstract async doExecute(): Promise<void>;
-	async postExecute?(): Promise<void>;
 
 	mochiCheck = async (collection: TitleCollection): Promise<void> => {
 		const progress = DOM.create('span', {
@@ -99,25 +97,29 @@ export abstract class Module {
 }
 
 export abstract class ImportModule extends Module {
+	async preExecute?(): Promise<boolean>;
 	abstract async execute(options: ModuleOptions): Promise<boolean | FoundTitle[]>;
+	async postExecute?(): Promise<void>;
 
 	doExecute = async (): Promise<void> => {
 		// Reset
 		this.summary = new Summary();
 
-		// Find Options and Login if needed
-		if (this.preExecute) {
-			if (!(await this.preExecute())) return;
-		}
-		const options = { merge: true, mochi: true };
-		if (this.interface) {
-			options.merge = this.interface.form.merge.checked;
-			options.mochi = this.interface.form.mochi.checked;
-		}
+		// Check login status
 		if (this.requireLogin && (await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
 			this.interface?.message('error', `Importing need you to be logged in on ${this.service.serviceName} !`);
 			this.interface?.complete();
 			return;
+		}
+		if (this.preExecute) {
+			if (!(await this.preExecute())) return;
+		}
+
+		// Find Options
+		const options = { merge: true, mochi: true };
+		if (this.interface) {
+			options.merge = this.interface.form.merge.checked;
+			options.mochi = this.interface.form.mochi.checked;
 		}
 
 		// Execute
@@ -166,7 +168,9 @@ export abstract class ImportModule extends Module {
 }
 
 export abstract class ExportModule extends Module {
+	async preExecute?(filtered: LocalTitle[]): Promise<boolean>;
 	abstract async execute(filtered: LocalTitle[], options: ModuleOptions): Promise<boolean>;
+	async postExecute?(): Promise<void>;
 
 	selectTitles = (titles: TitleCollection): LocalTitle[] => {
 		const filtered: LocalTitle[] = [];
@@ -182,24 +186,29 @@ export abstract class ExportModule extends Module {
 		// Reset
 		this.summary = new Summary();
 
-		// Find Options and Login if needed
-		if (this.preExecute && !(await this.preExecute())) {
-			this.interface?.complete();
-			return;
-		}
-		const options = { merge: true, mochi: true };
-		if (this.interface) {
-			options.merge = this.interface.form.merge.checked;
-			options.mochi = this.interface.form.mochi.checked;
-		}
+		// Check login status
 		if (this.requireLogin && (await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
 			this.interface?.message('error', `Exporting need you to be logged in on ${this.service.serviceName} !`);
 			this.interface?.complete();
 			return;
 		}
 
-		// Check Mochi
+		// Select Titles
 		const titles: TitleCollection = await TitleCollection.get();
+		const filteredTitles: LocalTitle[] = this.selectTitles(titles);
+		if (this.preExecute && !(await this.preExecute(filteredTitles))) {
+			this.interface?.complete();
+			return;
+		}
+
+		// Find Options
+		const options = { merge: true, mochi: true };
+		if (this.interface) {
+			options.merge = this.interface.form.merge.checked;
+			options.mochi = this.interface.form.mochi.checked;
+		}
+
+		// Check Mochi
 		if (options.mochi) {
 			const titles: TitleCollection = await TitleCollection.get();
 			let current = 0;
@@ -225,9 +234,6 @@ export abstract class ExportModule extends Module {
 			notification?.classList.remove('loading');
 			if (this.interface?.doStop) return this.interface?.complete();
 		}
-
-		// Select Titles
-		const filteredTitles: LocalTitle[] = this.selectTitles(titles);
 
 		// Execute
 		const result: boolean = await this.execute(filteredTitles, options);

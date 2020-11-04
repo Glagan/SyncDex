@@ -28,6 +28,10 @@ export class AnimePlanetImport extends ImportModule {
 	}
 
 	preExecute = async (): Promise<boolean> => {
+		if (AnimePlanet.username == '') {
+			this.interface?.message('error', 'Username not found while checking if logged in.');
+			return false;
+		}
 		const message = this.interface?.message('loading', 'Setting list type...');
 		const response = await Runtime.request<RawResponse>({
 			url: `https://www.anime-planet.com/users/${AnimePlanet.username}/manga/reading?sort=title&mylist_view=list`,
@@ -118,6 +122,8 @@ export class AnimePlanetImport extends ImportModule {
 			lastPage = current >= max;
 			current++;
 		}
+		message?.classList.remove('loading');
+		this.interface?.message('default', `Found ${medias.length} Titles on AnimePlanet.`);
 
 		return medias;
 	};
@@ -129,6 +135,10 @@ export class AnimePlanetExport extends ExportModule {
 	}
 
 	execute = async (titles: LocalTitle[], options: ModuleOptions): Promise<boolean> => {
+		if (AnimePlanet.username == '') {
+			this.interface?.message('error', 'Username not found while checking if logged in.');
+			return false;
+		}
 		const max = titles.length;
 		this.interface?.message('default', `Exporting ${max} Titles...`);
 		const progress = DOM.create('p');
@@ -185,6 +195,7 @@ export class AnimePlanet extends Service {
 	}
 
 	static importModule = (moduleInterface?: ModuleInterface) => new AnimePlanetImport(moduleInterface);
+	static exportModule = (moduleInterface?: ModuleInterface) => new AnimePlanetExport(moduleInterface);
 
 	static link(key: MediaKey) {
 		return `https://www.anime-planet.com/manga/${key.slug}`;

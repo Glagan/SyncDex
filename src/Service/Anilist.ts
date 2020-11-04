@@ -207,7 +207,6 @@ export class AnilistImport extends ImportModule {
 			this.interface?.message('warning', 'Bad Request, check if your token is valid.');
 			return false;
 		}
-
 		// Transform to array
 		const medias: FoundTitle[] = [];
 		const body = response.body;
@@ -232,6 +231,8 @@ export class AnilistImport extends ImportModule {
 				});
 			}
 		}
+		this.interface?.message('default', `Found ${medias.length} Titles on Anilist.`);
+
 		return medias;
 	};
 }
