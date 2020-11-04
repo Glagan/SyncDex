@@ -1,8 +1,8 @@
 import { Runtime } from '../Core/Runtime';
 import { ActivableKey, ActivableName, LoginMethod, Service, Services } from '../Core/Service';
 import { ModuleInterface } from '../Core/ModuleInterface';
-import { duration, ExportModule, ImportModule, ModuleOptions } from '../Core/Module';
-import { ExternalTitle, ExternalTitles, FoundTitle, LocalTitle, MissableField } from '../Core/Title';
+import { duration, ExportModule, ImportModule } from '../Core/Module';
+import { ExternalTitle, ExternalTitles, LocalTitle, MissableField } from '../Core/Title';
 import { DOM } from '../Core/DOM';
 
 export const enum AnimePlanetStatus {
@@ -41,7 +41,7 @@ export class AnimePlanetImport extends ImportModule {
 		return response.ok;
 	};
 
-	execute = async (options: ModuleOptions): Promise<boolean> => {
+	execute = async (): Promise<boolean> => {
 		const progress = DOM.create('p', { textContent: 'Fetching all titles...' });
 		const message = this.interface?.message('loading', [progress]);
 		const parser = new DOMParser();
@@ -132,7 +132,7 @@ export class AnimePlanetExport extends ExportModule {
 		super(AnimePlanet, moduleInterface);
 	}
 
-	execute = async (titles: LocalTitle[], options: ModuleOptions): Promise<boolean> => {
+	execute = async (titles: LocalTitle[]): Promise<boolean> => {
 		if (AnimePlanet.username == '') {
 			this.interface?.message('error', 'Username not found while checking if logged in.');
 			return false;

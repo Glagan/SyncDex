@@ -1,8 +1,8 @@
 import { Runtime } from '../Core/Runtime';
-import { ExternalTitle, ExternalTitles, FoundTitle, LocalTitle } from '../Core/Title';
+import { ExternalTitle, ExternalTitles, LocalTitle } from '../Core/Title';
 import { Options } from '../Core/Options';
 import { ActivableKey, ActivableName, Service, Services } from '../Core/Service';
-import { duration, ExportModule, ImportModule, ModuleOptions } from '../Core/Module';
+import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { AppendableElement, DOM } from '../Core/DOM';
 import { LoginMethod } from '../Core/Service';
@@ -182,7 +182,7 @@ export class AnilistImport extends ImportModule {
 		return true;
 	};
 
-	execute = async (options: ModuleOptions): Promise<boolean> => {
+	execute = async (): Promise<boolean> => {
 		// Get list of *all* titles
 		const message = this.interface?.message('loading', 'Fetching all titles...');
 		const response = await Runtime.jsonRequest<AnilistListResponse>({
@@ -241,7 +241,7 @@ export class AnilistExport extends ExportModule {
 		super(Anilist, moduleInterface);
 	}
 
-	execute = async (titles: LocalTitle[], options: ModuleOptions): Promise<boolean> => {
+	execute = async (titles: LocalTitle[]): Promise<boolean> => {
 		const max = titles.length;
 		this.interface?.message('default', `Exporting ${max} Titles...`);
 		const progress = DOM.create('p');

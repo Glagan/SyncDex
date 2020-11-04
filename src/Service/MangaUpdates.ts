@@ -1,5 +1,5 @@
 import { DOM } from '../Core/DOM';
-import { duration, ExportModule, ImportModule, ModuleOptions } from '../Core/Module';
+import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { Runtime } from '../Core/Runtime';
 import { ActivableKey, ActivableName, LoginMethod, Service, Services } from '../Core/Service';
@@ -28,7 +28,7 @@ export class MangaUpdatesImport extends ImportModule {
 		return 0;
 	};
 
-	execute = async (options: ModuleOptions): Promise<boolean> => {
+	execute = async (): Promise<boolean> => {
 		const progress = DOM.create('p', { textContent: 'Fetching all titles...' });
 		const message = this.interface?.message('loading', [progress]);
 		const parser = new DOMParser();
@@ -89,6 +89,7 @@ export class MangaUpdatesExport extends ExportModule {
 	// Use ImportModule and get a list of FoundTitle
 	preExecute = async (titles: LocalTitle[]): Promise<boolean> => {
 		const importModule = new MangaUpdatesImport();
+		importModule.options.save = false;
 		await importModule.doExecute();
 		this.onlineList = {};
 		for (const title of importModule.found) {
@@ -97,7 +98,7 @@ export class MangaUpdatesExport extends ExportModule {
 		return true;
 	};
 
-	execute = async (titles: LocalTitle[], options: ModuleOptions): Promise<boolean> => {
+	execute = async (titles: LocalTitle[]): Promise<boolean> => {
 		const max = titles.length;
 		this.interface?.message('default', `Exporting ${max} Titles...`);
 		const progress = DOM.create('p');

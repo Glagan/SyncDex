@@ -1,5 +1,5 @@
 import { DOM } from '../Core/DOM';
-import { duration, ExportModule, ImportModule, ModuleOptions } from '../Core/Module';
+import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
@@ -119,7 +119,7 @@ export class KitsuImport extends ImportModule {
 		return included[0]; // never
 	};
 
-	execute = async (options: ModuleOptions): Promise<boolean> => {
+	execute = async (): Promise<boolean> => {
 		const progress = DOM.create('p', { textContent: 'Fetching all titles...' });
 		const message = this.interface?.message('loading', [progress]);
 
@@ -231,7 +231,7 @@ export class KitsuExport extends ExportModule {
 		return true;
 	};
 
-	execute = async (titles: LocalTitle[], options: ModuleOptions): Promise<boolean> => {
+	execute = async (titles: LocalTitle[]): Promise<boolean> => {
 		const max = titles.length;
 		this.interface?.message('default', `Exporting ${max} Titles...`);
 		const progress = DOM.create('p');
