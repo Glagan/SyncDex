@@ -214,6 +214,7 @@ export class AnilistImport extends ImportModule {
 		for (const list of body.data.MediaListCollection.lists) {
 			for (const entry of list.entries) {
 				medias.push({
+					key: { id: entry.mediaId },
 					progress: {
 						chapter: entry.progress,
 						volume: entry.progressVolumes,

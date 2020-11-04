@@ -1,8 +1,9 @@
 import { Runtime } from '../Core/Runtime';
 import { ActivableKey, ActivableName, LoginMethod, Service, Services } from '../Core/Service';
 import { ModuleInterface } from '../Core/ModuleInterface';
-import { ImportModule, ModuleOptions } from '../Core/Module';
-import { ExternalTitle, ExternalTitles, FoundTitle, MissableField } from '../Core/Title';
+import { duration, ExportModule, ImportModule, ModuleOptions } from '../Core/Module';
+import { ExternalTitle, ExternalTitles, FoundTitle, LocalTitle, MissableField } from '../Core/Title';
+import { DOM } from '../Core/DOM';
 
 export const enum AnimePlanetStatus {
 	NONE = 0,
@@ -26,8 +27,128 @@ export class AnimePlanetImport extends ImportModule {
 		super(AnimePlanet, moduleInterface);
 	}
 
+	preExecute = async (): Promise<boolean> => {
+		const message = this.interface?.message('loading', 'Setting list type...');
+		const response = await Runtime.request<RawResponse>({
+			url: `https://www.anime-planet.com/users/${AnimePlanet.username}/manga/reading?sort=title&mylist_view=list`,
+			credentials: 'include',
+		});
+		message?.classList.remove('loading');
+		return response.ok;
+	};
+
 	execute = async (options: ModuleOptions): Promise<boolean | FoundTitle[]> => {
-		return false;
+		const progress = DOM.create('p', { textContent: 'Fetching all titles...' });
+		const message = this.interface?.message('loading', [progress]);
+		const parser = new DOMParser();
+		const medias: FoundTitle[] = [];
+
+		// Get each pages
+		let lastPage = false;
+		let current = 1;
+		let max = 1;
+		while (!lastPage) {
+			progress.textContent = `Fetching all titles... Page ${current} out of ${max}.`;
+			const response = await Runtime.request<RawResponse>({
+				url: `https://www.anime-planet.com/users/${AnimePlanet.username}/manga?sort=title&page=${current}`,
+				credentials: 'include',
+			});
+			if (!response.ok || typeof response.body !== 'string') {
+				message?.classList.remove('loading');
+				this.interface?.message(
+					'warning',
+					'The request failed, maybe AnimePlanet is having problems, retry later.'
+				);
+				return false;
+			}
+
+			// Find all Titles
+			const body = parser.parseFromString(response.body, 'text/html');
+			const rows = body.querySelectorAll('table.personalList tbody tr');
+			for (const row of rows) {
+				const name = row.querySelector('a.tooltip') as HTMLAnchorElement;
+				const slug = /\/manga\/(.+)/.exec(name.href);
+				if (slug) {
+					const form = row.querySelector('form[data-id]') as HTMLSelectElement;
+					const chapterSelector = row.querySelector('select[name="chapters"]') as HTMLSelectElement;
+					const volumeSelector = row.querySelector('select[name="volumes"]') as HTMLSelectElement;
+					const statusSelector = row.querySelector('select.changeStatus') as HTMLSelectElement;
+					// Score range: 0-5 with increments of 0.5
+					const score = row.querySelector('div.starrating > div[name]') as HTMLElement;
+					const status = AnimePlanetTitle.toStatus(parseInt(statusSelector.value));
+					let max: Partial<Progress> | undefined = undefined;
+					if (status == Status.COMPLETED) {
+						max = {
+							volume:
+								parseInt(
+									(volumeSelector[volumeSelector.length - 1] as HTMLOptionElement).value as string
+								) ?? undefined,
+							chapter:
+								parseInt(
+									(chapterSelector[chapterSelector.length - 1] as HTMLOptionElement).value as string
+								) ?? undefined,
+						};
+					}
+					medias.push({
+						key: {
+							id: parseInt(form.dataset.id as string),
+							slug: slug[1],
+						},
+						progress: {
+							chapter: parseInt(chapterSelector.value as string),
+							volume: parseInt(volumeSelector.value as string),
+						},
+						max: max,
+						status: status,
+						score: parseFloat(score.getAttribute('name') as string) * 20,
+						name: name.textContent as string,
+						mochi: parseInt(form.dataset.id as string),
+					});
+				}
+			}
+
+			// Check last page
+			const navigation = body.querySelector('div.pagination > ul.nav');
+			if (navigation !== null) {
+				const last = navigation.lastElementChild?.previousElementSibling;
+				if (last !== null && last !== undefined) {
+					max = parseInt(last.textContent as string);
+				}
+			}
+			lastPage = current >= max;
+			current++;
+		}
+
+		return medias;
+	};
+}
+
+export class AnimePlanetExport extends ExportModule {
+	constructor(moduleInterface?: ModuleInterface) {
+		super(AnimePlanet, moduleInterface);
+	}
+
+	execute = async (titles: LocalTitle[], options: ModuleOptions): Promise<boolean> => {
+		const max = titles.length;
+		this.interface?.message('default', `Exporting ${max} Titles...`);
+		const progress = DOM.create('p');
+		const message = this.interface?.message('loading', [progress]);
+		let average = 0;
+		for (let current = 0; !this.interface?.doStop && current < max; current++) {
+			const localTitle = titles[current];
+			let currentProgress = `Exporting Title ${current}/${max} (${localTitle.name})...`;
+			if (average > 0) currentProgress += `\nEstimated time remaining: ${duration((max - current) * average)}.`;
+			progress.textContent = currentProgress;
+			const before = Date.now();
+			const title = new AnimePlanetTitle({ ...localTitle, key: localTitle.services[ActivableKey.AnimePlanet] });
+			const response = await title.persist();
+			if (average == 0) average = Date.now() - before;
+			else average = (average + (Date.now() - before)) / 2;
+			if (response) this.summary.valid++;
+			else this.summary.failed.push(localTitle.name ?? `#${localTitle.key.id}`);
+		}
+		message?.classList.remove('loading');
+		return this.interface ? !this.interface.doStop : true;
 	};
 }
 
@@ -111,7 +232,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 			};
 			console.debug(values.max);
 		}
-		// No need to be logged in to have api ID
+		// No need to be logged in to have API ID
 		const mediaEntryForm = body.querySelector<HTMLFormElement>('form[id^=manga]')!;
 		values.key!.id = parseInt(mediaEntryForm.dataset.id!);
 		const statusSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.changeStatus [selected]');

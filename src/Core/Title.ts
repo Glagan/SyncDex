@@ -108,6 +108,7 @@ export class StorageTitle {
 export type MissableField = 'volume' | 'score' | 'start' | 'end';
 
 export interface FoundTitle {
+	key: MediaKey;
 	name?: string;
 	mangaDex?: number;
 	status?: Status;

@@ -222,8 +222,10 @@ const scss = ['SyncDex', 'Options'];
 	const watcher = rollup.watch(bundles);
 	let doneInitial = false;
 	let duration = 0;
+	let start = 0;
 	watcher.on('event', async (event) => {
 		if (event.code == 'START') {
+			start = Date.now();
 			console.log(`Compiling Scripts`);
 			duration = 0;
 		} else if (event.code == 'BUNDLE_START') {
@@ -254,8 +256,15 @@ const scss = ['SyncDex', 'Options'];
 			}
 			const zeroPad = (n) => `00${n}`.slice(-2);
 			const now = new Date();
+			const totalDuration = (() => {
+				const duration = now.getTime() - start;
+				if (duration > 1000) return `${Math.round(duration / 1000)}s`;
+				return `${duration}ms`;
+			})();
 			console.log(
-				`Done at ${zeroPad(now.getHours())}h${zeroPad(now.getMinutes())}min${zeroPad(now.getSeconds())}s`
+				`Done at ${zeroPad(now.getHours())}h${zeroPad(now.getMinutes())}min${zeroPad(
+					now.getSeconds()
+				)}s in ${totalDuration}`
 			);
 			if (!doneInitial) {
 				if (!options.watch) {
