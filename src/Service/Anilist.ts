@@ -207,6 +207,7 @@ export class AnilistImport extends ImportModule {
 			this.interface?.message('warning', 'Bad Request, check if your token is valid.');
 			return false;
 		}
+		if (this.interface?.doStop) return false;
 
 		// Transform to array
 		const body = response.body;
@@ -231,7 +232,6 @@ export class AnilistImport extends ImportModule {
 				});
 			}
 		}
-
 		return true;
 	};
 }

@@ -34,19 +34,18 @@ export class MangaUpdatesImport extends ImportModule {
 		const parser = new DOMParser();
 
 		// Get each pages
-		let lastPage = false;
-		let current = 0;
 		let max = MangaUpdatesImport.lists.length;
-		while (!lastPage) {
+		for (let current = 0; !this.interface?.doStop && current < max; current++) {
+			const page = MangaUpdatesImport.lists[current];
 			progress.textContent = `Fetching all titles... Page ${current + 1} out of ${max}.`;
 			const response = await Runtime.request<RawResponse>({
-				url: `https://www.mangaupdates.com/mylist.html?list=${MangaUpdatesImport.lists[current]}`,
+				url: `https://www.mangaupdates.com/mylist.html?list=${page}`,
 				credentials: 'include',
 			});
 			if (response.ok && response.body.indexOf('You must be a user to access this page.') < 0) {
 				const body = parser.parseFromString(response.body, 'text/html');
 				const rows = body.querySelectorAll(`div[id^='r']`);
-				const status = MangaUpdatesTitle.listToStatus(MangaUpdatesImport.lists[current]);
+				const status = MangaUpdatesTitle.listToStatus(page);
 				for (const row of rows) {
 					const scoreLink = row.querySelector(`a[title='Update Rating']`);
 					let score: number | undefined;
@@ -69,12 +68,10 @@ export class MangaUpdatesImport extends ImportModule {
 					});
 				}
 			}
-			lastPage = current >= max;
-			current++;
 		}
 		message?.classList.remove('loading');
 
-		return true;
+		return this.interface ? !this.interface.doStop : true;
 	};
 }
 
@@ -145,7 +142,7 @@ export class MangaUpdates extends Service {
 	static importModule = (moduleInterface?: ModuleInterface) => new MangaUpdatesImport(moduleInterface);
 	static exportModule = (moduleInterface?: ModuleInterface) => new MangaUpdatesExport(moduleInterface);
 
-	loggedIn = async (): Promise<RequestStatus> => {
+	static loggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: 'https://www.mangaupdates.com/aboutus.html',
 			credentials: 'include',

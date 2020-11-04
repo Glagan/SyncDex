@@ -203,7 +203,7 @@ export class KitsuExport extends ExportModule {
 	preExecute = async (titles: LocalTitle[]): Promise<boolean> => {
 		const message = this.interface?.message('loading', 'Checking current status of each titles...');
 		let max = Math.ceil(titles.length / 500);
-		for (let current = 1; current <= max; current++) {
+		for (let current = 1; !this.interface?.doStop && current <= max; current++) {
 			const ids = titles.slice((current - 1) * 500, current * 500).map((title) => title.services.ku!.id!);
 			const response = await Runtime.jsonRequest<KitsuResponse>({
 				url: `${KitsuAPI}
@@ -228,7 +228,7 @@ export class KitsuExport extends ExportModule {
 			}
 		}
 		message?.classList.remove('loading');
-		return true;
+		return this.interface ? !this.interface.doStop : true;
 	};
 
 	execute = async (titles: LocalTitle[]): Promise<boolean> => {
@@ -271,7 +271,7 @@ export class Kitsu extends Service {
 	static importModule = (moduleInterface?: ModuleInterface) => new KitsuImport(moduleInterface);
 	static exportModule = (moduleInterface?: ModuleInterface) => new KitsuExport(moduleInterface);
 
-	getUserId = async (): Promise<RequestStatus> => {
+	static getUserId = async (): Promise<RequestStatus> => {
 		if (Options.tokens.kitsuToken === undefined) return RequestStatus.MISSING_TOKEN;
 		let response = await Runtime.jsonRequest<KitsuUserResponse>({
 			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
@@ -283,7 +283,7 @@ export class Kitsu extends Service {
 		return RequestStatus.SUCCESS;
 	};
 
-	loggedIn = async (): Promise<RequestStatus> => {
+	static loggedIn = async (): Promise<RequestStatus> => {
 		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<KitsuUserResponse>({
 			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
@@ -295,7 +295,7 @@ export class Kitsu extends Service {
 		return Runtime.responseStatus(response);
 	};
 
-	login = async (username: string, password: string): Promise<RequestStatus> => {
+	static login = async (username: string, password: string): Promise<RequestStatus> => {
 		let response = await Runtime.jsonRequest({
 			url: 'https://kitsu.io/api/oauth/token',
 			method: 'POST',
@@ -309,12 +309,12 @@ export class Kitsu extends Service {
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		Options.tokens.kitsuToken = response.body.access_token;
-		const userIdResp = await this.getUserId();
+		const userIdResp = await Kitsu.getUserId();
 		if (userIdResp !== RequestStatus.SUCCESS) return userIdResp;
 		return RequestStatus.SUCCESS;
 	};
 
-	logout = async (): Promise<void> => {
+	static logout = async (): Promise<void> => {
 		delete Options.tokens.kitsuToken;
 		delete Options.tokens.kitsuUser;
 	};

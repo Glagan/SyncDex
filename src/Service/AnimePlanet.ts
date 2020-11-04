@@ -50,7 +50,7 @@ export class AnimePlanetImport extends ImportModule {
 		let lastPage = false;
 		let current = 1;
 		let max = 1;
-		while (!lastPage) {
+		while (!this.interface?.doStop && !lastPage) {
 			progress.textContent = `Fetching all titles... Page ${current} out of ${max}.`;
 			const response = await Runtime.request<RawResponse>({
 				url: `https://www.anime-planet.com/users/${AnimePlanet.username}/manga?sort=title&page=${current}`,
@@ -123,7 +123,7 @@ export class AnimePlanetImport extends ImportModule {
 		}
 		message?.classList.remove('loading');
 
-		return true;
+		return this.interface ? !this.interface.doStop : true;
 	};
 }
 
