@@ -182,7 +182,7 @@ export class AnilistImport extends ImportModule {
 		return true;
 	};
 
-	execute = async (options: ModuleOptions): Promise<boolean | FoundTitle[]> => {
+	execute = async (options: ModuleOptions): Promise<boolean> => {
 		// Get list of *all* titles
 		const message = this.interface?.message('loading', 'Fetching all titles...');
 		const response = await Runtime.jsonRequest<AnilistListResponse>({
@@ -207,12 +207,12 @@ export class AnilistImport extends ImportModule {
 			this.interface?.message('warning', 'Bad Request, check if your token is valid.');
 			return false;
 		}
+
 		// Transform to array
-		const medias: FoundTitle[] = [];
 		const body = response.body;
 		for (const list of body.data.MediaListCollection.lists) {
 			for (const entry of list.entries) {
-				medias.push({
+				this.found.push({
 					key: { id: entry.mediaId },
 					progress: {
 						chapter: entry.progress,
@@ -231,9 +231,8 @@ export class AnilistImport extends ImportModule {
 				});
 			}
 		}
-		this.interface?.message('default', `Found ${medias.length} Titles on Anilist.`);
 
-		return medias;
+		return true;
 	};
 }
 

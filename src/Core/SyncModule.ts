@@ -103,7 +103,7 @@ export class SyncModule {
 					doSave = true;
 				}
 				// Finish retrieving the ID if required -- AnimePlanet has 2 fields
-				if ((<typeof ExternalTitle>response.constructor).requireIdQuery) {
+				if ((<typeof ExternalTitle>response.constructor).updateKeyOnFirstFetch) {
 					this.title.services[key] = response.key;
 					doSave = true;
 				}

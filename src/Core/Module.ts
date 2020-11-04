@@ -97,13 +97,16 @@ export abstract class Module {
 }
 
 export abstract class ImportModule extends Module {
+	found: FoundTitle[] = [];
+
 	async preExecute?(): Promise<boolean>;
-	abstract async execute(options: ModuleOptions): Promise<boolean | FoundTitle[]>;
+	abstract async execute(options: ModuleOptions): Promise<boolean>;
 	async postExecute?(): Promise<void>;
 
 	doExecute = async (): Promise<void> => {
 		// Reset
 		this.summary = new Summary();
+		this.found = [];
 
 		// Check login status
 		if (this.requireLogin && (await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
@@ -123,11 +126,12 @@ export abstract class ImportModule extends Module {
 		}
 
 		// Execute
-		const medias: FoundTitle[] | boolean = await this.execute(options);
-		if (typeof medias === 'boolean') {
+		const result: boolean = await this.execute(options);
+		if (!result) {
 			this.interface?.complete();
 			return;
 		}
+		this.interface?.message('default', `Found ${this.found.length} Titles on ${this.service.name}.`);
 
 		// Find MangaDex ID for all FoundTitle
 		const titles: TitleCollection = await TitleCollection.get();
@@ -136,7 +140,7 @@ export abstract class ImportModule extends Module {
 		const notification = this.interface?.message('loading', [progress]);
 		const max = Math.ceil(this.summary.total / this.perConvert);
 		for (let i = 0; !this.interface?.doStop && i < max; i++) {
-			const titleList = medias.slice(current, current + this.perConvert);
+			const titleList = this.found.slice(current, current + this.perConvert);
 			current += this.perConvert;
 			progress.textContent = `Converting title ${Math.min(max, current + this.perConvert)} out of ${max}.`;
 			const connections = await Mochi.findMany(
@@ -162,6 +166,9 @@ export abstract class ImportModule extends Module {
 			this.summary.failed.push(...noIds.filter((t) => t.name !== undefined).map((t) => t.name as string));
 		}
 		notification?.classList.remove('loading');
+
+		// TODO: Check Merge option
+		// TODO: Save TitleCollection
 
 		if (this.postExecute) await this.postExecute();
 	};

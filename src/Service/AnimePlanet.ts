@@ -41,11 +41,10 @@ export class AnimePlanetImport extends ImportModule {
 		return response.ok;
 	};
 
-	execute = async (options: ModuleOptions): Promise<boolean | FoundTitle[]> => {
+	execute = async (options: ModuleOptions): Promise<boolean> => {
 		const progress = DOM.create('p', { textContent: 'Fetching all titles...' });
 		const message = this.interface?.message('loading', [progress]);
 		const parser = new DOMParser();
-		const medias: FoundTitle[] = [];
 
 		// Get each pages
 		let lastPage = false;
@@ -93,7 +92,7 @@ export class AnimePlanetImport extends ImportModule {
 								) ?? undefined,
 						};
 					}
-					medias.push({
+					this.found.push({
 						key: {
 							id: parseInt(form.dataset.id as string),
 							slug: slug[1],
@@ -123,9 +122,8 @@ export class AnimePlanetImport extends ImportModule {
 			current++;
 		}
 		message?.classList.remove('loading');
-		this.interface?.message('default', `Found ${medias.length} Titles on AnimePlanet.`);
 
-		return medias;
+		return true;
 	};
 }
 

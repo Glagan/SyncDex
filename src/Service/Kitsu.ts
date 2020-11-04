@@ -3,7 +3,7 @@ import { duration, ExportModule, ImportModule, ModuleOptions } from '../Core/Mod
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
-import { ActivableKey, ActivableName, Service, Services } from '../Core/Service';
+import { ActivableKey, ActivableName, LoginMethod, Service, Services } from '../Core/Service';
 import { ExternalTitle, ExternalTitles, FoundTitle, LocalTitle } from '../Core/Title';
 
 interface KitsuHeaders {
@@ -119,10 +119,9 @@ export class KitsuImport extends ImportModule {
 		return included[0]; // never
 	};
 
-	execute = async (options: ModuleOptions): Promise<boolean | FoundTitle[]> => {
+	execute = async (options: ModuleOptions): Promise<boolean> => {
 		const progress = DOM.create('p', { textContent: 'Fetching all titles...' });
 		const message = this.interface?.message('loading', [progress]);
-		const medias: FoundTitle[] = [];
 
 		// Get each pages
 		let lastPage = false;
@@ -180,7 +179,7 @@ export class KitsuImport extends ImportModule {
 						volume: manga.attributes.volumeCount,
 					};
 				}
-				medias.push(foundTitle);
+				this.found.push(foundTitle);
 			}
 
 			// We get 500 entries per page
@@ -189,9 +188,8 @@ export class KitsuImport extends ImportModule {
 			current++;
 		}
 		message?.classList.remove('loading');
-		this.interface?.message('default', `Found ${medias.length} Titles on Kitsu.`);
 
-		return medias;
+		return true;
 	};
 }
 
@@ -267,6 +265,8 @@ export class KitsuExport extends ExportModule {
 export class Kitsu extends Service {
 	static readonly serviceName: ActivableName = ActivableName.Kitsu;
 	static readonly serviceKey: ActivableKey = ActivableKey.Kitsu;
+
+	static loginMethod: LoginMethod = LoginMethod.FORM;
 
 	static importModule = (moduleInterface?: ModuleInterface) => new KitsuImport(moduleInterface);
 	static exportModule = (moduleInterface?: ModuleInterface) => new KitsuExport(moduleInterface);

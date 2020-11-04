@@ -560,7 +560,7 @@ export class LocalTitle extends Title {
 
 export abstract class ExternalTitle extends Title {
 	static readonly service: typeof Service = Service;
-	static readonly requireIdQuery: boolean = false;
+	static readonly updateKeyOnFirstFetch: boolean = false;
 
 	static idFromLink = (href: string): MediaKey => {
 		throw 'ExternalTitle.idFromLink is an abstract function';
