@@ -60,6 +60,7 @@ export abstract class Service {
 
 	static readonly loginMethod: LoginMethod;
 	static readonly loginUrl?: string;
+	static readonly identifierField: [string, string] = ['Email', 'email'];
 
 	static loggedIn = async (): Promise<RequestStatus> => {
 		throw 'Service.loggedIn is an abstract function';

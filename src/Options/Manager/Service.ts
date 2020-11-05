@@ -17,10 +17,9 @@ class ServiceCard {
 	activateButton: HTMLButtonElement;
 	mainMessage: HTMLElement;
 	mainButton: HTMLButtonElement;
-	checkStatusButton: HTMLElement;
+	checkStatusButton: HTMLButtonElement;
 	loginButton: HTMLAnchorElement;
 	removeButton: HTMLElement;
-	identifierField: [string, string] = ['Email', 'email'];
 
 	message(type: MessageType, content: string, append: boolean = true): HTMLElement {
 		const message = DOM.create('div', {
@@ -36,7 +35,6 @@ class ServiceCard {
 	}
 
 	createCard(): HTMLElement {
-		console.log('title', this.service.createTitle());
 		return DOM.create('div', {
 			class: 'scs card',
 			childs: [
@@ -84,17 +82,21 @@ class ServiceCard {
 		this.removeButton = DOM.create('button', {
 			childs: [DOM.icon('trash'), DOM.text('Remove')],
 		});
+		this.bind();
 	}
 
 	loading = (): void => {
 		DOM.clear(this.activeCardContent);
-		DOM.append(this.activeCardContent, this.loadingMessage);
+		if (Options.mainService == this.service.key) {
+			DOM.append(this.activeCardContent, this.mainMessage);
+		}
+		DOM.append(this.activeCardContent, this.loadingMessage, this.removeButton);
 	};
 
-	activate = (main: boolean): void => {
+	activate = (): void => {
 		this.activeCard.classList.add('active');
 		DOM.clear(this.activeCardContent);
-		if (main) {
+		if (Options.mainService == this.service.key) {
 			DOM.append(this.activeCardContent, this.mainMessage);
 		} else {
 			DOM.append(this.activeCardContent, this.mainButton);
@@ -112,6 +114,15 @@ class ServiceCard {
 		this.activeCard.classList.remove('active');
 		DOM.clear(this.activeCardContent);
 		DOM.append(this.activeCardContent, this.activateButton);
+	};
+
+	makeMain = (): void => {
+		this.manager.mainService = this.service;
+		this.manager.mainCard = this;
+		this.mainButton.remove();
+		this.activeCardContent.insertBefore(this.mainMessage, this.activeCardContent.firstElementChild);
+		// Move the card to the first position
+		this.manager.activeContainer.insertBefore(this.activeCard, this.manager.activeContainer.firstElementChild);
 	};
 
 	bind = (): void => {
@@ -135,30 +146,27 @@ class ServiceCard {
 				);
 			}
 			SaveOptions();
-			this.manager.reloadManager(this.service.key);
+			this.manager.reloadCard(this.service.key);
 		});
 		this.mainButton.addEventListener('click', () => {
 			// Make service the first in the list
-			const index = Options.services.indexOf(this.service.key as ActivableKey);
+			const index = Options.services.indexOf(this.service.key);
 			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
-			Options.mainService = this.service.key as ActivableKey;
+			Options.mainService = this.service.key;
 			SaveOptions();
-			// Remove main button and add the main button to the previous main
+			// Update old card
 			if (this.manager.mainService && this.manager.mainCard) {
 				const oldMainContent = this.manager.mainCard.activeCardContent;
 				oldMainContent.insertBefore(this.manager.mainCard.mainButton, oldMainContent.firstElementChild);
 				this.manager.mainCard.mainMessage.remove();
 			}
-			this.manager.mainService = this.service;
-			this.mainButton.remove();
-			this.activeCardContent.insertBefore(this.mainMessage, this.activeCardContent.firstElementChild);
-			// Move the card to the first position
-			this.manager.activeContainer.insertBefore(this.activeCard, this.manager.activeContainer.firstElementChild);
+			this.makeMain();
 		});
 		let busy = false;
 		this.checkStatusButton.addEventListener('click', async () => {
 			if (!busy) {
 				busy = true;
+				this.checkStatusButton.disabled = true;
 				this.loginButton.remove();
 				this.activeCardContent.insertBefore(this.loadingMessage, this.statusMessage);
 				this.statusMessage.remove();
@@ -167,6 +175,7 @@ class ServiceCard {
 					await Options.reloadTokens();
 				}
 				const status = await this.service.loggedIn();
+				this.checkStatusButton.disabled = false;
 				this.updateStatus(status);
 				this.loadingMessage.remove();
 				busy = false;
@@ -174,7 +183,7 @@ class ServiceCard {
 		});
 		this.removeButton.addEventListener('click', async () => {
 			// Remove service from Service list and assign new main if possible
-			const index = Options.services.indexOf(this.service.key as ActivableKey);
+			const index = Options.services.indexOf(this.service.key);
 			if (index > -1) {
 				Options.services.splice(index, 1);
 				if (Options.mainService == this.service.key) {
@@ -187,7 +196,7 @@ class ServiceCard {
 			}
 			SaveOptions();
 			// Disable card
-			this.manager.removeActiveService(this.service.key as ActivableKey);
+			this.manager.removeActiveService(this.service.key);
 			this.desactivate();
 			// Move service card after the active cards
 			while (
@@ -201,9 +210,7 @@ class ServiceCard {
 			}
 			// Set the new main
 			if (Options.mainService) {
-				this.manager.mainService = Services[Options.mainService];
-				this.manager.mainCard = this.manager.cards[Options.mainService];
-				this.manager.mainCard.mainButton.classList.add('hidden');
+				this.manager.cards[Options.mainService].makeMain();
 			} else {
 				this.manager.mainService = undefined;
 				this.manager.mainCard = undefined;
@@ -239,11 +246,11 @@ class ServiceCard {
 						DOM.create('div', {
 							class: 'row-parameter',
 							childs: [
-								DOM.create('label', { textContent: this.identifierField[0] }),
+								DOM.create('label', { textContent: this.service.identifierField[0] }),
 								DOM.create('input', {
-									type: this.identifierField[1],
+									type: this.service.identifierField[1],
 									name: 'identifier',
-									placeholder: this.identifierField[0],
+									placeholder: this.service.identifierField[0],
 									required: true,
 								}),
 								DOM.create('label', { textContent: 'Password' }),
@@ -283,16 +290,15 @@ class ServiceCard {
 						modal.enableExit();
 						modal.wrapper.classList.remove('loading');
 						if (res == RequestStatus.SUCCESS) {
+							SaveOptions();
 							SimpleNotification.success({ text: `Logged in on **${this.service.serviceName}** !` });
 							this.loginButton.remove();
 							this.updateStatus(res);
 							modal.remove();
 							return;
 						} else if (identifier == '' || password == '') {
-							SimpleNotification.error({ text: 'Empty e-mail or password.' });
-						} else {
-							SimpleNotification.error({ text: 'Invalid credentials.' });
-						}
+							SimpleNotification.error({ text: `Empty ${this.service.identifierField[0]} or password.` });
+						} else SimpleNotification.error({ text: 'Invalid credentials.' });
 						busy = false;
 					}
 				});
@@ -310,17 +316,20 @@ class ServiceCard {
 	};
 
 	updateStatus = (status: RequestStatus): void => {
-		this.activate(Options.mainService == this.service.key);
-		if (status == RequestStatus.SUCCESS) {
-			this.statusMessage.className = 'message success';
-			this.statusMessageContent.textContent = 'Active';
-			this.loginButton.remove();
-		} else {
-			this.statusMessage.className = 'message warning';
-			this.statusMessageContent.textContent = 'Inactive';
-			this.activeCardContent.insertBefore(this.loginButton, this.checkStatusButton);
+		// Avoid updating card if the Service has been removed while updating status
+		if (this.activeCard.classList.contains('active')) {
+			this.activate();
+			if (status == RequestStatus.SUCCESS) {
+				this.statusMessage.className = 'message success';
+				this.statusMessageContent.textContent = 'Active';
+				this.loginButton.remove();
+			} else {
+				this.statusMessage.className = 'message warning';
+				this.statusMessageContent.textContent = 'Inactive';
+				this.activeCardContent.insertBefore(this.loginButton, this.checkStatusButton);
+			}
+			this.manager.updateServiceStatus(this.service.key, status);
 		}
-		this.manager.updateServiceStatus(this.service.key as ActivableKey, status);
 	};
 }
 
@@ -342,58 +351,13 @@ export class ServiceManager {
 		this.inactiveWarning = document.getElementById('inactive-service')!;
 		// Create Services and bind them
 		for (const key of Object.values(ActivableKey)) {
-			console.log('added', key);
 			const card = new ServiceCard(this, Services[key]);
 			this.activeContainer.appendChild(card.activeCard);
-			if (Options.mainService == key) {
-				this.mainService = Services[key];
-				this.mainCard = card;
-			}
 			this.cards[key] = card;
 		}
-		console.log('cards', this.cards);
 		// Default State
 		this.refreshActive();
 	}
-
-	/**
-	 * Activate or desactivate all buttons in a Service card.
-	 * Check if the user is logged in on the Service and calls updateStatus to display warnings.
-	 */
-	reloadManager = async (key: ActivableKey): Promise<void> => {
-		const card = this.cards[key];
-		const index = Options.services.indexOf(key as ActivableKey);
-		if (Options.mainService == key) {
-			this.mainService = Services[key];
-			this.mainCard = card;
-			this.activeContainer.insertBefore(this.mainCard.activeCard, this.activeContainer.firstElementChild);
-			this.mainCard.activeCard.classList.add('active');
-			this.addActiveService(key);
-		} else if (index >= 0) {
-			// Insert as the *index* child to follow the Options order
-			const activeCards = this.activeContainer.querySelectorAll('.card.active');
-			const length = activeCards.length;
-			if (length == 0) {
-				this.activeContainer.insertBefore(card.activeCard, this.activeContainer.firstElementChild);
-			} else if (index >= length) {
-				this.activeContainer.insertBefore(card.activeCard, activeCards[length - 1].nextElementSibling);
-			} else if (index < length) {
-				this.activeContainer.insertBefore(card.activeCard, activeCards[index]);
-			}
-			card.activeCard.classList.add('active');
-			this.addActiveService(key as ActivableKey);
-		} else {
-			this.activeContainer.appendChild(card.activeCard);
-		}
-		// Update displayed state (buttons)
-		if (index >= 0) {
-			card.loading();
-			const status = await Services[key].loggedIn();
-			card.updateStatus(status);
-		} else {
-			card.desactivate();
-		}
-	};
 
 	/**
 	 * Update the inactiveServices list and display warnings if the status isn't SUCCESS
@@ -448,18 +412,63 @@ export class ServiceManager {
 	refreshActive = (): void => {
 		// Remove previous
 		DOM.clear(this.activeContainer);
+		this.mainService = undefined;
+		this.mainCard = undefined;
 		this.activeServices = [];
 		this.inactiveServices = [];
 		this.noServices.classList.add('hidden');
 		this.inactiveWarning.classList.add('hidden');
-		// Insert all Services card
+		// Reload all Service cards
 		for (const key of Object.values(ActivableKey)) {
-			this.reloadManager(key);
+			this.reloadCard(key);
+			if (Options.mainService == key) {
+				this.mainService = Services[key];
+				this.mainCard = this.cards[key];
+			}
 		}
 		if (this.activeServices.length == 0) {
 			this.noServices.classList.remove('hidden');
 		} else {
 			this.noServices.classList.add('hidden');
+		}
+	};
+
+	/**
+	 * Activate or desactivate all buttons in a Service card.
+	 * Check if the user is logged in on the Service and calls updateStatus to display warnings.
+	 */
+	reloadCard = async (key: ActivableKey): Promise<void> => {
+		const card = this.cards[key];
+		const index = Options.services.indexOf(key);
+		if (Options.mainService == key) {
+			this.mainService = Services[key];
+			this.mainCard = card;
+			this.activeContainer.insertBefore(this.mainCard.activeCard, this.activeContainer.firstElementChild);
+			this.mainCard.activeCard.classList.add('active');
+			this.addActiveService(key);
+		} else if (index >= 0) {
+			// Insert as the *index* child to follow the Options order
+			const activeCards = this.activeContainer.querySelectorAll('.card.active');
+			const length = activeCards.length;
+			if (length == 0) {
+				this.activeContainer.insertBefore(card.activeCard, this.activeContainer.firstElementChild);
+			} else if (index >= length) {
+				this.activeContainer.insertBefore(card.activeCard, activeCards[length - 1].nextElementSibling);
+			} else if (index < length) {
+				this.activeContainer.insertBefore(card.activeCard, activeCards[index]);
+			}
+			card.activeCard.classList.add('active');
+			this.addActiveService(key);
+		} else {
+			this.activeContainer.appendChild(card.activeCard);
+		}
+		// Update displayed state (buttons)
+		if (index >= 0) {
+			card.loading();
+			const status = await Services[key].loggedIn();
+			card.updateStatus(status);
+		} else {
+			card.desactivate();
 		}
 	};
 }

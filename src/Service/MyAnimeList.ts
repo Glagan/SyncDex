@@ -290,7 +290,6 @@ export class MyAnimeListTitle extends ExternalTitle {
 	static service = MyAnimeList;
 
 	csrf: string = '';
-
 	additional: {
 		tags: string;
 		priority: string;

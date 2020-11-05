@@ -33,6 +33,23 @@
 		}
 
 		// Styles
+		&,
+		&.default {
+			color: $grey-90;
+			background-color: $grey-90-a10;
+		}
+		&:hover,
+		&.default:hover {
+			background-color: $grey-90-a20;
+		}
+		&:active,
+		&.default:active {
+			background-color: $grey-90-a30;
+		}
+		&:focus,
+		&.default:focus {
+			box-shadow: $focus;
+		}
 		&.ghost {
 			color: $grey-90-a30;
 			background: transparent;
@@ -61,19 +78,6 @@
 			background-color: $blue-80;
 		}
 		&.primary:focus {
-			box-shadow: $focus;
-		}
-		&.default {
-			color: $grey-90;
-			background-color: $grey-90-a10;
-		}
-		&.default:hover {
-			background-color: $grey-90-a20;
-		}
-		&.default:active {
-			background-color: $grey-90-a30;
-		}
-		&.default:focus {
 			box-shadow: $focus;
 		}
 		&.danger {

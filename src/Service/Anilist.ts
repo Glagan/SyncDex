@@ -311,8 +311,6 @@ export class Anilist extends Service {
 export class AnilistTitle extends ExternalTitle {
 	static service = Anilist;
 
-	mediaEntryId: number = 0;
-
 	static readonly getQuery = `
 		query ($mediaId: Int) {
 			Media(id: $mediaId) {
@@ -369,6 +367,8 @@ export class AnilistTitle extends ExternalTitle {
 				deleted
 			}
 		}`.replace(/\n\t+/g, ' ');
+
+	mediaEntryId: number = 0;
 
 	static dateFromAnilist = (date: AnilistDate): Date | undefined => {
 		if (date.day !== null && date.month !== null && date.year !== null) {

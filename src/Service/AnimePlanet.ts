@@ -162,7 +162,7 @@ export class AnimePlanetExport extends ExportModule {
 
 export class AnimePlanet extends Service {
 	static readonly serviceName = ActivableName.AnimePlanet;
-	static readonly serviceKey = ActivableKey.AnimePlanet;
+	static readonly key = ActivableKey.AnimePlanet;
 
 	static readonly usesSlug = true;
 	static readonly missingFields: MissableField[] = ['volume', 'start', 'end'];
@@ -201,8 +201,7 @@ export class AnimePlanet extends Service {
 }
 
 export class AnimePlanetTitle extends ExternalTitle {
-	static readonly serviceName = ActivableName.AnimePlanet;
-	static readonly key = ActivableKey.AnimePlanet;
+	static service = AnimePlanet;
 	static readonly requireIdQuery: boolean = true;
 
 	token: string = '';

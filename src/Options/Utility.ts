@@ -2,7 +2,6 @@ import { Options } from '../Core/Options';
 import { OptionsManager } from './OptionsManager';
 
 let savingNotification: SimpleNotification;
-
 export async function SaveOptions(): Promise<void> {
 	if (savingNotification) savingNotification.remove();
 	await Options.save();
