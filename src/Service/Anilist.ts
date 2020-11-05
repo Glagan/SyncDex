@@ -1,7 +1,7 @@
 import { Runtime } from '../Core/Runtime';
-import { ExternalTitle, ExternalTitles, LocalTitle } from '../Core/Title';
+import { ExternalTitle, LocalTitle } from '../Core/Title';
 import { Options } from '../Core/Options';
-import { ActivableKey, ActivableName, Service, Services } from '../Core/Service';
+import { ActivableKey, ActivableName, Service } from '../Core/Service';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { AppendableElement, DOM } from '../Core/DOM';
@@ -267,7 +267,7 @@ export class AnilistExport extends ExportModule {
 
 export class Anilist extends Service {
 	static readonly serviceName: ActivableName = ActivableName.Anilist;
-	static readonly serviceKey: ActivableKey = ActivableKey.Anilist;
+	static readonly key: ActivableKey = ActivableKey.Anilist;
 
 	static loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	static loginUrl: string = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
@@ -307,8 +307,6 @@ export class Anilist extends Service {
 		});
 	}
 }
-
-Services[ActivableKey.Anilist] = Anilist;
 
 export class AnilistTitle extends ExternalTitle {
 	static service = Anilist;
@@ -522,5 +520,3 @@ export class AnilistTitle extends ExternalTitle {
 		return this.key.id!;
 	}
 }
-
-ExternalTitles[ActivableKey.Anilist] = AnilistTitle;

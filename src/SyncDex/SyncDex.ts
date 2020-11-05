@@ -1,7 +1,7 @@
 import { Router } from './Router';
 import { Options } from '../Core/Options';
 import { DOM } from '../Core/DOM';
-import { TitleCollection, StatusMap, iconToService, LocalTitle, ExternalTitles } from '../Core/Title';
+import { TitleCollection, StatusMap, iconToService, LocalTitle } from '../Core/Title';
 import { TitleOverview, ReadingOverview } from './Overview';
 import { Mochi } from '../Core/Mochi';
 import { injectScript, stringToProgress } from '../Core/Utility';
@@ -12,7 +12,9 @@ import { UpdateGroup } from './UpdateGroup';
 import { TitleChapterGroup } from './TitleChapterGroup';
 import { History } from './History';
 import { ChapterRow } from './ChapterRow';
-import { ActivableKey, Service, Services } from '../Core/Service';
+import { ActivableKey, Service } from '../Core/Service';
+import { ExternalTitles } from '../Core/ExternalTitles';
+import { Services } from '../Core/Services';
 
 interface ReadingState {
 	syncModule?: SyncModule;
@@ -571,7 +573,7 @@ export class SyncDex {
 			for (const key of Object.values(ActivableKey)) {
 				const localService = localServices[key];
 				if (title.services[key] == undefined) continue;
-				const serviceName = Services[key].name;
+				const serviceName = Services[key].serviceName;
 				// If there is no localService add a link
 				if (localService == undefined) {
 					const link = DOM.create('li', {

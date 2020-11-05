@@ -3,7 +3,7 @@ import { ExportModule, ImportModule } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { Runtime } from '../Core/Runtime';
 import { ActivableKey, ActivableName, LoginMethod, Service } from '../Core/Service';
-import { ExternalTitle, ExternalTitles, FoundTitle, LocalTitle } from '../Core/Title';
+import { ExternalTitle, FoundTitle, LocalTitle } from '../Core/Title';
 import { dateFormatInput } from '../Core/Utility';
 
 export enum MyAnimeListStatus {
@@ -250,7 +250,7 @@ export class MyAnimeListExport extends ExportModule {
 
 export class MyAnimeList extends Service {
 	static readonly serviceName: ActivableName = ActivableName.MyAnimeList;
-	static readonly serviceKey: ActivableKey = ActivableKey.MyAnimeList;
+	static readonly key: ActivableKey = ActivableKey.MyAnimeList;
 
 	static loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	static loginUrl: string = 'https://myanimelist.net/login.php';
@@ -522,5 +522,3 @@ export class MyAnimeListTitle extends ExternalTitle {
 		return this.key.id!;
 	}
 }
-
-ExternalTitles[ActivableKey.MyAnimeList] = MyAnimeListTitle;

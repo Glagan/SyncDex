@@ -2,8 +2,8 @@ import { DOM } from '../Core/DOM';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { Runtime } from '../Core/Runtime';
-import { ActivableKey, ActivableName, LoginMethod, Service, Services } from '../Core/Service';
-import { MissableField, ExternalTitle, ExternalTitles, FoundTitle, LocalTitle } from '../Core/Title';
+import { ActivableKey, ActivableName, LoginMethod, Service } from '../Core/Service';
+import { MissableField, ExternalTitle, FoundTitle, LocalTitle } from '../Core/Title';
 
 export const enum MangaUpdatesStatus {
 	NONE = -1,
@@ -134,7 +134,7 @@ export class MangaUpdatesExport extends ExportModule {
 
 export class MangaUpdates extends Service {
 	static readonly serviceName: ActivableName = ActivableName.MangaUpdates;
-	static readonly serviceKey: ActivableKey = ActivableKey.MangaUpdates;
+	static readonly key: ActivableKey = ActivableKey.MangaUpdates;
 
 	static loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	static loginUrl: string = 'https://www.mangaupdates.com/login.html';
@@ -156,8 +156,6 @@ export class MangaUpdates extends Service {
 		return `https://www.mangaupdates.com/series.html?id=${key.id}`;
 	}
 }
-
-Services[ActivableKey.MangaUpdates] = MangaUpdates;
 
 export class MangaUpdatesTitle extends ExternalTitle {
 	static service = MangaUpdates;
@@ -391,5 +389,3 @@ export class MangaUpdatesTitle extends ExternalTitle {
 		return this.key.id!;
 	}
 }
-
-ExternalTitles[ActivableKey.MangaUpdates] = MangaUpdatesTitle;

@@ -559,7 +559,7 @@ export class LocalTitle extends Title {
 }
 
 export abstract class ExternalTitle extends Title {
-	static readonly service: typeof Service = Service;
+	static readonly service: typeof Service;
 	static readonly updateKeyOnFirstFetch: boolean = false;
 
 	static idFromLink = (href: string): MediaKey => {
@@ -580,8 +580,6 @@ export abstract class ExternalTitle extends Title {
 	 */
 	abstract get mochi(): number | string;
 }
-
-export const ExternalTitles = {} as { [key in ActivableKey]: typeof ExternalTitle };
 
 export class TitleCollection {
 	collection: LocalTitle[] = [];

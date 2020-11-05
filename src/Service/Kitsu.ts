@@ -3,8 +3,8 @@ import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
-import { ActivableKey, ActivableName, LoginMethod, Service, Services } from '../Core/Service';
-import { ExternalTitle, ExternalTitles, FoundTitle, LocalTitle } from '../Core/Title';
+import { ActivableKey, ActivableName, LoginMethod, Service } from '../Core/Service';
+import { ExternalTitle, FoundTitle, LocalTitle } from '../Core/Title';
 
 interface KitsuHeaders {
 	Accept: string;
@@ -264,7 +264,7 @@ export class KitsuExport extends ExportModule {
 
 export class Kitsu extends Service {
 	static readonly serviceName: ActivableName = ActivableName.Kitsu;
-	static readonly serviceKey: ActivableKey = ActivableKey.Kitsu;
+	static readonly key: ActivableKey = ActivableKey.Kitsu;
 
 	static loginMethod: LoginMethod = LoginMethod.FORM;
 
@@ -323,8 +323,6 @@ export class Kitsu extends Service {
 		return `https://kitsu.io/manga/${key.id}`;
 	}
 }
-
-Services[ActivableKey.Kitsu] = Kitsu;
 
 export class KitsuTitle extends ExternalTitle {
 	static service = Kitsu;
@@ -473,5 +471,3 @@ export class KitsuTitle extends ExternalTitle {
 		return this.key.id!;
 	}
 }
-
-ExternalTitles[ActivableKey.Kitsu] = KitsuTitle;

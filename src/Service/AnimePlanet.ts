@@ -1,8 +1,8 @@
 import { Runtime } from '../Core/Runtime';
-import { ActivableKey, ActivableName, LoginMethod, Service, Services } from '../Core/Service';
+import { ActivableKey, ActivableName, LoginMethod, Service } from '../Core/Service';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
-import { ExternalTitle, ExternalTitles, LocalTitle, MissableField } from '../Core/Title';
+import { ExternalTitle, LocalTitle, MissableField } from '../Core/Title';
 import { DOM } from '../Core/DOM';
 
 export const enum AnimePlanetStatus {
@@ -200,11 +200,9 @@ export class AnimePlanet extends Service {
 	}
 }
 
-Services[ActivableKey.AnimePlanet] = AnimePlanet;
-
 export class AnimePlanetTitle extends ExternalTitle {
 	static readonly serviceName = ActivableName.AnimePlanet;
-	static readonly serviceKey = ActivableKey.AnimePlanet;
+	static readonly key = ActivableKey.AnimePlanet;
 	static readonly requireIdQuery: boolean = true;
 
 	token: string = '';
@@ -380,5 +378,3 @@ export class AnimePlanetTitle extends ExternalTitle {
 		return this.key.id!;
 	}
 }
-
-ExternalTitles[ActivableKey.AnimePlanet] = AnimePlanetTitle;

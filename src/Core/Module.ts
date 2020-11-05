@@ -180,7 +180,7 @@ export abstract class ImportModule extends Module {
 			this.interface?.complete();
 			return;
 		}
-		this.interface?.message('default', `Found ${this.found.length} Titles on ${this.service.name}.`);
+		this.interface?.message('default', `Found ${this.found.length} Titles on ${this.service.serviceName}.`);
 
 		// Find MangaDex ID for all FoundTitle
 		const titles: TitleCollection = await TitleCollection.get();

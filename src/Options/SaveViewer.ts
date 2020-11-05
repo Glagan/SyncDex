@@ -4,7 +4,8 @@ import { LocalStorage } from '../Core/Storage';
 import { dateFormat, progressToString } from '../Core/Utility';
 import { SaveEditor } from '../Core/SaveEditor';
 import { SyncModule } from '../Core/SyncModule';
-import { ActivableKey, Services } from '../Core/Service';
+import { ActivableKey } from '../Core/Service';
+import { Services } from '../Core/Services';
 
 interface SaveRow {
 	title: LocalTitle;

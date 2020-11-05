@@ -1,8 +1,10 @@
-import { Title, LocalTitle, ExternalTitle, StatusMap, ExternalTitles } from './Title';
+import { Title, LocalTitle, ExternalTitle, StatusMap } from './Title';
 import { Options } from './Options';
 import { Runtime } from './Runtime';
 import { Overview } from '../SyncDex/Overview';
-import { StaticKey, ActivableKey, Services } from './Service';
+import { StaticKey, ActivableKey } from './Service';
+import { ExternalTitles } from './ExternalTitles';
+import { Services } from './Services';
 
 export type SyncReport = {
 	[key in ActivableKey]?: RequestStatus | false;
@@ -272,7 +274,7 @@ export class SyncModule {
 	};
 
 	reportNotificationRow = (key: ActivableKey | StaticKey.SyncDex, status: string) => {
-		const name = key === StaticKey.SyncDex ? 'SyncDex' : Services[key].name;
+		const name = key === StaticKey.SyncDex ? 'SyncDex' : Services[key].serviceName;
 		return `![${name}|${Runtime.icon(key)}] **${name}**>*>[${status}]<`;
 	};
 

@@ -1,8 +1,6 @@
-import { AppendableElement, DOM } from './DOM';
+import { AppendableElement, DOM, MessageType } from './DOM';
 import { Modal } from './Modal';
 import { Service } from './Service';
-
-export type MessageType = 'default' | 'loading' | 'warning' | 'success' | 'error';
 
 /**
  * An Interface for a generic Module, the interface is inside a Modal.
@@ -144,16 +142,7 @@ export class ModuleInterface {
 	};
 
 	message = (type: MessageType, content: string | AppendableElement[], parent?: HTMLElement): HTMLElement => {
-		const messageContent = DOM.create('div', { class: 'content' });
-		if (typeof content === 'string') {
-			messageContent.appendChild(DOM.create('p', { textContent: content }));
-		} else {
-			DOM.append(messageContent, ...content);
-		}
-		let notification = DOM.create('div', {
-			class: `message ${type}`,
-			childs: [DOM.create('div', { class: 'icon' }), messageContent],
-		});
+		const notification = DOM.message(type, content);
 		if (parent) {
 			parent.appendChild(notification);
 		} else {

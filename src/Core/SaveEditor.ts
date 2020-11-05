@@ -5,7 +5,8 @@ import { dateFormatInput } from './Utility';
 import { Runtime } from './Runtime';
 import { Options } from './Options';
 import { SyncModule } from './SyncModule';
-import { ActivableKey, ActivableName, Service, ServiceKey, Services } from './Service';
+import { ActivableKey, ActivableName, Service, ServiceKey } from './Service';
+import { Services } from './Services';
 
 interface HistoryChapter {
 	node: HTMLElement;
@@ -415,8 +416,8 @@ export class SaveEditor {
 			} else delete title.end;
 			// Services
 			// TODO: Option to delete past Services on change, also applies when finding new ID with MangaDex or Mochi
-			for (const key in ActivableKey) {
-				this.saveServiceInput(key as ActivableKey, title, form);
+			for (const key of Object.values(ActivableKey)) {
+				this.saveServiceInput(key, title, form);
 			}
 			// Chapters
 			title.chapters = historyChapters.map((h) => h.chapter);

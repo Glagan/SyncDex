@@ -10,6 +10,8 @@ interface DOMProperties {
 	dataset: DOMStringMap;
 }
 
+export type MessageType = 'default' | 'loading' | 'warning' | 'success' | 'error';
+
 export class DOM {
 	static create<K extends keyof HTMLElementTagNameMap>(
 		tagName: K,
@@ -66,6 +68,19 @@ export class DOM {
 
 	static space(): Text {
 		return this.text('\xA0');
+	}
+
+	static message(type: MessageType, content: string | AppendableElement[]): HTMLElement {
+		const messageContent = DOM.create('div', { class: 'content' });
+		if (typeof content === 'string') {
+			messageContent.appendChild(DOM.create('p', { textContent: content }));
+		} else {
+			DOM.append(messageContent, ...content);
+		}
+		return DOM.create('div', {
+			class: `message ${type}`,
+			childs: [DOM.create('div', { class: 'icon' }), messageContent],
+		});
 	}
 
 	static icon(icon: string): HTMLElement {

@@ -81,12 +81,10 @@ export abstract class Service {
 		return '';
 	};
 	static createTitle(): AppendableElement {
-		return DOM.text((<typeof Service>this.constructor).serviceName);
+		return DOM.text(this.serviceName);
 	}
 
 	static compareId = (id1: MediaKey, id2: MediaKey): boolean => {
 		return id1.id === id2.id && id1.slug === id2.slug;
 	};
 }
-
-export const Services = {} as { [key in ActivableKey]: typeof Service };
