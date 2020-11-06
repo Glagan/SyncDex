@@ -4,6 +4,7 @@ import { Modal } from '../../Core/Modal';
 import { Options } from '../../Core/Options';
 import { ActivableKey, LoginMethod, Service } from '../../Core/Service';
 import { SaveOptions } from '../Utility';
+import { ModuleInterface } from '../../Core/ModuleInterface';
 
 class ServiceCard {
 	manager: ServiceManager;
@@ -20,6 +21,8 @@ class ServiceCard {
 	checkStatusButton: HTMLButtonElement;
 	loginButton: HTMLAnchorElement;
 	removeButton: HTMLElement;
+	importButton: HTMLButtonElement;
+	exportButton: HTMLButtonElement;
 
 	message(type: MessageType, content: string, append: boolean = true): HTMLElement {
 		const message = DOM.create('div', {
@@ -82,6 +85,13 @@ class ServiceCard {
 		this.removeButton = DOM.create('button', {
 			childs: [DOM.icon('trash'), DOM.text('Remove')],
 		});
+		// Import/Export
+		this.importButton = DOM.create('button', {
+			childs: [DOM.icon('download'), DOM.text('Import')],
+		});
+		this.exportButton = DOM.create('button', {
+			childs: [DOM.icon('upload'), DOM.text('Export')],
+		});
 		this.bind();
 	}
 
@@ -90,7 +100,14 @@ class ServiceCard {
 		if (Options.mainService == this.service.key) {
 			DOM.append(this.activeCardContent, this.mainMessage);
 		}
-		DOM.append(this.activeCardContent, this.loadingMessage, this.removeButton);
+		DOM.append(
+			this.activeCardContent,
+			this.loadingMessage,
+			this.removeButton,
+			DOM.create('hr'),
+			this.importButton,
+			this.exportButton
+		);
 	};
 
 	activate = (): void => {
@@ -106,14 +123,17 @@ class ServiceCard {
 			this.statusMessage,
 			this.loginButton,
 			this.checkStatusButton,
-			this.removeButton
+			this.removeButton,
+			DOM.create('hr'),
+			this.importButton,
+			this.exportButton
 		);
 	};
 
 	desactivate = (): void => {
 		this.activeCard.classList.remove('active');
 		DOM.clear(this.activeCardContent);
-		DOM.append(this.activeCardContent, this.activateButton);
+		DOM.append(this.activeCardContent, this.activateButton, DOM.create('hr'), this.importButton, this.exportButton);
 	};
 
 	makeMain = (): void => {
@@ -129,7 +149,6 @@ class ServiceCard {
 		if (this.service.loginUrl !== undefined) {
 			this.loginButton.href = this.service.loginUrl;
 		}
-		// Bind
 		this.activateButton.addEventListener('click', async () => {
 			Options.services.push(this.service.key);
 			if (Options.services.length == 1) {
@@ -312,6 +331,18 @@ class ServiceCard {
 				});
 				modal.show();
 			} // else LoginMethod.EXTERNAL just open a link
+		});
+		this.importButton.addEventListener('click', async (event) => {
+			event.preventDefault();
+			const moduleInterface = new ModuleInterface(this.service);
+			this.service.importModule(moduleInterface);
+			moduleInterface.modal.show();
+		});
+		this.exportButton.addEventListener('click', (event) => {
+			event.preventDefault();
+			const moduleInterface = new ModuleInterface(this.service);
+			this.service.exportModule(moduleInterface);
+			moduleInterface.modal.show();
 		});
 	};
 

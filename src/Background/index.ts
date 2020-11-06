@@ -26,7 +26,7 @@ let nextRequest: Record<string, number> = {};
 // Defaults to 1000ms
 const cooldowns: Record<string, number> = {
 	'mangadex.org': 1250,
-	'myanimelist.net': 1333,
+	'myanimelist.net': 1500,
 	localhost: 250,
 };
 browser.runtime.onMessage.addListener(

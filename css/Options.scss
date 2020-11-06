@@ -118,6 +118,9 @@ main {
 	overflow-y: auto;
 	overflow-x: auto;
 }
+hr {
+	margin-bottom: 8px;
+}
 
 // Services
 .services {
@@ -153,25 +156,6 @@ main {
 		background: url('/icons/#{$key}.png') 8px center / 16px no-repeat, map.get($services-bg, $key);
 		color: map.get($services-color, $key);
 	}
-}
-// Custom separated Title
-.sync {
-	color: map.get($services-color, 'sc');
-}
-.sync .dex {
-	color: map.get($services-secondary, 'sc');
-}
-.manga {
-	color: map.get($services-secondary, 'md');
-}
-.manga .dex {
-	color: map.get($services-color, 'md');
-}
-.ani {
-	color: map.get($services-secondary, 'al');
-}
-.ani .list {
-	color: map.get($services-color, 'al');
 }
 
 // Import Export Modal

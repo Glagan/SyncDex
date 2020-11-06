@@ -26,7 +26,7 @@ enum MyAnimeListExportStatus {
 
 interface MyAnimeListAPITitle {
 	id: number;
-	status: MyAnimeListExportStatus;
+	status: MyAnimeListStatus;
 	score: number;
 	num_read_chapters: number;
 	num_read_volumes: number;
@@ -44,10 +44,6 @@ const GetField = <T extends HTMLElement>(parent: Document, field: string): T => 
 };
 
 export class MyAnimeListImport extends ImportModule {
-	constructor(moduleInterface?: ModuleInterface) {
-		super(MyAnimeList, moduleInterface);
-	}
-
 	static api = (username: string, offset: number) =>
 		`https://myanimelist.net/mangalist/${username}/load.json?offset=${offset}&status=7`;
 
@@ -75,6 +71,14 @@ export class MyAnimeListImport extends ImportModule {
 		return d;
 	};
 
+	preExecute = async (): Promise<boolean> => {
+		if (MyAnimeList.username == '') {
+			this.interface?.message('error', 'No MyAnimeList username found, make sure you are logged in.');
+			return false;
+		}
+		return true;
+	};
+
 	execute = async (): Promise<boolean> => {
 		const progress = DOM.create('p', { textContent: 'Fetching all titles...' });
 		const message = this.interface?.message('loading', [progress]);
@@ -88,6 +92,7 @@ export class MyAnimeListImport extends ImportModule {
 				url: MyAnimeListImport.api(MyAnimeList.username, (current - 1) * 300),
 			});
 			if (!response.ok) {
+				message?.classList.remove('loading');
 				this.interface?.message(
 					'warning',
 					'The request failed, maybe MyAnimeList is having problems, retry later.'
@@ -104,7 +109,7 @@ export class MyAnimeListImport extends ImportModule {
 						chapter: title.num_read_chapters,
 						volume: title.num_read_volumes === 0 ? undefined : title.num_read_volumes,
 					},
-					status: this.toStatus(title.status),
+					status: MyAnimeListTitle.toStatus(title.status),
 					score: title.score * 10,
 					start: this.dateToTime(title.start_date_string ?? undefined),
 					end: this.dateToTime(title.finish_date_string ?? undefined),
@@ -120,7 +125,7 @@ export class MyAnimeListImport extends ImportModule {
 				}
 				this.found.push(found);
 			}
-			lastPage = body.length == 300;
+			lastPage = body.length != 300;
 			current++;
 		}
 		message?.classList.remove('loading');
@@ -131,10 +136,6 @@ export class MyAnimeListImport extends ImportModule {
 
 export class MyAnimeListExport extends ExportModule {
 	csrfToken: string = '';
-
-	constructor(moduleInterface?: ModuleInterface) {
-		super(MyAnimeList, moduleInterface);
-	}
 
 	// Create an xml node of type <type> and a value of <value>
 	node = (document: Document, type: string, value?: string | number): HTMLElement => {
@@ -255,8 +256,8 @@ export class MyAnimeList extends Service {
 	static loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	static loginUrl: string = 'https://myanimelist.net/login.php';
 
-	static importModule = (moduleInterface?: ModuleInterface) => new MyAnimeListImport(moduleInterface);
-	static exportModule = (moduleInterface?: ModuleInterface) => new MyAnimeListExport(moduleInterface);
+	static importModule = (moduleInterface?: ModuleInterface) => new MyAnimeListImport(MyAnimeList, moduleInterface);
+	static exportModule = (moduleInterface?: ModuleInterface) => new MyAnimeListExport(MyAnimeList, moduleInterface);
 
 	static username: string = '';
 
@@ -494,6 +495,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 	static fromStatus = (status: Status): MyAnimeListStatus => {
 		switch (status) {
 			case Status.READING:
+			case Status.REREADING:
 				return MyAnimeListStatus.READING;
 			case Status.COMPLETED:
 				return MyAnimeListStatus.COMPLETED;
@@ -504,6 +506,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 			case Status.PLAN_TO_READ:
 				return MyAnimeListStatus.PLAN_TO_READ;
 		}
+		// Status.WONT_READ
 		return MyAnimeListStatus.NONE;
 	};
 

@@ -108,10 +108,6 @@ export const KitsuHeaders = (): KitsuHeaders => {
 };
 
 export class KitsuImport extends ImportModule {
-	constructor(moduleInterface?: ModuleInterface) {
-		super(Kitsu, moduleInterface);
-	}
-
 	findManga = (included: KitsuManga[], id: string): KitsuManga => {
 		for (const manga of included) {
 			if (manga.id == id) return manga;
@@ -196,10 +192,6 @@ export class KitsuImport extends ImportModule {
 export class KitsuExport extends ExportModule {
 	onlineList: { [key: string]: number | undefined } = {};
 
-	constructor(moduleInterface?: ModuleInterface) {
-		super(Kitsu, moduleInterface);
-	}
-
 	preExecute = async (titles: LocalTitle[]): Promise<boolean> => {
 		const message = this.interface?.message('loading', 'Checking current status of each titles...');
 		let max = Math.ceil(titles.length / 500);
@@ -255,7 +247,7 @@ export class KitsuExport extends ExportModule {
 				if (response) this.summary.valid++;
 				else failed = true;
 			} else failed = false;
-			if (failed) this.summary.failed.push(localTitle.name ?? `#${localTitle.key.id}`);
+			if (failed) this.summary.failed.push(localTitle);
 		}
 		message?.classList.remove('loading');
 		return this.interface ? !this.interface.doStop : true;
@@ -268,8 +260,8 @@ export class Kitsu extends Service {
 
 	static loginMethod: LoginMethod = LoginMethod.FORM;
 
-	static importModule = (moduleInterface?: ModuleInterface) => new KitsuImport(moduleInterface);
-	static exportModule = (moduleInterface?: ModuleInterface) => new KitsuExport(moduleInterface);
+	static importModule = (moduleInterface?: ModuleInterface) => new KitsuImport(Kitsu, moduleInterface);
+	static exportModule = (moduleInterface?: ModuleInterface) => new KitsuExport(Kitsu, moduleInterface);
 
 	static getUserId = async (): Promise<RequestStatus> => {
 		if (Options.tokens.kitsuToken === undefined) return RequestStatus.MISSING_TOKEN;

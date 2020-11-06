@@ -17,10 +17,6 @@ export const enum MangaUpdatesStatus {
 export class MangaUpdatesImport extends ImportModule {
 	static lists: string[] = ['read', 'wish', 'complete', 'unfinished', 'hold'];
 
-	constructor(moduleInterface?: ModuleInterface) {
-		super(MangaUpdates, moduleInterface);
-	}
-
 	progressFromNode = (node: HTMLElement | null): number => {
 		if (node !== null) {
 			return parseInt((node.textContent as string).slice(2));
@@ -78,16 +74,12 @@ export class MangaUpdatesImport extends ImportModule {
 export class MangaUpdatesExport extends ExportModule {
 	onlineList: { [key: string]: FoundTitle | undefined } = {};
 
-	constructor(moduleInterface?: ModuleInterface) {
-		super(MangaUpdates, moduleInterface);
-	}
-
 	// We need the status of each titles before to move them from lists to lists
 	// Use ImportModule and get a list of FoundTitle
 	preExecute = async (titles: LocalTitle[]): Promise<boolean> => {
-		const importModule = new MangaUpdatesImport();
-		importModule.options.save = false;
-		await importModule.doExecute();
+		const importModule = new MangaUpdatesImport(MangaUpdates);
+		importModule.options.save.default = false;
+		await importModule.run();
 		this.onlineList = {};
 		for (const title of importModule.found) {
 			this.onlineList[title.key.id!] = title;
@@ -125,7 +117,7 @@ export class MangaUpdatesExport extends ExportModule {
 				if (response) this.summary.valid++;
 				else failed = true;
 			} else failed = true;
-			if (failed) this.summary.failed.push(localTitle.name ?? `#${localTitle.key.id}`);
+			if (failed) this.summary.failed.push(localTitle);
 		}
 		message?.classList.remove('loading');
 		return this.interface ? !this.interface.doStop : true;
@@ -139,8 +131,8 @@ export class MangaUpdates extends Service {
 	static loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	static loginUrl: string = 'https://www.mangaupdates.com/login.html';
 
-	static importModule = (moduleInterface?: ModuleInterface) => new MangaUpdatesImport(moduleInterface);
-	static exportModule = (moduleInterface?: ModuleInterface) => new MangaUpdatesExport(moduleInterface);
+	static importModule = (moduleInterface?: ModuleInterface) => new MangaUpdatesImport(MangaUpdates, moduleInterface);
+	static exportModule = (moduleInterface?: ModuleInterface) => new MangaUpdatesExport(MangaUpdates, moduleInterface);
 
 	static loggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({

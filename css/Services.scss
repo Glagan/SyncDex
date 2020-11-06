@@ -36,3 +36,23 @@ $services-bg: (
 	'mu': rgb(240, 243, 247),
 	'ap': rgb(48, 48, 48),
 );
+
+// Custom separated Title
+.sync {
+	color: map.get($services-color, 'sc');
+}
+.sync .dex {
+	color: map.get($services-secondary, 'sc');
+}
+.manga {
+	color: map.get($services-secondary, 'md');
+}
+.manga .dex {
+	color: map.get($services-color, 'md');
+}
+.ani {
+	color: map.get($services-secondary, 'al');
+}
+.ani .list {
+	color: map.get($services-color, 'al');
+}

@@ -1,11 +1,13 @@
 import { AppendableElement, DOM, MessageType } from './DOM';
 import { Modal } from './Modal';
+import { Module } from './Module';
 import { Service } from './Service';
 
 /**
  * An Interface for a generic Module, the interface is inside a Modal.
  */
 export class ModuleInterface {
+	service: typeof Service;
 	modal: Modal;
 	form: HTMLFormElement;
 	doStop: boolean = false;
@@ -14,7 +16,8 @@ export class ModuleInterface {
 	closeButton: HTMLButtonElement;
 	cancelButton: HTMLButtonElement;
 
-	constructor() {
+	constructor(service: typeof Service) {
+		this.service = service;
 		this.startButton = DOM.create('button', {
 			class: 'primary puffy',
 			textContent: 'Start',
@@ -53,40 +56,11 @@ export class ModuleInterface {
 			},
 		});
 		this.form = DOM.create('form');
-		this.createForm();
 		this.modal = new Modal();
 		this.createModal();
+		this.modal.body.appendChild(this.form);
+		DOM.append(this.modal.footer, this.startButton, this.cancelButton);
 	}
-
-	createForm = (): void => {
-		this.form.appendChild(DOM.create('h2', { textContent: 'Options' }));
-		// TODO: Not all options in Export
-		const section = DOM.create('div', {
-			class: 'parameter',
-			childs: [
-				DOM.create('input', {
-					type: 'checkbox',
-					id: `ck_merge`,
-					name: 'merge',
-					checked: true,
-					childs: [DOM.create('label', { textContent: 'Merge with current save', htmlFor: `ck_merge` })],
-				}),
-				DOM.create('input', {
-					type: 'checkbox',
-					id: `ck_mochi`,
-					name: 'mochi',
-					checked: true,
-					childs: [
-						DOM.create('label', {
-							textContent: 'Check Services ID with Mochi after Import',
-							htmlFor: `ck_mochi`,
-						}),
-					],
-				}),
-			],
-		});
-		this.form.appendChild(section);
-	};
 
 	createModal = (): void => {
 		this.modal.modal.classList.add('import-export-modal');
@@ -107,27 +81,46 @@ export class ModuleInterface {
 		});
 	};
 
-	bind = (service: typeof Service): void => {
-		this.modal.header.classList.add(service.key);
-		this.modal.header.appendChild(service.createTitle());
-		this.form.name = `save_form_${service.key}`;
+	createOptions = (module: Module): void => {
+		this.form.appendChild(DOM.create('h2', { textContent: 'Options' }));
+		const section = DOM.create('div', {
+			class: 'parameter',
+			childs: [],
+		});
+		for (const name in module.options) {
+			const option = module.options[name];
+			if (option.display) {
+				DOM.append(
+					section,
+					DOM.create('input', {
+						type: 'checkbox',
+						id: `ck_${name}`,
+						name: name,
+						checked: option.default,
+					}),
+					DOM.create('label', { textContent: option.description, htmlFor: `ck_${name}` })
+				);
+			}
+		}
+		this.form.appendChild(section);
+	};
+
+	bind = (module: Module): void => {
+		this.createOptions(module);
+		this.modal.header.classList.add(this.service.key);
+		this.modal.header.appendChild(this.service.createTitle());
+		this.form.name = `save_form_${this.service.key}`;
 		this.form.addEventListener('animationend', (event) => {
 			if (event.target == this.form && event.animationName == 'shrink') {
 				this.form.remove();
 				this.modal.disableExit();
 				DOM.clear(this.modal.body);
 				DOM.clear(this.modal.footer);
-				// TODO: execute
+				this.modal.footer.appendChild(this.stopButton);
+				module.run();
 			}
 		});
-		this.startButton.setAttribute('form', `save_form_${service.key}`);
-	};
-
-	reset = (): void => {
-		this.clear();
-		this.modal.enableExit();
-		this.modal.body.appendChild(this.form);
-		DOM.append(this.modal.footer, this.startButton, this.cancelButton);
+		this.startButton.setAttribute('form', `save_form_${this.service.key}`);
 	};
 
 	clear = (): void => {
@@ -136,9 +129,8 @@ export class ModuleInterface {
 	};
 
 	complete = (): void => {
-		DOM.clear(this.modal.footer);
 		this.modal.enableExit();
-		this.modal.footer.appendChild(this.closeButton);
+		this.stopButton.replaceWith(this.closeButton);
 	};
 
 	message = (type: MessageType, content: string | AppendableElement[], parent?: HTMLElement): HTMLElement => {

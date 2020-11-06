@@ -75,8 +75,9 @@ export abstract class Service {
 		}
 	}
 
-	static importModule?: (moduleInterface?: ModuleInterface) => Module;
-	static exportModule?: (moduleInterface?: ModuleInterface) => Module;
+	static importModule: (moduleInterface?: ModuleInterface) => Module;
+	static exportModule: (moduleInterface?: ModuleInterface) => Module;
+
 	static link = (key: MediaKey): string => {
 		throw 'Service.link is an abstract function';
 		return '';

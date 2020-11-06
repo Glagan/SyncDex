@@ -1,8 +1,8 @@
 import { Runtime } from './Runtime';
-import { ActivableKey, ServiceList, ServiceName, StaticKey } from './Service';
-import { LocalTitle } from './Title';
+import { ServiceName, StaticKey } from './Service';
+import { LocalTitle, SaveServiceList } from './Title';
 
-interface MochiService extends ServiceList {
+interface MochiService extends SaveServiceList {
 	[StaticKey.MangaDex]?: number;
 }
 
@@ -66,12 +66,21 @@ export class Mochi {
 	/**
 	 * Assign connections found from Mochi to a Title.
 	 */
-	static assign(title: LocalTitle, connections: ServiceList): void {
+	static assign(title: LocalTitle, connections: MochiService): void {
 		for (const key in connections) {
-			const serviceKey = key as ActivableKey;
-			Object.assign(title.services, {
-				[serviceKey]: connections[serviceKey],
-			});
+			const serviceKey = key as keyof MochiService;
+			const mediaKey = connections[serviceKey]!;
+			if (serviceKey === StaticKey.MangaDex) {
+				if (typeof mediaKey === 'number') title.key.id = mediaKey as number;
+			} else {
+				if (typeof mediaKey === 'number') {
+					title.services[serviceKey] = { id: mediaKey };
+				} else {
+					title.services[serviceKey] = {} as MediaKey;
+					if (mediaKey.i) title.services[serviceKey]!.id = mediaKey.i;
+					if (mediaKey.s) title.services[serviceKey]!.slug = mediaKey.s;
+				}
+			}
 		}
 	}
 }

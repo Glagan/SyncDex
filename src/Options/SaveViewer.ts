@@ -6,6 +6,7 @@ import { SaveEditor } from '../Core/SaveEditor';
 import { SyncModule } from '../Core/SyncModule';
 import { ActivableKey } from '../Core/Service';
 import { Services } from '../Core/Services';
+import { Runtime } from '../Core/Runtime';
 
 interface SaveRow {
 	title: LocalTitle;
@@ -160,7 +161,7 @@ export class SaveViewer {
 		this.deleteSelected.style.display = 'none';
 		this.currentPage = page;
 		this.displayedRows = [];
-		let titles = this.titles.collection.slice(SaveViewer.perPage * (page - 1), page * SaveViewer.perPage);
+		let titles = this.titles.slice(SaveViewer.perPage * (page - 1), page * SaveViewer.perPage);
 		const fragment = document.createDocumentFragment();
 		for (const title of titles) {
 			const row = this.createRow(title);
@@ -178,7 +179,7 @@ export class SaveViewer {
 				DOM.create('a', {
 					target: '_blank',
 					href: Services[key].link(title.services[key]!),
-					childs: [DOM.create('img', { src: `/icons/${serviceKey}.png` })],
+					childs: [DOM.create('img', { src: Runtime.icon(serviceKey) })],
 				})
 			);
 		}
@@ -222,9 +223,9 @@ export class SaveViewer {
 					class: 'mangadex',
 					childs: [
 						DOM.create('a', {
-							textContent: title.key.toString(),
+							textContent: title.key.id!.toString(),
 							target: '_blank',
-							href: `https://mangadex.org/title/${title.key}`,
+							href: LocalTitle.link(title.key),
 							childs: [DOM.space(), DOM.icon('external-link-alt')],
 						}),
 					],
@@ -313,9 +314,9 @@ export class SaveViewer {
 	sortTitles = (): void => {
 		const order = this.sortBy.order == 'ASC' ? 1 : -1;
 		if (this.sortBy.field == 'key') {
-			this.titles.collection.sort((a, b) => (a.key.id! > b.key.id! ? order : -order));
+			this.titles.sort((a, b) => (a.key.id! > b.key.id! ? order : -order));
 		} else if (this.sortBy.field == 'start' || this.sortBy.field == 'end') {
-			this.titles.collection.sort((a, b) => {
+			this.titles.sort((a, b) => {
 				if (a[this.sortBy.field] === undefined && b[this.sortBy.field] === undefined) {
 					return 0;
 				} else if (a[this.sortBy.field] == undefined) {
@@ -325,7 +326,7 @@ export class SaveViewer {
 				}
 				return a[this.sortBy.field]! > b[this.sortBy.field]! ? order : -order;
 			});
-		} else this.titles.collection.sort((a, b) => (a[this.sortBy.field]! > b[this.sortBy.field]! ? order : -order));
+		} else this.titles.sort((a, b) => (a[this.sortBy.field]! > b[this.sortBy.field]! ? order : -order));
 	};
 
 	updateAll = async (reload: boolean): Promise<void> => {

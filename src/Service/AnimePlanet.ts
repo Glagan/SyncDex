@@ -23,10 +23,6 @@ interface AnimePlanetAPIResponse {
 }
 
 export class AnimePlanetImport extends ImportModule {
-	constructor(moduleInterface?: ModuleInterface) {
-		super(AnimePlanet, moduleInterface);
-	}
-
 	preExecute = async (): Promise<boolean> => {
 		if (AnimePlanet.username == '') {
 			this.interface?.message('error', 'Username not found while checking if logged in.');
@@ -128,10 +124,6 @@ export class AnimePlanetImport extends ImportModule {
 }
 
 export class AnimePlanetExport extends ExportModule {
-	constructor(moduleInterface?: ModuleInterface) {
-		super(AnimePlanet, moduleInterface);
-	}
-
 	execute = async (titles: LocalTitle[]): Promise<boolean> => {
 		if (AnimePlanet.username == '') {
 			this.interface?.message('error', 'Username not found while checking if logged in.');
@@ -153,7 +145,7 @@ export class AnimePlanetExport extends ExportModule {
 			if (average == 0) average = Date.now() - before;
 			else average = (average + (Date.now() - before)) / 2;
 			if (response) this.summary.valid++;
-			else this.summary.failed.push(localTitle.name ?? `#${localTitle.key.id}`);
+			else this.summary.failed.push(localTitle);
 		}
 		message?.classList.remove('loading');
 		return this.interface ? !this.interface.doStop : true;
@@ -192,8 +184,8 @@ export class AnimePlanet extends Service {
 		return RequestStatus.FAIL;
 	}
 
-	static importModule = (moduleInterface?: ModuleInterface) => new AnimePlanetImport(moduleInterface);
-	static exportModule = (moduleInterface?: ModuleInterface) => new AnimePlanetExport(moduleInterface);
+	static importModule = (moduleInterface?: ModuleInterface) => new AnimePlanetImport(AnimePlanet, moduleInterface);
+	static exportModule = (moduleInterface?: ModuleInterface) => new AnimePlanetExport(AnimePlanet, moduleInterface);
 
 	static link(key: MediaKey) {
 		return `https://www.anime-planet.com/manga/${key.slug}`;

@@ -35,8 +35,13 @@ interface SaveProgress {
 	o?: 1;
 }
 
+export type SaveMediaKey = { s?: string; i?: number } | number;
+export type SaveServiceList = {
+	[key in ActivableKey]?: SaveMediaKey;
+};
+
 export interface StorageTitle {
-	s: { [key in ActivableKey]?: { s?: string; i?: number } | number }; // services
+	s: SaveServiceList; // services
 	st: Status; // status
 	sc?: number; // score
 	p: SaveProgress; // progress
@@ -278,7 +283,7 @@ export class LocalTitle extends Title {
 	/**
 	 * `ServiceKey` list of mapped Service for the Title.
 	 */
-	services: ServiceList = {};
+	services!: ServiceList;
 	/**
 	 * List of all read Chapters.
 	 */
@@ -314,6 +319,7 @@ export class LocalTitle extends Title {
 		this.inList = title !== undefined;
 		this.synced = true;
 		this.loggedIn = true;
+		if (!title?.services || !this.services) this.services = {};
 	}
 
 	/**
@@ -341,11 +347,11 @@ export class LocalTitle extends Title {
 			lastRead: title.lr,
 		};
 		for (const key in title.s) {
-			const id = title.s[key as keyof ServiceList];
+			const id = title.s[key as ActivableKey];
 			if (typeof id === 'number') {
-				mapped.services![key as keyof ServiceList] = { id: id };
+				mapped.services![key as ActivableKey] = { id: id };
 			} else {
-				mapped.services![key as keyof ServiceList] = {
+				mapped.services![key as ActivableKey] = {
 					id: id?.i ?? undefined,
 					slug: id?.s ?? undefined,
 				} as MediaKey;
@@ -400,11 +406,11 @@ export class LocalTitle extends Title {
 			lr: this.lastRead,
 		};
 		for (const key in this.services) {
-			const id = this.services[key as keyof ServiceList]!;
+			const id = this.services[key as ActivableKey]!;
 			if (id.id !== undefined && id.slug === undefined) {
-				mapped.s[key as keyof ServiceList] = id.id;
+				mapped.s[key as ActivableKey] = id.id;
 			} else {
-				mapped.s[key as keyof ServiceList] = { i: id.id, s: id.slug };
+				mapped.s[key as ActivableKey] = { i: id.id, s: id.slug };
 			}
 		}
 		if (this.start) mapped.sd = this.start.getTime();
@@ -655,6 +661,14 @@ export class TitleCollection {
 			if (title.key.id === id) return title;
 		}
 		return undefined;
+	};
+
+	sort = (compareFn?: ((a: LocalTitle, b: LocalTitle) => number) | undefined): LocalTitle[] => {
+		return this.collection.sort(compareFn);
+	};
+
+	slice = (start?: number | undefined, end?: number | undefined): LocalTitle[] => {
+		return this.collection.slice(start, end);
 	};
 
 	/**

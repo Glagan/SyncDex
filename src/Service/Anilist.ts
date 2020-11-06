@@ -157,10 +157,6 @@ export class AnilistImport extends ImportModule {
 		}`.replace(/\n\t+/g, ' '); // Require $userName
 	username: string = '';
 
-	constructor(moduleInterface?: ModuleInterface) {
-		super(Anilist, moduleInterface);
-	}
-
 	preExecute = async (): Promise<boolean> => {
 		// Find required username
 		const viewerResponse = await Runtime.jsonRequest({
@@ -237,9 +233,13 @@ export class AnilistImport extends ImportModule {
 }
 
 export class AnilistExport extends ExportModule {
-	constructor(moduleInterface?: ModuleInterface) {
-		super(Anilist, moduleInterface);
-	}
+	extendOptions = (): void => {
+		this.options.merge = {
+			description: 'Merge with current external Anilist save',
+			display: true,
+			default: true,
+		};
+	};
 
 	execute = async (titles: LocalTitle[]): Promise<boolean> => {
 		const max = titles.length;
@@ -258,7 +258,7 @@ export class AnilistExport extends ExportModule {
 			if (average == 0) average = Date.now() - before;
 			else average = (average + (Date.now() - before)) / 2;
 			if (response) this.summary.valid++;
-			else this.summary.failed.push(localTitle.name ?? `#${localTitle.key.id}`);
+			else this.summary.failed.push(localTitle);
 		}
 		message?.classList.remove('loading');
 		return this.interface ? !this.interface.doStop : true;
@@ -287,8 +287,8 @@ export class Anilist extends Service {
 		delete Options.tokens.anilistToken;
 	}
 
-	static importModule = (moduleInterface?: ModuleInterface) => new AnilistImport(moduleInterface);
-	static exportModule = (moduleInterface?: ModuleInterface) => new AnilistExport(moduleInterface);
+	static importModule = (moduleInterface?: ModuleInterface) => new AnilistImport(Anilist, moduleInterface);
+	static exportModule = (moduleInterface?: ModuleInterface) => new AnilistExport(Anilist, moduleInterface);
 
 	static link(key: MediaKey) {
 		return `https://anilist.co/manga/${key.id}`;
