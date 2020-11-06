@@ -249,7 +249,7 @@ export class AnilistExport extends ExportModule {
 		let average = 0;
 		for (let current = 0; !this.interface?.doStop && current < max; current++) {
 			const localTitle = titles[current];
-			let currentProgress = `Exporting Title ${current}/${max} (${localTitle.name})...`;
+			let currentProgress = `Exporting Title ${current} out of ${max} (${localTitle.name})...`;
 			if (average > 0) currentProgress += `\nEstimated time remaining: ${duration((max - current) * average)}.`;
 			progress.textContent = currentProgress;
 			const before = Date.now();
@@ -257,7 +257,7 @@ export class AnilistExport extends ExportModule {
 			const response = await title.persist();
 			if (average == 0) average = Date.now() - before;
 			else average = (average + (Date.now() - before)) / 2;
-			if (response) this.summary.valid++;
+			if (response <= RequestStatus.CREATED) this.summary.valid++;
 			else this.summary.failed.push(localTitle);
 		}
 		message?.classList.remove('loading');

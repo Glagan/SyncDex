@@ -136,15 +136,18 @@ export class AnimePlanetExport extends ExportModule {
 		let average = 0;
 		for (let current = 0; !this.interface?.doStop && current < max; current++) {
 			const localTitle = titles[current];
-			let currentProgress = `Exporting Title ${current}/${max} (${localTitle.name})...`;
+			let currentProgress = `Exporting Title ${current} out of ${max} (${localTitle.name})...`;
 			if (average > 0) currentProgress += `\nEstimated time remaining: ${duration((max - current) * average)}.`;
 			progress.textContent = currentProgress;
 			const before = Date.now();
-			const title = new AnimePlanetTitle({ ...localTitle, key: localTitle.services[ActivableKey.AnimePlanet] });
+			const title = new AnimePlanetTitle({
+				...localTitle,
+				key: localTitle.services[ActivableKey.AnimePlanet],
+			});
 			const response = await title.persist();
 			if (average == 0) average = Date.now() - before;
 			else average = (average + (Date.now() - before)) / 2;
-			if (response) this.summary.valid++;
+			if (response <= RequestStatus.CREATED) this.summary.valid++;
 			else this.summary.failed.push(localTitle);
 		}
 		message?.classList.remove('loading');
@@ -192,6 +195,7 @@ export class AnimePlanet extends Service {
 	}
 }
 
+export const AnimePlanetAPI = 'https://www.anime-planet.com/api/list';
 export class AnimePlanetTitle extends ExternalTitle {
 	static service = AnimePlanet;
 	static readonly requireIdQuery: boolean = true;
@@ -264,13 +268,11 @@ export class AnimePlanetTitle extends ExternalTitle {
 
 	persist = async (): Promise<RequestStatus> => {
 		if (this.status === Status.NONE) return RequestStatus.BAD_REQUEST;
-		const id = this.key;
+		const id = this.key.id;
 		// Only update Status if it's different
 		if (this.current.status !== this.status) {
 			const response = await Runtime.jsonRequest({
-				url: `https://www.anime-planet.com/api/list/status/manga/${id}/${AnimePlanetTitle.fromStatus(
-					this.status
-				)}/${this.token}`,
+				url: `${AnimePlanetAPI}/status/manga/${id}/${AnimePlanetTitle.fromStatus(this.status)}/${this.token}`,
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);
@@ -279,9 +281,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 		// Chapter progress
 		if (this.progress.chapter > 0 && this.current.progress.chapter !== this.progress.chapter) {
 			const response = await Runtime.jsonRequest({
-				url: `https://www.anime-planet.com/api/list/update/manga/${id}/${Math.floor(this.progress.chapter)}/0/${
-					this.token
-				}`,
+				url: `${AnimePlanetAPI}/update/manga/${id}/${Math.floor(this.progress.chapter)}/0/${this.token}`,
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);
@@ -292,7 +292,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 			// Convert 0-100 score to the 0-5 range -- Round to nearest .5
 			const apScore = Math.round((this.score / 20) * 2) / 2;
 			const response = await Runtime.jsonRequest({
-				url: `https://www.anime-planet.com/api/list/rate/manga/${id}/${apScore}/${this.token}`,
+				url: `${AnimePlanetAPI}/rate/manga/${id}/${apScore}/${this.token}`,
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);
@@ -307,9 +307,9 @@ export class AnimePlanetTitle extends ExternalTitle {
 
 	delete = async (): Promise<RequestStatus> => {
 		if (this.token == '') return RequestStatus.BAD_REQUEST;
-		const id = this.key;
+		const id = this.key.id;
 		const response = await Runtime.jsonRequest({
-			url: `https://www.anime-planet.com/api/list/status/manga/${id}/0/${this.token}`,
+			url: `${AnimePlanetAPI}/status/manga/${id}/0/${this.token}`,
 			method: 'GET',
 			credentials: 'include',
 		});

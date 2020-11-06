@@ -95,7 +95,7 @@ export class MangaUpdatesExport extends ExportModule {
 		let average = 0;
 		for (let current = 0; !this.interface?.doStop && current < max; current++) {
 			const localTitle = titles[current];
-			let currentProgress = `Exporting Title ${current}/${max} (${localTitle.name})...`;
+			let currentProgress = `Exporting Title ${current} out of ${max} (${localTitle.name})...`;
 			if (average > 0) currentProgress += `\nEstimated time remaining: ${duration((max - current) * average)}.`;
 			progress.textContent = currentProgress;
 			const before = Date.now();
@@ -114,7 +114,7 @@ export class MangaUpdatesExport extends ExportModule {
 				const response = await title.persist();
 				if (average == 0) average = Date.now() - before;
 				else average = (average + (Date.now() - before)) / 2;
-				if (response) this.summary.valid++;
+				if (response <= RequestStatus.CREATED) this.summary.valid++;
 				else failed = true;
 			} else failed = true;
 			if (failed) this.summary.failed.push(localTitle);

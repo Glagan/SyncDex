@@ -1,10 +1,11 @@
 import { DOM } from './DOM';
 import { ModuleInterface } from './ModuleInterface';
-import { Service } from './Service';
+import { Service, ServiceList, StaticKey } from './Service';
 import { FoundTitle, LocalTitle, TitleCollection } from './Title';
 import { Mochi } from './Mochi';
 import { LocalStorage } from './Storage';
 import { Options } from './Options';
+import { Runtime } from './Runtime';
 
 /**
  * Convert a duration in ms to a string
@@ -24,6 +25,7 @@ export function duration(time: number): string {
 export interface SummaryTitle {
 	name?: string;
 	key: MediaKey;
+	services?: ServiceList;
 }
 
 export class Summary {
@@ -151,7 +153,6 @@ export abstract class Module {
 	};
 }
 
-// TODO: Display cancel as separate from an error
 export abstract class ImportModule extends Module {
 	found: FoundTitle[] = [];
 	options: ModuleOptions = {
@@ -178,37 +179,47 @@ export abstract class ImportModule extends Module {
 	async postExecute?(): Promise<void>;
 
 	displaySummary = (): void => {
-		if (this.summary.total != this.summary.valid) {
-			const content = DOM.create('p', {
-				textContent: `${this.summary.failed.length} titles were not imported since they had invalid or missing properties.`,
-			});
-			this.interface?.message('warning', [content]);
-			if (this.summary.failed.length > 0) {
-				const failedBlock = this.summaryFailBlock(content);
-				for (const title of this.summary.failed) {
-					failedBlock.appendChild(
-						DOM.create('li', {
-							childs: [
-								DOM.create('a', {
-									target: '_blank',
-									href: this.service.link(title.key),
-									textContent: title.name ?? '[No Name]',
-									childs: [DOM.space(), DOM.icon('external-link-alt')],
-									title: 'Open in new tab',
-								}),
-							],
-						})
-					);
+		if (this.interface) {
+			if (this.summary.total != this.summary.valid) {
+				const content = DOM.create('p', {
+					textContent: `${this.summary.failed.length} titles were not imported since they had invalid or missing properties.`,
+				});
+				this.interface.message('warning', [content]);
+				if (this.summary.failed.length > 0) {
+					const failedBlock = this.summaryFailBlock(content);
+					for (const title of this.summary.failed) {
+						failedBlock.appendChild(
+							DOM.create('li', {
+								childs: [
+									DOM.create('a', {
+										target: '_blank',
+										href: this.service.link(title.key),
+										childs: [
+											DOM.create('img', {
+												src: Runtime.icon(this.service.key),
+												title: this.service.serviceName,
+											}),
+											DOM.space(),
+											DOM.text(title.name ?? '[No Name]'),
+											DOM.space(),
+											DOM.icon('external-link-alt'),
+										],
+										title: 'Open in new tab',
+									}),
+								],
+							})
+						);
+					}
 				}
 			}
+			let report = `Successfully imported ${this.summary.valid} titles`;
+			if (this.summary.options > 0) {
+				report += `${this.summary.history ? ', ' : ' and '} ${this.summary.options} Options`;
+			}
+			if (this.summary.history) report += ` and History`;
+			report += ` in ${this.summary.totalTime()} !`;
+			this.interface.message('success', report);
 		}
-		let report = `Successfully imported ${this.summary.valid} titles`;
-		if (this.summary.options > 0) {
-			report += `${this.summary.history ? ', ' : ' and '} ${this.summary.options} Options`;
-		}
-		if (this.summary.history) report += ` and History`;
-		report += ` in ${this.summary.totalTime()} !`;
-		this.interface?.message('success', report);
 	};
 
 	run = async (): Promise<void> => {
@@ -232,9 +243,11 @@ export abstract class ImportModule extends Module {
 		// Execute
 		this.setOptions();
 		const result = await this.execute();
-		if (!result) {
-			this.interface?.complete();
-			return;
+		if (!result || this.interface?.doStop) {
+			if (this.interface?.doStop) {
+				this.interface.message('warning', 'You cancelled the Import, nothing was saved.');
+			}
+			return this.interface?.complete();
 		}
 		this.interface?.message('default', `Found ${this.found.length} Titles on ${this.service.serviceName}.`);
 		this.summary.total = this.found.length;
@@ -277,6 +290,10 @@ export abstract class ImportModule extends Module {
 			this.summary.failed.push(...titleList.filter((t) => found.indexOf(t.mochi) < 0));
 		}
 		notification?.classList.remove('loading');
+		if (this.interface?.doStop) {
+			this.interface.message('warning', 'You cancelled the Import, nothing was saved.');
+			return this.interface?.complete();
+		}
 
 		// Merge
 		if (!this.options.merge.active) {
@@ -302,15 +319,14 @@ export abstract class ImportModule extends Module {
 		if (this.options.save.active) await titles.persist();
 		this.displaySummary();
 		this.interface?.complete();
-		if (this.postExecute) await this.postExecute();
+		if (result && this.postExecute) await this.postExecute();
 	};
 }
 
-// TODO: Display cancel as separate from an error
 export abstract class ExportModule extends Module {
 	options: ModuleOptions = {
 		mochi: {
-			description: 'Check Services ID with Mochi after Import',
+			description: 'Check Services ID with Mochi before Exporting',
 			display: true,
 			default: true,
 		},
@@ -327,37 +343,64 @@ export abstract class ExportModule extends Module {
 	async postExecute?(): Promise<void>;
 
 	displaySummary = (): void => {
-		if (this.summary.total != this.summary.valid) {
-			const content = DOM.create('p', {
-				textContent: `${this.summary.failed.length} titles were not exported since they had invalid or missing properties.`,
-			});
-			this.interface?.message('warning', [content]);
-			if (this.summary.failed.length > 0) {
-				const failedBlock = this.summaryFailBlock(content);
-				for (const title of this.summary.failed) {
-					failedBlock.appendChild(
-						DOM.create('li', {
+		if (this.interface) {
+			if (this.summary.total != this.summary.valid) {
+				const content = DOM.create('p', {
+					textContent: `${this.summary.failed.length} titles were not exported or had an error while exporting.`,
+				});
+				this.interface.message('warning', [content]);
+				if (this.summary.failed.length > 0) {
+					const failedBlock = this.summaryFailBlock(content);
+					for (const title of this.summary.failed) {
+						const name = title.name ?? '[No Name]';
+						const row = DOM.create('li', {
 							childs: [
 								DOM.create('a', {
 									target: '_blank',
 									href: LocalTitle.link(title.key),
-									textContent: title.name ?? '[No Name]',
-									childs: [DOM.space(), DOM.icon('external-link-alt')],
+									childs: [
+										DOM.create('img', { src: Runtime.icon(StaticKey.MangaDex), title: 'MangaDex' }),
+										DOM.space(),
+										DOM.text(name),
+										DOM.space(),
+										DOM.icon('external-link-alt'),
+									],
 									title: 'Open in new tab',
 								}),
 							],
-						})
-					);
+						});
+						if (title.services && title.services[this.service.key]) {
+							DOM.append(
+								row,
+								DOM.space(),
+								DOM.text('('),
+								DOM.create('a', {
+									target: '_blank',
+									href: this.service.link(title.services[this.service.key]!),
+									childs: [
+										DOM.create('img', { src: Runtime.icon(this.service.key), title: 'MangaDex' }),
+										DOM.space(),
+										DOM.text(name),
+										DOM.space(),
+										DOM.icon('external-link-alt'),
+									],
+									title: 'Open in new tab',
+								}),
+								DOM.text(')')
+							);
+						}
+						failedBlock.appendChild(row);
+					}
 				}
 			}
+			this.interface.message('success', `Exported ${this.summary.valid} titles in ${this.summary.totalTime()} !`);
 		}
-		this.interface?.message('success', `Exported ${this.summary.valid} titles in ${this.summary.totalTime()} !`);
 	};
 
 	selectTitles = (titles: TitleCollection): LocalTitle[] => {
 		const filtered: LocalTitle[] = [];
 		for (const title of titles.collection) {
-			if (title.services[this.service.key] !== undefined) {
+			if (title.status !== Status.NONE && title.services[this.service.key] !== undefined) {
 				filtered.push(title);
 			}
 		}
@@ -373,8 +416,7 @@ export abstract class ExportModule extends Module {
 		if ((await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
 			loginMessage?.classList.remove('loading');
 			this.interface?.message('error', `Exporting need you to be logged in on ${this.service.serviceName} !`);
-			this.interface?.complete();
-			return;
+			return this.interface?.complete();
 		}
 		loginMessage?.classList.remove('loading');
 
@@ -382,8 +424,7 @@ export abstract class ExportModule extends Module {
 		const titles: TitleCollection = await TitleCollection.get();
 		const filteredTitles: LocalTitle[] = this.selectTitles(titles);
 		if (this.preExecute && !(await this.preExecute(filteredTitles))) {
-			this.interface?.complete();
-			return;
+			return this.interface?.complete();
 		}
 
 		// Check Mochi
@@ -393,14 +434,14 @@ export abstract class ExportModule extends Module {
 			let current = 0;
 			let progress = DOM.create('p');
 			const notification = this.interface?.message('loading', [progress]);
-			const max = Math.ceil(this.summary.total / this.perConvert);
+			const max = Math.ceil(titles.length / this.perConvert);
 			for (let i = 0; !this.interface?.doStop && i < max; i++) {
 				const titleList = titles.collection.slice(current, current + this.perConvert);
 				current += this.perConvert;
 				progress.textContent = `Finding ID for titles ${Math.min(
-					max,
+					titles.length,
 					current + this.perConvert
-				)} out of ${max}.`;
+				)} out of ${titles.length}.`;
 				const connections = await Mochi.findMany(titleList.map((t) => t.key.id!));
 				if (connections !== undefined) {
 					for (const titleId in connections) {
@@ -410,18 +451,21 @@ export abstract class ExportModule extends Module {
 					}
 				}
 			}
+			await titles.persist();
 			notification?.classList.remove('loading');
-			if (this.interface?.doStop) return this.interface?.complete();
+		}
+		if (this.interface?.doStop) {
+			this.interface.message('warning', 'You cancelled the Export.');
+			return this.interface.complete();
 		}
 
 		// Execute
 		const result = await this.execute(filteredTitles);
-		if (!result) {
-			this.interface?.complete();
-			return;
-		}
 
+		// Done
+		if (this.interface?.doStop) this.interface.message('warning', 'You cancelled the Export.');
 		this.displaySummary();
-		if (this.postExecute) await this.postExecute();
+		this.interface?.complete();
+		if (result && this.postExecute) await this.postExecute();
 	};
 }

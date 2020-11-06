@@ -231,23 +231,18 @@ export class KitsuExport extends ExportModule {
 		let average = 0;
 		for (let current = 0; !this.interface?.doStop && current < max; current++) {
 			const localTitle = titles[current];
-			let failed = false;
-			let currentProgress = `Exporting Title ${current}/${max} (${localTitle.name})...`;
+			let currentProgress = `Exporting Title ${current} out of ${max} (${localTitle.name})...`;
 			if (average > 0) currentProgress += `\nEstimated time remaining: ${duration((max - current) * average)}.`;
 			progress.textContent = currentProgress;
 			// Kitsu require a libraryEntryId to update a Title
-			const libraryEntryId = this.onlineList[localTitle.services.ku!.id!];
-			if (libraryEntryId) {
-				const before = Date.now();
-				const title = new KitsuTitle({ ...localTitle, key: localTitle.services[ActivableKey.AnimePlanet] });
-				title.libraryEntryId = libraryEntryId;
-				const response = await title.persist();
-				if (average == 0) average = Date.now() - before;
-				else average = (average + (Date.now() - before)) / 2;
-				if (response) this.summary.valid++;
-				else failed = true;
-			} else failed = false;
-			if (failed) this.summary.failed.push(localTitle);
+			const before = Date.now();
+			const title = new KitsuTitle({ ...localTitle, key: localTitle.services[ActivableKey.AnimePlanet] });
+			title.libraryEntryId = this.onlineList[localTitle.services.ku!.id!];
+			const response = await title.persist();
+			if (average == 0) average = Date.now() - before;
+			else average = (average + (Date.now() - before)) / 2;
+			if (response <= RequestStatus.CREATED) this.summary.valid++;
+			else this.summary.failed.push(localTitle);
 		}
 		message?.classList.remove('loading');
 		return this.interface ? !this.interface.doStop : true;
@@ -318,7 +313,7 @@ export class Kitsu extends Service {
 
 export class KitsuTitle extends ExternalTitle {
 	static service = Kitsu;
-	libraryEntryId: number = 0;
+	libraryEntryId?: number = 0;
 
 	// abstract static get(id): RequestStatus
 	static get = async (key: MediaKey): Promise<ExternalTitle | RequestStatus> => {
@@ -357,7 +352,7 @@ export class KitsuTitle extends ExternalTitle {
 	persist = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		const method = this.libraryEntryId && this.libraryEntryId > 0 ? 'PATCH' : 'POST';
-		const url = `${KitsuAPI}${this.libraryEntryId > 0 ? `/${this.libraryEntryId}` : ''}`;
+		const url = `${KitsuAPI}${this.libraryEntryId && this.libraryEntryId > 0 ? `/${this.libraryEntryId}` : ''}`;
 		// Convert 0-100 score to the 0-20 range -- round to the nearest
 		const kuScore = this.score !== undefined && this.score > 0 ? Math.round(this.score / 5) : undefined;
 		const response = await Runtime.jsonRequest<KitsuPersistResponse>({
@@ -379,7 +374,7 @@ export class KitsuTitle extends ExternalTitle {
 						manga: {
 							data: {
 								type: 'manga',
-								id: this.key,
+								id: this.key.id,
 							},
 						},
 						user: {
@@ -404,7 +399,7 @@ export class KitsuTitle extends ExternalTitle {
 
 	delete = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
-		if (this.libraryEntryId <= 0) return RequestStatus.BAD_REQUEST;
+		if (!this.libraryEntryId || this.libraryEntryId <= 0) return RequestStatus.BAD_REQUEST;
 		let response = await Runtime.request({
 			url: `https://kitsu.io/api/edge/library-entries/${this.libraryEntryId}`,
 			method: 'DELETE',
