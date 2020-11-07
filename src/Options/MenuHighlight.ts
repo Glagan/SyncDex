@@ -35,9 +35,7 @@ export class MenuHighlight {
 		this.node.addEventListener(
 			'scroll',
 			() => window.requestAnimationFrame(() => this.frame(this.node.scrollTop)),
-			{
-				passive: true,
-			}
+			{ passive: true }
 		);
 		this.frame(this.node.scrollTop);
 	}

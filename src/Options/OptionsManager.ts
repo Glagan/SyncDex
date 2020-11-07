@@ -6,10 +6,11 @@ import { InputManager } from './Manager/Input';
 import { ServiceManager } from './Manager/Service';
 import { LocalStorage } from '../Core/Storage';
 import { SaveViewer } from './SaveViewer';
-import { ImportExportManager } from './Manager/ImportExport';
 import { SaveOptions } from './Utility';
 import { Options } from '../Core/Options';
 import { Changelog } from './Changelog';
+import { DOM } from '../Core/DOM';
+import { dateFormat } from '../Core/Utility';
 
 export class OptionsManager {
 	highlightsManager: HighlightsManager;
@@ -18,7 +19,6 @@ export class OptionsManager {
 	inputManager: InputManager;
 	menuHighlight: MenuHighlight;
 	serviceManager: ServiceManager;
-	importExport: ImportExportManager;
 	saveViewer: SaveViewer;
 	// Instance of the OptionsManager to use in ReloadOptions
 	static instance: OptionsManager;
@@ -30,8 +30,30 @@ export class OptionsManager {
 		this.inputManager = new InputManager();
 		this.menuHighlight = new MenuHighlight();
 		this.serviceManager = new ServiceManager();
-		this.importExport = new ImportExportManager();
 		this.saveViewer = new SaveViewer();
+
+		// Export
+		const exportCard = document.getElementById('export-syncdex') as HTMLElement;
+		exportCard.addEventListener('click', async (event) => {
+			event.preventDefault();
+			const data: ExportedSave | undefined = await LocalStorage.getAll();
+			if (data && data.options) {
+				delete data.options.tokens;
+				const blob = new Blob([JSON.stringify(data)], { type: 'application/json;charset=utf-8' });
+				const href = URL.createObjectURL(blob);
+				const downloadLink = DOM.create('a', {
+					css: { display: 'none' },
+					download: `SyncDex_${dateFormat(new Date(), true).replace(/(\s|:)+/g, '_')}.json`,
+					target: '_blank',
+					href: href,
+				});
+				document.body.appendChild(downloadLink);
+				downloadLink.click();
+				downloadLink.remove();
+				URL.revokeObjectURL(href);
+				SimpleNotification.success({ title: 'Save Exported' });
+			}
+		});
 
 		// Delete save event
 		const deleteSave = document.getElementById('delete-save');

@@ -25,8 +25,7 @@
 			<li data-link="history"><i class="fas fa-history"></i> History</li>
 			<li data-link="other"><i class="fas fa-ellipsis-h"></i> Other</li>
 			<li data-link="save"><i class="fas fa-save"></i> Save Viewer</li>
-			<li data-link="import"><i class="fas fa-download"></i> Import</li>
-			<li data-link="export"><i class="fas fa-upload"></i> Export</li>
+			<li data-link="import-export"><i class="fas fa-cloud"></i> Import/Export</li>
 			<li data-link="delete"><i class="fas fa-trash"></i> Delete</li>
 			<li id="open-changelog"><i class="fas fa-list-ol"></i> Changelog</li>
 			<li data-link="credits"><i class="fas fa-at"></i> Credits</li>
@@ -311,24 +310,27 @@
 				<tbody id="save-body"></tbody>
 			</table>
 		</div>
-		<h1 id="import"><i class="fas fa-download"></i> Import</h1>
-		<div class="block message default">
-			<div class="icon"></div>
-			<div class="content">
-				<p><b>Importing</b> will only update your <b>SyncDex</b> save and is used to initialize <b>SyncDex</b>.</p>
-				<p>If you wish to update any external Service, see <b><a href="#Export">Export</a></b></p>
+		<div id="import-export" class="section import-export">
+			<div>
+				<h1 id="import"><i class="fas fa-download"></i> Import</h1>
+				<div class="import">
+					<div id="import-mymangadex" class="scs card">
+						<div class="header mmd">MyMangaDex</div>
+					</div>
+					<div id="import-syncdex" class="scs card">
+						<div class="header sc">SyncDex</div>
+					</div>
+				</div>
+			</div>
+			<div>
+				<h1 id="export"><i class="fas fa-upload"></i> Export</h1>
+				<div class="export">
+					<div id="export-syncdex" class="scs card">
+						<div class="header sc">SyncDex</div>
+					</div>
+				</div>
 			</div>
 		</div>
-		<div class="section services selectable" id="import-container"></div>
-		<h1 id="export"><i class="fas fa-upload"></i> Export</h1>
-		<div class="block message default">
-			<div class="icon"></div>
-			<div class="content">
-				<p><b>Exporting</b> will update your <b>Online</b> save on the Service you choose using your <b>SyncDex</b> save.</p>
-				<p>You should <b><a href="#Import">Import</a></b> from somewhere before exporting to somewhere else !</p>
-			</div>
-		</div>
-		<div class="section services selectable" id="export-container"></div>
 		<h1 id="delete"><i class="fas fa-trash"></i> Delete</h1>
 		<div class="section">
 			<div class="message default">

@@ -158,7 +158,25 @@ hr {
 	}
 }
 
-// Import Export Modal
+// Import/Export$
+.import-export {
+	display: flex;
+	flex-flow: row nowrap;
+	align-items: stretch;
+
+	& > div {
+		flex: 1;
+	}
+}
+.import,
+.export {
+	display: flex;
+	justify-content: space-around;
+
+	& > .card {
+		cursor: pointer;
+	}
+}
 .import-export-modal {
 	form {
 		.parameter,

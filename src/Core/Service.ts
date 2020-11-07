@@ -1,6 +1,6 @@
 import { SaveOptions } from '../Options/Utility';
 import { AppendableElement, DOM } from './DOM';
-import { Module } from './Module';
+import { ExportModule, ImportModule } from './Module';
 import { ModuleInterface } from './ModuleInterface';
 import { MissableField } from './Title';
 
@@ -75,8 +75,8 @@ export abstract class Service {
 		}
 	}
 
-	static importModule: (moduleInterface?: ModuleInterface) => Module;
-	static exportModule: (moduleInterface?: ModuleInterface) => Module;
+	static importModule: (moduleInterface?: ModuleInterface) => ImportModule;
+	static exportModule: (moduleInterface?: ModuleInterface) => ExportModule;
 
 	static link = (key: MediaKey): string => {
 		throw 'Service.link is an abstract function';
