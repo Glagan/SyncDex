@@ -11,6 +11,7 @@ import { Options } from '../Core/Options';
 import { Changelog } from './Changelog';
 import { DOM } from '../Core/DOM';
 import { dateFormat } from '../Core/Utility';
+import { MyMangaDex } from './MyMangaDex';
 
 export class OptionsManager {
 	highlightsManager: HighlightsManager;
@@ -31,6 +32,13 @@ export class OptionsManager {
 		this.menuHighlight = new MenuHighlight();
 		this.serviceManager = new ServiceManager();
 		this.saveViewer = new SaveViewer();
+
+		// Import
+		const mmdImportCard = document.getElementById('import-mymangadex') as HTMLElement;
+		mmdImportCard.addEventListener('click', async (event) => {
+			event.preventDefault();
+			new MyMangaDex().start();
+		});
 
 		// Export
 		const exportCard = document.getElementById('export-syncdex') as HTMLElement;

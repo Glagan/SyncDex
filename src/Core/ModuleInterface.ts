@@ -1,13 +1,11 @@
 import { AppendableElement, DOM, MessageType } from './DOM';
 import { Modal } from './Modal';
-import { Module } from './Module';
-import { Service } from './Service';
+import { Module, ModuleOption, ModuleOptions } from './Module';
 
 /**
  * An Interface for a generic Module, the interface is inside a Modal.
  */
 export class ModuleInterface {
-	service: typeof Service;
 	modal: Modal;
 	form: HTMLFormElement;
 	doStop: boolean = false;
@@ -16,8 +14,7 @@ export class ModuleInterface {
 	closeButton: HTMLButtonElement;
 	cancelButton: HTMLButtonElement;
 
-	constructor(service: typeof Service) {
-		this.service = service;
+	constructor() {
 		this.startButton = DOM.create('button', {
 			class: 'primary puffy',
 			textContent: 'Start',
@@ -81,14 +78,14 @@ export class ModuleInterface {
 		});
 	};
 
-	createOptions = (module: Module): void => {
+	createOptions = (options: ModuleOptions): void => {
 		this.form.appendChild(DOM.create('h2', { textContent: 'Options' }));
 		const section = DOM.create('div', {
 			class: 'parameter',
 			childs: [],
 		});
-		for (const name in module.options) {
-			const option = module.options[name];
+		for (const name in options) {
+			const option = options[name];
 			if (option.display) {
 				DOM.append(
 					section,
@@ -105,11 +102,22 @@ export class ModuleInterface {
 		this.form.appendChild(section);
 	};
 
-	bind = (module: Module): void => {
-		this.createOptions(module);
-		this.modal.header.classList.add(this.service.key);
-		this.modal.header.appendChild(this.service.createTitle());
-		this.form.name = `save_form_${this.service.key}`;
+	setOptionsValues = (options: ModuleOptions): void => {
+		for (const name in options) {
+			if (this.form[name]) {
+				options[name].active = this.form[name].checked;
+			}
+		}
+	};
+
+	setStyle = (title: AppendableElement, key: string): void => {
+		this.modal.header.classList.add(key);
+		this.modal.header.appendChild(title);
+		this.form.name = `save_form_${key}`;
+		this.startButton.setAttribute('form', `save_form_${key}`);
+	};
+
+	bindFormSubmit = (fcnt: () => void) => {
 		this.form.addEventListener('animationend', (event) => {
 			if (event.target == this.form && event.animationName == 'shrink') {
 				this.form.remove();
@@ -117,10 +125,9 @@ export class ModuleInterface {
 				DOM.clear(this.modal.body);
 				DOM.clear(this.modal.footer);
 				this.modal.footer.appendChild(this.stopButton);
-				module.run();
+				fcnt();
 			}
 		});
-		this.startButton.setAttribute('form', `save_form_${this.service.key}`);
 	};
 
 	clear = (): void => {

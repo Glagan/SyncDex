@@ -335,14 +335,14 @@ class ServiceCard {
 		});
 		this.importButton.addEventListener('click', async (event) => {
 			event.preventDefault();
-			const moduleInterface = new ModuleInterface(this.service);
+			const moduleInterface = new ModuleInterface();
 			const importModule = this.service.importModule(moduleInterface);
 			importModule.postExecute = () => OptionsManager.instance.saveViewer.updateAll(true);
 			moduleInterface.modal.show();
 		});
 		this.exportButton.addEventListener('click', (event) => {
 			event.preventDefault();
-			const moduleInterface = new ModuleInterface(this.service);
+			const moduleInterface = new ModuleInterface();
 			const exportModule = this.service.exportModule(moduleInterface);
 			exportModule.postExecute = () => OptionsManager.instance.saveViewer.updateAll(true);
 			moduleInterface.modal.show();

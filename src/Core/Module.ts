@@ -76,6 +76,14 @@ export abstract class Module {
 		this.summary = new Summary();
 	}
 
+	bindInterface = (): void => {
+		if (this.interface) {
+			this.interface.createOptions(this.options);
+			this.interface.setStyle(this.service.createTitle(), this.service.key);
+			this.interface.bindFormSubmit(() => this.run());
+		}
+	};
+
 	summaryFailBlock = (parent: HTMLElement): HTMLElement => {
 		const failedBlock = DOM.create('ul', { class: 'failed' });
 		DOM.append(
@@ -116,13 +124,7 @@ export abstract class Module {
 		for (const name in this.options) {
 			this.options[name].active = this.options[name].default;
 		}
-		if (this.interface) {
-			for (const name in this.options) {
-				if (this.interface.form[name]) {
-					this.options[name].active = this.interface.form[name].checked;
-				}
-			}
-		}
+		this.interface?.setOptionsValues(this.options);
 	};
 
 	abstract async run(): Promise<void>;
@@ -171,7 +173,7 @@ export abstract class ImportModule extends Module {
 	constructor(service: typeof Service, moduleInterface?: ModuleInterface) {
 		super(service, moduleInterface);
 		if (this.extendOptions) this.extendOptions();
-		this.interface?.bind(this);
+		this.bindInterface();
 	}
 
 	async preExecute?(): Promise<boolean>;
@@ -335,7 +337,7 @@ export abstract class ExportModule extends Module {
 	constructor(service: typeof Service, moduleInterface?: ModuleInterface) {
 		super(service, moduleInterface);
 		if (this.extendOptions) this.extendOptions();
-		this.interface?.bind(this);
+		this.bindInterface();
 	}
 
 	async preExecute?(filtered: LocalTitle[]): Promise<boolean>;

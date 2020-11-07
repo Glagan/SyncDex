@@ -58,35 +58,6 @@ export interface StorageTitle {
 	lr?: number; // lastRead
 }
 
-export interface TitleProperties {
-	inList: boolean;
-	synced: boolean;
-	status: Status;
-	score: number;
-	progress: Progress;
-	max?: Partial<Progress>;
-	start?: Date;
-	end?: Date;
-	name?: string;
-}
-
-export interface LocalTitleProperties {
-	services: ServiceList;
-	chapters: number[];
-	lastTitle?: number;
-	lastCheck?: number;
-	// History
-	lastChapter?: number;
-	history?: Progress;
-	highest?: number;
-	lastRead?: number;
-}
-
-export interface ExternalTitleProperties {
-	loggedIn: boolean;
-	mangaDex?: number;
-}
-
 export class StorageTitle {
 	static valid(title: StorageTitle): boolean {
 		return (
