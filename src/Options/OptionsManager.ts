@@ -12,6 +12,9 @@ import { Changelog } from './Changelog';
 import { DOM } from '../Core/DOM';
 import { dateFormat } from '../Core/Utility';
 import { MyMangaDex } from './MyMangaDex';
+import { SyncDexImport } from './SyncDex';
+import { MangaDex } from './MangaDex';
+import { SpecialService } from './SpecialService';
 
 export class OptionsManager {
 	highlightsManager: HighlightsManager;
@@ -34,11 +37,23 @@ export class OptionsManager {
 		this.saveViewer = new SaveViewer();
 
 		// Import
-		const mmdImportCard = document.getElementById('import-mymangadex') as HTMLElement;
-		mmdImportCard.addEventListener('click', async (event) => {
-			event.preventDefault();
-			new MyMangaDex().start();
-		});
+		const importCards: { [key: string]: typeof SpecialService } = {
+			'import-mymangadex': MyMangaDex,
+			'import-syncdex': SyncDexImport,
+			'import-mangadex': MangaDex,
+		};
+		for (const cardId in importCards) {
+			const card = document.getElementById(cardId);
+			if (card) {
+				card.addEventListener('click', (event) => {
+					event.preventDefault();
+					const className = importCards[cardId];
+					// ! className is *NOT* abstract
+					/// @ts-ignore
+					new className().start();
+				});
+			}
+		}
 
 		// Export
 		const exportCard = document.getElementById('export-syncdex') as HTMLElement;

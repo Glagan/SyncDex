@@ -1,11 +1,11 @@
 import { DOM } from '../Core/DOM';
-import { ImportModule, ModuleOptions } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { AvailableOptions, Options } from '../Core/Options';
 import { ActivableKey, StaticKey, StaticName } from '../Core/Service';
 import { LocalStorage } from '../Core/Storage';
 import { LocalTitle, TitleCollection } from '../Core/Title';
 import { OptionsManager } from './OptionsManager';
+import { SpecialService } from './SpecialService';
 
 interface MyMangaDexTitle {
 	id: number;
@@ -63,20 +63,7 @@ type MyMangaDexSave = {
 	[key: string]: MyMangaDexTitle;
 };
 
-export class MyMangaDex {
-	options: ModuleOptions = {
-		merge: {
-			description: 'Merge with current local save',
-			display: true,
-			default: true,
-		},
-		mochi: {
-			description: 'Check Services ID with Mochi after Importing',
-			display: true,
-			default: true,
-		},
-	};
-
+export class MyMangaDex extends SpecialService {
 	assignValidOption = <K extends keyof AvailableOptions>(key: K, value: AvailableOptions[K]): number => {
 		// Check if the value is the same type as the value in the Options
 		if (typeof value === typeof Options[key]) {
@@ -209,6 +196,8 @@ export class MyMangaDex {
 		} else if (collection.length > 0) {
 			collection.merge(await TitleCollection.get(collection.ids));
 		}
+
+		// TODO: Mochi
 
 		// Save
 		await collection.persist();
