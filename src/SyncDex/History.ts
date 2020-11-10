@@ -48,12 +48,12 @@ export class History {
 					class: 'hover',
 					childs: [
 						DOM.create('a', {
-							href: `/title/${title.key}`,
+							href: `/title/${title.key.id}`,
 							childs: [
 								DOM.create('img', {
 									class: 'rounded',
 									title: title.name,
-									src: `/images/manga/${title.key}.large.jpg`,
+									src: `/images/manga/${title.key.id}.large.jpg`,
 									css: { width: '100%' },
 								}),
 							],
@@ -69,7 +69,7 @@ export class History {
 								DOM.create('a', {
 									class: 'manga_title white',
 									title: title.name,
-									href: `/title/${title.key}`,
+									href: `/title/${title.key.id}`,
 									textContent: title.name,
 								}),
 							],

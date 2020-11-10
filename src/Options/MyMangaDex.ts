@@ -5,7 +5,6 @@ import { ActivableKey, StaticKey, StaticName } from '../Core/Service';
 import { LocalStorage } from '../Core/Storage';
 import { LocalTitle, TitleCollection } from '../Core/Title';
 import { History } from '../SyncDex/History';
-import { OptionsManager } from './OptionsManager';
 import { SpecialService } from './SpecialService';
 
 interface MyMangaDexTitle {
@@ -202,7 +201,7 @@ export class MyMangaDex extends SpecialService {
 		moduleInterface.message;
 		message.classList.remove('loading');
 		moduleInterface.message('success', `Imported ${collection.length} Titles, History and Options !`);
-		OptionsManager.instance.reload();
+		this.reload();
 		moduleInterface.complete();
 	};
 

@@ -1,11 +1,10 @@
 import { DOM } from '../Core/DOM';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { Options } from '../Core/Options';
-import { StaticKey, StaticName } from '../Core/Service';
+import { StaticKey } from '../Core/Service';
 import { LocalStorage } from '../Core/Storage';
 import { LocalTitle, StorageTitle, TitleCollection } from '../Core/Title';
 import { SpecialService } from './SpecialService';
-import { OptionsManager } from './OptionsManager';
 import { History } from '../SyncDex/History';
 import { dateFormat } from '../Core/Utility';
 
@@ -88,7 +87,7 @@ export class SyncDexImport extends SpecialService {
 		moduleInterface.message;
 		message.classList.remove('loading');
 		moduleInterface.message('success', `Imported ${collection.length} Titles, History and Options !`);
-		OptionsManager.instance.reload();
+		this.reload();
 		moduleInterface.complete();
 	};
 

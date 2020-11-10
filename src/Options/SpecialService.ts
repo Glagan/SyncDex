@@ -5,6 +5,7 @@ import { ModuleInterface } from '../Core/ModuleInterface';
 import { AvailableOptions, Options } from '../Core/Options';
 import { StaticName } from '../Core/Service';
 import { TitleCollection } from '../Core/Title';
+import { OptionsManager } from './OptionsManager';
 
 export abstract class SpecialService {
 	options: ModuleOptions = {
@@ -66,4 +67,8 @@ export abstract class SpecialService {
 	};
 
 	abstract async start(): Promise<void>;
+
+	reload = (): void => {
+		OptionsManager.instance.reload();
+	};
 }

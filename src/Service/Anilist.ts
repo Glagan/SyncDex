@@ -1,7 +1,7 @@
+import { ActivableKey, ActivableName, Service } from '../Core/Service';
 import { Runtime } from '../Core/Runtime';
 import { ExternalTitle, LocalTitle } from '../Core/Title';
 import { Options } from '../Core/Options';
-import { ActivableKey, ActivableName, Service } from '../Core/Service';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { AppendableElement, DOM } from '../Core/DOM';

@@ -385,7 +385,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 
 	persist = async (): Promise<RequestStatus> => {
 		let url = `https://myanimelist.net/ownlist/manga/${this.key.id}/edit?hideLayout`;
-		if (!this.inList) url = `https://myanimelist.net/ownlist/manga/add?selected_manga_id=${this.key}&hideLayout`;
+		if (!this.inList) url = `https://myanimelist.net/ownlist/manga/add?selected_manga_id=${this.key.id}&hideLayout`;
 		const body: Record<string, string | number> = {
 			entry_id: 0,
 			manga_id: this.key.id!,

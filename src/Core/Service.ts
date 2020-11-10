@@ -1,4 +1,3 @@
-import { SaveOptions } from '../Options/Utility';
 import { AppendableElement, DOM } from './DOM';
 import { ExportModule, ImportModule } from './Module';
 import { ModuleInterface } from './ModuleInterface';
@@ -68,12 +67,6 @@ export abstract class Service {
 	};
 	static login?(username: string, password: string): Promise<RequestStatus>;
 	static logout?(): Promise<void>;
-	static async doLogout(): Promise<void> {
-		if (this.logout) {
-			this.logout();
-			await SaveOptions();
-		}
-	}
 
 	static importModule: (moduleInterface?: ModuleInterface) => ImportModule;
 	static exportModule: (moduleInterface?: ModuleInterface) => ExportModule;
