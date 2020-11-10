@@ -389,7 +389,7 @@ export class LocalTitle extends Title {
 		if (this.chapters.length > 0) {
 			mapped.c = this.chapters;
 		}
-		if (this.max) {
+		if (this.max && ((this.max.chapter && this.max.chapter > 0) || (this.max.volume && this.max.volume > 0))) {
 			mapped.m = {
 				c: this.max.chapter,
 				v: this.max.volume,

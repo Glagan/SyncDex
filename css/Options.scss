@@ -108,7 +108,7 @@ nav {
 body {
 	min-height: 100vh;
 	display: grid;
-	grid-template-columns: 20% 80%;
+	grid-template-columns: 18% 82%;
 	background-color: $grey-10;
 	color: $grey-90;
 	transition: all 250ms $animation;
@@ -117,9 +117,25 @@ main {
 	max-height: 100vh;
 	overflow-y: auto;
 	overflow-x: auto;
+	padding: 0 16px;
 }
 hr {
 	margin-bottom: 8px;
+}
+
+.section-content {
+	border-radius: 3px;
+	border: 1px solid $grey-40;
+	background-color: $grey-20;
+	padding: 8px;
+
+	& .block:last-child {
+		margin-bottom: 0;
+	}
+
+	.scs & .parameter:last-child {
+		margin-bottom: 0;
+	}
 }
 
 // Services
@@ -314,4 +330,48 @@ ul.changelog {
 	}
 }
 
-@import 'DarkTheme.scss';
+body:not(.light) {
+	background-color: $grey-70;
+	color: $white-100;
+
+	.scs {
+		&.modal .card .body {
+			color: $grey-90;
+		}
+		&.card {
+			box-shadow: $light-shadow-10;
+		}
+		&.card:hover {
+			box-shadow: $light-shadow-20;
+		}
+	}
+	.section-content {
+		border: 1px solid $grey-40;
+		background-color: $grey-60;
+	}
+	table {
+		border: 1px solid $grey-80;
+		background-color: $grey-60;
+		color: $white-100;
+		box-shadow: $light-shadow-10;
+	}
+	table thead {
+		background-color: $grey-70;
+		border: 1px solid $grey-80;
+	}
+	table thead th {
+		border-bottom: 1px solid $grey-80;
+	}
+	table tbody tr:nth-child(even) {
+		background-color: $grey-50;
+	}
+	table tr td.mangadex a[href] {
+		color: $white-100;
+	}
+	table tbody td.actions button {
+		color: $grey-10;
+	}
+	button.paging {
+		color: $white-100;
+	}
+}

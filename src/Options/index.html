@@ -57,51 +57,53 @@
 					<p>If you want to disable one of the highlights you can turn it off globally or set a color to <b>transparent</b>.</p>
 				</div>
 			</div>
-			<h2>Highlight</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_highlight" data-name="highlight" />
-				<label for="ck_highlight">Paint rows in chapters lists to quickly identify which chapters you can read next or that you already read.</label>
-			</div>
-			<h2>Next Chapter</h2>
-			<div class="block">
-				<label for="c-nextChapter" class="paragraph">Color of the next chapter of a title.</label>
-				<div class="color-input" data-color="nextChapter">
-					<input type="text" id="c-nextChapter" name="nextChapter" placeholder="Next chapter color" /><span class="color"></span>
+			<div class="section-content">
+				<h2>Highlight</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_highlight" data-name="highlight" />
+					<label for="ck_highlight">Paint rows in chapters lists to quickly identify which chapters you can read next or that you already read.</label>
 				</div>
-			</div>
-			<h2>Higher Chapters</h2>
-			<div class="block">
-				<label for="c-higherChapter" class="paragraph">Color of all <b>higher</b> chapters than your last read chapter.</label>
-				<div class="color-input" data-color="higherChapter">
-					<input type="text" id="c-higherChapter" name="higherChapter" placeholder="Higher chapters color" /><span class="color"></span>
-				</div>
-			</div>
-			<h2>Lower Chapters</h2>
-			<div class="block">
-				<label for="c-lowerChapter" class="paragraph">Color of all <b>lower</b> chapters than your last read chapter.</label>
-				<div class="color-input" data-color="lowerChapter">
-					<input type="text" id="c-lowerChapter" name="lowerChapter" placeholder="Lower chapter color" /><span class="color"></span>
-				</div>
-			</div>
-			<h2>Current Chapters</h2>
-			<div class="block">
-				<p class="paragraph">Colors for all <b>current</b> chapters.</p>
-				<div class="paragraph message">
-					<div class="icon"></div>
-					<div class="content">
-						<p><b>SyncDex</b> will cycle through them if you add multiple of them.</p>
+				<h2>Next Chapter</h2>
+				<div class="block">
+					<label for="c-nextChapter" class="paragraph">Color of the next chapter of a title.</label>
+					<div class="color-input" data-color="nextChapter">
+						<input type="text" id="c-nextChapter" name="nextChapter" placeholder="Next chapter color" /><span class="color"></span>
 					</div>
 				</div>
-				<div id="highlights" class="highlights"></div>
-			</div>
-			<h2>Opened Chapters</h2>
-			<div class="block">
-				<label for="c-openedChapter" class="paragraph">
-					Colors for chapters that you opened if the "<b>Save opened chapters</b>" option is enabled.<br />
-					Only applied in a <b>title</b> page.
-				</label>
-				<div class="color-input" data-color="openedChapter">
-					<input type="text" id="c-openedChapter" name="openedChapter" placeholder="Opened chapters color" /><span class="color"></span>
+				<h2>Higher Chapters</h2>
+				<div class="block">
+					<label for="c-higherChapter" class="paragraph">Color of all <b>higher</b> chapters than your last read chapter.</label>
+					<div class="color-input" data-color="higherChapter">
+						<input type="text" id="c-higherChapter" name="higherChapter" placeholder="Higher chapters color" /><span class="color"></span>
+					</div>
+				</div>
+				<h2>Lower Chapters</h2>
+				<div class="block">
+					<label for="c-lowerChapter" class="paragraph">Color of all <b>lower</b> chapters than your last read chapter.</label>
+					<div class="color-input" data-color="lowerChapter">
+						<input type="text" id="c-lowerChapter" name="lowerChapter" placeholder="Lower chapter color" /><span class="color"></span>
+					</div>
+				</div>
+				<h2>Current Chapters</h2>
+				<div class="block">
+					<p class="paragraph">Colors for all <b>current</b> chapters.</p>
+					<div class="paragraph message">
+						<div class="icon"></div>
+						<div class="content">
+							<p><b>SyncDex</b> will cycle through them if you add multiple of them.</p>
+						</div>
+					</div>
+					<div id="highlights" class="highlights"></div>
+				</div>
+				<h2>Opened Chapters</h2>
+				<div class="block">
+					<label for="c-openedChapter" class="paragraph">
+						Colors for chapters that you opened if the "<b>Save opened chapters</b>" option is enabled.<br />
+						Only applied in a <b>title</b> page.
+					</label>
+					<div class="color-input" data-color="openedChapter">
+						<input type="text" id="c-openedChapter" name="openedChapter" placeholder="Opened chapters color" /><span class="color"></span>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -113,81 +115,88 @@
 					<p>The following options change the behavior while you are reading.</p>
 				</div>
 			</div>
-			<h2>Save opened chapters</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_saveOpenedChapters" data-name="saveOpenedChapters" />
-				<label for="ck_saveOpenedChapters">Keep a list of all opened chapters when read.</label>
-			</div>
-			<h2>Save only next chapter</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_saveOnlyNext" data-name="saveOnlyNext" />
-				<label for="ck_saveOnlyNext">Save the chapter you are reading only if it's the next one.</label>
-				<p class="helper">If "<b>Confirm Chapter save</b>" is enabled it will asks you if you still want to update it, or else it will do nothing.</p>
-			</div>
-			<h2>Save only higher chapter</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_saveOnlyHigher" data-name="saveOnlyHigher" />
-				<label for="ck_saveOnlyHigher">Save the chapter you are reading only if it's <b>higher</b>.</label>
-				<p class="helper">If "<b>Confirm Chapter save</b>" is enabled it will asks you if you still want to update it, or else it will do nothing.</p>
-			</div>
-			<h2>Confirm Chapter</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_confirmChapter" data-name="confirmChapter" />
-				<label for="ck_confirmChapter">Asks if you still want to update your list(s) to the current chapter you are reading if the chapter is <b>Delayed</b>, <b>Higher, Lower or not your next</b> (depending on your options), or <b>not in your MangaDex list</b>.</label>
-			</div>
-			<h2>Update only if in list</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_updateOnlyInList" data-name="updateOnlyInList" />
-				<label for="ck_updateOnlyInList">Update your list(s) only if the title you are reading is <b>already</b> in your <b>MangaDex</b> list.</label>
-			</div>
-			<h2>Auto Sync</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_autoSync" data-name="autoSync" />
-				<label for="ck_autoSync">Automatically sync all of your Services from the most recent Service, or you Local Save.</label>
-				<p class="helper">Services will be synced from the last one in your list to your <b>Main Service</b>, syncing <b>Dates</b> and <b>Score</b> with it.</p>
+			<div class="section-content">
+				<h2>Save opened chapters</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_saveOpenedChapters" data-name="saveOpenedChapters" />
+					<label for="ck_saveOpenedChapters">Keep a list of all opened chapters when read.</label>
+				</div>
+				<h2>Save only next chapter</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_saveOnlyNext" data-name="saveOnlyNext" />
+					<label for="ck_saveOnlyNext">Save the chapter you are reading only if it's the next one.</label>
+					<p class="helper">If "<b>Confirm Chapter save</b>" is enabled it will asks you if you still want to update it, or else it will do nothing.</p>
+				</div>
+				<h2>Save only higher chapter</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_saveOnlyHigher" data-name="saveOnlyHigher" />
+					<label for="ck_saveOnlyHigher">Save the chapter you are reading only if it's <b>higher</b>.</label>
+					<p class="helper">If "<b>Confirm Chapter save</b>" is enabled it will asks you if you still want to update it, or else it will do nothing.</p>
+				</div>
+				<h2>Confirm Chapter</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_confirmChapter" data-name="confirmChapter" />
+					<label for="ck_confirmChapter">Asks if you still want to update your list(s) to the current chapter you are reading if the chapter is <b>Delayed</b>, <b>Higher, Lower or not your next</b> (depending on your options), or <b>not in your MangaDex list</b>.</label>
+				</div>
+				<h2>Update only if in list</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_updateOnlyInList" data-name="updateOnlyInList" />
+					<label for="ck_updateOnlyInList">Update your list(s) only if the title you are reading is <b>already</b> in your <b>MangaDex</b> list.</label>
+				</div>
+				<h2>Update MangaDex list</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_updateMD" data-name="updateMD" />
+					<label for="ck_updateMD">Update the <b>status</b> of the titles in your <b>MangaDex</b> list when needed.</label>
+					<p class="helper">
+						This will update the Status to <b>Reading</b> if it's not in your list, or if it's another list, and set it to <b>Completed</b> when you finish reading.<br />
+						Out of sync <b>MangaDex Status</b> will also be updated when visiting a <b>Title Page</b>.
+					</p>
+				</div>
 			</div>
 		</div>
 		<h1 id="lists"><i class="fas fa-list"></i> Lists</h1>
 		<div class="section">
-			<h2>Hide Higher chapters</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_hideHigher" data-name="hideHigher" />
-				<label for="ck_hideHigher">Hide chapters that are <b>higher</b> than the last chapter you read.</label>
-			</div>
-			<h2>Hide Lower chapters</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_hideLower" data-name="hideLower" />
-				<label for="ck_hideLower">Hide chapters that are <b>lower</b> than the last chapter you read.</label>
-			</div>
-			<h2>Hide Last chapters</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_hideLast" data-name="hideLast" />
-				<label for="ck_hideLast">Hide the last chapter you read.</label>
-			</div>
-			<h2>Display cover in lists</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_thumbnail" data-name="thumbnail" />
-				<label for="ck_thumbnail">Display the cover of the title when hovering a row inside lists.</label>
-				<input type="checkbox" id="ck_originalThumbnail" data-name="originalThumbnail" data-dependency="thumbnail" />
-				<label for="ck_originalThumbnail">Display the full size original cover of the title instead of a thumbnail.</label>
-				<p class="helper">Do not enable this if you don't have a somehow good connection, some images can be big.</p>
-				<input type="checkbox" id="ck_progressInThumbnail" data-name="progressInThumbnail" data-dependency="thumbnail" />
-				<label for="ck_progressInThumbnail">Display the current progress of the <b>Title</b> in it's thumbnail.</label>
-			</div>
-			<h2>Group Titles</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_groupTitlesInLists" data-name="groupTitlesInLists" />
-				<label for="ck_groupTitlesInLists">Group all rows of a Title in <b>Chapter Lists</b> to avoid multiple groups for a single Title.</label>
-				<p class="helper">Rows will be ordered by the <b>Chapter</b> value and not by <b>Publish Date</b>, but the transformed unique Groups will be ordered by the Publish Date of the first found row of the group.</p>
-			</div>
-			<h2>Separate Languages</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_separateLanguages" data-name="separateLanguages" />
-				<label for="ck_separateLanguages">Separate languages in lists if there are multiple and display your favorite <b>Language</b> by default if it's available.</label>
-				<h2 class="dependency">Favorite Language</h2>
-				<label for="ck_favoriteLanguage">Default active <b>Language</b> if available. Use <b>country code</b>. use <b>all</b> to not have any favorite by default.</label>
-				<input type="text" id="ck_favoriteLanguage" data-input="favoriteLanguage" data-dependency="separateLanguages">
-				<p class="helper">You can find the country code of your language by hovering the displayed flag of a chapter in your language.</p>
+			<div class="section-content">
+				<h2>Hide Higher chapters</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_hideHigher" data-name="hideHigher" />
+					<label for="ck_hideHigher">Hide chapters that are <b>higher</b> than the last chapter you read.</label>
+				</div>
+				<h2>Hide Lower chapters</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_hideLower" data-name="hideLower" />
+					<label for="ck_hideLower">Hide chapters that are <b>lower</b> than the last chapter you read.</label>
+				</div>
+				<h2>Hide Last chapters</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_hideLast" data-name="hideLast" />
+					<label for="ck_hideLast">Hide the last chapter you read.</label>
+				</div>
+				<h2>Display cover in lists</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_thumbnail" data-name="thumbnail" />
+					<label for="ck_thumbnail">Display the cover of the title when hovering a row inside lists.</label>
+					<input type="checkbox" id="ck_originalThumbnail" data-name="originalThumbnail" data-dependency="thumbnail" />
+					<label for="ck_originalThumbnail">Display the full size original cover of the title instead of a thumbnail.</label>
+					<p class="helper">Do not enable this if you don't have a somehow good connection, some images can be big.</p>
+					<input type="checkbox" id="ck_progressInThumbnail" data-name="progressInThumbnail" data-dependency="thumbnail" />
+					<label for="ck_progressInThumbnail">Display the current progress of the <b>Title</b> in it's thumbnail.</label>
+				</div>
+				<h2>Group Titles</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_groupTitlesInLists" data-name="groupTitlesInLists" />
+					<label for="ck_groupTitlesInLists">Group all rows of a Title in <b>Chapter Lists</b> to avoid multiple groups for a single Title.</label>
+					<p class="helper">Rows will be ordered by the <b>Chapter</b> value and not by <b>Publish Date</b>, but the transformed unique Groups will be ordered by the Publish Date of the first found row of the group.</p>
+				</div>
+				<h2>Separate Languages</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_separateLanguages" data-name="separateLanguages" />
+					<label for="ck_separateLanguages">Separate languages in lists if there are multiple and display your favorite <b>Language</b> by default if it's available.</label>
+					<h2 class="dependency">Favorite Language</h2>
+					<label for="ck_favoriteLanguage">Default active <b>Language</b> if available. Use <b>country code</b>. use <b>all</b> to not have any favorite by default.</label>
+					<input type="text" id="ck_favoriteLanguage" data-input="favoriteLanguage" data-dependency="separateLanguages">
+					<p class="helper">You can find the country code of your language by hovering the displayed flag of a chapter in your language.</p>
+				</div>
 			</div>
 		</div>
 		<h1 id="title-page"><i class="fas fa-book"></i> Title Page</h1>
@@ -198,31 +207,41 @@
 					<p>The following options change what is displayed on <b>title</b>s page.</p>
 				</div>
 			</div>
-			<h2>Link to services</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_linkToServices" data-name="linkToServices" />
-				<label for="ck_linkToServices">Add links to all Services that are valid and available.</label>
-			</div>
-			<h2>Overview</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_overviewMainOnly" data-name="overviewMainOnly" />
-				<label for="ck_overviewMainOnly">Display the <b>overview</b> only for your main Service.</label>
-			</div>
-			<h2>MangaDex Buttons update SyncDex</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_mdUpdateSyncDex" data-name="mdUpdateSyncDex" />
-				<label for="ck_mdUpdateSyncDex">Update <b>SyncDex</b> status and all <b>Active Services</b> when using <b>Status</b> and <b>Score</b> buttons.</label>
+			<div class="section-content">
+				<h2>Link to services</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_linkToServices" data-name="linkToServices" />
+					<label for="ck_linkToServices">Add links to all Services that are valid and available.</label>
+				</div>
+				<h2>Overview</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_overviewMainOnly" data-name="overviewMainOnly" />
+					<label for="ck_overviewMainOnly">Display the <b>overview</b> only for your main Service.</label>
+				</div>
+				<h2>Auto Sync</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_autoSync" data-name="autoSync" />
+					<label for="ck_autoSync">Automatically sync all of your Services from the most recent Service, or you Local Save.</label>
+					<p class="helper">Services will be synced from the last one in your list to your <b>Main Service</b>, syncing <b>Dates</b> and <b>Score</b> with it.</p>
+				</div>
+				<h2>MangaDex Buttons update SyncDex</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_mdUpdateSyncDex" data-name="mdUpdateSyncDex" />
+					<label for="ck_mdUpdateSyncDex">Update <b>SyncDex</b> status and all <b>Active Services</b> when using <b>Status</b> and <b>Score</b> buttons.</label>
+				</div>
 			</div>
 		</div>
 		<h1 id="notifications"><i class="fas fa-bell"></i> Notifications</h1>
 		<div class="section">
-			<div class="parameter">
-				<input type="checkbox" id="ck_notifications" data-name="notifications" />
-				<label for="ck_notifications">Show Notifications.</label>
-				<p class="helper">Error notifications will still be displayed unless you also toggle them off below.<br />
-					Confirmation notifications are always displayed.</p>
-				<input type="checkbox" id="ck_errorNotifications" data-name="errorNotifications" />
-				<label for="ck_errorNotifications">Show Error Notifications.</label>
+			<div class="section-content">
+				<div class="parameter">
+					<input type="checkbox" id="ck_notifications" data-name="notifications" />
+					<label for="ck_notifications">Show Notifications.</label>
+					<p class="helper">Error notifications will still be displayed unless you also toggle them off below.<br />
+						Confirmation notifications are always displayed.</p>
+					<input type="checkbox" id="ck_errorNotifications" data-name="errorNotifications" />
+					<label for="ck_errorNotifications">Show Error Notifications.</label>
+				</div>
 			</div>
 		</div>
 		<h1 id="history"><i class="fas fa-history"></i> History</h1>
@@ -233,43 +252,38 @@
 					<p>The following options update the <b>History</b> page of <b>MangaDex</b> (<a href="https://mangadex.org/history" rel="noreferrer noopener" target="_blank">https://mangadex.org/history <i class="fas fa-external-link-alt"></i></a>)</p>
 				</div>
 			</div>
-			<div class="parameter">
-				<input type="checkbox" id="ck_biggerHistory" data-name="biggerHistory" />
-				<label for="ck_biggerHistory">Save each titles you read and display a bigger history than the original 20 that <b>MangaDex</b> save.</label>
-				<p class="helper">
-					This will also <b>Highlight</b> your each cards in the <b>History</b> page to hint your status for the Title.<br />
-					<b>Green</b> if you read the <b>Highest available chapter</b> or <b>Blue</b> if there is a new chapter.
-				</p>
-				<input type="checkbox" id="ck_chapterStatus" data-name="chapterStatus" data-dependency="biggerHistory" />
-				<label for="ck_chapterStatus">Update the <b>History</b> page every 30min while it's keep opened to update <b>Highlight</b>.</label>
+			<div class="section-content">
+				<div class="parameter">
+					<input type="checkbox" id="ck_biggerHistory" data-name="biggerHistory" />
+					<label for="ck_biggerHistory">Save each titles you read and display a bigger history than the original 20 that <b>MangaDex</b> save.</label>
+					<p class="helper">
+						This will also <b>Highlight</b> your each cards in the <b>History</b> page to hint your status for the Title.<br />
+						<b>Green</b> if you read the <b>Highest available chapter</b> or <b>Blue</b> if there is a new chapter.
+					</p>
+					<input type="checkbox" id="ck_chapterStatus" data-name="chapterStatus" data-dependency="biggerHistory" />
+					<label for="ck_chapterStatus">Update the <b>History</b> page every 30min while it's keep opened to update <b>Highlight</b>.</label>
+				</div>
 			</div>
 		</div>
 		<h1 id="other"><i class="fas fa-ellipsis-h"></i> Other</h1>
 		<div class="section">
-			<h2 class="bold">Mochi</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_useMochi" data-name="useMochi" />
-				<label for="ck_useMochi">Use <a href="https://mochi.nikurasu.org/" target="_blank" rel="noreferrer noopener">Mochi <i class="fas fa-external-link-alt"></i></a> to get Services links.</label>
-				<input type="checkbox" id="ck_acceptLowScore" data-name="acceptLowScore" data-dependency="useMochi">
-				<label for="ck_acceptLowScore">Allow low score results from <b>Mochi</b>.</label>
-				<p class="helper">It is not recommended since it could add and update unrelated titles to your list.</p>
-			</div>
-			<h2>Update MangaDex list</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_updateMD" data-name="updateMD" />
-				<label for="ck_updateMD">Update the <b>status</b> of the titles in your <b>MangaDex</b> list when needed.</label>
-				<p class="helper">
-					This will update the Status to <b>Reading</b> if it's not in your list, or if it's another list, and set it to <b>Completed</b> when you finish reading.<br />
-					Out of sync <b>MangaDex Status</b> will also be updated when visiting a <b>Title Page</b>.
-				</p>
-			</div>
-			<h2>Check Lists on Startup</h2>
-			<div class="parameter">
-				<input type="checkbox" id="ck_checkOnStartup" data-name="checkOnStartup" />
-				<label for="ck_checkOnStartup">Check your lists on all <b>Services</b> you activated when you start your browser and update your <b>Local Save</b>.</label>
-				<p class="helper">
-					This option is useful if you read on your phone with <b>Tachiyomi</b> for example and it directly updates your list on a <b>Service</b>.
-				</p>
+			<div class="section-content">
+				<h2 class="bold">Mochi</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_useMochi" data-name="useMochi" />
+					<label for="ck_useMochi">Use <a href="https://mochi.nikurasu.org/" target="_blank" rel="noreferrer noopener">Mochi <i class="fas fa-external-link-alt"></i></a> to get Services links.</label>
+					<input type="checkbox" id="ck_acceptLowScore" data-name="acceptLowScore" data-dependency="useMochi">
+					<label for="ck_acceptLowScore">Allow low score results from <b>Mochi</b>.</label>
+					<p class="helper">It is not recommended since it could add and update unrelated titles to your list.</p>
+				</div>
+				<h2>Check Lists on Startup</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_checkOnStartup" data-name="checkOnStartup" />
+					<label for="ck_checkOnStartup">Check your lists on all <b>Services</b> you activated when you start your browser and update your <b>Local Save</b>.</label>
+					<p class="helper">
+						This option is useful if you read on your phone with <b>Tachiyomi</b> for example and it directly updates your list on a <b>Service</b>.
+					</p>
+				</div>
 			</div>
 		</div>
 		<h1 id="save"><i class="fas fa-save"></i> Save Viewer</h1>
@@ -313,7 +327,7 @@
 		<div id="import-export" class="section import-export">
 			<div>
 				<h1 id="import"><i class="fas fa-download"></i> Import</h1>
-				<div class="import">
+				<div class="import section-content">
 					<div id="import-mymangadex" class="scs card">
 						<div class="header mmd">MyMangaDex</div>
 					</div>
@@ -327,7 +341,7 @@
 			</div>
 			<div>
 				<h1 id="export"><i class="fas fa-upload"></i> Export</h1>
-				<div class="export">
+				<div class="export section-content">
 					<div id="export-syncdex" class="scs card">
 						<div class="header sc">SyncDex</div>
 					</div>
@@ -357,7 +371,9 @@
 		</div>
 		<h1 id="credits"><i class="fas fa-at"></i> Credits</h1>
 		<div class="section">
-			<b>SyncDex</b> icon modified by myself, taken from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com <i class="fas fa-external-link-alt"></i></a> by <a href="https://www.flaticon.com/free-icon/sync_2413831" title="iconixar">iconixar <i class="fas fa-external-link-alt"></i></a>.
+			<div class="section-content">
+				<b>SyncDex</b> icon modified by myself, taken from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com <i class="fas fa-external-link-alt"></i></a> by <a href="https://www.flaticon.com/free-icon/sync_2413831" title="iconixar">iconixar <i class="fas fa-external-link-alt"></i></a>.
+			</div>
 		</div>
 	</main>
 	<script src="../dist/SimpleNotification.js"></script>

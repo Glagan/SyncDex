@@ -294,7 +294,7 @@ export class SaveEditor {
 			form,
 			this.modalRow([
 				this.modalGroup('MangaDex', '', [
-					DOM.create('span', { class: 'helper', textContent: `# ${title.key}` }),
+					DOM.create('span', { class: 'helper', textContent: `# ${title.key.id}` }),
 				]),
 				this.modalGroup('Name', 'ee_name', [
 					DOM.create('input', {

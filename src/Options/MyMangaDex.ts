@@ -188,6 +188,12 @@ export class MyMangaDex extends SpecialService {
 		message.classList.remove('loading');
 		if (moduleInterface.doStop) return moduleInterface.complete();
 
+		// Mochi
+		if (this.options.mochi.active) {
+			await this.mochi(collection, moduleInterface, { names: true });
+			if (moduleInterface.doStop) return moduleInterface.complete();
+		}
+
 		// Save
 		message = moduleInterface.message('loading', 'Saving...');
 		if (!this.options.merge.active) {
@@ -196,8 +202,6 @@ export class MyMangaDex extends SpecialService {
 		} else if (collection.length > 0) {
 			collection.merge(await TitleCollection.get(collection.ids));
 		}
-
-		// TODO: Mochi
 
 		// Save
 		await collection.persist();

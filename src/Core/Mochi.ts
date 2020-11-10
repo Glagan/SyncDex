@@ -2,7 +2,12 @@ import { Runtime } from './Runtime';
 import { ServiceName, StaticKey } from './Service';
 import { LocalTitle, SaveServiceList } from './Title';
 
+export interface MochiExtra {
+	names?: boolean;
+}
+
 interface MochiService extends SaveServiceList {
+	name?: string;
 	[StaticKey.MangaDex]?: number;
 }
 
@@ -24,10 +29,16 @@ export class Mochi {
 	 */
 	static connections(
 		id: (number | string) | (number | string)[],
-		source: ServiceName = ServiceName.MangaDex
+		source: ServiceName = ServiceName.MangaDex,
+		extra?: MochiExtra
 	): string {
-		if (Array.isArray(id)) return `${Mochi.server}/connections.php?id=${id.join(',')}&source=${source}`;
-		return `${Mochi.server}/connections.php?id=${id}&source=${source}`;
+		const extras = extra
+			? `&${Object.keys(extra)
+					.map((key) => `${key}=${extra[key as keyof MochiExtra]}`)
+					.join('&')}`
+			: '';
+		if (Array.isArray(id)) return `${Mochi.server}/connections.php?id=${id.join(',')}&source=${source}${extras}`;
+		return `${Mochi.server}/connections.php?id=${id}&source=${source}${extras}`;
 	}
 
 	/**
@@ -37,10 +48,11 @@ export class Mochi {
 	 */
 	static async find(
 		id: number | string,
-		source: ServiceName = ServiceName.MangaDex
+		source: ServiceName = ServiceName.MangaDex,
+		extra?: MochiExtra
 	): Promise<MochiService | undefined> {
 		const response = await Runtime.jsonRequest<MochiResult>({
-			url: Mochi.connections(id, source),
+			url: Mochi.connections(id, source, extra),
 		});
 		if (!response.ok) return undefined;
 		if (response.body.data === undefined) return undefined;
@@ -54,10 +66,11 @@ export class Mochi {
 	 */
 	static async findMany(
 		ids: (number | string)[],
-		source: ServiceName = ServiceName.MangaDex
+		source: ServiceName = ServiceName.MangaDex,
+		extra?: MochiExtra
 	): Promise<MochiService[] | undefined> {
 		const response = await Runtime.jsonRequest<MochiResult>({
-			url: Mochi.connections(ids, source),
+			url: Mochi.connections(ids, source, extra),
 		});
 		if (!response.ok) return undefined;
 		return response.body.data;
@@ -70,15 +83,23 @@ export class Mochi {
 		for (const key in connections) {
 			const serviceKey = key as keyof MochiService;
 			const mediaKey = connections[serviceKey]!;
-			if (serviceKey === StaticKey.MangaDex) {
+			if (serviceKey == StaticKey.MangaDex) {
 				if (typeof mediaKey === 'number') title.key.id = mediaKey as number;
+			} else if (serviceKey == 'name') {
+				title.name = mediaKey as string;
 			} else {
 				if (typeof mediaKey === 'number') {
 					title.services[serviceKey] = { id: mediaKey };
-				} else {
+				} else if (typeof mediaKey !== 'string') {
 					title.services[serviceKey] = {} as MediaKey;
 					if (mediaKey.i) title.services[serviceKey]!.id = mediaKey.i;
 					if (mediaKey.s) title.services[serviceKey]!.slug = mediaKey.s;
+					if (
+						title.services[serviceKey]!.id === undefined &&
+						title.services[serviceKey]!.slug === undefined
+					) {
+						delete title.services[serviceKey];
+					}
 				}
 			}
 		}

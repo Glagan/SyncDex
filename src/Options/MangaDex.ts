@@ -57,6 +57,8 @@ export class MangaDex extends SpecialService {
 
 		// Show the Modal
 		moduleInterface.bindFormSubmit(async () => {
+			moduleInterface.setOptionsValues(this.options);
+
 			// Check login and get an Username
 			let message = moduleInterface.message('loading', 'Checking login status...');
 			const loggedIn = (await this.loggedIn()) === RequestStatus.SUCCESS;
@@ -104,6 +106,12 @@ export class MangaDex extends SpecialService {
 			message.classList.remove('loading');
 			if (moduleInterface.doStop) return moduleInterface.complete();
 
+			// Mochi
+			if (this.options.mochi.active) {
+				await this.mochi(titles, moduleInterface, { names: true });
+				if (moduleInterface.doStop) return moduleInterface.complete();
+			}
+
 			// Save
 			message = moduleInterface.message('loading', 'Saving...');
 			if (!this.options.merge.active) {
@@ -112,8 +120,6 @@ export class MangaDex extends SpecialService {
 			} else if (titles.length > 0) {
 				titles.merge(await TitleCollection.get(titles.ids));
 			}
-
-			// TODO: Mochi
 
 			// Save
 			await titles.persist();
