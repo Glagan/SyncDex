@@ -377,7 +377,7 @@ export class AnilistTitle extends ExternalTitle {
 		return undefined;
 	};
 
-	static get = async (key: MediaKey): Promise<AnilistTitle | RequestStatus> => {
+	static async get(key: MediaKey): Promise<AnilistTitle | RequestStatus> {
 		const id = key.id!;
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<AnilistGetResponse>({
@@ -412,7 +412,7 @@ export class AnilistTitle extends ExternalTitle {
 			values.end = AnilistTitle.dateFromAnilist(mediaEntry.completedAt);
 		} else values.inList = false;
 		return new AnilistTitle(values);
-	};
+	}
 
 	static dateToAnilist = (date?: Date): AnilistDate | undefined => {
 		if (date !== undefined) {

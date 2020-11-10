@@ -316,7 +316,7 @@ export class KitsuTitle extends ExternalTitle {
 	libraryEntryId?: number = 0;
 
 	// abstract static get(id): RequestStatus
-	static get = async (key: MediaKey): Promise<ExternalTitle | RequestStatus> => {
+	static async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<KitsuResponse>({
 			url: `${KitsuAPI}?filter[manga_id]=${key.id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=chapterCount,volumeCount,canonicalTitle`,
@@ -347,7 +347,7 @@ export class KitsuTitle extends ExternalTitle {
 			values.name = body.included[0].attributes.canonicalTitle;
 		} else values.inList = false;
 		return new KitsuTitle(values);
-	};
+	}
 
 	persist = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;

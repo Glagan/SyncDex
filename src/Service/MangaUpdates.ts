@@ -176,9 +176,9 @@ export class MangaUpdatesTitle extends ExternalTitle {
 		return MangaUpdatesStatus.NONE;
 	};
 
-	static get = async (key: MediaKey): Promise<ExternalTitle | RequestStatus> => {
+	static async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
 		const response = await Runtime.request<RawResponse>({
-			url: MangaUpdatesTitle.link(key),
+			url: MangaUpdates.link(key),
 			method: 'GET',
 			credentials: 'include',
 		});
@@ -217,7 +217,7 @@ export class MangaUpdatesTitle extends ExternalTitle {
 		const title = body.querySelector('span.releasestitle');
 		values.name = title ? title.textContent! : undefined;
 		return new MangaUpdatesTitle(values);
-	};
+	}
 
 	// Get a list of status to go through to be able to update to the wanted status
 	pathToStatus = (): MangaUpdatesStatus[] => {

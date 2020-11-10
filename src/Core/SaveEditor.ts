@@ -58,13 +58,13 @@ export class SaveEditor {
 		return chapterNode;
 	};
 
-	static createServiceInput = (service: typeof Service, value: MediaKey): HTMLElement[] => {
+	static createServiceInput = (service: typeof Service, value?: MediaKey): HTMLElement[] => {
 		const inputs: HTMLElement[] = [
 			DOM.create('input', {
 				type: 'number',
 				name: `${service.key}_id`,
 				placeholder: `${service.name} ID`,
-				value: `${value.id ?? ''}`,
+				value: `${value?.id ?? ''}`,
 			}),
 		];
 		if (service.usesSlug) {
@@ -73,7 +73,7 @@ export class SaveEditor {
 					type: 'string',
 					name: `${service.key}_slug`,
 					placeholder: `${service.name} Slug`,
-					value: `${value.slug ?? ''}`,
+					value: `${value?.slug ?? ''}`,
 				})
 			);
 		}
@@ -254,7 +254,13 @@ export class SaveEditor {
 		const historyForm = DOM.create('form', {
 			class: 'chapter',
 			childs: [
-				DOM.create('input', { type: 'number', min: '0', step: 'any', name: 'chapter', placeholder: 'Chapter' }),
+				DOM.create('input', {
+					type: 'number',
+					min: '0',
+					step: 'any',
+					name: 'chapter',
+					placeholder: 'Chapter',
+				}),
 				DOM.create('button', { type: 'submit', class: 'primary small', textContent: 'Add' }),
 			],
 			events: {
@@ -350,10 +356,10 @@ export class SaveEditor {
 			]),
 			DOM.create('div', {
 				class: 'group history',
-				title: 'Click to show the Chapter List for the Title.',
 				childs: [
 					DOM.create('label', {
 						textContent: 'History',
+						title: 'Click to show the Chapter List for the Title.',
 						childs: [DOM.space(), showHistory],
 						events: {
 							click: (event) => {

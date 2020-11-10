@@ -323,7 +323,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 		return new Date(parts[0], parts[1] - 1, parts[2]);
 	};
 
-	static get = async (key: MediaKey): Promise<ExternalTitle | RequestStatus> => {
+	static async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
 		const response = await Runtime.request<RawResponse>({
 			url: `https://myanimelist.net/ownlist/manga/${key.id}/edit?hideLayout`,
 			method: 'GET',
@@ -381,7 +381,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 			} else values.loggedIn = true;
 		}
 		return new MyAnimeListTitle(values);
-	};
+	}
 
 	persist = async (): Promise<RequestStatus> => {
 		let url = `https://myanimelist.net/ownlist/manga/${this.key.id}/edit?hideLayout`;

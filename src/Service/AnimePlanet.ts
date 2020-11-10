@@ -207,7 +207,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 		score?: number;
 	} = { progress: { chapter: 0 }, status: Status.NONE };
 
-	static get = async (key: MediaKey): Promise<ExternalTitle | RequestStatus> => {
+	static async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
 		const response = await Runtime.request<RawResponse>({
 			url: AnimePlanetTitle.link(key),
 			method: 'GET',
@@ -264,7 +264,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 		}
 		values.name = body.querySelector(`h1[itemprop='name']`)!.textContent!;
 		return new AnimePlanetTitle(values);
-	};
+	}
 
 	persist = async (): Promise<RequestStatus> => {
 		if (this.status === Status.NONE) return RequestStatus.BAD_REQUEST;

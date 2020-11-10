@@ -548,10 +548,6 @@ export abstract class ExternalTitle extends Title {
 		return { id: 0 };
 	};
 
-	static link(key: MediaKey): string {
-		return (<typeof ExternalTitle>this.constructor).service.link(key);
-	}
-
 	/**
 	 * Get the ID used by Mochi that can only be a number or a string.
 	 */
