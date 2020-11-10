@@ -146,6 +146,8 @@ export class SaveViewer {
 		this.reloadButton.addEventListener('click', (event) => {
 			event.preventDefault();
 			this.sortBy = { search: '', status: undefined, field: 'key', order: 'ASC' };
+			this.statusSelect.value = '-1';
+			this.searchInput.value = '';
 			this.idColumn.appendChild(this.sortFieldIcon);
 			this.sortFieldIcon.classList.remove('fa-angle-down');
 			this.sortFieldIcon.classList.add('fa-angle-up');

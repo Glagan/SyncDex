@@ -9,11 +9,9 @@ import { SaveViewer } from './SaveViewer';
 import { SaveOptions } from './Utility';
 import { Options } from '../Core/Options';
 import { Changelog } from './Changelog';
-import { DOM } from '../Core/DOM';
-import { dateFormat } from '../Core/Utility';
 import { MyMangaDex } from './MyMangaDex';
-import { SyncDexImport } from './SyncDex';
-import { MangaDex } from './MangaDex';
+import { SyncDexImport, SyncDexExport } from './SyncDex';
+import { MangaDexImport, MangaDexExport } from './MangaDex';
 import { SpecialService } from './SpecialService';
 
 export class OptionsManager {
@@ -40,7 +38,9 @@ export class OptionsManager {
 		const importCards: { [key: string]: typeof SpecialService } = {
 			'import-mymangadex': MyMangaDex,
 			'import-syncdex': SyncDexImport,
-			'import-mangadex': MangaDex,
+			'import-mangadex': MangaDexImport,
+			'export-syncdex': SyncDexExport,
+			'export-mangadex': MangaDexExport,
 		};
 		for (const cardId in importCards) {
 			const card = document.getElementById(cardId);
@@ -52,29 +52,6 @@ export class OptionsManager {
 				});
 			}
 		}
-
-		// Export
-		const exportCard = document.getElementById('export-syncdex') as HTMLElement;
-		exportCard.addEventListener('click', async (event) => {
-			event.preventDefault();
-			const data: ExportedSave | undefined = await LocalStorage.getAll();
-			if (data && data.options) {
-				delete data.options.tokens;
-				const blob = new Blob([JSON.stringify(data)], { type: 'application/json;charset=utf-8' });
-				const href = URL.createObjectURL(blob);
-				const downloadLink = DOM.create('a', {
-					css: { display: 'none' },
-					download: `SyncDex_${dateFormat(new Date(), true).replace(/(\s|:)+/g, '_')}.json`,
-					target: '_blank',
-					href: href,
-				});
-				document.body.appendChild(downloadLink);
-				downloadLink.click();
-				downloadLink.remove();
-				URL.revokeObjectURL(href);
-				SimpleNotification.success({ title: 'Save Exported' });
-			}
-		});
 
 		// Delete save event
 		const deleteSave = document.getElementById('delete-save');

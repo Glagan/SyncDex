@@ -1,12 +1,13 @@
 import { DOM } from '../Core/DOM';
 import { ModuleInterface } from '../Core/ModuleInterface';
-import { AvailableOptions, DefaultOptions, Options } from '../Core/Options';
+import { Options } from '../Core/Options';
 import { StaticKey, StaticName } from '../Core/Service';
 import { LocalStorage } from '../Core/Storage';
 import { LocalTitle, StorageTitle, TitleCollection } from '../Core/Title';
 import { SpecialService } from './SpecialService';
 import { OptionsManager } from './OptionsManager';
 import { History } from '../SyncDex/History';
+import { dateFormat } from '../Core/Utility';
 
 export class SyncDexImport extends SpecialService {
 	handleFile = async (data: ExportedSave, moduleInterface: ModuleInterface): Promise<void> => {
@@ -95,7 +96,19 @@ export class SyncDexImport extends SpecialService {
 		// Create a ModuleInterface from scratch
 		const moduleInterface = new ModuleInterface();
 		moduleInterface.createOptions(this.options);
-		moduleInterface.setStyle(DOM.text(StaticName.SyncDex), StaticKey.SyncDex);
+		moduleInterface.setStyle(
+			DOM.create('span', {
+				class: 'sync',
+				textContent: 'Sync',
+				childs: [
+					DOM.create('span', {
+						class: 'dex',
+						textContent: 'Dex',
+					}),
+				],
+			}),
+			StaticKey.SyncDex
+		);
 
 		// Add File input
 		const inputId = `file_${StaticKey.SyncDex}`;
@@ -152,5 +165,27 @@ export class SyncDexImport extends SpecialService {
 			reader.readAsText(form.save.files[0]);
 		});
 		moduleInterface.modal.show();
+	};
+}
+
+export class SyncDexExport extends SpecialService {
+	start = async (): Promise<void> => {
+		const data: ExportedSave | undefined = await LocalStorage.getAll();
+		if (data && data.options) {
+			delete data.options.tokens;
+			const blob = new Blob([JSON.stringify(data)], { type: 'application/json;charset=utf-8' });
+			const href = URL.createObjectURL(blob);
+			const downloadLink = DOM.create('a', {
+				css: { display: 'none' },
+				download: `SyncDex_${dateFormat(new Date(), true).replace(/(\s|:)+/g, '_')}.json`,
+				target: '_blank',
+				href: href,
+			});
+			document.body.appendChild(downloadLink);
+			downloadLink.click();
+			downloadLink.remove();
+			URL.revokeObjectURL(href);
+			SimpleNotification.success({ title: 'Save Exported' });
+		}
 	};
 }

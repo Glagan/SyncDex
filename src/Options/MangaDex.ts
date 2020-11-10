@@ -1,5 +1,4 @@
 import { DOM } from '../Core/DOM';
-import { ModuleOptions } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
@@ -22,10 +21,21 @@ interface MangaDexAPIResponse {
 	}[];
 }
 
-export class MangaDex extends SpecialService {
-	user: number = 0;
+export class MangaDexHelper {
+	static createTitle = (): HTMLElement => {
+		return DOM.create('span', {
+			class: 'manga',
+			textContent: 'Manga',
+			childs: [
+				DOM.create('span', {
+					class: 'dex',
+					textContent: 'Dex',
+				}),
+			],
+		});
+	};
 
-	loggedIn = async (): Promise<RequestStatus> => {
+	static getUser = async (): Promise<number> => {
 		const response = await Runtime.request<RawResponse>({
 			url: `https://mangadex.org/about`,
 			credentials: 'include',
@@ -42,18 +52,25 @@ export class MangaDex extends SpecialService {
 			if (res === null) {
 				throw 'Could not find User ID';
 			}
-			this.user = parseInt(res[1]);
-			return RequestStatus.SUCCESS;
+			return parseInt(res[1]);
 		} catch (error) {
-			return RequestStatus.FAIL;
+			return 0;
 		}
 	};
 
+	static getAllTitles = (user: number): Promise<JSONResponse<MangaDexAPIResponse>> => {
+		return Runtime.jsonRequest<MangaDexAPIResponse>({
+			url: `https://mangadex.org/api/v2/user/${user}/followed-manga`,
+		});
+	};
+}
+
+export class MangaDexImport extends SpecialService {
 	start = async (): Promise<void> => {
 		// Create a ModuleInterface from scratch
 		const moduleInterface = new ModuleInterface();
 		moduleInterface.createOptions(this.options);
-		moduleInterface.setStyle(DOM.text(StaticName.MangaDex), StaticKey.MangaDex);
+		moduleInterface.setStyle(MangaDexHelper.createTitle(), StaticKey.MangaDex);
 
 		// Show the Modal
 		moduleInterface.bindFormSubmit(async () => {
@@ -61,9 +78,10 @@ export class MangaDex extends SpecialService {
 
 			// Check login and get an Username
 			let message = moduleInterface.message('loading', 'Checking login status...');
-			const loggedIn = (await this.loggedIn()) === RequestStatus.SUCCESS;
+			const user = await MangaDexHelper.getUser();
+			const loggedIn = user !== 0;
 			message.classList.remove('loading');
-			if (!loggedIn || this.user == 0) {
+			if (!loggedIn) {
 				moduleInterface.message(
 					'warning',
 					`You need to be logged in on MangaDex to Import your following list !`
@@ -75,9 +93,7 @@ export class MangaDex extends SpecialService {
 			// The only problem is there is no names for each titles
 			// But the API has the current progress while the /list page doesn't
 			message = moduleInterface.message('loading', 'Fetching all Titles...');
-			const response = await Runtime.jsonRequest<MangaDexAPIResponse>({
-				url: `https://mangadex.org/api/v2/user/${this.user}/followed-manga`,
-			});
+			const response = await MangaDexHelper.getAllTitles(user);
 			message.classList.remove('loading');
 			if (!response.ok) {
 				moduleInterface.message(
@@ -127,6 +143,102 @@ export class MangaDex extends SpecialService {
 			message.classList.remove('loading');
 			moduleInterface.message('success', `Imported ${titles.length} Titles !`);
 			OptionsManager.instance.reload();
+			moduleInterface.complete();
+		});
+		moduleInterface.modal.show();
+	};
+}
+
+export class MangaDexExport extends SpecialService {
+	persistTitle = async (title: LocalTitle): Promise<RequestStatus> => {
+		// Status
+		const response = await Runtime.request<RawResponse>({
+			url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_follow&id=${title.key.id}&type=${
+				title.status
+			}&_=${Date.now()}`,
+			credentials: 'include',
+			headers: {
+				'X-Requested-With': 'XMLHttpRequest',
+			},
+		});
+		// Score
+		if (title.score > 0) {
+			await Runtime.request<RawResponse>({
+				url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_rating&id=${title.key.id}&rating=${
+					title.score / 10
+				}&_=${Date.now()}`,
+				credentials: 'include',
+				headers: {
+					'X-Requested-With': 'XMLHttpRequest',
+				},
+			});
+		}
+		return Runtime.responseStatus(response);
+	};
+
+	start = async (): Promise<void> => {
+		// Create a ModuleInterface from scratch
+		const moduleInterface = new ModuleInterface();
+		moduleInterface.setStyle(MangaDexHelper.createTitle(), StaticKey.MangaDex);
+
+		// Show the Modal
+		moduleInterface.bindFormSubmit(async () => {
+			// Check login and get an Username
+			let message = moduleInterface.message('loading', 'Checking login status...');
+			const user = await MangaDexHelper.getUser();
+			const loggedIn = user !== 0;
+			message.classList.remove('loading');
+			if (!loggedIn) {
+				moduleInterface.message('warning', `You need to be logged in on MangaDex to Export your Save !`);
+				return moduleInterface.complete();
+			}
+
+			// Select Titles
+			const allTitles = await TitleCollection.get();
+			let titles = allTitles.collection.filter((title) => title.status != Status.NONE);
+
+			// Fetch all Titles already in list to avoid sending extra requests
+			message = moduleInterface.message('loading', 'Filtering Titles already on MangaDex List...');
+			const response = await MangaDexHelper.getAllTitles(user);
+			if (!response.ok) {
+				moduleInterface.message(
+					'warning',
+					'The request failed, maybe MangaDex is having problems, retry later.'
+				);
+				return moduleInterface.complete();
+			}
+			const onlineList: { [key: string]: { status: Status; rating: number } } = {};
+			for (const title of response.body.data) {
+				onlineList[title.mangaId] = { status: title.followType, rating: title.rating ?? 0 };
+			}
+			titles = titles.filter(
+				(t) =>
+					onlineList[t.key.id!] === undefined ||
+					onlineList[t.key.id!].status !== t.status ||
+					(t.score > 0 && onlineList[t.key.id!].rating !== Math.round(t.score / 10))
+			);
+			message.classList.remove('loading');
+
+			// Export all Titles
+			const progress = DOM.create('p');
+			message = moduleInterface.message('loading', [progress]);
+			let i = 0;
+			const max = titles.length;
+			for (; !moduleInterface.doStop && i < max; i++) {
+				const title = titles[i];
+				progress.textContent = `Exporting Title ${i + 1} out of ${max} (${
+					title.name ? title.name : 'No Name'
+				})`;
+				if (
+					onlineList[title.key.id!] === undefined ||
+					onlineList[title.key.id!].status !== title.status ||
+					(title.score > 0 && onlineList[title.key.id!].rating !== title.score)
+				) {
+					await this.persistTitle(title);
+				}
+			}
+			message.classList.remove('loading');
+			moduleInterface.message('success', `Exported ${i + 1} Titles !`);
 			moduleInterface.complete();
 		});
 		moduleInterface.modal.show();
