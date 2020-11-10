@@ -2,6 +2,7 @@ import { DOM } from '../Core/DOM';
 import { Mochi, MochiExtra } from '../Core/Mochi';
 import { ModuleOptions } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
+import { AvailableOptions, Options } from '../Core/Options';
 import { StaticName } from '../Core/Service';
 import { TitleCollection } from '../Core/Title';
 
@@ -19,6 +20,22 @@ export abstract class SpecialService {
 		},
 	};
 	perConvert: number = 250;
+
+	optionExists = (key: string): key is keyof AvailableOptions => {
+		return Options[key as keyof AvailableOptions] !== undefined;
+	};
+
+	assignValidOption = <K extends keyof AvailableOptions>(key: K, value: AvailableOptions[K]): boolean => {
+		// Check if the value is the same type as the value in the Options
+		if (typeof value === typeof Options[key]) {
+			// Check if the key actually exist
+			if ((Options as AvailableOptions)[key] !== undefined || key === 'mainService') {
+				(Options as AvailableOptions)[key] = value;
+				return true;
+			}
+		}
+		return false;
+	};
 
 	mochi = async (titles: TitleCollection, moduleInterface?: ModuleInterface, extras?: MochiExtra): Promise<void> => {
 		let current = 0;

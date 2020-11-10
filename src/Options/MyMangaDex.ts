@@ -1,9 +1,10 @@
 import { DOM } from '../Core/DOM';
 import { ModuleInterface } from '../Core/ModuleInterface';
-import { AvailableOptions, Options } from '../Core/Options';
+import { Options } from '../Core/Options';
 import { ActivableKey, StaticKey, StaticName } from '../Core/Service';
 import { LocalStorage } from '../Core/Storage';
 import { LocalTitle, TitleCollection } from '../Core/Title';
+import { History } from '../SyncDex/History';
 import { OptionsManager } from './OptionsManager';
 import { SpecialService } from './SpecialService';
 
@@ -64,39 +65,26 @@ type MyMangaDexSave = {
 };
 
 export class MyMangaDex extends SpecialService {
-	assignValidOption = <K extends keyof AvailableOptions>(key: K, value: AvailableOptions[K]): number => {
-		// Check if the value is the same type as the value in the Options
-		if (typeof value === typeof Options[key]) {
-			// Check if the key actually exist
-			if ((Options as AvailableOptions)[key] !== undefined || key === 'mainService') {
-				(Options as AvailableOptions)[key] = value;
-				return 1;
-			}
-		}
-		return 0;
-	};
-
 	convertOptions = (data: MyMangaDexSave): void => {
 		const old = data.options;
 		if (old !== undefined) {
-			let total = 0;
-			total += this.assignValidOption('thumbnail', old.showTooltips);
-			total += this.assignValidOption('originalThumbnail', old.showFullCover);
-			total += this.assignValidOption('thumbnailMaxHeight', old.coverMaxHeight);
-			total += this.assignValidOption('updateMD', old.updateMDList);
-			total += this.assignValidOption('updateOnlyInList', old.updateOnlyInList);
-			total += this.assignValidOption('notifications', old.showNotifications);
-			total += this.assignValidOption('errorNotifications', old.showErrors);
-			total += this.assignValidOption('hideHigher', old.hideHigherChapters);
-			total += this.assignValidOption('hideLower', old.hideLowerChapters);
-			total += this.assignValidOption('hideLast', old.hideLastRead);
-			total += this.assignValidOption('saveOnlyHigher', old.saveOnlyHigher);
-			total += this.assignValidOption('biggerHistory', old.updateHistoryPage);
-			total += this.assignValidOption('saveOpenedChapters', old.saveAllOpened);
-			total += this.assignValidOption('chaptersSaved', old.maxChapterSaved);
-			total += this.assignValidOption('highlight', old.highlightChapters);
-			total += this.assignValidOption('saveOnlyNext', old.saveOnlyNext);
-			total += this.assignValidOption('confirmChapter', old.confirmChapter);
+			this.assignValidOption('thumbnail', old.showTooltips);
+			this.assignValidOption('originalThumbnail', old.showFullCover);
+			this.assignValidOption('thumbnailMaxHeight', old.coverMaxHeight);
+			this.assignValidOption('updateMD', old.updateMDList);
+			this.assignValidOption('updateOnlyInList', old.updateOnlyInList);
+			this.assignValidOption('notifications', old.showNotifications);
+			this.assignValidOption('errorNotifications', old.showErrors);
+			this.assignValidOption('hideHigher', old.hideHigherChapters);
+			this.assignValidOption('hideLower', old.hideLowerChapters);
+			this.assignValidOption('hideLast', old.hideLastRead);
+			this.assignValidOption('saveOnlyHigher', old.saveOnlyHigher);
+			this.assignValidOption('biggerHistory', old.updateHistoryPage);
+			this.assignValidOption('saveOpenedChapters', old.saveAllOpened);
+			this.assignValidOption('chaptersSaved', old.maxChapterSaved);
+			this.assignValidOption('highlight', old.highlightChapters);
+			this.assignValidOption('saveOnlyNext', old.saveOnlyNext);
+			this.assignValidOption('confirmChapter', old.confirmChapter);
 			Options.colors = {
 				highlights: old.lastOpenColors || Options.colors.highlights,
 				nextChapter: old.nextChapterColor || Options.colors.nextChapter,
@@ -198,10 +186,16 @@ export class MyMangaDex extends SpecialService {
 		message = moduleInterface.message('loading', 'Saving...');
 		if (!this.options.merge.active) {
 			await LocalStorage.clear();
-			await Options.save();
+			if (history) await LocalStorage.set('history', { ids: history });
 		} else if (collection.length > 0) {
 			collection.merge(await TitleCollection.get(collection.ids));
 		}
+		if (history && this.options.merge.active) {
+			await History.load();
+			History.ids = [...new Set(History.ids.concat(history))];
+			await History.save();
+		}
+		await Options.save();
 
 		// Save
 		await collection.persist();

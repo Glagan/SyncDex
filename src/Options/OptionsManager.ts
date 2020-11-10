@@ -47,10 +47,8 @@ export class OptionsManager {
 			if (card) {
 				card.addEventListener('click', (event) => {
 					event.preventDefault();
-					const className = importCards[cardId];
-					// ! className is *NOT* abstract
-					/// @ts-ignore
-					new className().start();
+					/// @ts-ignore className is *NOT* abstract
+					new importCards[cardId]().start();
 				});
 			}
 		}

@@ -25,7 +25,8 @@
 			<li data-link="history"><i class="fas fa-history"></i> History</li>
 			<li data-link="other"><i class="fas fa-ellipsis-h"></i> Other</li>
 			<li data-link="save"><i class="fas fa-save"></i> Save Viewer</li>
-			<li data-link="import-export"><i class="fas fa-cloud"></i> Import/Export</li>
+			<li data-link="import"><i class="fas fa-cloud-download-alt"></i> Import</li>
+			<li data-link="export"><i class="fas fa-cloud-upload-alt"></i> Export</li>
 			<li data-link="delete"><i class="fas fa-trash"></i> Delete</li>
 			<li id="open-changelog"><i class="fas fa-list-ol"></i> Changelog</li>
 			<li data-link="credits"><i class="fas fa-at"></i> Credits</li>
@@ -324,30 +325,28 @@
 				<tbody id="save-body"></tbody>
 			</table>
 		</div>
-		<div id="import-export" class="section import-export">
-			<div>
-				<h1 id="import"><i class="fas fa-download"></i> Import</h1>
-				<div class="import section-content">
-					<div id="import-mymangadex" class="scs card">
-						<div class="header mmd">MyMangaDex</div>
-					</div>
-					<div id="import-syncdex" class="scs card">
-						<div class="header sc">SyncDex</div>
-					</div>
-					<div id="import-mangadex" class="scs card">
-						<div class="header md">MangaDex</div>
-					</div>
+		<h1 id="import"><i class="fas fa-download"></i> Import</h1>
+		<div class="section">
+			<div class="services section-content">
+				<div id="import-mymangadex" class="scs card">
+					<div class="header mmd">MyMangaDex</div>
+				</div>
+				<div id="import-syncdex" class="scs card">
+					<div class="header sc"><span class="sync">Sync<span class="dex">Dex</span></span></div>
+				</div>
+				<div id="import-mangadex" class="scs card">
+					<div class="header md"><span class="manga">Manga<span class="dex">Dex</span></span></div>
 				</div>
 			</div>
-			<div>
-				<h1 id="export"><i class="fas fa-upload"></i> Export</h1>
-				<div class="export section-content">
-					<div id="export-syncdex" class="scs card">
-						<div class="header sc">SyncDex</div>
-					</div>
-					<div id="import-mangadex" class="scs card">
-						<div class="header md">MangaDex</div>
-					</div>
+		</div>
+		<h1 id="export"><i class="fas fa-upload"></i> Export</h1>
+		<div class="section">
+			<div class="services section-content">
+				<div id="export-syncdex" class="scs card">
+					<div class="header sc"><span class="sync">Sync<span class="dex">Dex</span></span></div>
+				</div>
+				<div id="import-mangadex" class="scs card">
+					<div class="header md"><span class="manga">Manga<span class="dex">Dex</span></span></div>
 				</div>
 			</div>
 		</div>
