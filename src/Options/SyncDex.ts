@@ -14,7 +14,7 @@ export class SyncDexImport extends SpecialService {
 		let message = moduleInterface.message('loading', 'Loading SyncDex Titles...');
 		const collection = new TitleCollection();
 		for (const key in data) {
-			if (key !== 'options' && key !== 'history') {
+			if (!LocalStorage.isSpecialKey(key)) {
 				// Check if LocalTitle keys are valid and contain a valid LocalTitle
 				const id = parseInt(key);
 				if (!isNaN(id) && StorageTitle.valid(data[key])) {

@@ -1,5 +1,6 @@
 import { LocalStorage } from './Storage';
 import { ActivableKey } from './Service';
+import { browser } from 'webextension-polyfill-ts';
 
 console.log('SyncDex :: Options');
 

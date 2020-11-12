@@ -600,7 +600,7 @@ export class TitleCollection {
 		if (list === undefined) {
 			const localTitles = (await LocalStorage.getAll()) as ExportedSave;
 			for (const key in localTitles) {
-				if (key !== 'options' && key != 'history') {
+				if (!LocalStorage.isSpecialKey(key)) {
 					collection.add(new LocalTitle(parseInt(key), LocalTitle.fromSave(localTitles[key])));
 				}
 			}

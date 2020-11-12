@@ -1,4 +1,3 @@
-import { setBrowser } from '../Core/Browser';
 import { DOM } from '../Core/DOM';
 import { Modal } from '../Core/Modal';
 import { Options } from '../Core/Options';
@@ -6,7 +5,6 @@ import { Changelog } from './Changelog';
 import { OptionsManager } from './OptionsManager';
 import { ThemeHandler } from './ThemeHandler';
 
-setBrowser();
 (async () => {
 	ThemeHandler.bind();
 	SimpleNotification._options.position = 'bottom-left';

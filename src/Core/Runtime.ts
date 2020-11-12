@@ -1,43 +1,78 @@
+import { browser } from 'webextension-polyfill-ts';
+import { log } from './Log';
+
 export class Runtime {
+	static messageSender: (message: Message) => any = browser.runtime.sendMessage;
+
 	/**
 	 * Send a message to the background running script.
 	 */
-	static sendMessage<R extends RequestResponse | void>(message: Message): Promise<R> {
-		return browser.runtime.sendMessage<R>(message);
+	static async sendMessage<R extends RequestResponse | void>(message: Message): Promise<R> {
+		return Runtime.messageSender(message);
 	}
 
 	/**
 	 * Send a fetch request with an expected JSON response.
 	 */
-	static jsonRequest<R extends {} = Record<string, any>>(
+	static async jsonRequest<R extends {} = Record<string, any>>(
 		message: Omit<RequestMessage, 'action' | 'isJson'>
 	): Promise<JSONResponse<R>> {
-		return Runtime.sendMessage<JSONResponse<R>>(
-			Object.assign(message, {
-				action: MessageAction.request,
-				isJson: true,
-			})
-		);
+		try {
+			return Runtime.sendMessage<JSONResponse<R>>(
+				Object.assign(message, {
+					action: MessageAction.request,
+					isJson: true,
+				})
+			);
+		} catch (error) {
+			log(`Error in Runtime.jsonRequest: ${error}`);
+			return {
+				url: message.url,
+				ok: false,
+				failed: true,
+				code: 0,
+				redirected: false,
+				headers: {},
+				body: {} as R,
+			};
+		}
 	}
 
 	/**
 	 * Send a fetch request.
 	 */
-	static request<R extends RequestResponse = RawResponse>(message: Omit<RequestMessage, 'action'>): Promise<R> {
-		return Runtime.sendMessage<R>(
-			Object.assign(message, {
-				action: MessageAction.request,
-			})
-		);
+	static async request<R extends RequestResponse = RawResponse>(message: Omit<RequestMessage, 'action'>): Promise<R> {
+		try {
+			return Runtime.sendMessage<R>(
+				Object.assign(message, {
+					action: MessageAction.request,
+				})
+			);
+		} catch (error) {
+			log(`Error in Runtime.request: ${error}`);
+			return {
+				url: message.url,
+				ok: false,
+				failed: true,
+				code: 0,
+				redirected: false,
+				headers: {},
+				body: message.isJson ? {} : '',
+			} as R;
+		}
 	}
 
 	/**
 	 * Open a new tab of the Options page.
 	 */
-	static openOptions(): Promise<void> {
-		return Runtime.sendMessage({
-			action: MessageAction.openOptions,
-		});
+	static async openOptions(): Promise<void> {
+		try {
+			return Runtime.sendMessage({
+				action: MessageAction.openOptions,
+			});
+		} catch (error) {
+			log(`Could not open Options with Runtime.openOptions: ${error}`);
+		}
 	}
 
 	/**

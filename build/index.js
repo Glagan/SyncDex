@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const fs = require('fs');
-const exec = require('child_process');
+const exec = require('child_process').exec;
 const rimraf = require('rimraf');
 const path = require('path');
 const rollup = require('rollup');
@@ -8,6 +8,8 @@ const sass = require('sass');
 const typescript = require('@rollup/plugin-typescript');
 const json = require('@rollup/plugin-json');
 const { terser } = require('rollup-plugin-terser');
+const nodeResolve = require('rollup-plugin-node-resolve');
+const commonjs = require('@rollup/plugin-commonjs');
 const options = require('minimist')(process.argv.slice(2), {
 	default: {
 		'web-ext': false,
@@ -172,7 +174,7 @@ const bundles = bundleList.map((bundle) => {
 		input: bundle.input,
 		// external: ['SimpleNotification'],
 		plugins: (() => {
-			let list = [typescript(), json({ preferConst: true })];
+			let list = [typescript(), json({ preferConst: true }), nodeResolve({ browser: true }), commonjs()];
 			if (options.mode == 'prod' || options.mode == 'production') {
 				list.push(terser());
 			}
@@ -317,15 +319,10 @@ async function buildExtension(browser, nonVerbose) {
 
 	// Make web-ext
 	if (options.webExt) {
-		if (!nonVerbose) process.stdout.write(` web-ext...`);
-		console.log(`${p} Building ${browser} web-ext`);
 		const execResult = await execPromise(
 			exec(`web-ext build --source-dir ${folderName} --artifacts-dir web-ext-artifacts`)
 		)
 			.then(() => {
-				if (!fs.existsSync('build')) {
-					fs.mkdirSync('build');
-				}
 				fs.renameSync(
 					`web-ext-artifacts/syncdex-${manifest.version}.zip`,
 					`web-ext-artifacts/syncdex_${manifest.version}_${browser}.zip`

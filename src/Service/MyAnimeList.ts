@@ -63,12 +63,13 @@ export class MyAnimeListImport extends ImportModule {
 		return Status.NONE;
 	};
 
-	// Convert a YYYY-MM-DD MyAnimeList date to a Date timestamp
+	// Convert a DD-MM-YYYY MyAnimeList date to a Date timestamp
 	dateToTime = (date?: string): Date | undefined => {
 		if (date === undefined) return undefined;
-		const d = new Date(date);
-		if (isNaN(d.getFullYear()) || d.getFullYear() === 0) return undefined;
-		return d;
+		const parts = date.split('-').map((p) => parseInt(p));
+		if (parts.length != 3) return undefined;
+		const year = parts[2] > 25 ? 1900 + parts[2] : 2000 + parts[2];
+		return new Date(year, Math.min(0, parts[1] - 1), parts[0]);
 	};
 
 	preExecute = async (): Promise<boolean> => {
@@ -465,14 +466,6 @@ export class MyAnimeListTitle extends ExternalTitle {
 		if (!response.ok) return Runtime.responseStatus(response);
 		this.inList = true;
 		return RequestStatus.DELETED;
-	};
-
-	// Convert a YYYY-MM-DD MyAnimeList date to a Date timestamp
-	dateToTime = (date?: string): number | undefined => {
-		if (date === undefined) return undefined;
-		const d = new Date(date);
-		if (isNaN(d.getFullYear()) || d.getFullYear() === 0) return undefined;
-		return d.getTime();
 	};
 
 	static toStatus = (status: MyAnimeListStatus): Status => {

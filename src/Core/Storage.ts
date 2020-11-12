@@ -1,3 +1,5 @@
+import { browser } from 'webextension-polyfill-ts';
+
 console.log('SyncDex :: Storage');
 
 export class LocalStorage {
@@ -14,7 +16,7 @@ export class LocalStorage {
 				return value.toString();
 			});
 		}
-		return browser.storage.local.get<T>(keys === undefined ? null : (keys as string[]));
+		return browser.storage.local.get(keys === undefined ? null : (keys as string[]));
 	}
 
 	/**
@@ -23,7 +25,7 @@ export class LocalStorage {
 	 */
 	static async get<T>(key?: number | string): Promise<any | T | undefined> {
 		if (typeof key === 'number') key = key.toString();
-		const data = await browser.storage.local.get<T>(key === undefined ? null : key);
+		const data = await browser.storage.local.get(key === undefined ? null : key);
 		if (key !== undefined && key !== undefined && data !== undefined) return data[key];
 		return data as any;
 	}
@@ -39,7 +41,7 @@ export class LocalStorage {
 	/**
 	 * Save the { key: data } object in Local Storage.
 	 */
-	static set(key: number | string, data: Object): Promise<void> {
+	static set(key: number | string, data: any): Promise<void> {
 		if (typeof key == 'number') key = key.toString();
 		return browser.storage.local.set({ [key]: data });
 	}
@@ -58,4 +60,8 @@ export class LocalStorage {
 	static clear(): Promise<void> {
 		return browser.storage.local.clear();
 	}
+
+	static isSpecialKey = (key: string): boolean => {
+		return key == 'options' || key == 'history' || key == 'startup' || key == 'logs';
+	};
 }

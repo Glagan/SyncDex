@@ -1,10 +1,8 @@
-import { setBrowser } from '../Core/Browser';
 import { Options } from '../Core/Options';
 
 console.log('SyncDex :: Anilist Token');
 
 (async () => {
-	setBrowser();
 	await Options.load();
 	// Search token in URL
 	const found = /access_token=(.+)&token_type=Bearer/.exec(window.location.href);
