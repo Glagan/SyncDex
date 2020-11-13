@@ -1,6 +1,7 @@
 import { browser, Runtime as BrowserRuntime, WebRequest } from 'webextension-polyfill-ts';
 import { isChrome } from '../Core/IsChrome';
 import { log } from '../Core/Log';
+import { ModuleStatus } from '../Core/Module';
 import { DefaultOptions, Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
 import { Services } from '../Core/Services';
@@ -78,6 +79,14 @@ async function handleMessage(message: Message, sender?: BrowserRuntime.MessageSe
 			const cookies = await browser.cookies.getAll({ url: message.url, storeId: cookieStoreId });
 			(msg.headers as Record<string, string>)['X-Cookie'] = cookies.map((c) => `${c.name}=${c.value}`).join('; ');
 		}
+		// Add Sec- Headers
+		for (const header of ['Sec-Fetch-Dest', 'Sec-Fetch-Mode', 'Sec-Fetch-Site', 'Sec-Fetch-User']) {
+			if ((msg.headers as Record<string, string>)[header] !== undefined) {
+				(msg.headers as Record<string, string>)[`X-${header}`] = (msg.headers as Record<string, string>)[
+					header
+				];
+			}
+		}
 		return fetch(msg.url, {
 			...message,
 			body,
@@ -95,7 +104,7 @@ async function handleMessage(message: Message, sender?: BrowserRuntime.MessageSe
 				};
 			})
 			.catch((error) => {
-				log(error);
+				log(`Error on request [${msg.url}]: ${error} >> ${error.stack}`);
 				return <RequestResponse>{
 					url: msg.url,
 					ok: false,
@@ -127,25 +136,37 @@ if (!isChrome) {
 			return { requestHeaders: details.requestHeaders };
 		}
 		// Replace Cookie headers by X-Cookie value
+		const rewrite = ['x-cookie'];
 		const headers: WebRequest.HttpHeaders = [];
+		let i = -1;
 		for (const header of details.requestHeaders) {
 			const headerName = header.name.toLowerCase();
-			if (headerName === 'x-cookie') {
+			if ((i = rewrite.indexOf(headerName)) >= 0) {
 				headers.push({
-					name: 'Cookie',
+					name: rewrite[i].slice(2),
 					value: header.value,
 				});
-			} else if (headerName !== 'cookie') {
-				headers.push(header);
-			}
+			} else headers.push(header);
 		}
 		return { requestHeaders: headers };
 	}
 
-	// prettier-ignore
-	browser.webRequest.onBeforeSendHeaders.addListener(setContainersCookies,
-		{ urls: ['https://myanimelist.net/*'] },
-		[ 'blocking', 'requestHeaders' ]
+	// Add listener on all URLs that uses Cookies
+	browser.webRequest.onBeforeSendHeaders.addListener(
+		setContainersCookies,
+		{
+			urls: [
+				'https://myanimelist.net/about.php',
+				'https://myanimelist.net/manga/*',
+				'https://myanimelist.net/ownlist/manga/*',
+				'https://mangadex.org/*',
+				'https://*.mangaupdates.com/series.html?id=*',
+				'https://*.mangaupdates.com/ajax/*',
+				'https://*.anime-planet.com/manga/*',
+				'https://*.anime-planet.com/api/*',
+			],
+		},
+		['blocking', 'requestHeaders']
 	);
 }
 
@@ -157,57 +178,59 @@ const updates: Update[] = [];
 
 browser.runtime.onInstalled.addListener(async (details) => {
 	// Apply each needed Updates
+	let updated = false;
 	if (details.reason === 'update') {
 		await Options.load();
-		for (const update of updates) {
-			if (update.version >= Options.version) {
-				update.fnct();
-				Options.version = update.version;
+		if (Options.version !== DefaultOptions.version) {
+			await log(`Updating from version ${Options.version} to ${DefaultOptions.version}`);
+			for (const update of updates) {
+				if (update.version >= Options.version) {
+					update.fnct();
+					Options.version = update.version;
+					await log(`Applied patch version ${update.version}`);
+				}
 			}
+			Options.version = DefaultOptions.version;
+			await Options.save();
+			updated = true;
 		}
-		Options.version = DefaultOptions.version;
-		await Options.save();
-	}
+	} else await log(`Installation version ${DefaultOptions.version}`);
 
 	// Open the options with a Modal
-	if (details.reason === 'install' || details.reason === 'update') {
+	if (updated || details.reason === 'install') {
 		browser.tabs.create({ url: browser.runtime.getURL(`options/index.html#${details.reason}`) });
 	}
 });
 
 async function onStartup() {
-	try {
-		Runtime.messageSender = (message: Message) => handleMessage(message);
-		await Options.load();
-		log.consoleOutputDefault = true;
-		await log('Startup script started');
-		if (Options.checkOnStartup && Options.services.length > 0) {
-			await log('Importing lists');
-			// Duration between checks: 30min
-			const lastCheck: number | string[] | undefined = await LocalStorage.get('startup');
-			if (typeof lastCheck !== 'number' || Date.now() - lastCheck > 1_800_000) {
-				const done: string[] = typeof lastCheck === 'object' ? lastCheck : [];
-				for (const key of [...Options.services].reverse()) {
-					if (done.indexOf(key) < 0) {
+	Runtime.messageSender = (message: Message) => handleMessage(message);
+	await Options.load();
+	if (Options.checkOnStartup && Options.services.length > 0) {
+		await log('Importing lists');
+		// Duration between checks: 30min
+		const lastCheck: number | string[] | undefined = await LocalStorage.get('startup');
+		if (typeof lastCheck !== 'number' || Date.now() - lastCheck > 1_800_000) {
+			const done: string[] = typeof lastCheck === 'object' ? lastCheck : [];
+			for (const key of [...Options.services].reverse()) {
+				if (done.indexOf(key) < 0) {
+					try {
 						const start = Date.now();
-						await log(`Importing ${key}`);
+						await log(`Importing ${Services[key].serviceName}`);
 						const module = Services[key].importModule();
-						await module.run();
-						done.push(key);
-						await LocalStorage.set('startup', { done: done });
-						await log(`Imported ${key} in ${Date.now() - start}ms`);
-					} else await log(`Skipping ${key} already imported`);
-				}
-				await LocalStorage.set('startup', Date.now());
-				await log(`Done with Startup script`);
-			} else await log(`Startup script executed less than 30minutes ago, skipping`);
-		} else {
-			await log(
-				`Did no Import: ${!Options.checkOnStartup ? 'Check on Startup disabled' : 'No services enabled'}`
-			);
-		}
-	} catch (error) {
-		log(`Error while Checking lists: ${error}`);
-	}
+						const moduleResult = await module.run();
+						if (moduleResult == ModuleStatus.SUCCESS) {
+							await log(`Imported ${Services[key].serviceName} in ${Date.now() - start}ms`);
+						} else await log(`Could not import ${Services[key].serviceName} | Status: ${moduleResult}`);
+					} catch (error) {
+						await log(`Error while importing ${Services[key].serviceName} ${error.stack}`);
+					}
+					done.push(key);
+					await LocalStorage.set('startup', { done: done });
+				} else await log(`Skipping ${Services[key].serviceName} already imported`);
+			}
+			await LocalStorage.set('startup', Date.now());
+			await log(`Done with Startup script`);
+		} else await log(`Startup script executed less than 30minutes ago, skipping`);
+	} else if (Options.checkOnStartup) await log('Did not Import: No services enabled');
 }
 browser.runtime.onStartup.addListener(onStartup);

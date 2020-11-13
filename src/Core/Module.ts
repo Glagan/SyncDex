@@ -6,6 +6,16 @@ import { Mochi } from './Mochi';
 import { LocalStorage } from './Storage';
 import { Options } from './Options';
 import { Runtime } from './Runtime';
+import { log } from './Log';
+
+export const enum ModuleStatus {
+	SUCCESS,
+	CANCEL,
+	LOGIN_FAIL,
+	PREXECUTE_FAIL,
+	EXECUTE_FAIL,
+	GENERAL_FAIL,
+}
 
 /**
  * Convert a duration in ms to a string
@@ -127,7 +137,7 @@ export abstract class Module {
 		this.interface?.setOptionsValues(this.options);
 	};
 
-	abstract async run(): Promise<void>;
+	abstract async run(): Promise<ModuleStatus>;
 
 	mochiCheck = async (collection: TitleCollection): Promise<void> => {
 		const progress = DOM.create('span', {
@@ -224,104 +234,115 @@ export abstract class ImportModule extends Module {
 		}
 	};
 
-	run = async (): Promise<void> => {
+	run = async (): Promise<ModuleStatus> => {
 		// Reset
 		this.summary = new Summary();
 		this.found = [];
 
-		// Check login status
-		const loginMessage = this.interface?.message('loading', 'Checking login status...');
-		if ((await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
+		try {
+			// Check login status
+			const loginMessage = this.interface?.message('loading', 'Checking login status...');
+			if ((await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
+				loginMessage?.classList.remove('loading');
+				this.interface?.message('error', `Importing need you to be logged in on ${this.service.serviceName} !`);
+				this.interface?.complete();
+				return ModuleStatus.LOGIN_FAIL;
+			}
 			loginMessage?.classList.remove('loading');
-			this.interface?.message('error', `Importing need you to be logged in on ${this.service.serviceName} !`);
-			this.interface?.complete();
-			return;
-		}
-		loginMessage?.classList.remove('loading');
-		if (this.preExecute) {
-			if (!(await this.preExecute())) return;
-		}
+			if (this.preExecute) {
+				if (!(await this.preExecute())) return ModuleStatus.PREXECUTE_FAIL;
+			}
 
-		// Execute
-		this.setOptions();
-		const result = await this.execute();
-		if (!result || this.interface?.doStop) {
+			// Execute
+			this.setOptions();
+			const result = await this.execute();
+			if (!result || this.interface?.doStop) {
+				this.interface?.complete();
+				if (this.interface?.doStop) {
+					this.interface.message('warning', 'You cancelled the Import, nothing was saved.');
+					return ModuleStatus.CANCEL;
+				}
+				return ModuleStatus.EXECUTE_FAIL;
+			}
+			this.interface?.message('default', `Found ${this.found.length} Titles on ${this.service.serviceName}.`);
+			this.summary.total = this.found.length;
+
+			// Find MangaDex ID for all FoundTitle
+			const titles: TitleCollection = await TitleCollection.get();
+			let current = 0;
+			let progress = DOM.create('p');
+			const notification = this.interface?.message('loading', [progress]);
+			const max = Math.ceil(this.summary.total / this.perConvert);
+			for (let i = 0; !this.interface?.doStop && i < max; i++) {
+				const titleList = this.found.slice(current, current + this.perConvert);
+				current += this.perConvert;
+				progress.textContent = `Converting title ${Math.min(
+					this.summary.total,
+					current + this.perConvert
+				)} out of ${this.summary.total}.`;
+				const allConnections = await Mochi.findMany(
+					titleList.map((t) => t.mochi),
+					this.service.serviceName
+				);
+				const found: (number | string)[] = [];
+				if (allConnections !== undefined) {
+					for (const key in allConnections) {
+						const connections = allConnections[key];
+						if (connections['md'] !== undefined) {
+							const title = titleList.find((t) => t.mochi == key);
+							if (title) {
+								const localTitle = new LocalTitle(connections['md'], title);
+								Mochi.assign(localTitle, connections);
+								localTitle.services[this.service.key] = title.key;
+								titles.add(localTitle);
+								this.summary.valid++;
+								found.push(title.mochi);
+							}
+						}
+					}
+				}
+				// Add missing titles to the failed Summary
+				this.summary.failed.push(...titleList.filter((t) => found.indexOf(t.mochi) < 0));
+			}
+			notification?.classList.remove('loading');
 			if (this.interface?.doStop) {
 				this.interface.message('warning', 'You cancelled the Import, nothing was saved.');
+				this.interface.complete();
+				return ModuleStatus.CANCEL;
 			}
-			return this.interface?.complete();
-		}
-		this.interface?.message('default', `Found ${this.found.length} Titles on ${this.service.serviceName}.`);
-		this.summary.total = this.found.length;
 
-		// Find MangaDex ID for all FoundTitle
-		const titles: TitleCollection = await TitleCollection.get();
-		let current = 0;
-		let progress = DOM.create('p');
-		const notification = this.interface?.message('loading', [progress]);
-		const max = Math.ceil(this.summary.total / this.perConvert);
-		for (let i = 0; !this.interface?.doStop && i < max; i++) {
-			const titleList = this.found.slice(current, current + this.perConvert);
-			current += this.perConvert;
-			progress.textContent = `Converting title ${Math.min(
-				this.summary.total,
-				current + this.perConvert
-			)} out of ${this.summary.total}.`;
-			const allConnections = await Mochi.findMany(
-				titleList.map((t) => t.mochi),
-				this.service.serviceName
-			);
-			const found: (number | string)[] = [];
-			if (allConnections !== undefined) {
-				for (const key in allConnections) {
-					const connections = allConnections[key];
-					if (connections['md'] !== undefined) {
-						const title = titleList.find((t) => t.mochi == key);
-						if (title) {
-							const localTitle = new LocalTitle(connections['md'], title);
-							Mochi.assign(localTitle, connections);
-							localTitle.services[this.service.key] = title.key;
-							titles.add(localTitle);
-							this.summary.valid++;
-							found.push(title.mochi);
+			// Merge
+			if (!this.options.merge.active) {
+				if (this.options.save.active) await LocalStorage.clear();
+				await Options.save();
+			} else if (titles.length > 0) {
+				titles.merge(await TitleCollection.get(titles.ids));
+			}
+
+			// Add chapters
+			if (Options.saveOpenedChapters) {
+				for (const title of titles.collection) {
+					if (title.progress.chapter > 0) {
+						title.chapters = [];
+						let index = Math.max(title.progress.chapter - Options.chaptersSaved, 1);
+						for (; index <= title.progress.chapter; index++) {
+							title.chapters.push(index);
 						}
 					}
 				}
 			}
-			// Add missing titles to the failed Summary
-			this.summary.failed.push(...titleList.filter((t) => found.indexOf(t.mochi) < 0));
-		}
-		notification?.classList.remove('loading');
-		if (this.interface?.doStop) {
-			this.interface.message('warning', 'You cancelled the Import, nothing was saved.');
-			return this.interface?.complete();
-		}
 
-		// Merge
-		if (!this.options.merge.active) {
-			if (this.options.save.active) await LocalStorage.clear();
-			await Options.save();
-		} else if (titles.length > 0) {
-			titles.merge(await TitleCollection.get(titles.ids));
+			if (this.options.save.active) await titles.persist();
+			this.displaySummary();
+			this.interface?.complete();
+			if (this.postExecute) await this.postExecute();
+			return ModuleStatus.SUCCESS;
+		} catch (error) {
+			const line = await log(error);
+			this.interface?.message('error', line.msg);
+			this.interface?.complete();
+			return ModuleStatus.GENERAL_FAIL;
 		}
-
-		// Add chapters
-		if (Options.saveOpenedChapters) {
-			for (const title of titles.collection) {
-				if (title.progress.chapter > 0) {
-					title.chapters = [];
-					let index = Math.max(title.progress.chapter - Options.chaptersSaved, 1);
-					for (; index <= title.progress.chapter; index++) {
-						title.chapters.push(index);
-					}
-				}
-			}
-		}
-
-		if (this.options.save.active) await titles.persist();
-		this.displaySummary();
-		this.interface?.complete();
-		if (result && this.postExecute) await this.postExecute();
 	};
 }
 
@@ -409,65 +430,75 @@ export abstract class ExportModule extends Module {
 		return filtered;
 	};
 
-	run = async (): Promise<void> => {
+	run = async (): Promise<ModuleStatus> => {
 		// Reset
 		this.summary = new Summary();
 
-		// Check login status
-		const loginMessage = this.interface?.message('loading', 'Checking login status...');
-		if ((await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
+		try {
+			// Check login status
+			const loginMessage = this.interface?.message('loading', 'Checking login status...');
+			if ((await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
+				loginMessage?.classList.remove('loading');
+				this.interface?.message('error', `Exporting need you to be logged in on ${this.service.serviceName} !`);
+				this.interface?.complete();
+				return ModuleStatus.LOGIN_FAIL;
+			}
 			loginMessage?.classList.remove('loading');
-			this.interface?.message('error', `Exporting need you to be logged in on ${this.service.serviceName} !`);
-			return this.interface?.complete();
-		}
-		loginMessage?.classList.remove('loading');
 
-		// Select Titles
-		const titles: TitleCollection = await TitleCollection.get();
-		const filteredTitles: LocalTitle[] = this.selectTitles(titles);
-		if (this.preExecute && !(await this.preExecute(filteredTitles))) {
-			return this.interface?.complete();
-		}
-
-		// Check Mochi
-		this.setOptions();
-		if (this.options.mochi.active) {
+			// Select Titles
 			const titles: TitleCollection = await TitleCollection.get();
-			let current = 0;
-			let progress = DOM.create('p');
-			const notification = this.interface?.message('loading', [progress]);
-			const max = Math.ceil(titles.length / this.perConvert);
-			for (let i = 0; !this.interface?.doStop && i < max; i++) {
-				const titleList = titles.collection.slice(current, current + this.perConvert);
-				current += this.perConvert;
-				progress.textContent = `Finding ID for titles ${Math.min(
-					titles.length,
-					current + this.perConvert
-				)} out of ${titles.length}.`;
-				const connections = await Mochi.findMany(titleList.map((t) => t.key.id!));
-				if (connections !== undefined) {
-					for (const titleId in connections) {
-						const id = parseInt(titleId);
-						const title = titleList.find((t) => t.key.id! == id);
-						if (title) Mochi.assign(title, connections[titleId]);
+			const filteredTitles: LocalTitle[] = this.selectTitles(titles);
+			if (this.preExecute && !(await this.preExecute(filteredTitles))) {
+				this.interface?.complete();
+				return ModuleStatus.PREXECUTE_FAIL;
+			}
+
+			// Check Mochi
+			this.setOptions();
+			if (this.options.mochi.active) {
+				const titles: TitleCollection = await TitleCollection.get();
+				let current = 0;
+				let progress = DOM.create('p');
+				const notification = this.interface?.message('loading', [progress]);
+				const max = Math.ceil(titles.length / this.perConvert);
+				for (let i = 0; !this.interface?.doStop && i < max; i++) {
+					const titleList = titles.collection.slice(current, current + this.perConvert);
+					current += this.perConvert;
+					progress.textContent = `Finding ID for titles ${Math.min(
+						titles.length,
+						current + this.perConvert
+					)} out of ${titles.length}.`;
+					const connections = await Mochi.findMany(titleList.map((t) => t.key.id!));
+					if (connections !== undefined) {
+						for (const titleId in connections) {
+							const id = parseInt(titleId);
+							const title = titleList.find((t) => t.key.id! == id);
+							if (title) Mochi.assign(title, connections[titleId]);
+						}
 					}
 				}
+				await titles.persist();
+				notification?.classList.remove('loading');
 			}
-			await titles.persist();
-			notification?.classList.remove('loading');
-		}
-		if (this.interface?.doStop) {
-			this.interface.message('warning', 'You cancelled the Export.');
-			return this.interface.complete();
-		}
+			if (this.interface?.doStop) {
+				this.interface.message('warning', 'You cancelled the Export.');
+				return ModuleStatus.CANCEL;
+			}
 
-		// Execute
-		const result = await this.execute(filteredTitles);
+			// Execute
+			const result = await this.execute(filteredTitles);
 
-		// Done
-		if (this.interface?.doStop) this.interface.message('warning', 'You cancelled the Export.');
-		this.displaySummary();
-		this.interface?.complete();
-		if (result && this.postExecute) await this.postExecute();
+			// Done
+			if (this.interface?.doStop) this.interface.message('warning', 'You cancelled the Export.');
+			this.displaySummary();
+			this.interface?.complete();
+			if (result && this.postExecute) await this.postExecute();
+			return result ? ModuleStatus.SUCCESS : ModuleStatus.EXECUTE_FAIL;
+		} catch (error) {
+			const line = await log(error);
+			this.interface?.message('error', line.msg);
+			this.interface?.complete();
+			return ModuleStatus.GENERAL_FAIL;
+		}
 	};
 }

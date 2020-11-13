@@ -264,21 +264,18 @@ export class MyAnimeList extends Service {
 
 	static loggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
-			url: 'https://myanimelist.net/login.php',
+			url: 'https://myanimelist.net/about.php',
 			method: 'GET',
 			credentials: 'include',
-			redirect: 'follow',
+			cache: 'no-cache',
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		if (response.body == '') return RequestStatus.SERVER_ERROR;
-		if (response.body && response.url.indexOf('login.php') < 0) {
-			const parser = new DOMParser();
-			const body = parser.parseFromString(response.body, 'text/html');
-			const header = body.querySelector<HTMLElement>('a.header-profile-link');
-			if (header) {
-				MyAnimeList.username = header.textContent!.trim();
-				return RequestStatus.SUCCESS;
-			}
+		const body = new DOMParser().parseFromString(response.body, 'text/html');
+		const header = body.querySelector<HTMLElement>('a.header-profile-link');
+		if (header) {
+			MyAnimeList.username = header.textContent!.trim();
+			return RequestStatus.SUCCESS;
 		}
 		return RequestStatus.FAIL;
 	};

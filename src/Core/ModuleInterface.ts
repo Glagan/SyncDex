@@ -135,9 +135,10 @@ export class ModuleInterface {
 		DOM.clear(this.modal.footer);
 	};
 
-	complete = (): void => {
+	complete = (): boolean => {
 		this.modal.enableExit();
 		this.stopButton.replaceWith(this.closeButton);
+		return true;
 	};
 
 	message = (type: MessageType, content: string | AppendableElement[], parent?: HTMLElement): HTMLElement => {

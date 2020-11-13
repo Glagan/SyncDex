@@ -25,7 +25,7 @@ export class Runtime {
 				})
 			);
 		} catch (error) {
-			log(`Error in Runtime.jsonRequest: ${error}`);
+			await log(`Error in Runtime.jsonRequest: ${error}`);
 			return {
 				url: message.url,
 				ok: false,
@@ -49,7 +49,7 @@ export class Runtime {
 				})
 			);
 		} catch (error) {
-			log(`Error in Runtime.request: ${error}`);
+			await log(`Error in Runtime.request: ${error}`);
 			return {
 				url: message.url,
 				ok: false,
@@ -71,7 +71,7 @@ export class Runtime {
 				action: MessageAction.openOptions,
 			});
 		} catch (error) {
-			log(`Could not open Options with Runtime.openOptions: ${error}`);
+			await log(`Could not open Options with Runtime.openOptions: ${error}`);
 		}
 	}
 

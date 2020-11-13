@@ -28,6 +28,7 @@
 			<li data-link="import"><i class="fas fa-cloud-download-alt"></i> Import</li>
 			<li data-link="export"><i class="fas fa-cloud-upload-alt"></i> Export</li>
 			<li data-link="delete"><i class="fas fa-trash"></i> Delete</li>
+			<li data-link="logs"><i class="fas fa-file-archive"></i> Logs</li>
 			<li id="open-changelog"><i class="fas fa-list-ol"></i> Changelog</li>
 			<li data-link="credits"><i class="fas fa-at"></i> Credits</li>
 		</ul>
@@ -312,7 +313,7 @@
 					<tr>
 						<th><input type="checkbox" id="save_all" /><label for="save_all"></label></th>
 						<th class="mangadex" data-field="key">MangaDex</th>
-						<th class="name" data-field="name">Name</th>
+						<th class="data name" data-field="name">Name</th>
 						<th>Services</th>
 						<th data-field="status">Status</th>
 						<th data-field="score">Score</th>
@@ -349,6 +350,23 @@
 					<div class="header md"><span class="manga">Manga<span class="dex">Dex</span></span></div>
 				</div>
 			</div>
+		</div>
+		<h1 id="logs"><i class="fas fa-file-archive"></i> Logs</h1>
+		<div class="section logs-viewer">
+			<div class="manage">
+				<button id="clear-logs" class="danger"><i class="fas fa-trash"></i> Clear</button>
+				<button id="reload-logs" class="primary"><i class="fas fa-sync-alt"></i> Reload</button>
+			</div>
+			<table class="block">
+				<thead>
+					<tr>
+						<th class="id">#</th>
+						<th class="date">Date</th>
+						<th class="data"></th>
+					</tr>
+				</thead>
+				<tbody id="logs-container"></tbody>
+			</table>
 		</div>
 		<h1 id="delete"><i class="fas fa-trash"></i> Delete</h1>
 		<div class="section">

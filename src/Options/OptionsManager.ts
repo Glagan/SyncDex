@@ -13,6 +13,7 @@ import { MyMangaDex } from './MyMangaDex';
 import { SyncDexImport, SyncDexExport } from './SyncDex';
 import { MangaDexImport, MangaDexExport } from './MangaDex';
 import { SpecialService } from './SpecialService';
+import { Logs } from './Logs';
 
 export class OptionsManager {
 	highlightsManager: HighlightsManager;
@@ -22,6 +23,7 @@ export class OptionsManager {
 	menuHighlight: MenuHighlight;
 	serviceManager: ServiceManager;
 	saveViewer: SaveViewer;
+	logs: Logs;
 	// Instance of the OptionsManager to use in ReloadOptions
 	static instance: OptionsManager;
 
@@ -33,6 +35,7 @@ export class OptionsManager {
 		this.menuHighlight = new MenuHighlight();
 		this.serviceManager = new ServiceManager();
 		this.saveViewer = new SaveViewer();
+		this.logs = new Logs();
 
 		// Import
 		const importCards: { [key: string]: typeof SpecialService } = {
@@ -108,5 +111,6 @@ export class OptionsManager {
 		this.inputManager.updateAll();
 		this.serviceManager.refreshActive();
 		this.saveViewer.updateAll(true);
+		this.logs.reload();
 	};
 }

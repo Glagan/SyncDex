@@ -1,4 +1,5 @@
 import { DOM } from '../Core/DOM';
+import { log } from '../Core/Log';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { Options } from '../Core/Options';
 import { ActivableKey, StaticKey, StaticName } from '../Core/Service';
@@ -110,7 +111,7 @@ export class MyMangaDex extends SpecialService {
 		);
 	};
 
-	handleFile = async (data: MyMangaDexSave, moduleInterface: ModuleInterface): Promise<void> => {
+	handleFile = async (data: MyMangaDexSave, moduleInterface: ModuleInterface): Promise<any> => {
 		// Find all Titles
 		let message = moduleInterface.message('loading', 'Loading MyMangaDex Titles...');
 		const titles: MyMangaDexTitle[] = [];
@@ -245,7 +246,7 @@ export class MyMangaDex extends SpecialService {
 			// Read File
 			let message = moduleInterface.message('loading', 'Loading file...');
 			var reader = new FileReader();
-			reader.onload = async (): Promise<void> => {
+			reader.onload = async (): Promise<any> => {
 				if (typeof reader.result !== 'string') {
 					if (message) message.classList.remove('loading');
 					message = moduleInterface.message('warning', 'Unknown error, wrong file type.');
@@ -254,14 +255,14 @@ export class MyMangaDex extends SpecialService {
 				let data: MyMangaDexSave;
 				try {
 					data = JSON.parse(reader.result) as MyMangaDexSave;
+					if (message) message.classList.remove('loading');
+					this.handleFile(data, moduleInterface);
 				} catch (error) {
-					console.error(error);
+					await log(error);
 					if (message) message.classList.remove('loading');
 					message = moduleInterface.message('warning', 'Invalid file !');
-					return moduleInterface.complete();
+					moduleInterface.complete();
 				}
-				if (message) message.classList.remove('loading');
-				this.handleFile(data, moduleInterface);
 			};
 			reader.readAsText(form.save.files[0]);
 		});

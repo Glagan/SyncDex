@@ -7,9 +7,10 @@ import { LocalTitle, StorageTitle, TitleCollection } from '../Core/Title';
 import { SpecialService } from './SpecialService';
 import { History } from '../SyncDex/History';
 import { dateFormat } from '../Core/Utility';
+import { log } from '../Core/Log';
 
 export class SyncDexImport extends SpecialService {
-	handleFile = async (data: ExportedSave, moduleInterface: ModuleInterface): Promise<void> => {
+	handleFile = async (data: ExportedSave, moduleInterface: ModuleInterface): Promise<any> => {
 		// Find all Titles
 		let message = moduleInterface.message('loading', 'Loading SyncDex Titles...');
 		const collection = new TitleCollection();
@@ -143,7 +144,7 @@ export class SyncDexImport extends SpecialService {
 			// Read File
 			let message = moduleInterface.message('loading', 'Loading file...');
 			var reader = new FileReader();
-			reader.onload = async (): Promise<void> => {
+			reader.onload = async (): Promise<any> => {
 				if (typeof reader.result !== 'string') {
 					if (message) message.classList.remove('loading');
 					message = moduleInterface.message('warning', 'Unknown error, wrong file type.');
@@ -152,14 +153,14 @@ export class SyncDexImport extends SpecialService {
 				let data: ExportedSave;
 				try {
 					data = JSON.parse(reader.result) as ExportedSave;
+					if (message) message.classList.remove('loading');
+					this.handleFile(data, moduleInterface);
 				} catch (error) {
-					console.error(error);
+					await log(error);
 					if (message) message.classList.remove('loading');
 					message = moduleInterface.message('warning', 'Invalid file !');
-					return moduleInterface.complete();
+					moduleInterface.complete();
 				}
-				if (message) message.classList.remove('loading');
-				this.handleFile(data, moduleInterface);
 			};
 			reader.readAsText(form.save.files[0]);
 		});

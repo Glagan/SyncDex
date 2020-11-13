@@ -29,6 +29,7 @@ let mainManifest = {
 	permissions: [
 		'http://127.0.0.1/*', // !
 		'http://localhost/mochi-v2/api/*', // !
+		'https://myanimelist.net/about.php',
 		'https://myanimelist.net/manga/*',
 		'https://myanimelist.net/ownlist/manga/*',
 		'https://mangadex.org/*',

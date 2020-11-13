@@ -226,38 +226,42 @@ hr {
 }
 
 // Save Viewer
-.save-viewer {
-	table {
-		width: 100%;
+table {
+	width: 100%;
 
-		tr {
-			th {
-				&.name {
-					width: 20%;
-				}
-				&.actions {
-					width: 5%;
-				}
-				&[data-field] {
-					cursor: pointer;
+	tr {
+		th {
+			&[data-field] {
+				cursor: pointer;
 
-					& i {
-						margin-left: 4px;
-					}
-				}
-			}
-			td {
-				&.mangadex a[href] {
-					color: $grey-90;
-				}
-				&.name {
-					text-overflow: ellipsis;
-					overflow: hidden;
-					white-space: nowrap;
-					text-align: left;
+				& i {
+					margin-left: 4px;
 				}
 			}
 		}
+		td {
+			&.data {
+				text-overflow: ellipsis;
+				overflow: hidden;
+				white-space: nowrap;
+				text-align: left;
+			}
+		}
+	}
+
+	.message {
+		margin-bottom: 0;
+	}
+}
+.save-viewer {
+	.name {
+		width: 20%;
+	}
+	.actions {
+		width: 5%;
+	}
+	.mangadex a[href] {
+		color: $grey-90;
 	}
 	button.paging {
 		color: $grey-90;
@@ -291,11 +295,27 @@ hr {
 	margin-left: 4px;
 	margin-right: 4px;
 }
-#save-body .message {
-	margin-bottom: 0;
-}
 #delete-selected {
 	display: none;
+}
+
+// Logs
+.logs-viewer {
+	.manage {
+		display: flex;
+		flex-flow: row nowrap;
+		justify-content: space-evenly;
+		margin-bottom: 8px;
+	}
+	.id {
+		width: 5%;
+	}
+	.date {
+		width: 15%;
+	}
+	.data {
+		width: 80%;
+	}
 }
 
 // Changelog
