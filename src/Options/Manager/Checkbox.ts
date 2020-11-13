@@ -9,32 +9,12 @@ type BooleanOptions = Pick<
 	}[keyof AvailableOptions]
 >;
 
-class RawDependency {
-	header: HTMLElement | null;
-	input: HTMLInputElement;
-
-	constructor(input: HTMLInputElement, header: HTMLElement | null) {
-		this.header = header;
-		this.input = input;
-	}
-
-	enable = (): void => {
-		if (this.header) this.header.classList.remove('disabled');
-		this.input.disabled = false;
-	};
-
-	disable = (): void => {
-		if (this.header) this.header.classList.add('disabled');
-		this.input.disabled = true;
-	};
-}
-
 export class Checkbox {
 	enabled: boolean = true;
 	node: HTMLInputElement;
 	label: HTMLLabelElement;
 	dependencies: Checkbox[] = [];
-	rawDependencies: RawDependency[] = [];
+	otherDependencies: Element | null = null;
 	optionName: keyof BooleanOptions;
 	parent?: keyof BooleanOptions;
 
@@ -74,24 +54,30 @@ export class Checkbox {
 		});
 	};
 
-	toggle = (value: boolean): void => {
-		if (value) {
-			this.node.checked = true;
-			for (const dependency of this.dependencies) {
-				dependency.enable();
+	toggleDependencies = (value: boolean): void => {
+		if (this.otherDependencies) {
+			if (value) this.otherDependencies.classList.remove('disabled');
+			else this.otherDependencies.classList.add('disabled');
+			for (const child of this.otherDependencies.children) {
+				if (child.tagName == 'INPUT') {
+					(child as HTMLInputElement).disabled = !value;
+				}
 			}
-			for (const dependency of this.rawDependencies) {
+		}
+	};
+
+	toggle = (value: boolean): void => {
+		this.node.checked = value;
+		if (value) {
+			for (const dependency of this.dependencies) {
 				dependency.enable();
 			}
 		} else {
-			this.node.checked = false;
 			for (const dependency of this.dependencies) {
 				dependency.disable();
 			}
-			for (const dependency of this.rawDependencies) {
-				dependency.disable();
-			}
 		}
+		this.toggleDependencies(value);
 	};
 }
 
@@ -102,7 +88,6 @@ export class CheckboxManager {
 		const checkboxes = document.querySelectorAll<HTMLInputElement>(`input[type='checkbox'][data-name]`);
 		for (const node of checkboxes) {
 			const checkbox = new Checkbox(node);
-			checkbox.bind();
 			this.checkboxes.push(checkbox);
 
 			// Add dependencies
@@ -117,21 +102,16 @@ export class CheckboxManager {
 			}
 
 			// Add Raw Dependencies -- input but not checkbox
-			let currentNode: Element | null = checkbox.label.nextElementSibling;
-			if (currentNode && currentNode.classList.contains('dependency')) {
-				let header: Element | null = currentNode;
-				while (currentNode) {
-					if (currentNode.tagName == 'INPUT') {
-						const dependency = new RawDependency(currentNode as HTMLInputElement, header as HTMLElement);
-						if (!Options[checkbox.optionName]) dependency.disable();
-						checkbox.rawDependencies.push(dependency);
-						header = null;
-					} else if (currentNode.tagName == 'H2') {
-						header = currentNode as HTMLElement;
-					}
-					currentNode = currentNode.nextElementSibling;
-				}
+			let dependencies: Element | null = checkbox.label.nextElementSibling;
+			if (dependencies && dependencies.classList.contains('helper')) {
+				dependencies = dependencies.nextElementSibling;
 			}
+			if (dependencies && dependencies.classList.contains('dependencies')) {
+				checkbox.otherDependencies = dependencies;
+			}
+
+			// Bind last to toggle value and add events
+			checkbox.bind();
 		}
 	}
 

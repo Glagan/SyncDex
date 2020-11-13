@@ -11,10 +11,7 @@
 @import 'Elements.scss';
 @import 'Messages.scss';
 
-// Color Input and Options only input
-.dependency {
-	margin-left: 32px;
-}
+// Color Input
 .color {
 	display: inline-block;
 	width: 32px;
@@ -36,6 +33,18 @@
 }
 .color-input button:first-child {
 	margin-right: 4px;
+}
+
+// Dependencies
+.dependencies {
+	margin-left: 32px;
+
+	h2 {
+		margin-top: 8px;
+	}
+	&.disabled *:not(input) {
+		opacity: 0.4;
+	}
 }
 
 // Table

@@ -139,36 +139,13 @@
 			box-shadow: $focus;
 		}
 
-		&[data-dependency] + label,
-		& + label + .helper,
-		& + .label + .helper {
-			margin-left: 30px;
-		}
-		&[data-dependency] + label + .helper {
-			margin-left: 60px;
-		}
 		&:disabled + label,
 		&:disabled + label + .helper {
 			opacity: 0.4;
 		}
-	}
 
-	h2.dependency {
-		margin-top: 4px;
-
-		& + label,
-		& + label + input[data-dependency]:not([type='checkbox']),
-		& + label + input[data-dependency]:not([type='checkbox']) + .helper {
+		& + label + .helper {
 			margin-left: 30px;
-		}
-
-		&.disabled {
-			&,
-			& + label,
-			& + label + input[data-dependency]:not([type='checkbox']),
-			& + label + input[data-dependency]:not([type='checkbox']) + .helper {
-				opacity: 0.4;
-			}
 		}
 	}
 }

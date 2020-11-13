@@ -819,7 +819,7 @@ export class SyncDex {
 			const alert = DOM.create('div', {
 				class: 'alert alert-primary',
 				textContent: initialized
-					? `You refresh your history more than 24h ago and you can refresh it again.
+					? `You refreshed your history more than 24h ago and you can refresh it again.
 						It is not recommended to do it often, and it does nothing if you didn't add new titles to your MangaDex list.`
 					: `You never initialized your History.
 						It is recommend to do it at least once to highlight every cards.`,

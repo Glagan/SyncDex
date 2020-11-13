@@ -40,6 +40,8 @@ export interface AvailableOptions {
 	acceptLowScore: boolean;
 	updateMD: boolean;
 	checkOnStartup: boolean;
+	checkOnStartupMainOnly: boolean;
+	checkOnStartupCooldown: number;
 	// Services
 	services: ActivableKey[];
 	mainService: ActivableKey | undefined;
@@ -96,6 +98,8 @@ export const DefaultOptions: AvailableOptions = {
 	acceptLowScore: false,
 	updateMD: false,
 	checkOnStartup: false,
+	checkOnStartupMainOnly: true,
+	checkOnStartupCooldown: 30,
 	// Services
 	services: [],
 	mainService: undefined,

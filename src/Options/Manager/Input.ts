@@ -23,6 +23,8 @@ export class Input {
 		this.input = input;
 		this.type = this.input.type === 'number' ? 'number' : 'text';
 		this.limits = [parseInt(this.input.min), parseInt(this.input.max)];
+		if (isNaN(this.limits[0])) this.limits[0] = -Infinity;
+		if (isNaN(this.limits[1])) this.limits[1] = +Infinity;
 		this.optionName = this.input.dataset.input as keyof ValidInputs;
 	}
 

@@ -178,11 +178,13 @@
 				<div class="parameter">
 					<input type="checkbox" id="ck_thumbnail" data-name="thumbnail" />
 					<label for="ck_thumbnail">Display the cover of the title when hovering a row inside lists.</label>
-					<input type="checkbox" id="ck_originalThumbnail" data-name="originalThumbnail" data-dependency="thumbnail" />
-					<label for="ck_originalThumbnail">Display the full size original cover of the title instead of a thumbnail.</label>
-					<p class="helper">Do not enable this if you don't have a somehow good connection, some images can be big.</p>
-					<input type="checkbox" id="ck_progressInThumbnail" data-name="progressInThumbnail" data-dependency="thumbnail" />
-					<label for="ck_progressInThumbnail">Display the current progress of the <b>Title</b> in it's thumbnail.</label>
+					<div class="dependencies">
+						<input type="checkbox" id="ck_originalThumbnail" data-name="originalThumbnail" data-dependency="thumbnail" />
+						<label for="ck_originalThumbnail">Display the full size original cover of the title instead of a thumbnail.</label>
+						<p class="helper">Do not enable this if you don't have a somehow good connection, some images can be big.</p>
+						<input type="checkbox" id="ck_progressInThumbnail" data-name="progressInThumbnail" data-dependency="thumbnail" />
+						<label for="ck_progressInThumbnail">Display the current progress of the <b>Title</b> in it's thumbnail.</label>
+					</div>
 				</div>
 				<h2>Group Titles</h2>
 				<div class="parameter">
@@ -194,10 +196,12 @@
 				<div class="parameter">
 					<input type="checkbox" id="ck_separateLanguages" data-name="separateLanguages" />
 					<label for="ck_separateLanguages">Separate languages in lists if there are multiple and display your favorite <b>Language</b> by default if it's available.</label>
-					<h2 class="dependency">Favorite Language</h2>
-					<label for="ck_favoriteLanguage">Default active <b>Language</b> if available. Use <b>country code</b>. use <b>all</b> to not have any favorite by default.</label>
-					<input type="text" id="ck_favoriteLanguage" data-input="favoriteLanguage" data-dependency="separateLanguages">
-					<p class="helper">You can find the country code of your language by hovering the displayed flag of a chapter in your language.</p>
+					<div class="dependencies">
+						<h2 class="dependency">Favorite Language</h2>
+						<label for="ck_favoriteLanguage">Default active <b>Language</b> if available. Use <b>country code</b>. use <b>all</b> to not have any favorite by default.</label>
+						<input type="text" id="ck_favoriteLanguage" data-input="favoriteLanguage" data-dependency="separateLanguages">
+						<p class="helper">You can find the country code of your language by hovering the displayed flag of a chapter in your language.</p>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -262,8 +266,10 @@
 						This will also <b>Highlight</b> your each cards in the <b>History</b> page to hint your status for the Title.<br />
 						<b>Green</b> if you read the <b>Highest available chapter</b> or <b>Blue</b> if there is a new chapter.
 					</p>
-					<input type="checkbox" id="ck_chapterStatus" data-name="chapterStatus" data-dependency="biggerHistory" />
-					<label for="ck_chapterStatus">Update the <b>History</b> page every 30min while it's keep opened to update <b>Highlight</b>.</label>
+					<div class="dependencies">
+						<input type="checkbox" id="ck_chapterStatus" data-name="chapterStatus" data-dependency="biggerHistory" />
+						<label for="ck_chapterStatus">Update the <b>History</b> page every 30min while it's keep opened to update <b>Highlight</b>.</label>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -274,17 +280,23 @@
 				<div class="parameter">
 					<input type="checkbox" id="ck_useMochi" data-name="useMochi" />
 					<label for="ck_useMochi">Use <a href="https://mochi.nikurasu.org/" target="_blank" rel="noreferrer noopener">Mochi <i class="fas fa-external-link-alt"></i></a> to get Services links.</label>
-					<input type="checkbox" id="ck_acceptLowScore" data-name="acceptLowScore" data-dependency="useMochi">
-					<label for="ck_acceptLowScore">Allow low score results from <b>Mochi</b>.</label>
-					<p class="helper">It is not recommended since it could add and update unrelated titles to your list.</p>
+					<div class="dependencies">
+						<input type="checkbox" id="ck_acceptLowScore" data-name="acceptLowScore" data-dependency="useMochi">
+						<label for="ck_acceptLowScore">Allow low score results from <b>Mochi</b>.</label>
+						<p class="helper">It is not recommended since it could add and update unrelated titles to your list.</p>
+					</div>
 				</div>
 				<h2>Check Lists on Startup</h2>
 				<div class="parameter">
 					<input type="checkbox" id="ck_checkOnStartup" data-name="checkOnStartup" />
 					<label for="ck_checkOnStartup">Check your lists on all <b>Services</b> you activated when you start your browser and update your <b>Local Save</b>.</label>
-					<p class="helper">
-						This option is useful if you read on your phone with <b>Tachiyomi</b> for example and it directly updates your list on a <b>Service</b>.
-					</p>
+					<p class="helper">This option is useful if you read on your phone with <b>Tachiyomi</b> for example and it directly updates your list on a <b>Service</b>.</p>
+					<div class="dependencies">
+						<input type="checkbox" id="ck_checkOnStartupMainOnly" data-name="checkOnStartupMainOnly" data-dependency="checkOnStartup">
+						<label for="ck_checkOnStartupMainOnly">Only <b>Import</b> your <b>Main Service</b>.</label>
+						<label for="ck_checkOnStartupCooldown">Cooldown between startup checks <b>in minutes</b> (at least 10min).</label>
+						<input type="number" id="ck_checkOnStartupCooldown" min="10" data-input="checkOnStartupCooldown" data-dependency="checkOnStartup">
+					</div>
 				</div>
 			</div>
 		</div>

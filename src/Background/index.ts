@@ -206,12 +206,13 @@ async function onStartup() {
 	Runtime.messageSender = (message: Message) => handleMessage(message);
 	await Options.load();
 	if (Options.checkOnStartup && Options.services.length > 0) {
-		await log('Importing lists');
-		// Duration between checks: 30min
+		const checkCooldown = Options.checkOnStartupCooldown * 60 * 1000;
 		const lastCheck: number | string[] | undefined = await LocalStorage.get('startup');
-		if (typeof lastCheck !== 'number' || Date.now() - lastCheck > 1_800_000) {
+		if (typeof lastCheck !== 'number' || Date.now() - lastCheck > checkCooldown) {
+			await log('Importing lists');
+			const services = Options.checkOnStartupMainOnly ? [Options.mainService!] : [...Options.services].reverse();
 			const done: string[] = typeof lastCheck === 'object' ? lastCheck : [];
-			for (const key of [...Options.services].reverse()) {
+			for (const key of services) {
 				if (done.indexOf(key) < 0) {
 					try {
 						const start = Date.now();
@@ -229,8 +230,8 @@ async function onStartup() {
 				} else await log(`Skipping ${Services[key].serviceName} already imported`);
 			}
 			await LocalStorage.set('startup', Date.now());
-			await log(`Done with Startup script`);
-		} else await log(`Startup script executed less than 30minutes ago, skipping`);
+			await log(`Done Importing lists`);
+		} else await log(`Startup script executed less than ${Options.checkOnStartupCooldown}minutes ago, skipping`);
 	} else if (Options.checkOnStartup) await log('Did not Import: No services enabled');
 }
 browser.runtime.onStartup.addListener(onStartup);
