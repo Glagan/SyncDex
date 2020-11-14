@@ -1,6 +1,8 @@
+import { browser } from 'webextension-polyfill-ts';
 import { DOM } from '../Core/DOM';
 import { Modal } from '../Core/Modal';
 import { Options } from '../Core/Options';
+import { LocalStorage } from '../Core/Storage';
 import { Changelog } from './Changelog';
 import { OptionsManager } from './OptionsManager';
 import { ThemeHandler } from './ThemeHandler';
@@ -10,6 +12,9 @@ import { ThemeHandler } from './ThemeHandler';
 	SimpleNotification._options.position = 'bottom-left';
 	await Options.load();
 	OptionsManager.instance = new OptionsManager();
+	// Check current import progress
+	const importInProgress = await LocalStorage.get('importInProgress');
+	OptionsManager.instance.toggleImportProgressState(importInProgress);
 
 	// Check if SyncDex was updated or installed
 	const reason = window.location.hash.substr(1);
@@ -39,4 +44,12 @@ import { ThemeHandler } from './ThemeHandler';
 	} else if (reason === 'update') {
 		Changelog.openModal(true);
 	}
+
+	browser.runtime.onMessage.addListener((message: Message): void => {
+		if (message.action == MessageAction.importStart) {
+			OptionsManager.instance.toggleImportProgressState(true);
+		} else if (message.action == MessageAction.importComplete) {
+			OptionsManager.instance.toggleImportProgressState(false);
+		}
+	});
 })();

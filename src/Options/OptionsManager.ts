@@ -24,6 +24,7 @@ export class OptionsManager {
 	serviceManager: ServiceManager;
 	saveViewer: SaveViewer;
 	logs: Logs;
+	importExportCards: HTMLElement[] = [];
 	// Instance of the OptionsManager to use in ReloadOptions
 	static instance: OptionsManager;
 
@@ -37,21 +38,24 @@ export class OptionsManager {
 		this.saveViewer = new SaveViewer();
 		this.logs = new Logs();
 
-		// Import
-		const importCards: { [key: string]: typeof SpecialService } = {
+		// Import/Export
+		const cardIds: { [key: string]: typeof SpecialService } = {
 			'import-mymangadex': MyMangaDex,
 			'import-syncdex': SyncDexImport,
 			'import-mangadex': MangaDexImport,
 			'export-syncdex': SyncDexExport,
 			'export-mangadex': MangaDexExport,
 		};
-		for (const cardId in importCards) {
+		for (const cardId in cardIds) {
 			const card = document.getElementById(cardId);
 			if (card) {
+				this.importExportCards.push(card);
 				card.addEventListener('click', (event) => {
 					event.preventDefault();
-					/// @ts-ignore className is *NOT* abstract
-					new importCards[cardId]().start();
+					if (!card.classList.contains('disabled')) {
+						/// @ts-ignore className is *NOT* abstract
+						new importCards[cardId]().start();
+					}
 				});
 			}
 		}
@@ -103,6 +107,21 @@ export class OptionsManager {
 			});
 		}
 	}
+
+	toggleImportProgressState = (value: boolean): void => {
+		this.serviceManager.toggleImportProgressState(value);
+		if (value) {
+			for (const card of this.importExportCards) {
+				card.title = 'Import in Progress, wait for it to finish.';
+				card.classList.add('disabled');
+			}
+		} else {
+			for (const card of this.importExportCards) {
+				card.title = '';
+				card.classList.remove('disabled');
+			}
+		}
+	};
 
 	reload = (): void => {
 		this.highlightsManager.updateAll();

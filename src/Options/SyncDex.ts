@@ -173,6 +173,7 @@ export class SyncDexExport extends SpecialService {
 		const data: ExportedSave | undefined = await LocalStorage.getAll();
 		if (data && data.options) {
 			delete data.options.tokens;
+			delete data.importInProgress;
 			const blob = new Blob([JSON.stringify(data)], { type: 'application/json;charset=utf-8' });
 			const href = URL.createObjectURL(blob);
 			const downloadLink = DOM.create('a', {

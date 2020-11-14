@@ -52,6 +52,9 @@ declare const enum RequestStatus {
 declare const enum MessageAction {
 	request = 'request',
 	openOptions = 'openOptions',
+	silentImport = 'silentImport',
+	importStart = 'importStart',
+	importComplete = 'importComplete',
 }
 
 interface RequestMessage {
@@ -75,7 +78,11 @@ interface OpenOptionsMessage {
 	action: MessageAction.openOptions;
 }
 
-type Message = RequestMessage | OpenOptionsMessage;
+interface ImportMessage {
+	action: MessageAction.silentImport | MessageAction.importStart | MessageAction.importComplete;
+}
+
+type Message = RequestMessage | OpenOptionsMessage | ImportMessage;
 
 interface RequestResponse<T extends {} = Record<string, any> | string> {
 	url: string;
@@ -95,8 +102,9 @@ type ExportOptions = {
 	options?: AvailableOptions;
 };
 
-type StartupState = {
-	startup?: number | string[];
+type ImportState = {
+	import?: number | string[];
+	importInProgress?: true;
 };
 
 type HistoryObject = {
@@ -113,7 +121,7 @@ type ExportedTitles = {
 	[key: string]: StorageTitle;
 };
 
-type ExportedSave = ExportOptions & ExportHistory & ExportedTitles & StartupState;
+type ExportedSave = ExportOptions & ExportHistory & ExportedTitles & ImportState;
 
 declare const enum ListType {
 	Detailed,

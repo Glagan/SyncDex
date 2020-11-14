@@ -117,6 +117,8 @@ async function handleMessage(message: Message, sender?: BrowserRuntime.MessageSe
 			});
 	} else if (message.action == MessageAction.openOptions) {
 		return browser.runtime.openOptionsPage();
+	} else if (message.action == MessageAction.silentImport) {
+		return silentImport(true);
 	}
 	return new Promise(() => false);
 }
@@ -202,15 +204,18 @@ browser.runtime.onInstalled.addListener(async (details) => {
 	}
 });
 
-async function onStartup() {
+async function silentImport(manual: boolean = false) {
 	Runtime.messageSender = (message: Message) => handleMessage(message);
 	await Options.load();
-	if (Options.checkOnStartup && Options.services.length > 0) {
+	if (manual || (Options.checkOnStartup && Options.services.length > 0)) {
 		const checkCooldown = Options.checkOnStartupCooldown * 60 * 1000;
-		const lastCheck: number | string[] | undefined = await LocalStorage.get('startup');
-		if (typeof lastCheck !== 'number' || Date.now() - lastCheck > checkCooldown) {
+		const lastCheck: number | string[] | undefined = await LocalStorage.get('import');
+		if (manual || typeof lastCheck !== 'number' || Date.now() - lastCheck > checkCooldown) {
+			await browser.runtime.sendMessage({ action: MessageAction.importStart });
 			await log('Importing lists');
-			const services = Options.checkOnStartupMainOnly ? [Options.mainService!] : [...Options.services].reverse();
+			await LocalStorage.set('importInProgress', true);
+			const services =
+				!manual && Options.checkOnStartupMainOnly ? [Options.mainService!] : [...Options.services].reverse();
 			const done: string[] = typeof lastCheck === 'object' ? lastCheck : [];
 			for (const key of services) {
 				if (done.indexOf(key) < 0) {
@@ -226,12 +231,14 @@ async function onStartup() {
 						await log(`Error while importing ${Services[key].serviceName} ${error.stack}`);
 					}
 					done.push(key);
-					await LocalStorage.set('startup', { done: done });
+					if (!manual) await LocalStorage.set('import', { done: done });
 				} else await log(`Skipping ${Services[key].serviceName} already imported`);
 			}
-			await LocalStorage.set('startup', Date.now());
+			if (!manual) await LocalStorage.set('import', Date.now());
+			await LocalStorage.remove('importInProgress');
+			await browser.runtime.sendMessage({ action: MessageAction.importComplete });
 			await log(`Done Importing lists`);
 		} else await log(`Startup script executed less than ${Options.checkOnStartupCooldown}minutes ago, skipping`);
 	} else if (Options.checkOnStartup) await log('Did not Import: No services enabled');
 }
-browser.runtime.onStartup.addListener(onStartup);
+browser.runtime.onStartup.addListener(silentImport);

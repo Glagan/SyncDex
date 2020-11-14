@@ -148,6 +148,9 @@ hr {
 }
 
 // Services
+h1 > button {
+	vertical-align: middle;
+}
 .services {
 	display: flex;
 	flex-flow: row wrap;

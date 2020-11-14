@@ -62,6 +62,6 @@ export class LocalStorage {
 	}
 
 	static isSpecialKey = (key: string): boolean => {
-		return key == 'options' || key == 'history' || key == 'startup' || key == 'logs';
+		return key == 'options' || key == 'history' || key == 'startup' || key == 'logs' || key == 'importInProgress';
 	};
 }

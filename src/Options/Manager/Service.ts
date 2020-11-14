@@ -6,6 +6,7 @@ import { ActivableKey, LoginMethod, Service } from '../../Core/Service';
 import { SaveOptions } from '../Utility';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { OptionsManager } from '../OptionsManager';
+import { Runtime } from '../../Core/Runtime';
 
 class ServiceCard {
 	manager: ServiceManager;
@@ -377,6 +378,7 @@ export class ServiceManager {
 	mainService?: Service;
 	mainCard?: ServiceCard;
 	cards = {} as { [key in ActivableKey]: ServiceCard };
+	importAllButton: HTMLButtonElement;
 
 	constructor() {
 		this.activeContainer = document.getElementById('service-list')!;
@@ -389,6 +391,13 @@ export class ServiceManager {
 			this.activeContainer.appendChild(card.activeCard);
 			this.cards[key] = card;
 		}
+		// Import All button
+		this.importAllButton = document.getElementById('import-all') as HTMLButtonElement;
+		this.importAllButton.addEventListener('click', async (event) => {
+			event.preventDefault();
+			// Start modules in the background -- response will be received in toggleImportProgressState
+			await Runtime.sendMessage({ action: MessageAction.silentImport });
+		});
 		// Default State
 		this.refreshActive();
 	}
@@ -417,6 +426,7 @@ export class ServiceManager {
 	addActiveService = (key: ActivableKey): void => {
 		this.activeServices.push(key);
 		this.noServices.classList.add('hidden');
+		this.importAllButton.classList.remove('hidden');
 	};
 
 	/**
@@ -435,6 +445,7 @@ export class ServiceManager {
 			this.activeServices.splice(index, 1);
 			if (this.activeServices.length == 0) {
 				this.noServices.classList.remove('hidden');
+				this.importAllButton.classList.add('hidden');
 			}
 		}
 	};
@@ -462,8 +473,10 @@ export class ServiceManager {
 		}
 		if (this.activeServices.length == 0) {
 			this.noServices.classList.remove('hidden');
+			this.importAllButton.classList.add('hidden');
 		} else {
 			this.noServices.classList.add('hidden');
+			this.importAllButton.classList.remove('hidden');
 		}
 	};
 
@@ -503,6 +516,29 @@ export class ServiceManager {
 			card.updateStatus(status);
 		} else {
 			card.desactivate();
+		}
+	};
+
+	toggleImportProgressState = (value: boolean): void => {
+		this.importAllButton.disabled = value;
+		if (value) {
+			this.importAllButton.classList.add('loading');
+			this.importAllButton.title = 'Import in Progress, wait for it to finish.';
+		} else {
+			this.importAllButton.classList.remove('loading');
+			this.importAllButton.title = '';
+		}
+		for (const cardKey of Object.values(ActivableKey)) {
+			const card = this.cards[cardKey];
+			card.importButton.disabled = value;
+			card.exportButton.disabled = value;
+			if (value) {
+				card.importButton.title = 'Import in Progress, wait for it to finish.';
+				card.exportButton.title = 'Import in Progress, wait for it to finish.';
+			} else {
+				card.importButton.title = '';
+				card.exportButton.title = '';
+			}
 		}
 	};
 }
