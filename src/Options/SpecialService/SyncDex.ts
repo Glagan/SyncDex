@@ -1,13 +1,13 @@
-import { DOM } from '../Core/DOM';
-import { ModuleInterface } from '../Core/ModuleInterface';
-import { Options } from '../Core/Options';
-import { StaticKey } from '../Core/Service';
-import { LocalStorage } from '../Core/Storage';
-import { LocalTitle, StorageTitle, TitleCollection } from '../Core/Title';
-import { SpecialService } from './SpecialService';
-import { History } from '../SyncDex/History';
-import { dateFormat } from '../Core/Utility';
-import { log } from '../Core/Log';
+import { DOM } from '../../Core/DOM';
+import { log } from '../../Core/Log';
+import { ModuleInterface } from '../../Core/ModuleInterface';
+import { Options } from '../../Core/Options';
+import { StaticKey } from '../../Core/Service';
+import { LocalStorage } from '../../Core/Storage';
+import { LocalTitle, StorageTitle, TitleCollection } from '../../Core/Title';
+import { dateFormat } from '../../Core/Utility';
+import { History } from '../../SyncDex/History';
+import { SpecialService } from '../SpecialService';
 
 export class SyncDexImport extends SpecialService {
 	handleFile = async (data: ExportedSave, moduleInterface: ModuleInterface): Promise<any> => {
@@ -174,6 +174,8 @@ export class SyncDexExport extends SpecialService {
 		if (data && data.options) {
 			delete data.options.tokens;
 			delete data.importInProgress;
+			delete data.dropboxState;
+			delete data.saveSync;
 			const blob = new Blob([JSON.stringify(data)], { type: 'application/json;charset=utf-8' });
 			const href = URL.createObjectURL(blob);
 			const downloadLink = DOM.create('a', {

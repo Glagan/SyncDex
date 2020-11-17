@@ -62,6 +62,12 @@ export class Runtime {
 		}
 	}
 
+	static buildQuery(params: { [key: string]: any }): string {
+		return Object.keys(params)
+			.map((field) => `${encodeURIComponent(field)}=${encodeURIComponent(params[field])}`)
+			.join('&');
+	}
+
 	/**
 	 * Open a new tab of the Options page.
 	 */

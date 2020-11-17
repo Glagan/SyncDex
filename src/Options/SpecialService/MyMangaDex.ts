@@ -1,12 +1,12 @@
-import { DOM } from '../Core/DOM';
-import { log } from '../Core/Log';
-import { ModuleInterface } from '../Core/ModuleInterface';
-import { Options } from '../Core/Options';
-import { ActivableKey, StaticKey, StaticName } from '../Core/Service';
-import { LocalStorage } from '../Core/Storage';
-import { LocalTitle, TitleCollection } from '../Core/Title';
-import { History } from '../SyncDex/History';
-import { SpecialService } from './SpecialService';
+import { DOM } from '../../Core/DOM';
+import { log } from '../../Core/Log';
+import { ModuleInterface } from '../../Core/ModuleInterface';
+import { Options } from '../../Core/Options';
+import { ActivableKey, StaticKey, StaticName } from '../../Core/Service';
+import { LocalStorage } from '../../Core/Storage';
+import { LocalTitle, TitleCollection } from '../../Core/Title';
+import { History } from '../../SyncDex/History';
+import { SpecialService } from '../SpecialService';
 
 interface MyMangaDexTitle {
 	id: number;

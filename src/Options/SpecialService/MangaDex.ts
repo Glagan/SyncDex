@@ -1,11 +1,11 @@
-import { DOM } from '../Core/DOM';
-import { ModuleInterface } from '../Core/ModuleInterface';
-import { Options } from '../Core/Options';
-import { Runtime } from '../Core/Runtime';
-import { StaticKey } from '../Core/Service';
-import { LocalStorage } from '../Core/Storage';
-import { LocalTitle, TitleCollection } from '../Core/Title';
-import { SpecialService } from './SpecialService';
+import { DOM } from '../../Core/DOM';
+import { ModuleInterface } from '../../Core/ModuleInterface';
+import { Options } from '../../Core/Options';
+import { Runtime } from '../../Core/Runtime';
+import { StaticKey } from '../../Core/Service';
+import { LocalStorage } from '../../Core/Storage';
+import { LocalTitle, TitleCollection } from '../../Core/Title';
+import { SpecialService } from '../SpecialService';
 
 interface MangaDexAPIResponse {
 	code: number;

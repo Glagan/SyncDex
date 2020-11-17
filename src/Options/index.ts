@@ -5,6 +5,8 @@ import { Options } from '../Core/Options';
 import { LocalStorage } from '../Core/Storage';
 import { Changelog } from './Changelog';
 import { OptionsManager } from './OptionsManager';
+import { SaveSync } from './SaveSync';
+import { Dropbox } from './SaveSync/Dropbox';
 import { ThemeHandler } from './ThemeHandler';
 
 (async () => {
@@ -13,7 +15,7 @@ import { ThemeHandler } from './ThemeHandler';
 	await Options.load();
 	OptionsManager.instance = new OptionsManager();
 	// Check current import progress
-	const importInProgress = await LocalStorage.get('importInProgress');
+	const importInProgress = !!(await LocalStorage.get<boolean>('importInProgress'));
 	OptionsManager.instance.toggleImportProgressState(importInProgress);
 
 	// Check if SyncDex was updated or installed
@@ -45,6 +47,7 @@ import { ThemeHandler } from './ThemeHandler';
 		Changelog.openModal(true);
 	}
 
+	// Toggle import buttons when starting/ending an import
 	browser.runtime.onMessage.addListener((message: Message): void => {
 		if (message.action == MessageAction.importStart) {
 			OptionsManager.instance.toggleImportProgressState(true);
@@ -52,4 +55,40 @@ import { ThemeHandler } from './ThemeHandler';
 			OptionsManager.instance.toggleImportProgressState(false);
 		}
 	});
+
+	// Create cards for each save sync services
+	const saveSyncServices: { [key: string]: SaveSync } = { Dropbox: new Dropbox() };
+	const parent = document.getElementById('save-sync-services')!;
+	const cards: HTMLButtonElement[] = [];
+	const saveSync = await LocalStorage.get<{ service: string }>('saveSync');
+	for (const key of Object.keys(saveSyncServices)) {
+		const syncService = saveSyncServices[key];
+		const card = DOM.create('button', { class: 'primary', textContent: syncService.constructor.name });
+		card.addEventListener('click', (event) => {
+			event.preventDefault();
+			syncService.card(card);
+		});
+		cards.push(card);
+	}
+	if (saveSync !== undefined) {
+		saveSyncServices[saveSync.service].manage(parent);
+	} else {
+		DOM.append(parent, ...cards);
+	}
+	// Check if there is a token being received for an save sync service
+	const query: { [key: string]: string } = {};
+	const queryString = window.location.search.substring(1);
+	queryString
+		.split('&')
+		.map((s) => s.split('='))
+		.forEach((s) => (query[s[0]] = s[1]));
+	if (query.for && query.for !== '') {
+		for (const key of Object.keys(saveSyncServices)) {
+			const syncService = saveSyncServices[key];
+			if (syncService.constructor.name == query.for) {
+				syncService.login(query);
+				break;
+			}
+		}
+	}
 })();

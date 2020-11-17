@@ -6,8 +6,8 @@
 	<meta http-equiv="X-UA-Compatible" content="ie=edge" />
 	<title>SyncDex :: Options</title>
 	<link rel="shortcut icon" href="/icons/sc.png" type="image/png">
-	<link rel="stylesheet" href="https://code.cdn.mozilla.net/fonts/fira.css" />
-	<link rel="stylesheet" type="text/css" media="all" href="../dist/fontawesome_solid.min.css" />
+	<!--<link rel="stylesheet" href="https://code.cdn.mozilla.net/fonts/fira.css" />-->
+	<link rel="stylesheet" type="text/css" media="all" href="../dist/fontawesome_solid_brands.min.css" />
 	<link rel="stylesheet" type="text/css" media="all" href="../dist/SimpleNotification.min.css" />
 	<link rel="stylesheet" type="text/css" media="all" href="../css/Options.css" />
 </head>
@@ -27,6 +27,7 @@
 			<li data-link="save"><i class="fas fa-save"></i> Save Viewer</li>
 			<li data-link="import"><i class="fas fa-cloud-download-alt"></i> Import</li>
 			<li data-link="export"><i class="fas fa-cloud-upload-alt"></i> Export</li>
+			<li data-link="save-sync"><i class="fab fa-dropbox"></i> Save Sync</li>
 			<li data-link="delete"><i class="fas fa-trash"></i> Delete</li>
 			<li data-link="logs"><i class="fas fa-file-archive"></i> Logs</li>
 			<li id="open-changelog"><i class="fas fa-list-ol"></i> Changelog</li>
@@ -362,6 +363,16 @@
 					<div class="header md"><span class="manga">Manga<span class="dex">Dex</span></span></div>
 				</div>
 			</div>
+		</div>
+		<h1 id="save-sync"><i class="fab fa-dropbox"></i> Save Sync</h1>
+		<div class="import-export section">
+			<div class="block message default">
+				<div class="icon"></div>
+				<div class="content">
+					<p>Setup a cloud storage provider to sync your save and all your options on all of your devices.</p>
+				</div>
+			</div>
+			<div id="save-sync-services" class="services section-content"></div>
 		</div>
 		<h1 id="logs"><i class="fas fa-file-archive"></i> Logs</h1>
 		<div class="section logs-viewer">

@@ -27,6 +27,7 @@ let mainManifest = {
 	author: 'Glagan',
 	description: 'Automatically update your Manga lists when reading on MangaDex.',
 	permissions: [
+		'storage',
 		'http://127.0.0.1/*', // !
 		'http://localhost/mochi-v2/api/*', // !
 		'https://myanimelist.net/about.php',
@@ -39,7 +40,7 @@ let mainManifest = {
 		'https://*.mangaupdates.com/ajax/*',
 		'https://*.anime-planet.com/manga/*',
 		'https://*.anime-planet.com/api/*',
-		'storage',
+		'https://api.dropboxapi.com/*',
 	],
 	icons: {
 		48: 'icons/48.png',
@@ -57,7 +58,6 @@ let mainManifest = {
 		},
 		{
 			matches: [
-				'https://*.mangadex.org/ajax*',
 				'https://*.mangadex.org/follows*',
 				'https://*.mangadex.org/manga*',
 				'https://*.mangadex.org/titles*',
@@ -90,6 +90,17 @@ let mainManifest = {
 		page: 'options/index.html',
 		open_in_tab: true,
 	},
+	web_accessible_resources: [
+		'icons/sc.png',
+		'icons/mmd.png',
+		'icons/md.png',
+		'icons/mal.png',
+		'icons/al.png',
+		'icons/ku.png',
+		'icons/mu.png',
+		'icons/ap.png',
+		'options/index.html',
+	],
 };
 const browsers = ['firefox', 'chrome'];
 let browser_manifests = {

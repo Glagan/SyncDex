@@ -9,9 +9,9 @@ import { SaveViewer } from './SaveViewer';
 import { SaveOptions } from './Utility';
 import { Options } from '../Core/Options';
 import { Changelog } from './Changelog';
-import { MyMangaDex } from './MyMangaDex';
-import { SyncDexImport, SyncDexExport } from './SyncDex';
-import { MangaDexImport, MangaDexExport } from './MangaDex';
+import { MyMangaDex } from './SpecialService/MyMangaDex';
+import { SyncDexImport, SyncDexExport } from './SpecialService/SyncDex';
+import { MangaDexImport, MangaDexExport } from './SpecialService/MangaDex';
 import { SpecialService } from './SpecialService';
 import { Logs } from './Logs';
 

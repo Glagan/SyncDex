@@ -23,11 +23,11 @@ export class LocalStorage {
 	 * Get the object identified by `key` from Local Storage, or undefined.
 	 * Pass null to retrieve all Local Storage.
 	 */
-	static async get<T>(key?: number | string): Promise<any | T | undefined> {
+	static async get<T>(key?: number | string): Promise<T | undefined> {
 		if (typeof key === 'number') key = key.toString();
 		const data = await browser.storage.local.get(key === undefined ? null : key);
 		if (key !== undefined && key !== undefined && data !== undefined) return data[key];
-		return data as any;
+		return data as T;
 	}
 
 	/**
@@ -62,6 +62,14 @@ export class LocalStorage {
 	}
 
 	static isSpecialKey = (key: string): boolean => {
-		return key == 'options' || key == 'history' || key == 'startup' || key == 'logs' || key == 'importInProgress';
+		return (
+			key == 'options' ||
+			key == 'history' ||
+			key == 'startup' ||
+			key == 'logs' ||
+			key == 'importInProgress' ||
+			key == 'dropboxState' ||
+			key == 'saveSync'
+		);
 	};
 }
