@@ -33,6 +33,7 @@ let mainManifest = {
 		'https://myanimelist.net/about.php',
 		'https://myanimelist.net/manga/*',
 		'https://myanimelist.net/ownlist/manga/*',
+		'https://myanimelist.net/mangalist/*',
 		'https://mangadex.org/*',
 		'https://graphql.anilist.co/',
 		'https://kitsu.io/api/*',
@@ -41,6 +42,7 @@ let mainManifest = {
 		'https://*.anime-planet.com/manga/*',
 		'https://*.anime-planet.com/api/*',
 		'https://api.dropboxapi.com/*',
+		'https://content.dropboxapi.com/*',
 	],
 	icons: {
 		48: 'icons/48.png',

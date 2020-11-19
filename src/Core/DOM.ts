@@ -83,9 +83,9 @@ export class DOM {
 		});
 	}
 
-	static icon(icon: string): HTMLElement {
+	static icon(styleOrIcon: string, icon?: string): HTMLElement {
 		return DOM.create('i', {
-			class: `fas fa-${icon}`,
+			class: `fa${icon !== undefined ? styleOrIcon : 's'} fa-${icon !== undefined ? icon : styleOrIcon}`,
 		});
 	}
 

@@ -14,6 +14,7 @@ import { SyncDexImport, SyncDexExport } from './SpecialService/SyncDex';
 import { MangaDexImport, MangaDexExport } from './SpecialService/MangaDex';
 import { SpecialService } from './SpecialService';
 import { Logs } from './Logs';
+import { SaveSyncManager } from './Manager/SaveSync';
 
 export class OptionsManager {
 	highlightsManager: HighlightsManager;
@@ -23,6 +24,7 @@ export class OptionsManager {
 	menuHighlight: MenuHighlight;
 	serviceManager: ServiceManager;
 	saveViewer: SaveViewer;
+	saveSync: SaveSyncManager;
 	logs: Logs;
 	importExportCards: HTMLElement[] = [];
 	// Instance of the OptionsManager to use in ReloadOptions
@@ -36,6 +38,7 @@ export class OptionsManager {
 		this.menuHighlight = new MenuHighlight();
 		this.serviceManager = new ServiceManager();
 		this.saveViewer = new SaveViewer();
+		this.saveSync = new SaveSyncManager();
 		this.logs = new Logs();
 
 		// Import/Export
@@ -54,7 +57,7 @@ export class OptionsManager {
 					event.preventDefault();
 					if (!card.classList.contains('disabled')) {
 						/// @ts-ignore className is *NOT* abstract
-						new importCards[cardId]().start();
+						new cardIds[cardId]().start();
 					}
 				});
 			}
@@ -130,6 +133,7 @@ export class OptionsManager {
 		this.inputManager.updateAll();
 		this.serviceManager.refreshActive();
 		this.saveViewer.updateAll(true);
+		this.saveSync.refresh();
 		this.logs.reload();
 	};
 }

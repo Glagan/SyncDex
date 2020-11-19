@@ -49,23 +49,30 @@ async function handleMessage(message: Message, sender?: BrowserRuntime.MessageSe
 		msg.cache = msg.cache !== undefined ? msg.cache : 'default';
 		msg.mode = msg.mode !== undefined ? msg.mode : undefined;
 		msg.credentials = msg.credentials !== undefined ? msg.credentials : 'same-origin';
-		msg.headers = msg.headers !== undefined ? msg.headers : {};
-		let body: FormData | string | undefined;
-		if (typeof msg.body === 'object' && msg.body !== null) {
-			let data = new FormData();
-			for (const key in msg.body as FormDataProxy) {
-				if (msg.body.hasOwnProperty(key)) {
-					const element = (msg.body as FormDataProxy)[key] as string | number | FormDataFile;
-					if (typeof element === 'string') {
-						data.set(key, element);
-					} else if (typeof element === 'number') {
-						data.set(key, element.toString());
-					} else if (typeof element === 'object') {
-						data.set(key, new File(element.content, element.name, element.options));
+		msg.headers = msg.headers !== undefined ? (msg.headers as Record<string, string>) : {};
+		let body: File | FormData | string | undefined;
+		if (msg.fileRequest !== undefined) {
+			msg.headers['Content-Type'] = 'application/octet-stream';
+			const save = (await LocalStorage.getAll()) as ExportedSave;
+			delete save.dropboxState;
+			delete save.saveSync;
+			body = new File([JSON.stringify(save)], 'application/json');
+		} else if (msg.form !== undefined) {
+			if (!(msg.form instanceof FormData)) {
+				body = new FormData();
+				for (const key in msg.form as FormDataProxy) {
+					if (msg.form.hasOwnProperty(key)) {
+						const element = msg.form[key];
+						if (typeof element === 'string') {
+							body.set(key, element);
+						} else if (typeof element === 'number') {
+							body.set(key, element.toString());
+						} else {
+							body.set(key, new File(element.content, element.name, element.options));
+						}
 					}
 				}
-			}
-			body = data;
+			} else body = msg.form;
 		} else if (msg.body !== null) {
 			body = msg.body;
 		}
@@ -76,17 +83,16 @@ async function handleMessage(message: Message, sender?: BrowserRuntime.MessageSe
 				(msg.credentials == 'include' && sender.tab?.cookieStoreId !== undefined))
 		) {
 			const cookieStoreId = sender.tab!.cookieStoreId;
-			const cookies = await browser.cookies.getAll({ url: message.url, storeId: cookieStoreId });
-			(msg.headers as Record<string, string>)['X-Cookie'] = cookies.map((c) => `${c.name}=${c.value}`).join('; ');
+			const cookiesList = await browser.cookies.getAll({ url: message.url, storeId: cookieStoreId });
+			const cookies = cookiesList.map((c) => `${c.name}=${c.value}`).join('; ');
+			if (cookies != '') msg.headers['X-Cookie'] = cookies;
 		}
 		// Add Sec- Headers
-		for (const header of ['Sec-Fetch-Dest', 'Sec-Fetch-Mode', 'Sec-Fetch-Site', 'Sec-Fetch-User']) {
-			if ((msg.headers as Record<string, string>)[header] !== undefined) {
-				(msg.headers as Record<string, string>)[`X-${header}`] = (msg.headers as Record<string, string>)[
-					header
-				];
+		/*for (const header of ['Sec-Fetch-Dest', 'Sec-Fetch-Mode', 'Sec-Fetch-Site', 'Sec-Fetch-User']) {
+			if (msg.headers[header] !== undefined) {
+				msg.headers[`X-${header}`] = msg.headers[header];
 			}
-		}
+		}*/
 		return fetch(msg.url, {
 			...message,
 			body,
@@ -104,7 +110,7 @@ async function handleMessage(message: Message, sender?: BrowserRuntime.MessageSe
 				};
 			})
 			.catch((error) => {
-				log(`Error on request [${msg.url}]: ${error} >> ${error.stack}`);
+				log(`Error on request [${msg.url}]: ${error}${error.stack ? `>> ${error.stack}` : ''}`);
 				return <RequestResponse>{
 					url: msg.url,
 					ok: false,
@@ -161,11 +167,13 @@ if (!isChrome) {
 				'https://myanimelist.net/about.php',
 				'https://myanimelist.net/manga/*',
 				'https://myanimelist.net/ownlist/manga/*',
+				'https://myanimelist.net/mangalist/*',
 				'https://mangadex.org/*',
 				'https://*.mangaupdates.com/series.html?id=*',
 				'https://*.mangaupdates.com/ajax/*',
 				'https://*.anime-planet.com/manga/*',
 				'https://*.anime-planet.com/api/*',
+				'localhost/*', // !
 			],
 		},
 		['blocking', 'requestHeaders']

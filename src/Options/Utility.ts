@@ -1,5 +1,4 @@
 import { Options } from '../Core/Options';
-import { OptionsManager } from './OptionsManager';
 
 let savingNotification: SimpleNotification;
 export async function SaveOptions(): Promise<void> {
@@ -8,10 +7,4 @@ export async function SaveOptions(): Promise<void> {
 	savingNotification = SimpleNotification.success({
 		title: 'Options Saved',
 	});
-}
-
-export function ReloadOptions(): void {
-	if (OptionsManager.instance) {
-		OptionsManager.instance.reload();
-	}
 }

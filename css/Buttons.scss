@@ -36,15 +36,15 @@
 		&,
 		&.default {
 			color: $grey-90;
-			background-color: $grey-90-a10;
+			background-color: $grey-30;
 		}
 		&:hover,
 		&.default:hover {
-			background-color: $grey-90-a20;
+			background-color: $grey-40;
 		}
 		&:active,
 		&.default:active {
-			background-color: $grey-90-a30;
+			background-color: $grey-50;
 		}
 		&:focus,
 		&.default:focus {

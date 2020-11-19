@@ -312,6 +312,21 @@ table {
 	display: none;
 }
 
+// Save Sync
+#save-sync-container {
+	.manage {
+		margin-top: 4px;
+
+		button {
+			margin-right: 8px;
+
+			&:last-child {
+				margin-right: 0;
+			}
+		}
+	}
+}
+
 // Logs
 .logs-viewer {
 	.manage {

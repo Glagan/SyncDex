@@ -225,11 +225,11 @@ export class MyAnimeListExport extends ExportModule {
 			url: `https://myanimelist.net/import.php`,
 			method: 'POST',
 			credentials: 'include',
-			body: <FormDataProxy>{
+			form: {
 				importtype: '3',
 				subimport: 'Import Data',
 				csrf_token: this.csrfToken,
-				mal: <FormDataFile>{
+				mal: {
 					content: [file],
 					name: 'mal_export.xml',
 					options: {

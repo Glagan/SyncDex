@@ -62,12 +62,14 @@ interface RequestMessage {
 	method?: 'GET' | 'POST' | 'HEAD' | 'OPTIONS' | 'DELETE' | 'PUT' | 'PATCH';
 	url: string;
 	isJson?: boolean;
-	body?: FormDataProxy | FormData | string | null;
+	body?: string | null;
+	form?: FormDataProxy | FormData;
 	cache?: RequestCache;
 	mode?: RequestMode;
 	headers?: HeadersInit;
 	redirect?: RequestRedirect;
 	credentials?: RequestCredentials;
+	fileRequest?: 'localSave';
 }
 
 interface FetchJSONMessage extends RequestMessage {

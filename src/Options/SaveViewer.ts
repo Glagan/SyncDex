@@ -233,7 +233,7 @@ export class SaveViewer {
 					],
 				}),
 				DOM.create('td', {
-					class: 'name',
+					class: 'data name',
 					textContent: title.name ? title.name : '-',
 					title: title.name ? title.name : '-',
 				}),
