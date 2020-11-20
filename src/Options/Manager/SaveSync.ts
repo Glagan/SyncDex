@@ -1,7 +1,7 @@
 import { DOM } from '../../Core/DOM';
 import { LocalStorage } from '../../Core/Storage';
-import { SaveSync, SaveSyncState } from '../SaveSync';
-import { Dropbox } from '../SaveSync/Dropbox';
+import { SaveSync, SaveSyncState } from '../../Core/SaveSync';
+import { Dropbox } from '../../SaveSync/Dropbox';
 
 interface Query {
 	[key: string]: string;
@@ -51,8 +51,65 @@ export class SaveSyncManager {
 		DOM.clear(this.container);
 		const state = await LocalStorage.get<SaveSyncState>('saveSync');
 		if (state !== undefined) {
-			this.saveSyncServices[state.service].state = state;
-			this.saveSyncServices[state.service].manage(this, this.container);
+			const syncService = this.saveSyncServices[state.service];
+			syncService.state = state;
+
+			// Make summary and manage buttons
+			const summary = DOM.create('p', {
+				childs: [
+					DOM.text('Logged in on'),
+					DOM.space(),
+					DOM.create('b', {
+						childs: [
+							(<typeof SaveSync>syncService.constructor).icon(),
+							DOM.space(),
+							DOM.text(syncService.constructor.name),
+						],
+					}),
+					DOM.text('.'),
+				],
+			});
+			const importButton = DOM.create('button', {
+				class: 'primary',
+				childs: [DOM.icon('cloud-download-alt'), DOM.space(), DOM.text('Import')],
+			});
+			const exportButton = DOM.create('button', {
+				class: 'primary',
+				childs: [DOM.icon('cloud-upload-alt'), DOM.space(), DOM.text('Export')],
+			});
+			const deleteLogout = DOM.create('button', {
+				class: 'danger',
+				childs: [DOM.icon('trash-alt'), DOM.space(), DOM.text('Delete and Logout')],
+				events: {
+					click: async (event) => {
+						event.preventDefault();
+						await syncService.delete();
+						await syncService.logout();
+						await syncService.clean();
+						this.refresh();
+					},
+				},
+			});
+			const logout = DOM.create('button', {
+				class: 'danger',
+				childs: [DOM.icon('sign-out-alt'), DOM.space(), DOM.text('Logout')],
+				events: {
+					click: async (event) => {
+						event.preventDefault();
+						await syncService.logout();
+						await syncService.clean();
+						this.refresh();
+					},
+				},
+			});
+			DOM.append(
+				this.container,
+				summary,
+				DOM.create('div', {
+					class: 'manage',
+					childs: [importButton, exportButton, deleteLogout, logout],
+				})
+			);
 		} else DOM.append(this.container, ...this.cards);
 	};
 }

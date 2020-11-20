@@ -5,7 +5,7 @@ const rimraf = require('rimraf');
 const path = require('path');
 const rollup = require('rollup');
 const sass = require('sass');
-const typescript = require('@rollup/plugin-typescript');
+const typescript = require('rollup-plugin-typescript2');
 const json = require('@rollup/plugin-json');
 const { terser } = require('rollup-plugin-terser');
 const nodeResolve = require('rollup-plugin-node-resolve');
@@ -147,6 +147,10 @@ const DevFiles = [
 	'build/scripts/SyncDex.js.map',
 	'build/scripts/SyncDex_Anilist.js.map:external',
 ];
+if (options.mode == 'dev') {
+	Files.unshift('src:src');
+	Files.push(...DevFiles);
+}
 
 // Startup
 // prettier-ignore
@@ -178,7 +182,7 @@ let bundleList = [
 		output: 'build/scripts/SyncDex_options.js',
 	},
 	{
-		name: 'External',
+		name: 'Anilist',
 		input: 'src/External/Anilist.ts',
 		output: 'build/scripts/SyncDex_Anilist.js',
 	},
@@ -188,19 +192,25 @@ const bundles = bundleList.map((bundle) => {
 		input: bundle.input,
 		// external: ['SimpleNotification'],
 		plugins: (() => {
-			let list = [typescript(), json({ preferConst: true }), nodeResolve({ browser: true }), commonjs()];
+			let list = [
+				typescript({ cacheRoot: 'build/.cache' }),
+				json({ preferConst: true }),
+				nodeResolve({ browser: true }),
+				commonjs(),
+			];
 			if (options.mode == 'prod' || options.mode == 'production') {
 				list.push(terser());
 			}
 			return list;
 		})(),
 		output: {
+			//dir: `build/scripts/`,
 			file: bundle.output,
 			format: 'es',
 			sourcemap: options.mode == 'dev',
 		},
 		watch: {
-			buildDelay: 750,
+			buildDelay: 500,
 			clearScreen: false,
 			chokidar: false,
 			exclude: ['node_modules/**/*', 'build/**/*', 'dist/**/*'],
@@ -208,10 +218,9 @@ const bundles = bundleList.map((bundle) => {
 	};
 });
 function bundleName(outputFile) {
-	const file = /.+\\(.+)$/.exec(outputFile)[1];
-	return bundleList.find((bundle) => {
-		return bundle.output.indexOf(file) >= 0;
-	}).name;
+	const file = /.+\\(.+)\.js$/.exec(outputFile)[1];
+	if (file == 'SyncDex') return 'SyncDex';
+	return /SyncDex_(.+)/.exec(file)[1];
 }
 
 // SCSS Files
@@ -278,14 +287,14 @@ const scss = ['SyncDex', 'Options'];
 				return `${duration}ms`;
 			})();
 			console.log(
-				`Done at ${zeroPad(now.getHours())}h${zeroPad(now.getMinutes())}min${zeroPad(
+				`Done at \u001b[94m${zeroPad(now.getHours())}h${zeroPad(now.getMinutes())}min${zeroPad(
 					now.getSeconds()
-				)}s in ${totalDuration}`
+				)}s\u001b[0m in \u001b[94m${totalDuration}\u001b[0m`
 			);
 			if (!doneInitial) {
 				if (!options.watch) {
 					watcher.close();
-				} else console.log(`Watching folders (CTRL + C to exit)`);
+				} else console.log(`\u001b[92mWatching folders (CTRL + C to exit)\u001b[0m`);
 				doneInitial = true;
 			}
 		}
@@ -325,10 +334,6 @@ async function buildExtension(browser, nonVerbose) {
 	bundleManifestStream.cork();
 	bundleManifestStream.end();
 
-	if (options.mode == 'dev') {
-		Files.unshift('src:src');
-		Files.push(...DevFiles);
-	}
 	deepFileCopy(Files, folderName, ['chrome', 'firefox']);
 
 	// Make web-ext

@@ -1,5 +1,5 @@
 import { DOM } from '../Core/DOM';
-import * as changelog from '../../changelog.json';
+import * as changelog from '../changelog.json';
 import { Modal } from '../Core/Modal';
 import { Options } from '../Core/Options';
 

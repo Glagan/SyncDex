@@ -137,7 +137,7 @@ export abstract class Module {
 		this.interface?.setOptionsValues(this.options);
 	};
 
-	abstract async run(): Promise<ModuleStatus>;
+	abstract run(): Promise<ModuleStatus>;
 
 	mochiCheck = async (collection: TitleCollection): Promise<void> => {
 		const progress = DOM.create('span', {
@@ -187,7 +187,7 @@ export abstract class ImportModule extends Module {
 	}
 
 	async preExecute?(): Promise<boolean>;
-	abstract async execute(): Promise<boolean>;
+	abstract execute(): Promise<boolean>;
 	async postExecute?(): Promise<void>;
 
 	displaySummary = (): void => {
@@ -362,7 +362,7 @@ export abstract class ExportModule extends Module {
 	}
 
 	async preExecute?(filtered: LocalTitle[]): Promise<boolean>;
-	abstract async execute(filtered: LocalTitle[]): Promise<boolean>;
+	abstract execute(filtered: LocalTitle[]): Promise<boolean>;
 	async postExecute?(): Promise<void>;
 
 	displaySummary = (): void => {

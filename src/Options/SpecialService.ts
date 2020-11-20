@@ -66,7 +66,7 @@ export abstract class SpecialService {
 		notification?.classList.remove('loading');
 	};
 
-	abstract async start(): Promise<void>;
+	abstract start(): Promise<void>;
 
 	reload = (): void => {
 		OptionsManager.instance.reload();

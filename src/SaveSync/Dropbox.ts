@@ -1,9 +1,9 @@
-import { DOM } from '../../Core/DOM';
-import { Runtime } from '../../Core/Runtime';
-import { LocalStorage } from '../../Core/Storage';
-import { SaveSyncManager } from '../Manager/SaveSync';
-import { generateRandomString, pkceChallengeFromVerifier } from '../PKCEHelper';
-import { SaveSync, SaveSyncState } from '../SaveSync';
+import { DOM } from '../Core/DOM';
+import { Runtime } from '../Core/Runtime';
+import { LocalStorage } from '../Core/Storage';
+import { SaveSyncManager } from '../Options/Manager/SaveSync';
+import { generateRandomString, pkceChallengeFromVerifier } from '../Options/PKCEHelper';
+import { SaveSync } from '../Core/SaveSync';
 
 type DropboxState = { state: string; verifier: string };
 type DropboxFile = {
@@ -28,6 +28,7 @@ type DropboxFile = {
 //	 4. update remote file with the local save if it's not more recent
 //	3. create a newfile with the local save if it doesn't exists
 export class Dropbox extends SaveSync {
+	static icon = () => DOM.icon('b', 'dropbox');
 	static CLIENT_ID = 'd8aw9vtzpdqg93y';
 	static REDIRECT_URI = `${Runtime.file('options/index.html')}?for=Dropbox`;
 
@@ -92,66 +93,31 @@ export class Dropbox extends SaveSync {
 					event.preventDefault();
 					await this.refreshTokenIfNeeded();
 					const file = await this.checkIfFileExists();
-					await this.uploadLocalSave();
-					if (typeof file === 'object') {
-						console.log('file', file);
-						// TODO
-						if (file.server_modified) {
-							await this.uploadLocalSave();
-						}
-					} else if (file === true) {
+					if (typeof file === 'object' && file !== null) {
+						const serverModified = new Date(file.server_modified);
+						const localModified = await LocalStorage.get<number>('lastModified', 0);
+						console.log(
+							'Server',
+							serverModified.getTime(),
+							`(${file.server_modified})`,
+							'Local',
+							localModified
+						);
+						if (serverModified.getTime() > localModified) {
+							await this.downloadExternalSave();
+						} else await this.uploadLocalSave();
+					} else if (file === null) {
 						await this.uploadLocalSave();
 					} else SimpleNotification.error({ title: 'API Error ?' });
 				},
 			},
 		});
-		const sync = DOM.create('button', {
-			class: 'default',
-			childs: [DOM.icon('sync-alt'), DOM.space(), DOM.text('Refresh')],
-			events: {
-				click: async (event) => {
-					event.preventDefault();
-					await this.refreshTokenIfNeeded();
-				},
-			},
-		});
-		const importButton = DOM.create('button', {
-			class: 'primary',
-			childs: [DOM.icon('cloud-download-alt'), DOM.space(), DOM.text('Import')],
-		});
-		const exportButton = DOM.create('button', {
-			class: 'primary',
-			childs: [DOM.icon('cloud-upload-alt'), DOM.space(), DOM.text('Export')],
-		});
-		const deleteLogout = DOM.create('button', {
-			class: 'danger',
-			childs: [DOM.icon('trash-alt'), DOM.space(), DOM.text('Delete and Logout')],
-		});
-		const logout = DOM.create('button', {
-			class: 'danger',
-			childs: [DOM.icon('sign-out-alt'), DOM.space(), DOM.text('Logout')],
-			events: {
-				click: async (event) => {
-					event.preventDefault();
-					await this.clean();
-					manager.refresh();
-				},
-			},
-		});
-		DOM.append(
-			parent,
-			summary,
-			DOM.create('div', {
-				class: 'manage',
-				childs: [listFiles, testCreateFile, sync, importButton, exportButton, deleteLogout, logout],
-			})
-		);
 	};
 
 	/**
 	 * Return a DropboxFile if it exists, true if it doesn't and false if the API returned an error.
 	 */
-	checkIfFileExists = async (): Promise<DropboxFile | boolean> => {
+	checkIfFileExists = async (): Promise<DropboxFile | null | false> => {
 		await this.refreshTokenIfNeeded();
 		const response = await Runtime.jsonRequest({
 			method: 'POST',
@@ -164,30 +130,60 @@ export class Dropbox extends SaveSync {
 		});
 		if (response.ok) {
 			if (response.body?.matches && response.body.matches.length === 1) {
-				return response.body.matches[0].metadata as DropboxFile;
+				return response.body.matches[0].metadata.metadata as DropboxFile;
 			}
-			return true;
+			return null;
 		}
 		return false;
 	};
 
-	uploadLocalSave = async (): Promise<boolean> => {
-		try {
-			await this.refreshTokenIfNeeded();
-			const response = await Runtime.jsonRequest({
-				method: 'POST',
-				url: 'https://content.dropboxapi.com/2/files/upload',
-				headers: {
-					Authorization: `Bearer ${this.state?.token}`,
-					'Dropbox-API-Arg': '{"path":"/Save.json","mode":"overwrite","mute":true}',
-				},
-				fileRequest: 'localSave',
-			});
-			return response.ok;
-		} catch (error) {
-			console.error(error);
-			return false;
+	lastModified = async (): Promise<number> => {
+		await this.refreshTokenIfNeeded();
+		const file = await this.checkIfFileExists();
+		if (typeof file === 'object' && file !== null) {
+			return new Date(file.server_modified).getTime();
+			/*const serverModified = new Date(file.server_modified);
+			const localModified = await LocalStorage.get<number>('lastModified', 0);
+			console.log(
+				'Server',
+				serverModified.getTime(),
+				`(${file.server_modified})`,
+				'Local',
+				localModified
+			);
+			if (serverModified.getTime() > localModified) {
+				await this.downloadExternalSave();
+			} else await this.uploadLocalSave();*/
 		}
+		return file === null ? 0 : -1;
+	};
+
+	downloadExternalSave = async (): Promise<boolean> => {
+		await this.refreshTokenIfNeeded();
+		const response = await Runtime.request({
+			method: 'POST',
+			url: 'https://content.dropboxapi.com/2/files/download',
+			headers: {
+				Authorization: `Bearer ${this.state?.token}`,
+				'Dropbox-API-Arg': '{"path":"/Save.json"}',
+			},
+		});
+		console.log(response);
+		return response.ok;
+	};
+
+	uploadLocalSave = async (): Promise<boolean> => {
+		await this.refreshTokenIfNeeded();
+		const response = await Runtime.jsonRequest({
+			method: 'POST',
+			url: 'https://content.dropboxapi.com/2/files/upload',
+			headers: {
+				Authorization: `Bearer ${this.state?.token}`,
+				'Dropbox-API-Arg': '{"path":"/Save.json","mode":"overwrite","mute":true}',
+			},
+			fileRequest: 'localSave',
+		});
+		return response.ok;
 	};
 
 	refreshTokenIfNeeded = async (): Promise<boolean> => {
@@ -209,7 +205,7 @@ export class Dropbox extends SaveSync {
 	};
 
 	login = async (query: { [key: string]: string }): Promise<boolean> => {
-		const dropboxState: DropboxState | undefined = await LocalStorage.get<DropboxState>('dropboxState');
+		const dropboxState = await LocalStorage.get<DropboxState>('dropboxState');
 		await LocalStorage.remove('dropboxState');
 		if (query.error) {
 			SimpleNotification.error(
@@ -245,6 +241,10 @@ export class Dropbox extends SaveSync {
 		return false;
 	};
 
+	delete = async (): Promise<boolean> => {
+		return true;
+	};
+
 	handleTokenResponse = async (response: RawResponse): Promise<boolean> => {
 		try {
 			const body = JSON.parse(response.body);
@@ -267,9 +267,5 @@ export class Dropbox extends SaveSync {
 			SimpleNotification.error({ title: 'API Error', text: 'Could not parse a body from the Dropbox API.' });
 		}
 		return false;
-	};
-
-	clean = async () => {
-		return LocalStorage.remove('saveSync');
 	};
 }

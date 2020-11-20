@@ -5,6 +5,7 @@
 .jshintrc
 
 # Build
+build/.cache
 build/chrome
 build/firefox
 build/scripts
