@@ -348,7 +348,7 @@ export class LocalTitle extends Title {
 	 */
 	static async get(id: number | string | object): Promise<LocalTitle> {
 		if (typeof id !== 'number' && typeof id !== 'string') throw 'LocalTitle.id need to be a number or a string.';
-		const title: StorageTitle | undefined = await LocalStorage.get<StorageTitle>(id);
+		const title = await LocalStorage.get<StorageTitle>(id);
 		const rid = typeof id === 'number' ? id : parseInt(id);
 		if (title === undefined) {
 			return new LocalTitle(rid);

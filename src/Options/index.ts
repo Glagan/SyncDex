@@ -13,7 +13,7 @@ import { ThemeHandler } from './ThemeHandler';
 	await Options.load();
 	OptionsManager.instance = new OptionsManager();
 	// Check current import progress
-	const importInProgress = !!(await LocalStorage.get<boolean>('importInProgress'));
+	const importInProgress = await LocalStorage.get<boolean>('importInProgress', false);
 	OptionsManager.instance.toggleImportProgressState(importInProgress);
 
 	// Check if SyncDex was updated or installed

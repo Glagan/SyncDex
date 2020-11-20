@@ -134,9 +134,7 @@ export const Options: AvailableOptions & ManageOptions = Object.assign(
 			const options = await LocalStorage.get<AvailableOptions>('options');
 			if (options !== undefined) {
 				Object.assign(Options, options);
-			} else {
-				return await Options.save();
-			}
+			} else return await Options.save();
 		},
 
 		reloadTokens: async (): Promise<void> => {

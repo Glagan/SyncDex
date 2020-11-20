@@ -21,15 +21,14 @@ export class History {
 	}
 
 	static async load(): Promise<void> {
-		await (LocalStorage.get('history') as Promise<HistoryObject | undefined>).then(async (res) => {
-			if (res == undefined) {
-				await LocalStorage.set('history', { ids: [] });
-			} else {
-				History.last = res.last;
-				History.page = res.page;
-				History.ids = res.ids;
-			}
-		});
+		const history = await LocalStorage.get<HistoryObject>('history');
+		if (history == undefined) {
+			await LocalStorage.set('history', { ids: [] });
+		} else {
+			History.last = history.last;
+			History.page = history.page;
+			History.ids = history.ids;
+		}
 	}
 
 	static async save(): Promise<void> {

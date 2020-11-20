@@ -10,9 +10,7 @@ export namespace Log {
 }
 export async function loadLogs(reload: boolean = false): Promise<LogLine[]> {
 	if (Log.logs === undefined || reload) {
-		const storageLogs = await LocalStorage.get<LogLine[] | undefined>('logs');
-		if (storageLogs !== undefined) Log.logs = storageLogs;
-		else Log.logs = [];
+		Log.logs = await LocalStorage.get<LogLine[]>('logs', []);
 	}
 	return Log.logs!;
 }

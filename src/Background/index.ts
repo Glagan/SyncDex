@@ -217,7 +217,7 @@ async function silentImport(manual: boolean = false) {
 	await Options.load();
 	if (manual || (Options.checkOnStartup && Options.services.length > 0)) {
 		const checkCooldown = Options.checkOnStartupCooldown * 60 * 1000;
-		const lastCheck: number | string[] | undefined = await LocalStorage.get('import');
+		const lastCheck: number | string[] = await LocalStorage.get('import', 0);
 		if (manual || typeof lastCheck !== 'number' || Date.now() - lastCheck > checkCooldown) {
 			await browser.runtime.sendMessage({ action: MessageAction.importStart });
 			await log('Importing lists');
