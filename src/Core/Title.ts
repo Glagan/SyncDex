@@ -348,7 +348,7 @@ export class LocalTitle extends Title {
 	 */
 	static async get(id: number | string | object): Promise<LocalTitle> {
 		if (typeof id !== 'number' && typeof id !== 'string') throw 'LocalTitle.id need to be a number or a string.';
-		const title = await LocalStorage.get<StorageTitle>(id);
+		const title = await LocalStorage.get(id);
 		const rid = typeof id === 'number' ? id : parseInt(id);
 		if (title === undefined) {
 			return new LocalTitle(rid);
@@ -500,7 +500,7 @@ export class LocalTitle extends Title {
 	};
 
 	refresh = async (): Promise<boolean> => {
-		const reloaded = await LocalStorage.get<StorageTitle>(this.key.id!);
+		const reloaded = await LocalStorage.get(this.key.id!);
 		if (reloaded) {
 			Object.assign(this, LocalTitle.fromSave(reloaded));
 			return true;
@@ -598,14 +598,14 @@ export class TitleCollection {
 	static async get(list?: number[] | string[]): Promise<TitleCollection> {
 		let collection = new TitleCollection();
 		if (list === undefined) {
-			const localTitles = (await LocalStorage.getAll()) as ExportedSave;
+			const localTitles = await LocalStorage.getAll();
 			for (const key in localTitles) {
 				if (!LocalStorage.isSpecialKey(key)) {
 					collection.add(new LocalTitle(parseInt(key), LocalTitle.fromSave(localTitles[key])));
 				}
 			}
 		} else {
-			const localTitles = await LocalStorage.getAll<StorageTitle>(list);
+			const localTitles = await LocalStorage.getList(list);
 			if (localTitles !== undefined) {
 				for (const id of list) {
 					const titleId = typeof id === 'number' ? id : parseInt(id);

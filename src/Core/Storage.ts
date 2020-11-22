@@ -1,4 +1,5 @@
 import { browser } from 'webextension-polyfill-ts';
+import { StorageTitle } from './Title';
 
 console.log('SyncDex :: Storage');
 
@@ -8,24 +9,33 @@ export class LocalStorage {
 	 * Each keys in the returned object can be undefined if it wasn't saved.
 	 * Pass nothing to retrieve all Local Storage.
 	 */
-	static getAll<T = Record<string, any>>(
-		keys?: (number | string)[]
-	): Promise<Record<string, any> | Record<string, T> | undefined> {
-		return browser.storage.local.get(keys === undefined ? null : keys);
+	static getAll(): Promise<ExportedSave> {
+		return browser.storage.local.get(null);
+	}
+
+	static getList(keys: Omit<number | string, keyof ExportedSave>[]): Promise<Record<string, StorageTitle>> {
+		for (const index in keys) {
+			if (typeof keys[index] === 'number') keys[index] = `${keys[index]}`;
+		}
+		return browser.storage.local.get(keys);
 	}
 
 	/**
 	 * Get the object identified by `key` from Local Storage, or undefined.
 	 * Pass nothing to retrieve all Local Storage.
 	 */
-	static async get<T>(key: number | string): Promise<T | undefined>;
-	static async get<T>(key: number | string, empty: T): Promise<T>;
-	static async get<T>(key: number | string, empty?: T): Promise<T | undefined> {
-		if (typeof key === 'number') key = key.toString();
-		const data = await browser.storage.local.get(key === undefined ? null : key);
+	static async get<T extends keyof ExportedSave>(key: T): Promise<ExportedSave[T] | undefined>;
+	static async get<T extends keyof ExportedSave>(
+		key: T,
+		empty: ExportedSave[T]
+	): Promise<NonNullable<ExportedSave[T]>>;
+	static async get<T extends keyof ExportedSave>(
+		key: T,
+		empty?: ExportedSave[T]
+	): Promise<ExportedSave[T] | undefined> {
+		const data = await browser.storage.local.get(typeof key === 'number' ? `${key}` : (key as string));
 		if (data[key] === undefined) return empty;
-		if (key !== undefined && key !== undefined) return data[key];
-		return data as T;
+		return data[key];
 	}
 
 	/**
@@ -65,9 +75,9 @@ export class LocalStorage {
 		return (
 			key == 'options' ||
 			key == 'history' ||
-			key == 'startup' ||
 			key == 'logs' ||
 			key == 'lastModified' ||
+			key == 'import' ||
 			key == 'importInProgress' ||
 			key == 'dropboxState' ||
 			key == 'saveSync'

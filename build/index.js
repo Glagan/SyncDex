@@ -28,6 +28,7 @@ let mainManifest = {
 	description: 'Automatically update your Manga lists when reading on MangaDex.',
 	permissions: [
 		'storage',
+		'alarms',
 		'http://127.0.0.1/*', // !
 		'http://localhost/mochi-v2/api/*', // !
 		'https://myanimelist.net/about.php',
@@ -154,14 +155,17 @@ if (options.mode == 'dev') {
 
 // Startup
 // prettier-ignore
-const RED = 91, GREEN = 92, ORANGE = 93, BLUE = 94;
+const RED = 91, GREEN = 92, ORANGE = 93, BLUE = 94, MAGENTA = 95, CYAN = 96;
+const color = (code) => `\u001b[${code}m`;
+const reset = () => `\u001b[0m`;
 const optionColor = (option, content = undefined, theme = [GREEN, ORANGE]) =>
-	`${option ? `\u001b[${theme[0]}m` : `\u001b[${theme[1]}m`}${content ? content : option}\u001b[0m`;
+	`${option ? color(theme[0]) : color(theme[1])}${content ? content : option}${reset()}`;
 console.log(
-	`\u001b[96mSyncDex ${mainManifest.version}\u001b[0m :: mode: ${optionColor(options.mode == 'prod', options.mode, [
-		GREEN,
-		BLUE,
-	])} | web-ext: ${optionColor(options.webExt)} | watch: ${optionColor(options.watch)} `
+	`${color(CYAN)}SyncDex ${mainManifest.version}${reset()} :: mode: ${optionColor(
+		options.mode == 'prod',
+		options.mode,
+		[GREEN, BLUE]
+	)} | web-ext: ${optionColor(options.webExt)} | watch: ${optionColor(options.watch)} `
 );
 
 // Compile and Build
@@ -229,9 +233,9 @@ const scss = ['SyncDex', 'Options'];
 // Start
 (async () => {
 	// Build CSS
-	console.log('Compiling CSS...');
+	console.log(`${color(MAGENTA)}Compiling CSS${reset()}`);
 	scss.forEach((name) => {
-		process.stdout.write(`~ ${name}...`);
+		process.stdout.write(`\t~ ${name}...`);
 		const result = sass.renderSync({
 			file: `css/${name}.scss`,
 			outFile: `${name}.css`,
@@ -251,12 +255,12 @@ const scss = ['SyncDex', 'Options'];
 	watcher.on('event', async (event) => {
 		if (event.code == 'START') {
 			start = Date.now();
-			console.log(`Compiling Scripts`);
+			console.log(`${color(MAGENTA)}Compiling Scripts${reset()}`);
 			duration = 0;
 		} else if (event.code == 'BUNDLE_START') {
 			rimraf.sync(event.output[0]); // Delete previous file
 			if (options.mode == 'dev') rimraf.sync(`${event.output[0]}.map`);
-			process.stdout.write(`~ ${bundleName(event.output[0])}...`);
+			process.stdout.write(`\t~ ${bundleName(event.output[0])}...`);
 		} else if (event.code == 'BUNDLE_END') {
 			process.stdout.write(` done in ${event.duration}ms\n`);
 			duration += event.duration;
@@ -268,13 +272,14 @@ const scss = ['SyncDex', 'Options'];
 					`\n# File ${event.error.loc.file}:${event.error.loc.line} line ${event.error.loc.column}`
 				);
 			}
-			if (event.error.frame) process.stdout.write(`${event.error.frame}`);
+			if (event.error.frame) process.stdout.write(`${event.error.frame}\n`);
+			else process.stdout.write(`\n`);
 			duration = 0;
 			if (!options.watch) watcher.close();
 			return false;
 		} else if (event.code == 'END') {
-			console.log(`Compiled all modules in ${duration}ms`);
-			console.log(`Building extensions`);
+			console.log(`${color(GREEN)}Compiled all modules in${reset()} ${color(BLUE)}${duration}ms${reset()}`);
+			console.log(`${color(MAGENTA)}Building extensions${reset()}`);
 			// Build for each browsers
 			for (const browser of browsers) {
 				await buildExtension(browser, doneInitial);
@@ -287,14 +292,14 @@ const scss = ['SyncDex', 'Options'];
 				return `${duration}ms`;
 			})();
 			console.log(
-				`Done at \u001b[94m${zeroPad(now.getHours())}h${zeroPad(now.getMinutes())}min${zeroPad(
-					now.getSeconds()
-				)}s\u001b[0m in \u001b[94m${totalDuration}\u001b[0m`
+				`${color(GREEN)}Done at ${color(BLUE)}${zeroPad(now.getHours())}h${zeroPad(
+					now.getMinutes()
+				)}min${zeroPad(now.getSeconds())}s${color(GREEN)} in ${reset()}${color(BLUE)}${totalDuration}${reset()}`
 			);
 			if (!doneInitial) {
 				if (!options.watch) {
 					watcher.close();
-				} else console.log(`\u001b[92mWatching folders (CTRL + C to exit)\u001b[0m`);
+				} else console.log(`${color(GREEN)}Watching folders (CTRL + C to exit)\${reset()}`);
 				doneInitial = true;
 			}
 		}
@@ -304,7 +309,7 @@ const scss = ['SyncDex', 'Options'];
 // Create manifest, move files and build web-ext for a single Browser
 async function buildExtension(browser, nonVerbose) {
 	const start = Date.now();
-	process.stdout.write(`~ ${browser}...`);
+	process.stdout.write(`\t~ ${browser}...`);
 	// Create temp folder for the bundle
 	let folderName = `build/${browser}`;
 	if (fs.existsSync(folderName)) {

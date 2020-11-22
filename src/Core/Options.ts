@@ -1,66 +1,7 @@
 import { LocalStorage } from './Storage';
-import { ActivableKey } from './Service';
 import { browser } from 'webextension-polyfill-ts';
 
 console.log('SyncDex :: Options');
-
-export interface AvailableOptions {
-	// Chapter and Title List / Updates
-	hideHigher: boolean;
-	hideLower: boolean;
-	hideLast: boolean;
-	highlight: boolean;
-	groupTitlesInLists: boolean;
-	thumbnail: boolean;
-	originalThumbnail: boolean;
-	progressInThumbnail: boolean;
-	thumbnailMaxHeight: number;
-	separateLanguages: boolean;
-	favoriteLanguage: string;
-	// Reading
-	saveOpenedChapters: boolean;
-	chaptersSaved: number;
-	saveOnlyHigher: boolean;
-	saveOnlyNext: boolean;
-	confirmChapter: boolean;
-	updateOnlyInList: boolean;
-	// Title
-	linkToServices: boolean;
-	overviewMainOnly: boolean;
-	autoSync: boolean;
-	mdUpdateSyncDex: boolean;
-	// History
-	biggerHistory: boolean;
-	chapterStatus: boolean;
-	// Notifications
-	notifications: boolean;
-	errorNotifications: boolean;
-	// Global
-	useMochi: boolean;
-	acceptLowScore: boolean;
-	updateMD: boolean;
-	checkOnStartup: boolean;
-	checkOnStartupMainOnly: boolean;
-	checkOnStartupCooldown: number;
-	// Services
-	services: ActivableKey[];
-	mainService: ActivableKey | undefined;
-	noReloadStatus: boolean;
-	tokens: Partial<{
-		anilistToken: string | undefined;
-		kitsuUser: string | undefined;
-		kitsuToken: string | undefined;
-	}>;
-	// Colors
-	colors: {
-		highlights: string[];
-		nextChapter: string;
-		higherChapter: string;
-		lowerChapter: string;
-		openedChapter: string; // Title Page
-	};
-	version: number;
-}
 
 export const DefaultOptions: AvailableOptions = {
 	// Chapter and Title List / Updates
@@ -102,7 +43,7 @@ export const DefaultOptions: AvailableOptions = {
 	checkOnStartupCooldown: 30,
 	// Services
 	services: [],
-	mainService: undefined,
+	mainService: null,
 	noReloadStatus: true,
 	tokens: {
 		anilistToken: undefined,
@@ -131,14 +72,14 @@ export const Options: AvailableOptions & ManageOptions = Object.assign(
 	JSON.parse(JSON.stringify(DefaultOptions)), // Avoid references
 	{
 		load: async (): Promise<void> => {
-			const options = await LocalStorage.get<AvailableOptions>('options');
+			const options = await LocalStorage.get('options');
 			if (options !== undefined) {
 				Object.assign(Options, options);
 			} else return await Options.save();
 		},
 
 		reloadTokens: async (): Promise<void> => {
-			const options = await LocalStorage.get<AvailableOptions>('options');
+			const options = await LocalStorage.get('options');
 			if (options !== undefined && options.tokens !== undefined) {
 				Options.tokens = {};
 				Object.assign(Options.tokens, options.tokens);

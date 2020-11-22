@@ -86,9 +86,7 @@ export class OptionsManager {
 					++clickCount;
 					// Clear clickCount after 4s, just in case
 					notification = SimpleNotification.info(
-						{
-							text: 'Click **Delete** again to confirm',
-						},
+						{ text: 'Click **Delete** again to confirm' },
 						{ duration: 4000, pauseOnHover: false }
 					);
 					window.clearTimeout(clearClickCount);

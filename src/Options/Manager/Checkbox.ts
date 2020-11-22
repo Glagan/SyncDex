@@ -1,4 +1,4 @@
-import { Options, AvailableOptions } from '../../Core/Options';
+import { Options } from '../../Core/Options';
 import { SaveOptions } from '../Utility';
 
 // https://medium.com/dailyjs/typescript-create-a-condition-based-subset-types-9d902cea5b8c#6f75

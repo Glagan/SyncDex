@@ -1,5 +1,4 @@
 import { DOM } from '../Core/DOM';
-import { log } from '../Core/Log';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { Runtime } from '../Core/Runtime';

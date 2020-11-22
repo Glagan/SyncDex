@@ -1,6 +1,6 @@
 import { DOM } from '../../Core/DOM';
 import { LocalStorage } from '../../Core/Storage';
-import { SaveSync, SaveSyncState } from '../../Core/SaveSync';
+import { SaveSync } from '../../Core/SaveSync';
 import { Dropbox } from '../../SaveSync/Dropbox';
 
 interface Query {
@@ -49,7 +49,7 @@ export class SaveSyncManager {
 
 	refresh = async (): Promise<void> => {
 		DOM.clear(this.container);
-		const state = await LocalStorage.get<SaveSyncState>('saveSync');
+		const state = await LocalStorage.get('saveSync');
 		if (state !== undefined) {
 			const syncService = this.saveSyncServices[state.service];
 			syncService.state = state;
@@ -83,9 +83,10 @@ export class SaveSyncManager {
 				events: {
 					click: async (event) => {
 						event.preventDefault();
-						await syncService.delete();
-						await syncService.logout();
-						await syncService.clean();
+						if (await syncService.delete()) {
+							await syncService.logout();
+							await syncService.clean();
+						} else SimpleNotification.error({ text: `Could not delete your save, check logs.` });
 						this.refresh();
 					},
 				},

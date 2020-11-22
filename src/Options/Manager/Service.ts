@@ -208,7 +208,7 @@ class ServiceCard {
 			if (index > -1) {
 				Options.services.splice(index, 1);
 				if (Options.mainService == this.service.key) {
-					Options.mainService = Options.services.length > 0 ? Options.services[0] : undefined;
+					Options.mainService = Options.services.length > 0 ? Options.services[0] : null;
 				}
 			}
 			// Execute logout actions

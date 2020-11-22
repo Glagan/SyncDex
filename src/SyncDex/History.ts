@@ -21,7 +21,7 @@ export class History {
 	}
 
 	static async load(): Promise<void> {
-		const history = await LocalStorage.get<HistoryObject>('history');
+		const history = await LocalStorage.get('history');
 		if (history == undefined) {
 			await LocalStorage.set('history', { ids: [] });
 		} else {

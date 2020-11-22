@@ -118,8 +118,9 @@ export class MyMangaDex extends SpecialService {
 		for (const key in data) {
 			if (key !== 'options' && key !== 'history') {
 				// Check if LocalTitle keys are valid and contain a valid LocalTitle
-				if (!isNaN(parseInt(key)) && this.isValidMyMangaDexTitle(data[key])) {
-					titles.push({ ...data[key], id: parseInt(key) });
+				const id = parseInt(key);
+				if (!isNaN(id) && this.isValidMyMangaDexTitle(data[key])) {
+					titles.push({ ...data[key], id: id });
 				}
 			}
 		}

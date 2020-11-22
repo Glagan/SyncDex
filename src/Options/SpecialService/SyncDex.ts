@@ -170,9 +170,9 @@ export class SyncDexImport extends SpecialService {
 
 export class SyncDexExport extends SpecialService {
 	start = async (): Promise<void> => {
-		const data: ExportedSave | undefined = await LocalStorage.getAll();
-		if (data && data.options) {
-			delete data.options.tokens;
+		const data = await LocalStorage.getAll();
+		if (data.options) {
+			delete (data.options as any).tokens;
 			delete data.importInProgress;
 			delete data.dropboxState;
 			delete data.saveSync;

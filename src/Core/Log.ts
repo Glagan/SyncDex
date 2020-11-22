@@ -1,16 +1,11 @@
 import { LocalStorage } from './Storage';
 
-export interface LogLine {
-	d: number;
-	msg: string;
-}
-
 export namespace Log {
 	export let logs: LogLine[] | undefined = undefined;
 }
 export async function loadLogs(reload: boolean = false): Promise<LogLine[]> {
 	if (Log.logs === undefined || reload) {
-		Log.logs = await LocalStorage.get<LogLine[]>('logs', []);
+		Log.logs = await LocalStorage.get('logs', []);
 	}
 	return Log.logs!;
 }

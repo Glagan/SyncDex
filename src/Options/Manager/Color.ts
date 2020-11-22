@@ -1,4 +1,4 @@
-import { AvailableOptions, Options } from '../../Core/Options';
+import { Options } from '../../Core/Options';
 import { SaveOptions } from '../Utility';
 
 type SingleColor = Exclude<keyof AvailableOptions['colors'], 'highlights'>;

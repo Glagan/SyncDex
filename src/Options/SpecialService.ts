@@ -2,7 +2,7 @@ import { DOM } from '../Core/DOM';
 import { Mochi, MochiExtra } from '../Core/Mochi';
 import { ModuleOptions } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
-import { AvailableOptions, Options } from '../Core/Options';
+import { DefaultOptions, Options } from '../Core/Options';
 import { StaticName } from '../Core/Service';
 import { TitleCollection } from '../Core/Title';
 import { OptionsManager } from './OptionsManager';
@@ -23,7 +23,7 @@ export abstract class SpecialService {
 	perConvert: number = 250;
 
 	optionExists = (key: string): key is keyof AvailableOptions => {
-		return Options[key as keyof AvailableOptions] !== undefined;
+		return DefaultOptions[key as keyof AvailableOptions] !== undefined;
 	};
 
 	assignValidOption = <K extends keyof AvailableOptions>(key: K, value: AvailableOptions[K]): boolean => {

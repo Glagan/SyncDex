@@ -1,6 +1,6 @@
 import { AppendableElement, DOM, MessageType } from './DOM';
 import { Modal } from './Modal';
-import { Module, ModuleOption, ModuleOptions } from './Module';
+import { ModuleOptions } from './Module';
 
 /**
  * An Interface for a generic Module, the interface is inside a Modal.

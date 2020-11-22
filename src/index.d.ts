@@ -100,13 +100,88 @@ interface JSONResponse<T extends {} = Record<string, any>> extends RequestRespon
 
 interface RawResponse extends RequestResponse<string> {}
 
+interface AvailableOptions {
+	// Chapter and Title List / Updates
+	hideHigher: boolean;
+	hideLower: boolean;
+	hideLast: boolean;
+	highlight: boolean;
+	groupTitlesInLists: boolean;
+	thumbnail: boolean;
+	originalThumbnail: boolean;
+	progressInThumbnail: boolean;
+	thumbnailMaxHeight: number;
+	separateLanguages: boolean;
+	favoriteLanguage: string;
+	// Reading
+	saveOpenedChapters: boolean;
+	chaptersSaved: number;
+	saveOnlyHigher: boolean;
+	saveOnlyNext: boolean;
+	confirmChapter: boolean;
+	updateOnlyInList: boolean;
+	// Title
+	linkToServices: boolean;
+	overviewMainOnly: boolean;
+	autoSync: boolean;
+	mdUpdateSyncDex: boolean;
+	// History
+	biggerHistory: boolean;
+	chapterStatus: boolean;
+	// Notifications
+	notifications: boolean;
+	errorNotifications: boolean;
+	// Global
+	useMochi: boolean;
+	acceptLowScore: boolean;
+	updateMD: boolean;
+	checkOnStartup: boolean;
+	checkOnStartupMainOnly: boolean;
+	checkOnStartupCooldown: number;
+	// Services
+	services: import('./Core/Service').ActivableKey[];
+	mainService: import('./Core/Service').ActivableKey | null;
+	noReloadStatus: boolean;
+	tokens: Partial<{
+		anilistToken: string | undefined;
+		kitsuUser: string | undefined;
+		kitsuToken: string | undefined;
+	}>;
+	// Colors
+	colors: {
+		highlights: string[];
+		nextChapter: string;
+		higherChapter: string;
+		lowerChapter: string;
+		openedChapter: string; // Title Page
+	};
+	version: number;
+}
+
 type ExportOptions = {
 	options?: AvailableOptions;
 };
 
 type ImportState = {
 	import?: number | string[];
-	importInProgress?: true;
+	importInProgress?: boolean;
+};
+
+type PKCEWaitingState = {
+	state: string;
+	verifier: string;
+};
+
+interface SaveSyncState {
+	service: string;
+	token: string;
+	expires: number;
+	refresh: string;
+}
+
+type SaveSyncServicesState = {
+	dropboxState?: PKCEWaitingState;
+	saveSync?: SaveSyncState;
 };
 
 type HistoryObject = {
@@ -119,11 +194,29 @@ type ExportHistory = {
 	history?: HistoryObject;
 };
 
+type SaveLastModified = {
+	lastModified?: number;
+};
+
+interface LogLine {
+	d: number;
+	msg: string;
+}
+
+type SaveLogs = {
+	logs?: LogLine[];
+};
+
 type ExportedTitles = {
 	[key: string]: StorageTitle;
 };
 
-type ExportedSave = ExportOptions & ExportHistory & ExportedTitles & ImportState;
+type ExportedSave = ExportOptions &
+	ExportHistory &
+	ImportState &
+	SaveSyncServicesState &
+	SaveLastModified &
+	ExportedTitles;
 
 declare const enum ListType {
 	Detailed,

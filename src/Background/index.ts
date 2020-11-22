@@ -1,13 +1,17 @@
-import { browser, Runtime as BrowserRuntime, WebRequest } from 'webextension-polyfill-ts';
+import { Alarms, browser, Runtime as BrowserRuntime, WebRequest } from 'webextension-polyfill-ts';
 import { isChrome } from '../Core/IsChrome';
 import { log } from '../Core/Log';
 import { ModuleStatus } from '../Core/Module';
 import { DefaultOptions, Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
+import { SaveSync } from '../Core/SaveSync';
+import { SaveSyncServices } from '../Core/SaveSyncServices';
 import { Services } from '../Core/Services';
 import { LocalStorage } from '../Core/Storage';
 
 console.log('SyncDex :: Background');
+
+Runtime.messageSender = (message: Message) => handleMessage(message);
 
 function findDomain(url: string): string {
 	// Simple domain search - not the best but simple
@@ -53,7 +57,7 @@ async function handleMessage(message: Message, sender?: BrowserRuntime.MessageSe
 		let body: File | FormData | string | undefined;
 		if (msg.fileRequest !== undefined) {
 			msg.headers['Content-Type'] = 'application/octet-stream';
-			const save = (await LocalStorage.getAll()) as ExportedSave;
+			const save = await LocalStorage.getAll();
 			delete save.dropboxState;
 			delete save.saveSync;
 			body = new File([JSON.stringify(save)], 'application/json');
@@ -186,7 +190,7 @@ interface Update {
 }
 const updates: Update[] = [];
 
-browser.runtime.onInstalled.addListener(async (details) => {
+browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstalledDetailsType) => {
 	// Apply each needed Updates
 	let updated = false;
 	if (details.reason === 'update') {
@@ -204,7 +208,10 @@ browser.runtime.onInstalled.addListener(async (details) => {
 			await Options.save();
 			updated = true;
 		}
-	} else await log(`Installation version ${DefaultOptions.version}`);
+	} else {
+		browser.alarms.create('saveSyncBackup', { periodInMinutes: 5 });
+		await log(`Installation version ${DefaultOptions.version}`);
+	}
 
 	// Open the options with a Modal
 	if (updated || details.reason === 'install') {
@@ -212,8 +219,49 @@ browser.runtime.onInstalled.addListener(async (details) => {
 	}
 });
 
+browser.alarms.onAlarm.addListener(async (alarm: Alarms.Alarm) => {
+	await log(`Alarms goes on ${alarm.name} ~ ${alarm.periodInMinutes}min`);
+	if (alarm.name == 'saveSyncBackup') {
+		syncSave();
+	}
+});
+
+async function syncSave() {
+	try {
+		const syncState = await LocalStorage.get('saveSync');
+		// TODO: Add LocalStorage('saveSyncInProgress') to avoid multiple saves at the same time
+		if (syncState !== undefined) {
+			await log(`Sync State ${JSON.stringify(syncState)}`);
+			const saveSyncServiceClass = SaveSyncServices[syncState.service];
+			if (saveSyncServiceClass !== undefined) {
+				/// @ts-ignore saveSyncServiceClass is *NOT* abstract
+				const saveSyncService: SaveSync = new saveSyncServiceClass();
+				saveSyncService.state = syncState;
+				const serverModified = await saveSyncService.lastModified();
+				const localModified = await LocalStorage.get('lastModified', 0);
+				if (serverModified > localModified) {
+					await log(`Updating local save from ${saveSyncService.constructor.name}`);
+					if (await saveSyncService.import(localModified)) {
+						await log(`Updated local save`);
+					} else await log(`Couldn't update your local save`);
+				} else {
+					await log(`Updating external save on ${saveSyncService.constructor.name}`);
+					if (await saveSyncService.uploadLocalSave()) {
+						await log(`Updated external save`);
+					} else await log(`Couldn't update the external save`);
+				}
+			} else {
+				delete (syncState as any).token;
+				delete (syncState as any).refresh;
+				await log(`Invalid Save Sync Service [${syncState}]`);
+				await LocalStorage.remove('saveSync');
+			}
+		}
+	} catch (error) {
+		log(error);
+	}
+}
 async function silentImport(manual: boolean = false) {
-	Runtime.messageSender = (message: Message) => handleMessage(message);
 	await Options.load();
 	if (manual || (Options.checkOnStartup && Options.services.length > 0)) {
 		const checkCooldown = Options.checkOnStartupCooldown * 60 * 1000;
@@ -249,4 +297,9 @@ async function silentImport(manual: boolean = false) {
 		} else await log(`Startup script executed less than ${Options.checkOnStartupCooldown}minutes ago, skipping`);
 	} else if (Options.checkOnStartup) await log('Did not Import: No services enabled');
 }
-browser.runtime.onStartup.addListener(silentImport);
+async function onStartup() {
+	browser.alarms.create('saveSyncBackup', { periodInMinutes: 5 });
+	await syncSave();
+	await silentImport();
+}
+browser.runtime.onStartup.addListener(onStartup);
