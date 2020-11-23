@@ -1,3 +1,4 @@
+import { browser } from 'webextension-polyfill-ts';
 import { LocalStorage } from './Storage';
 
 export namespace Log {
@@ -14,6 +15,7 @@ export async function log(message: string | Error): Promise<LogLine> {
 	const line = { d: Date.now(), msg: typeof message === 'object' ? `${message}\nStack: ${message.stack}` : message };
 	logs.push(line);
 	if (logs.length > 250) logs.splice(0, logs.length - 250);
-	await LocalStorage.set('logs', logs);
+	// Do not use LocalStorage.set to avoid updating lastModified
+	await browser.storage.local.set({ logs: logs });
 	return line;
 }

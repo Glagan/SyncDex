@@ -191,6 +191,8 @@ interface Update {
 const updates: Update[] = [];
 
 browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstalledDetailsType) => {
+	browser.alarms.create('saveSyncBackup', { periodInMinutes: 5 });
+
 	// Apply each needed Updates
 	let updated = false;
 	if (details.reason === 'update') {
@@ -209,7 +211,6 @@ browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstall
 			updated = true;
 		}
 	} else {
-		browser.alarms.create('saveSyncBackup', { periodInMinutes: 5 });
 		await log(`Installation version ${DefaultOptions.version}`);
 	}
 
@@ -241,15 +242,15 @@ async function syncSave() {
 				const localModified = await LocalStorage.get('lastModified', 0);
 				if (serverModified > localModified) {
 					await log(`Updating local save from ${saveSyncService.constructor.name}`);
-					if (await saveSyncService.import(localModified)) {
-						await log(`Updated local save`);
-					} else await log(`Couldn't update your local save`);
-				} else {
+					if (!(await saveSyncService.import(localModified))) {
+						await log(`Couldn't update your local save`);
+					}
+				} else if (serverModified < localModified) {
 					await log(`Updating external save on ${saveSyncService.constructor.name}`);
-					if (await saveSyncService.uploadLocalSave()) {
-						await log(`Updated external save`);
-					} else await log(`Couldn't update the external save`);
-				}
+					if (!(await saveSyncService.uploadLocalSave())) {
+						await log(`Couldn't update the external save`);
+					}
+				} else await log(`Save up to date, nothing done`);
 			} else {
 				delete (syncState as any).token;
 				delete (syncState as any).refresh;
