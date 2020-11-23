@@ -1,7 +1,19 @@
 import { browser } from 'webextension-polyfill-ts';
+import { Runtime } from './Runtime';
 import { StorageTitle } from './Title';
 
 console.log('SyncDex :: Storage');
+
+export enum SaveSpecialKeys {
+	Options = 'options',
+	History = 'history',
+	Logs = 'logs',
+	LastModified = 'lastModified',
+	Import = 'import',
+	ImportProgress = 'importInProgress',
+	DropboxState = 'dropboxState',
+	SaveSync = 'saveSync',
+}
 
 export class LocalStorage {
 	/**
@@ -49,9 +61,10 @@ export class LocalStorage {
 	/**
 	 * Save the { key: data } object in Local Storage.
 	 */
-	static set(key: number | string, data: any): Promise<void> {
+	static async set(key: number | string, data: any) {
 		if (typeof key == 'number') key = key.toString();
-		return browser.storage.local.set({ [key]: data, lastModified: Date.now() });
+		await browser.storage.local.set({ [key]: data, lastModified: Date.now() });
+		await Runtime.sendMessage({ action: MessageAction.saveSync });
 	}
 
 	/**
@@ -71,16 +84,9 @@ export class LocalStorage {
 		return browser.storage.local.set({ lastModified: Date.now() });
 	}
 
-	static isSpecialKey = (key: string): boolean => {
-		return (
-			key == 'options' ||
-			key == 'history' ||
-			key == 'logs' ||
-			key == 'lastModified' ||
-			key == 'import' ||
-			key == 'importInProgress' ||
-			key == 'dropboxState' ||
-			key == 'saveSync'
-		);
+	static specialKeys: string[] = Object.values(SaveSpecialKeys);
+
+	static isSpecialKey = (key: string): key is keyof typeof SaveSpecialKeys => {
+		return LocalStorage.specialKeys.includes(key);
 	};
 }

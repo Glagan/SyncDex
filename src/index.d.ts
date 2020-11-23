@@ -55,6 +55,7 @@ declare const enum MessageAction {
 	silentImport = 'silentImport',
 	importStart = 'importStart',
 	importComplete = 'importComplete',
+	saveSync = 'saveSync',
 }
 
 interface RequestMessage {
@@ -84,7 +85,12 @@ interface ImportMessage {
 	action: MessageAction.silentImport | MessageAction.importStart | MessageAction.importComplete;
 }
 
-type Message = RequestMessage | OpenOptionsMessage | ImportMessage;
+interface SaveSyncMessage {
+	action: MessageAction.saveSync;
+	delay?: number;
+}
+
+type Message = RequestMessage | OpenOptionsMessage | ImportMessage | SaveSyncMessage;
 
 interface RequestResponse<T extends {} = Record<string, any> | string> {
 	url: string;
@@ -158,19 +164,10 @@ interface AvailableOptions {
 	version: number;
 }
 
-type ExportOptions = {
-	options?: AvailableOptions;
-};
-
-type ImportState = {
-	import?: number | string[];
-	importInProgress?: boolean;
-};
-
-type PKCEWaitingState = {
+interface PKCEWaitingState {
 	state: string;
 	verifier: string;
-};
+}
 
 interface SaveSyncState {
 	service: string;
@@ -179,44 +176,27 @@ interface SaveSyncState {
 	refresh: string;
 }
 
-type SaveSyncServicesState = {
-	dropboxState?: PKCEWaitingState;
-	saveSync?: SaveSyncState;
-};
-
-type HistoryObject = {
+interface HistoryObject {
 	last?: number;
 	page?: number;
 	ids: number[];
-};
-
-type ExportHistory = {
-	history?: HistoryObject;
-};
-
-type SaveLastModified = {
-	lastModified?: number;
-};
-
+}
 interface LogLine {
 	d: number;
 	msg: string;
 }
 
-type SaveLogs = {
+interface ExportedSave {
+	options?: AvailableOptions;
+	import?: number | string[];
+	importInProgress?: boolean;
 	logs?: LogLine[];
-};
-
-type ExportedTitles = {
-	[key: string]: StorageTitle;
-};
-
-type ExportedSave = ExportOptions &
-	ExportHistory &
-	ImportState &
-	SaveSyncServicesState &
-	SaveLastModified &
-	ExportedTitles;
+	history?: HistoryObject;
+	dropboxState?: PKCEWaitingState;
+	saveSync?: SaveSyncState;
+	lastModified?: number;
+	[key: string]: import('./Core/Title').StorageTitle;
+}
 
 declare const enum ListType {
 	Detailed,

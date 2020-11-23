@@ -11,6 +11,8 @@ import { LocalStorage } from '../Core/Storage';
 
 console.log('SyncDex :: Background');
 
+const SaveSyncAlarmName = 'saveSyncBackup';
+
 Runtime.messageSender = (message: Message) => handleMessage(message);
 
 function findDomain(url: string): string {
@@ -129,6 +131,18 @@ async function handleMessage(message: Message, sender?: BrowserRuntime.MessageSe
 		return browser.runtime.openOptionsPage();
 	} else if (message.action == MessageAction.silentImport) {
 		return silentImport(true);
+	} else if (message.action == MessageAction.saveSync) {
+		const alarm = await browser.alarms.get(SaveSyncAlarmName);
+		if (!alarm) {
+			const delay = message.delay ? message.delay : 1;
+			Runtime.setIcon(
+				`Save will Sync in less than ${delay}minute${delay > 1 ? 's' : ''}`,
+				'#45A1FF',
+				`${delay}m`
+			);
+			browser.alarms.create(SaveSyncAlarmName, { delayInMinutes: delay });
+		}
+		return true;
 	}
 	return new Promise(() => false);
 }
@@ -191,7 +205,7 @@ interface Update {
 const updates: Update[] = [];
 
 browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstalledDetailsType) => {
-	browser.alarms.create('saveSyncBackup', { periodInMinutes: 5 });
+	browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
 
 	// Apply each needed Updates
 	let updated = false;
@@ -221,9 +235,11 @@ browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstall
 });
 
 browser.alarms.onAlarm.addListener(async (alarm: Alarms.Alarm) => {
-	await log(`Alarms goes on ${alarm.name} ~ ${alarm.periodInMinutes}min`);
-	if (alarm.name == 'saveSyncBackup') {
-		syncSave();
+	await log(`Alarms goes on ${alarm.name}`);
+	if (alarm.name == SaveSyncAlarmName) {
+		Runtime.setIcon('Save Sync in progress', '#058b00', '~');
+		await syncSave();
+		Runtime.setIcon();
 	}
 });
 
@@ -299,7 +315,7 @@ async function silentImport(manual: boolean = false) {
 	} else if (Options.checkOnStartup) await log('Did not Import: No services enabled');
 }
 async function onStartup() {
-	browser.alarms.create('saveSyncBackup', { periodInMinutes: 5 });
+	browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
 	await syncSave();
 	await silentImport();
 }

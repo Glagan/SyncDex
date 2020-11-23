@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const fs = require('fs');
-const exec = require('child_process').exec;
+const { spawn } = require('child_process');
 const rimraf = require('rimraf');
 const path = require('path');
 const rollup = require('rollup');
@@ -10,6 +10,7 @@ const json = require('@rollup/plugin-json');
 const { terser } = require('rollup-plugin-terser');
 const nodeResolve = require('rollup-plugin-node-resolve');
 const commonjs = require('@rollup/plugin-commonjs');
+const { resolve } = require('path');
 const options = require('minimist')(process.argv.slice(2), {
 	default: {
 		'web-ext': false,
@@ -230,39 +231,79 @@ function bundleName(outputFile) {
 // SCSS Files
 const scss = ['SyncDex', 'Options'];
 
+// Multiline async compilations
+let promises = [];
+let lines = [];
+let queuedUpdate = false;
+let updatingLine;
+const updateLine = async () => {
+	if (queuedUpdate) return;
+	if (updatingLine !== undefined) {
+		queuedUpdate = true;
+		await updatingLine;
+	}
+	updatingLine = new Promise((resolve) => {
+		process.stdout.clearLine();
+		process.stdout.cursorTo(0);
+		process.stdout.write(lines.join(`\n`));
+		queuedUpdate = false;
+		updatingLine = undefined;
+		resolve();
+	});
+};
+const clearLine = () => {
+	updatingLine = undefined;
+	promises = [];
+	lines = [];
+};
+const waitLine = async () => {
+	await Promise.all(promises);
+	process.stdout.write(`\n`);
+	clearLine();
+};
+
 // Start
 (async () => {
 	// Build CSS
+	let start = Date.now();
 	console.log(`${color(MAGENTA)}Compiling CSS${reset()}`);
-	scss.forEach((name) => {
-		process.stdout.write(`\t~ ${name}...`);
-		const result = sass.renderSync({
-			file: `css/${name}.scss`,
-			outFile: `${name}.css`,
-			includePaths: ['css'],
-			sourceMap: true,
-			outputStyle: options.mode == 'dev' ? 'expanded' : 'compressed',
-		});
-		fs.writeFileSync(`build/css/${name}.css`, result.css.toString());
-		fs.writeFileSync(`build/css/${name}.css.map`, result.map.toString());
-		process.stdout.write(` done in ${result.stats.duration}ms\n`);
+	clearLine();
+	scss.forEach((name, index) => {
+		lines[index] = `\t${color(CYAN)}${name}${reset()}...`;
+		updateLine();
+		promises.push(
+			new Promise((resolve) => {
+				const result = sass.renderSync({
+					file: `css/${name}.scss`,
+					outFile: `${name}.css`,
+					includePaths: ['css'],
+					sourceMap: true,
+					outputStyle: options.mode == 'dev' ? 'expanded' : 'compressed',
+				});
+				fs.writeFileSync(`build/css/${name}.css`, result.css.toString());
+				fs.writeFileSync(`build/css/${name}.css.map`, result.map.toString());
+				lines[index] = `${lines[index]} done in ${result.stats.duration}ms`;
+				updateLine();
+				resolve();
+			})
+		);
 	});
+	await waitLine();
 	// Compile modules
 	const watcher = rollup.watch(bundles);
 	let doneInitial = false;
 	let duration = 0;
-	let start = 0;
 	watcher.on('event', async (event) => {
 		if (event.code == 'START') {
-			start = Date.now();
+			if (doneInitial) start = Date.now();
 			console.log(`${color(MAGENTA)}Compiling Scripts${reset()}`);
 			duration = 0;
 		} else if (event.code == 'BUNDLE_START') {
 			rimraf.sync(event.output[0]); // Delete previous file
 			if (options.mode == 'dev') rimraf.sync(`${event.output[0]}.map`);
-			process.stdout.write(`\t~ ${bundleName(event.output[0])}...`);
+			process.stdout.write(`\t${color(CYAN)}${bundleName(event.output[0])}${reset()}...`);
 		} else if (event.code == 'BUNDLE_END') {
-			process.stdout.write(` done in ${event.duration}ms\n`);
+			process.stdout.write(` done in ${color(BLUE)}${event.duration}ms${reset()}\n`);
 			duration += event.duration;
 		} else if (event.code == 'ERROR') {
 			process.stdout.write(`\n# ${event.error}`);
@@ -279,27 +320,28 @@ const scss = ['SyncDex', 'Options'];
 			return false;
 		} else if (event.code == 'END') {
 			console.log(`${color(GREEN)}Compiled all modules in${reset()} ${color(BLUE)}${duration}ms${reset()}`);
-			console.log(`${color(MAGENTA)}Building extensions${reset()}`);
+			const extStart = Date.now();
+			process.stdout.write(`${color(MAGENTA)}Building extensions${reset()}...`);
 			// Build for each browsers
+			const promises = [];
 			for (const browser of browsers) {
-				await buildExtension(browser, doneInitial);
+				promises.push(buildExtension(browser, doneInitial));
 			}
+			await Promise.all(promises);
+			process.stdout.write(` done in ${color(BLUE)}${Date.now() - extStart}ms${reset()}\n`);
 			const zeroPad = (n) => `00${n}`.slice(-2);
 			const now = new Date();
-			const totalDuration = (() => {
-				const duration = now.getTime() - start;
-				if (duration > 1000) return `${Math.round(duration / 1000)}s`;
-				return `${duration}ms`;
-			})();
 			console.log(
 				`${color(GREEN)}Done at ${color(BLUE)}${zeroPad(now.getHours())}h${zeroPad(
 					now.getMinutes()
-				)}min${zeroPad(now.getSeconds())}s${color(GREEN)} in ${reset()}${color(BLUE)}${totalDuration}${reset()}`
+				)}min${zeroPad(now.getSeconds())}s${color(GREEN)} in ${reset()}${color(BLUE)}${
+					now.getTime() - start
+				}ms${reset()}`
 			);
 			if (!doneInitial) {
 				if (!options.watch) {
 					watcher.close();
-				} else console.log(`${color(GREEN)}Watching folders (CTRL + C to exit)\${reset()}`);
+				} else console.log(`${color(GREEN)}Watching folders (CTRL + C to exit)${reset()}`);
 				doneInitial = true;
 			}
 		}
@@ -308,15 +350,12 @@ const scss = ['SyncDex', 'Options'];
 
 // Create manifest, move files and build web-ext for a single Browser
 async function buildExtension(browser, nonVerbose) {
-	const start = Date.now();
-	process.stdout.write(`\t~ ${browser}...`);
 	// Create temp folder for the bundle
 	let folderName = `build/${browser}`;
 	if (fs.existsSync(folderName)) {
 		rimraf.sync(folderName);
 	}
 	fs.mkdirSync(folderName);
-
 	// Merge manifests
 	let manifest = Object.assign({}, mainManifest);
 	for (const key in browser_manifests[browser]) {
@@ -327,9 +366,7 @@ async function buildExtension(browser, nonVerbose) {
 			manifest[key].push(...value);
 		} else if (typeof manifest[key] === 'object') {
 			Object.assign(manifest[key], value);
-		} else {
-			manifest[key] = value;
-		}
+		} else manifest[key] = value;
 	}
 	// Write in file
 	let bundleManifestStream = fs.createWriteStream(`${folderName}/manifest.json`, {
@@ -338,39 +375,29 @@ async function buildExtension(browser, nonVerbose) {
 	bundleManifestStream.write(JSON.stringify(manifest));
 	bundleManifestStream.cork();
 	bundleManifestStream.end();
-
 	deepFileCopy(Files, folderName, ['chrome', 'firefox']);
 
 	// Make web-ext
 	if (options.webExt) {
-		const execResult = await execPromise(
-			exec(`web-ext build --source-dir ${folderName} --artifacts-dir web-ext-artifacts`)
-		)
-			.then(() => {
-				fs.renameSync(
-					`web-ext-artifacts/syncdex-${manifest.version}.zip`,
-					`web-ext-artifacts/syncdex_${manifest.version}_${browser}.zip`
-				);
-				rimraf.sync(`${folderName}/web-ext-artifacts`);
-				return true;
-			})
-			.catch((error) => {
-				console.error(error);
-				return false;
+		const child = spawn(
+			process.platform === 'win32' ? 'web-ext.cmd' : 'web-ext',
+			[
+				'build',
+				'--source-dir',
+				folderName,
+				'--artifacts-dir',
+				'web-ext-artifacts',
+				'--filename',
+				`syncdex_${manifest.version}_${browser}`,
+			],
+			{ windowsHide: true, stdio: 'ignore' }
+		);
+		await new Promise((resolve) => {
+			child.on('close', function (data) {
+				resolve();
 			});
-		if (!execResult) {
-			return;
-		}
+		});
 	}
-	process.stdout.write(` done in ${Date.now() - start}ms\n`);
-}
-
-// Promisify exec -- see https://stackoverflow.com/a/30883005
-function execPromise(child) {
-	return new Promise((resolve, reject) => {
-		child.addListener('error', reject);
-		child.addListener('exit', resolve);
-	});
 }
 
 /**
