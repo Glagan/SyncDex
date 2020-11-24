@@ -13,7 +13,7 @@ interface HistoryChapter {
 	chapter: number;
 }
 
-export class SaveEditor {
+export class TitleEditor {
 	static modalRow(content: AppendableElement[]): HTMLElement {
 		return DOM.create('div', { class: 'row', childs: content });
 	}
@@ -98,7 +98,12 @@ export class SaveEditor {
 		if (!found) delete title.services[key];
 	};
 
-	static create(syncModule: SyncModule, postSubmit?: () => void, postDelete?: () => void): Modal {
+	static create(
+		syncModule: SyncModule,
+		postSubmit?: () => void,
+		postDelete?: () => void,
+		onCancel?: () => void
+	): Modal {
 		const title = syncModule.title;
 		const modal = new Modal('medium');
 		modal.header.classList.add('title');
@@ -439,9 +444,10 @@ export class SaveEditor {
 						created: previousState.status == Status.NONE && title.status != Status.NONE,
 						completed: completed,
 					},
-					previousState
+					previousState,
+					onCancel
 				);
-			} else syncModule.displayReportNotifications({}, { completed: completed }, previousState);
+			} else syncModule.displayReportNotifications({}, { completed: completed }, previousState, onCancel);
 			modal.enableExit();
 			modal.remove();
 			if (postSubmit) postSubmit();
@@ -485,8 +491,10 @@ export class SaveEditor {
 			deleteButton.classList.add('loading');
 			// Delete Title from lists
 			await syncModule.title.delete();
-			const report = await syncModule.syncExternal();
-			syncModule.displayReportNotifications(report, { completed: false }, previousState);
+			if (updateAllCheckbox.checked) {
+				const report = await syncModule.syncExternal();
+				syncModule.displayReportNotifications(report, { completed: false }, previousState, onCancel);
+			} else syncModule.displayReportNotifications({}, { completed: false }, previousState, onCancel);
 			if (syncModule.overview?.syncedLocal) syncModule.overview.syncedLocal(syncModule.title);
 			modal.enableExit();
 			modal.remove();

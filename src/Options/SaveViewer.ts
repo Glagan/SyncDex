@@ -2,7 +2,7 @@ import { TitleCollection, StatusMap, LocalTitle } from '../Core/Title';
 import { DOM, AppendableElement } from '../Core/DOM';
 import { LocalStorage } from '../Core/Storage';
 import { dateFormat, progressToString } from '../Core/Utility';
-import { SaveEditor } from '../Core/SaveEditor';
+import { TitleEditor } from '../Core/TitleEditor';
 import { SyncModule } from '../Core/SyncModule';
 import { ActivableKey } from '../Core/Service';
 import { Services } from '../Core/Services';
@@ -253,15 +253,20 @@ export class SaveViewer {
 			event.preventDefault();
 			const syncModule = new SyncModule(title);
 			syncModule.initialize();
-			SaveEditor.create(
+			let removed = false;
+			TitleEditor.create(
 				syncModule,
+				() => this.loadPage(this.currentPage),
 				() => {
-					this.loadPage(this.currentPage);
-				},
-				() => {
+					removed = true;
 					this.realTitles.remove(title.key.id!);
 					this.titles.remove(title.key.id!);
 					this.updateDisplayedPage();
+				},
+				async () => {
+					const page = this.currentPage;
+					if (removed) await this.updateAll(true);
+					this.loadPage(page);
 				}
 			).show();
 		});

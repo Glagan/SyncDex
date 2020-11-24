@@ -241,14 +241,16 @@ export class SyncModule {
 	 * 	inList, status, progress, score, start, end from previousState.
 	 */
 	restoreState = (title: LocalTitle): void => {
+		this.title.inList = title.inList;
+		this.title.synced = title.synced;
 		this.title.progress = title.progress;
 		this.title.chapters = title.chapters;
 		this.title.mdStatus = title.mdStatus;
 		this.title.mdScore = title.mdScore;
 		this.title.lastRead = title.lastRead;
-		this.title.inList = title.inList;
 		this.title.status = title.status;
 		this.title.score = title.score;
+		this.title.name = title.name;
 		// Add back Date objects since JSON.stringify made them strings
 		this.title.start = title.start ? new Date(title.start) : undefined;
 		this.title.end = title.end ? new Date(title.end) : undefined;

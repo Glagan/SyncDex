@@ -3,7 +3,7 @@ import { LocalTitle, Title, StatusMap, MissableField, ExternalTitle } from '../C
 import { Runtime } from '../Core/Runtime';
 import { Options } from '../Core/Options';
 import { SyncModule } from '../Core/SyncModule';
-import { SaveEditor } from '../Core/SaveEditor';
+import { TitleEditor } from '../Core/TitleEditor';
 import { ChapterList } from './ChapterList';
 import { ChapterRow } from './ChapterRow';
 import { dateCompare, dateFormat, isDate } from '../Core/Utility';
@@ -361,7 +361,7 @@ class LocalOverview extends ServiceOverview {
 	bind = (syncModule: SyncModule): void => {
 		this.editButton.addEventListener('click', async (event) => {
 			event.preventDefault();
-			SaveEditor.create(syncModule, async () => {
+			TitleEditor.create(syncModule, async () => {
 				syncModule.overview?.reset();
 				// Initialize SyncModule again if there is new Service IDs
 				syncModule.initialize();
@@ -765,7 +765,7 @@ export class ReadingOverview {
 	bind = (syncModule: SyncModule): void => {
 		this.editButton.addEventListener('click', async (event) => {
 			event.preventDefault();
-			SaveEditor.create(syncModule, async () => {
+			TitleEditor.create(syncModule, async () => {
 				this.reset();
 				syncModule.initialize();
 				await syncModule.syncLocal();
