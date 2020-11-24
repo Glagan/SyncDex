@@ -174,6 +174,7 @@ export class SyncDexExport extends SpecialService {
 		if (data.options) {
 			delete (data.options as any).tokens;
 			delete data.importInProgress;
+			delete data.saveSyncInProgress;
 			delete data.dropboxState;
 			delete data.saveSync;
 			const blob = new Blob([JSON.stringify(data)], { type: 'application/json;charset=utf-8' });

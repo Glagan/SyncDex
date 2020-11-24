@@ -110,6 +110,7 @@ export class OptionsManager {
 	}
 
 	toggleImportProgressState = (value: boolean): void => {
+		this.saveSync.toggleImportProgressState(value);
 		this.serviceManager.toggleImportProgressState(value);
 		if (value) {
 			for (const card of this.importExportCards) {

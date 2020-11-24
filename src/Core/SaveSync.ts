@@ -3,7 +3,7 @@ import { LocalStorage } from './Storage';
 
 export abstract class SaveSync {
 	static icon: () => HTMLElement;
-	state: SaveSyncState | null = null;
+	static state?: SaveSyncState;
 
 	abstract createCard(): HTMLButtonElement;
 	abstract onCardClick(node: HTMLButtonElement): Promise<void>;
@@ -30,11 +30,12 @@ export abstract class SaveSync {
 					delete save.saveSync;
 					delete save.lastModified;
 					delete save.importInProgress;
+					delete save.saveSyncInProgress;
 					if (save.import && typeof save.import !== 'number') {
 						delete save.import;
 					}
 					//delete save.logs;
-					await LocalStorage.raw(save);
+					await LocalStorage.raw('set', save);
 				}
 			} catch (error) {
 				log(error);

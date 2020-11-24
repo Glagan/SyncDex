@@ -12,6 +12,7 @@ import { LocalStorage } from '../Core/Storage';
 console.log('SyncDex :: Background');
 
 const SaveSyncAlarmName = 'saveSyncBackup';
+let SaveSyncState: SaveSyncState | undefined;
 
 Runtime.messageSender = (message: Message) => handleMessage(message);
 
@@ -33,118 +34,132 @@ const cooldowns: Record<string, number> = {
 // TODO: Handle containers in checkOnStartup since there is no sender
 // Probably gate which containers to update based on the future containers update with state for each containers
 // and import lists for each containers that need it by sending a fake MessageSender with preloaded tab informations for the container
-async function handleMessage(message: Message, sender?: BrowserRuntime.MessageSender) {
+function handleMessage(message: Message, sender?: BrowserRuntime.MessageSender) {
 	if (message.action == MessageAction.request) {
-		const msg = message as RequestMessage;
-		// Cooldown
-		const domain = findDomain(msg.url);
-		const now = Date.now();
-		// Sleep until cooldown is reached
-		if (nextRequest[domain] && nextRequest[domain] >= now) {
-			const diff = nextRequest[domain] - now;
-			nextRequest[domain] = now + diff + (cooldowns[domain] ?? 1000) + 100;
-			await new Promise((resolve) => setTimeout(resolve, diff));
-		} else {
-			nextRequest[domain] = now + (cooldowns[domain] ?? 1000) + 100;
-		}
-		// Options
-		msg.isJson = msg.isJson !== undefined ? msg.isJson : false;
-		msg.method = msg.method !== undefined ? msg.method : 'GET';
-		msg.body = msg.body !== undefined ? msg.body : null;
-		msg.redirect = msg.redirect !== undefined ? msg.redirect : 'follow';
-		msg.cache = msg.cache !== undefined ? msg.cache : 'default';
-		msg.mode = msg.mode !== undefined ? msg.mode : undefined;
-		msg.credentials = msg.credentials !== undefined ? msg.credentials : 'same-origin';
-		msg.headers = msg.headers !== undefined ? (msg.headers as Record<string, string>) : {};
-		let body: File | FormData | string | undefined;
-		if (msg.fileRequest !== undefined) {
-			msg.headers['Content-Type'] = 'application/octet-stream';
-			const save = await LocalStorage.getAll();
-			delete save.dropboxState;
-			delete save.saveSync;
-			body = new File([JSON.stringify(save)], 'application/json');
-		} else if (msg.form !== undefined) {
-			if (!(msg.form instanceof FormData)) {
-				body = new FormData();
-				for (const key in msg.form as FormDataProxy) {
-					if (msg.form.hasOwnProperty(key)) {
-						const element = msg.form[key];
-						if (typeof element === 'string') {
-							body.set(key, element);
-						} else if (typeof element === 'number') {
-							body.set(key, element.toString());
-						} else {
-							body.set(key, new File(element.content, element.name, element.options));
+		return new Promise(async (resolve) => {
+			const msg = message as RequestMessage;
+			// Cooldown
+			const domain = findDomain(msg.url);
+			const now = Date.now();
+			// Sleep until cooldown is reached
+			if (nextRequest[domain] && nextRequest[domain] >= now) {
+				const diff = nextRequest[domain] - now;
+				nextRequest[domain] = now + diff + (cooldowns[domain] ?? 1000) + 100;
+				await new Promise((resolve) => setTimeout(resolve, diff));
+			} else {
+				nextRequest[domain] = now + (cooldowns[domain] ?? 1000) + 100;
+			}
+			// Options
+			msg.isJson = msg.isJson !== undefined ? msg.isJson : false;
+			msg.method = msg.method !== undefined ? msg.method : 'GET';
+			msg.body = msg.body !== undefined ? msg.body : null;
+			msg.redirect = msg.redirect !== undefined ? msg.redirect : 'follow';
+			msg.cache = msg.cache !== undefined ? msg.cache : 'default';
+			msg.mode = msg.mode !== undefined ? msg.mode : undefined;
+			msg.credentials = msg.credentials !== undefined ? msg.credentials : 'same-origin';
+			msg.headers = msg.headers !== undefined ? (msg.headers as Record<string, string>) : {};
+			let body: File | FormData | string | undefined;
+			if (msg.fileRequest !== undefined) {
+				msg.headers['Content-Type'] = 'application/octet-stream';
+				const save = await LocalStorage.getAll();
+				delete save.dropboxState;
+				delete save.saveSync;
+				body = new File([JSON.stringify(save)], 'application/json');
+			} else if (msg.form !== undefined) {
+				if (!(msg.form instanceof FormData)) {
+					body = new FormData();
+					for (const key in msg.form as FormDataProxy) {
+						if (msg.form.hasOwnProperty(key)) {
+							const element = msg.form[key];
+							if (typeof element === 'string') {
+								body.set(key, element);
+							} else if (typeof element === 'number') {
+								body.set(key, element.toString());
+							} else {
+								body.set(key, new File(element.content, element.name, element.options));
+							}
 						}
 					}
-				}
-			} else body = msg.form;
-		} else if (msg.body !== null) {
-			body = msg.body;
-		}
-		// Fetch
-		if (
-			sender &&
-			((!isChrome && msg.credentials == 'same-origin') ||
-				(msg.credentials == 'include' && sender.tab?.cookieStoreId !== undefined))
-		) {
-			const cookieStoreId = sender.tab!.cookieStoreId;
-			const cookiesList = await browser.cookies.getAll({ url: message.url, storeId: cookieStoreId });
-			const cookies = cookiesList.map((c) => `${c.name}=${c.value}`).join('; ');
-			if (cookies != '') msg.headers['X-Cookie'] = cookies;
-		}
-		// Add Sec- Headers
-		/*for (const header of ['Sec-Fetch-Dest', 'Sec-Fetch-Mode', 'Sec-Fetch-Site', 'Sec-Fetch-User']) {
-			if (msg.headers[header] !== undefined) {
-				msg.headers[`X-${header}`] = msg.headers[header];
+				} else body = msg.form;
+			} else if (msg.body !== null) {
+				body = msg.body;
 			}
-		}*/
-		return fetch(msg.url, {
-			...message,
-			body,
-		})
-			.then(async (response) => {
-				return <RequestResponse>{
-					url: response.url,
-					ok: response.status >= 200 && response.status < 400,
-					failed: false,
-					code: response.status,
-					redirected: response.redirected,
-					// chrome doesn't allow message with the Headers object
-					headers: JSON.parse(JSON.stringify(response.headers)),
-					body: msg.isJson ? await response.json() : await response.text(),
-				};
+			// Fetch
+			if (
+				sender &&
+				((!isChrome && msg.credentials == 'same-origin') ||
+					(msg.credentials == 'include' && sender.tab?.cookieStoreId !== undefined))
+			) {
+				const cookieStoreId = sender.tab!.cookieStoreId;
+				const cookiesList = await browser.cookies.getAll({ url: message.url, storeId: cookieStoreId });
+				const cookies = cookiesList.map((c) => `${c.name}=${c.value}`).join('; ');
+				if (cookies != '') msg.headers['X-Cookie'] = cookies;
+			}
+			// Add Sec- Headers
+			/*for (const header of ['Sec-Fetch-Dest', 'Sec-Fetch-Mode', 'Sec-Fetch-Site', 'Sec-Fetch-User']) {
+				if (msg.headers[header] !== undefined) {
+					msg.headers[`X-${header}`] = msg.headers[header];
+				}
+			}*/
+			const result = await fetch(msg.url, {
+				...message,
+				body,
 			})
-			.catch((error) => {
-				log(`Error on request [${msg.url}]: ${error}${error.stack ? `>> ${error.stack}` : ''}`);
-				return <RequestResponse>{
-					url: msg.url,
-					ok: false,
-					failed: true,
-					code: 0,
-					redirected: false,
-					headers: {},
-					body: msg.isJson ? {} : '',
-				};
-			});
+				.then(async (response) => {
+					return <RequestResponse>{
+						url: response.url,
+						ok: response.status >= 200 && response.status < 400,
+						failed: false,
+						code: response.status,
+						redirected: response.redirected,
+						// chrome doesn't allow message with the Headers object
+						headers: JSON.parse(JSON.stringify(response.headers)),
+						body: msg.isJson ? await response.json() : await response.text(),
+					};
+				})
+				.catch((error) => {
+					log(`Error on request [${msg.url}]: ${error}${error.stack ? `>> ${error.stack}` : ''}`);
+					return <RequestResponse>{
+						url: msg.url,
+						ok: false,
+						failed: true,
+						code: 0,
+						redirected: false,
+						headers: {},
+						body: msg.isJson ? {} : '',
+					};
+				});
+			resolve(result);
+		});
 	} else if (message.action == MessageAction.openOptions) {
 		return browser.runtime.openOptionsPage();
 	} else if (message.action == MessageAction.silentImport) {
 		return silentImport(true);
 	} else if (message.action == MessageAction.saveSync) {
-		const alarm = await browser.alarms.get(SaveSyncAlarmName);
-		if (!alarm) {
-			const delay = message.delay ? message.delay : 1;
-			Runtime.setIcon(
-				`Save will Sync in less than ${delay}minute${delay > 1 ? 's' : ''}`,
-				'#45A1FF',
-				`${delay}m`
-			);
-			browser.alarms.create(SaveSyncAlarmName, { delayInMinutes: delay });
+		if (message.state) {
+			SaveSyncState = message.state;
+			return new Promise(async (resolve) => {
+				const alarm = await browser.alarms.get(SaveSyncAlarmName);
+				const delay = message.delay ? message.delay : 1;
+				if (delay == 0) {
+					if (alarm) browser.alarms.clear(SaveSyncAlarmName);
+					await syncSave();
+				} else if (!alarm) {
+					const scheduled = new Date(Date.now() + delay * 60 * 1000);
+					Runtime.setIcon(
+						`Save will Sync in less than ${delay}minute${
+							delay > 1 ? 's' : ''
+						} (${scheduled.toLocaleString()})`,
+						'#45A1FF',
+						`${delay}m`
+					);
+					browser.alarms.create(SaveSyncAlarmName, { delayInMinutes: delay });
+				}
+				resolve(true);
+			});
 		}
-		return true;
 	}
-	return new Promise(() => false);
+	return Promise.resolve(true);
 }
 browser.runtime.onMessage.addListener(handleMessage);
 
@@ -224,9 +239,7 @@ browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstall
 			await Options.save();
 			updated = true;
 		}
-	} else {
-		await log(`Installation version ${DefaultOptions.version}`);
-	}
+	} else await log(`Installation version ${DefaultOptions.version}`);
 
 	// Open the options with a Modal
 	if (updated || details.reason === 'install') {
@@ -235,48 +248,45 @@ browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstall
 });
 
 browser.alarms.onAlarm.addListener(async (alarm: Alarms.Alarm) => {
-	await log(`Alarms goes on ${alarm.name}`);
 	if (alarm.name == SaveSyncAlarmName) {
-		Runtime.setIcon('Save Sync in progress', '#058b00', '~');
 		await syncSave();
-		Runtime.setIcon();
 	}
 });
 
 async function syncSave() {
-	try {
-		const syncState = await LocalStorage.get('saveSync');
-		// TODO: Add LocalStorage('saveSyncInProgress') to avoid multiple saves at the same time
-		if (syncState !== undefined) {
-			await log(`Sync State ${JSON.stringify(syncState)}`);
-			const saveSyncServiceClass = SaveSyncServices[syncState.service];
-			if (saveSyncServiceClass !== undefined) {
-				/// @ts-ignore saveSyncServiceClass is *NOT* abstract
-				const saveSyncService: SaveSync = new saveSyncServiceClass();
-				saveSyncService.state = syncState;
-				const serverModified = await saveSyncService.lastModified();
-				const localModified = await LocalStorage.get('lastModified', 0);
-				if (serverModified > localModified) {
-					await log(`Updating local save from ${saveSyncService.constructor.name}`);
-					if (!(await saveSyncService.import(localModified))) {
-						await log(`Couldn't update your local save`);
-					}
-				} else if (serverModified < localModified) {
-					await log(`Updating external save on ${saveSyncService.constructor.name}`);
-					if (!(await saveSyncService.uploadLocalSave())) {
-						await log(`Couldn't update the external save`);
-					}
-				} else await log(`Save up to date, nothing done`);
-			} else {
-				delete (syncState as any).token;
-				delete (syncState as any).refresh;
-				await log(`Invalid Save Sync Service [${syncState}]`);
-				await LocalStorage.remove('saveSync');
-			}
+	Runtime.setIcon('Save Sync in progress', '#058b00', '~');
+	const syncState = SaveSyncState;
+	if (syncState !== undefined && !LocalStorage.get('saveSyncInProgress', false)) {
+		const saveSyncServiceClass = SaveSyncServices[syncState.service];
+		if (saveSyncServiceClass !== undefined) {
+			await LocalStorage.set('saveSyncInProgress', true);
+			await browser.runtime.sendMessage({ action: MessageAction.saveSyncStart });
+			/// @ts-ignore saveSyncServiceClass is *NOT* abstract
+			const saveSyncService: SaveSync = new saveSyncServiceClass();
+			SaveSync.state = syncState;
+			const serverModified = await saveSyncService.lastModified();
+			const localModified = await LocalStorage.get('lastModified', 0);
+			if (serverModified > localModified) {
+				await log(`Updating local save from ${saveSyncService.constructor.name}`);
+				if (!(await saveSyncService.import(localModified))) {
+					await log(`Couldn't update your local save`);
+				}
+			} else if (serverModified < localModified) {
+				await log(`Updating external save on ${saveSyncService.constructor.name}`);
+				if (!(await saveSyncService.uploadLocalSave())) {
+					await log(`Couldn't update the external save`);
+				}
+			} else await log(`Save up to date, nothing done`);
+			await LocalStorage.remove('saveSyncInProgress');
+			await browser.runtime.sendMessage({ action: MessageAction.saveSyncComplete });
+		} else {
+			delete (syncState as any).token;
+			delete (syncState as any).refresh;
+			await log(`Invalid Save Sync Service [${syncState}]`);
+			await LocalStorage.remove('saveSync');
 		}
-	} catch (error) {
-		log(error);
 	}
+	Runtime.setIcon();
 }
 async function silentImport(manual: boolean = false) {
 	await Options.load();
@@ -284,9 +294,9 @@ async function silentImport(manual: boolean = false) {
 		const checkCooldown = Options.checkOnStartupCooldown * 60 * 1000;
 		const lastCheck: number | string[] = await LocalStorage.get('import', 0);
 		if (manual || typeof lastCheck !== 'number' || Date.now() - lastCheck > checkCooldown) {
+			await LocalStorage.set('importInProgress', true);
 			await browser.runtime.sendMessage({ action: MessageAction.importStart });
 			await log('Importing lists');
-			await LocalStorage.set('importInProgress', true);
 			const services =
 				!manual && Options.checkOnStartupMainOnly ? [Options.mainService!] : [...Options.services].reverse();
 			const done: string[] = typeof lastCheck === 'object' ? lastCheck : [];
@@ -316,6 +326,7 @@ async function silentImport(manual: boolean = false) {
 }
 async function onStartup() {
 	browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
+	await LocalStorage.remove('saveSyncInProgress');
 	await syncSave();
 	await silentImport();
 }

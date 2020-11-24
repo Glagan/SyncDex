@@ -605,7 +605,7 @@ export class TitleCollection {
 				}
 			}
 		} else {
-			const localTitles = await LocalStorage.getList(list);
+			const localTitles = await LocalStorage.getTitleList(list);
 			if (localTitles !== undefined) {
 				for (const id of list) {
 					const titleId = typeof id === 'number' ? id : parseInt(id);
@@ -661,6 +661,6 @@ export class TitleCollection {
 		for (const title of this.collection) {
 			mapped[title.key.id!] = title.toSave();
 		}
-		return LocalStorage.raw(mapped);
+		return LocalStorage.raw('set', mapped);
 	};
 }

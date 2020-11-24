@@ -2,6 +2,7 @@ import { browser } from 'webextension-polyfill-ts';
 import { DOM } from '../Core/DOM';
 import { Modal } from '../Core/Modal';
 import { Options } from '../Core/Options';
+import { SaveSync } from '../Core/SaveSync';
 import { LocalStorage } from '../Core/Storage';
 import { Changelog } from './Changelog';
 import { OptionsManager } from './OptionsManager';
@@ -11,10 +12,11 @@ import { ThemeHandler } from './ThemeHandler';
 	ThemeHandler.bind();
 	SimpleNotification._options.position = 'bottom-left';
 	await Options.load();
+	SaveSync.state = await LocalStorage.get('saveSync');
 	OptionsManager.instance = new OptionsManager();
 	// Check current import progress
-	const importInProgress = await LocalStorage.get('importInProgress', false);
-	OptionsManager.instance.toggleImportProgressState(importInProgress);
+	const progress = await LocalStorage.raw('get', ['importInProgress', 'saveSyncInProgress']);
+	OptionsManager.instance.toggleImportProgressState(progress.importInProgress || progress.saveSyncInProgress);
 
 	// Check if SyncDex was updated or installed
 	const reason = window.location.hash.substr(1);
@@ -47,9 +49,9 @@ import { ThemeHandler } from './ThemeHandler';
 
 	// Toggle import buttons when starting/ending an import
 	browser.runtime.onMessage.addListener((message: Message): void => {
-		if (message.action == MessageAction.importStart) {
+		if (message.action == MessageAction.importStart || message.action == MessageAction.saveSyncStart) {
 			OptionsManager.instance.toggleImportProgressState(true);
-		} else if (message.action == MessageAction.importComplete) {
+		} else if (message.action == MessageAction.importComplete || message.action == MessageAction.saveSyncComplete) {
 			OptionsManager.instance.toggleImportProgressState(false);
 		}
 	});

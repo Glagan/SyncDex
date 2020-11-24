@@ -63,7 +63,7 @@ export class Dropbox extends SaveSync {
 				method: 'POST',
 				url: 'https://api.dropboxapi.com/2/files/search_v2',
 				headers: {
-					Authorization: `Bearer ${this.state?.token}`,
+					Authorization: `Bearer ${SaveSync.state?.token}`,
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({ query: 'Save.json' }),
@@ -95,7 +95,7 @@ export class Dropbox extends SaveSync {
 				method: 'POST',
 				url: 'https://content.dropboxapi.com/2/files/download',
 				headers: {
-					Authorization: `Bearer ${this.state?.token}`,
+					Authorization: `Bearer ${SaveSync.state?.token}`,
 					'Dropbox-API-Arg': `{"path":"${Dropbox.FILENAME}"}`,
 				},
 			});
@@ -113,7 +113,7 @@ export class Dropbox extends SaveSync {
 				method: 'POST',
 				url: 'https://content.dropboxapi.com/2/files/upload',
 				headers: {
-					Authorization: `Bearer ${this.state?.token}`,
+					Authorization: `Bearer ${SaveSync.state?.token}`,
 					'Dropbox-API-Arg': `{"path":"${Dropbox.FILENAME}","mode":"overwrite","mute":true}`,
 				},
 				fileRequest: 'localSave',
@@ -125,16 +125,16 @@ export class Dropbox extends SaveSync {
 	};
 
 	refreshTokenIfNeeded = async (): Promise<boolean> => {
-		if (!this.state) return false;
-		if (this.state.expires < Date.now()) {
-			await log(`Refreshing Dropbox token (expired ${this.state.expires})`);
+		if (!SaveSync.state) return false;
+		if (SaveSync.state.expires < Date.now()) {
+			await log(`Refreshing Dropbox token (expired ${SaveSync.state.expires})`);
 			const response = await Runtime.request<RawResponse>({
 				method: 'POST',
 				url: 'https://api.dropboxapi.com/oauth2/token',
 				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 				body: Runtime.buildQuery({
 					grant_type: 'refresh_token',
-					refresh_token: this.state.refresh,
+					refresh_token: SaveSync.state.refresh,
 					client_id: Dropbox.CLIENT_ID,
 				}),
 			});
@@ -186,7 +186,7 @@ export class Dropbox extends SaveSync {
 				method: 'POST',
 				url: 'https://api.dropboxapi.com/2/files/delete_v2',
 				headers: {
-					Authorization: `Bearer ${this.state?.token}`,
+					Authorization: `Bearer ${SaveSync.state?.token}`,
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({ path: Dropbox.FILENAME }),
@@ -202,13 +202,13 @@ export class Dropbox extends SaveSync {
 			const body = JSON.parse(response.body);
 			if (response.ok) {
 				SimpleNotification.success({ text: `Connected to **Dropbox**` });
-				this.state = {
+				SaveSync.state = {
 					service: 'Dropbox',
 					token: body.access_token,
 					expires: Date.now() + body.expires_in * 1000,
 					refresh: body.refresh_token,
 				};
-				await LocalStorage.set('saveSync', this.state);
+				await LocalStorage.set('saveSync', SaveSync.state);
 				return true;
 			}
 			SimpleNotification.error({

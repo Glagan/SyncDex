@@ -144,10 +144,10 @@ const Files = [
 	'build/scripts/SyncDex.js',
 ];
 const DevFiles = [
-	'build/scripts/SyncDex_background.js.map:background',
-	'build/scripts/SyncDex_options.js.map:options',
-	'build/scripts/SyncDex.js.map',
-	'build/scripts/SyncDex_Anilist.js.map:external',
+	//'build/scripts/SyncDex_background.js.map:background',
+	//'build/scripts/SyncDex_options.js.map:options',
+	//'build/scripts/SyncDex.js.map',
+	//'build/scripts/SyncDex_Anilist.js.map:external',
 ];
 if (options.mode == 'dev') {
 	Files.unshift('src:src');
@@ -212,10 +212,10 @@ const bundles = bundleList.map((bundle) => {
 			//dir: `build/scripts/`,
 			file: bundle.output,
 			format: 'es',
-			sourcemap: options.mode == 'dev',
+			sourcemap: options.mode == 'dev' ? 'inline' : false,
 		},
 		watch: {
-			buildDelay: 500,
+			buildDelay: 1500,
 			clearScreen: false,
 			chokidar: false,
 			exclude: ['node_modules/**/*', 'build/**/*', 'dist/**/*'],
@@ -225,7 +225,8 @@ const bundles = bundleList.map((bundle) => {
 function bundleName(outputFile) {
 	const file = /.+\\(.+)\.js$/.exec(outputFile)[1];
 	if (file == 'SyncDex') return 'SyncDex';
-	return /SyncDex_(.+)/.exec(file)[1];
+	const name = /SyncDex_(.+)/.exec(file)[1];
+	return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
 }
 
 // SCSS Files
@@ -278,10 +279,11 @@ const waitLine = async () => {
 					outFile: `${name}.css`,
 					includePaths: ['css'],
 					sourceMap: true,
+					sourceMapEmbed: true,
 					outputStyle: options.mode == 'dev' ? 'expanded' : 'compressed',
 				});
 				fs.writeFileSync(`build/css/${name}.css`, result.css.toString());
-				fs.writeFileSync(`build/css/${name}.css.map`, result.map.toString());
+				//fs.writeFileSync(`build/css/${name}.css.map`, result.map.toString());
 				lines[index] = `${lines[index]} done in ${result.stats.duration}ms`;
 				updateLine();
 				resolve();
@@ -300,7 +302,7 @@ const waitLine = async () => {
 			duration = 0;
 		} else if (event.code == 'BUNDLE_START') {
 			rimraf.sync(event.output[0]); // Delete previous file
-			if (options.mode == 'dev') rimraf.sync(`${event.output[0]}.map`);
+			//if (options.mode == 'dev') rimraf.sync(`${event.output[0]}.map`);
 			process.stdout.write(`\t${color(CYAN)}${bundleName(event.output[0])}${reset()}...`);
 		} else if (event.code == 'BUNDLE_END') {
 			process.stdout.write(` done in ${color(BLUE)}${event.duration}ms${reset()}\n`);

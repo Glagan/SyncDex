@@ -11,9 +11,16 @@ export class SaveSyncManager {
 	saveSyncServices: { [key: string]: SaveSync } = { Dropbox: new Dropbox() };
 	container: HTMLElement;
 	cards: HTMLButtonElement[] = [];
+	syncService?: SaveSync;
+	importButton: HTMLButtonElement;
+	exportButton: HTMLButtonElement;
+	deleteLogoutButton: HTMLButtonElement;
+	logoutButton: HTMLButtonElement;
 
 	constructor() {
 		this.container = document.getElementById('save-sync-container')!;
+
+		// Logged out nodes
 		for (const key of Object.keys(this.saveSyncServices)) {
 			const syncService = this.saveSyncServices[key];
 			const card = syncService.createCard();
@@ -23,6 +30,63 @@ export class SaveSyncManager {
 			});
 			this.cards.push(card);
 		}
+
+		// Logged in nodes
+		this.importButton = DOM.create('button', {
+			class: 'primary',
+			childs: [DOM.icon('cloud-download-alt'), DOM.space(), DOM.text('Import')],
+			disabled: true,
+			events: {
+				click: async (event) => {
+					event.preventDefault();
+					if (!this.syncService) return;
+					// TODO
+				},
+			},
+		});
+		this.exportButton = DOM.create('button', {
+			class: 'primary',
+			childs: [DOM.icon('cloud-upload-alt'), DOM.space(), DOM.text('Export')],
+			disabled: true,
+			events: {
+				click: async (event) => {
+					event.preventDefault();
+					if (!this.syncService) return;
+					// TODO
+				},
+			},
+		});
+		this.deleteLogoutButton = DOM.create('button', {
+			class: 'danger',
+			childs: [DOM.icon('trash-alt'), DOM.space(), DOM.text('Delete and Logout')],
+			events: {
+				click: async (event) => {
+					event.preventDefault();
+					if (!this.syncService) return;
+					if (await this.syncService.delete()) {
+						await this.syncService.logout();
+						await this.syncService.clean();
+						delete SaveSync.state;
+					} else SimpleNotification.error({ text: `Could not delete your save, check logs.` });
+					this.refresh();
+				},
+			},
+		});
+		this.logoutButton = DOM.create('button', {
+			class: 'danger',
+			childs: [DOM.icon('sign-out-alt'), DOM.space(), DOM.text('Logout')],
+			events: {
+				click: async (event) => {
+					event.preventDefault();
+					if (!this.syncService) return;
+					await this.syncService.logout();
+					await this.syncService.clean();
+					delete SaveSync.state;
+					this.refresh();
+				},
+			},
+		});
+
 		this.initialize();
 	}
 
@@ -49,10 +113,9 @@ export class SaveSyncManager {
 
 	refresh = async (): Promise<void> => {
 		DOM.clear(this.container);
-		const state = await LocalStorage.get('saveSync');
-		if (state !== undefined) {
-			const syncService = this.saveSyncServices[state.service];
-			syncService.state = state;
+		SaveSync.state = await LocalStorage.get('saveSync');
+		if (SaveSync.state !== undefined) {
+			this.syncService = this.saveSyncServices[SaveSync.state.service];
 
 			// Make summary and manage buttons
 			const summary = DOM.create('p', {
@@ -61,56 +124,45 @@ export class SaveSyncManager {
 					DOM.space(),
 					DOM.create('b', {
 						childs: [
-							(<typeof SaveSync>syncService.constructor).icon(),
+							(<typeof SaveSync>this.syncService.constructor).icon(),
 							DOM.space(),
-							DOM.text(syncService.constructor.name),
+							DOM.text(this.syncService.constructor.name),
 						],
 					}),
 					DOM.text('.'),
 				],
-			});
-			const importButton = DOM.create('button', {
-				class: 'primary',
-				childs: [DOM.icon('cloud-download-alt'), DOM.space(), DOM.text('Import')],
-			});
-			const exportButton = DOM.create('button', {
-				class: 'primary',
-				childs: [DOM.icon('cloud-upload-alt'), DOM.space(), DOM.text('Export')],
-			});
-			const deleteLogout = DOM.create('button', {
-				class: 'danger',
-				childs: [DOM.icon('trash-alt'), DOM.space(), DOM.text('Delete and Logout')],
-				events: {
-					click: async (event) => {
-						event.preventDefault();
-						if (await syncService.delete()) {
-							await syncService.logout();
-							await syncService.clean();
-						} else SimpleNotification.error({ text: `Could not delete your save, check logs.` });
-						this.refresh();
-					},
-				},
-			});
-			const logout = DOM.create('button', {
-				class: 'danger',
-				childs: [DOM.icon('sign-out-alt'), DOM.space(), DOM.text('Logout')],
-				events: {
-					click: async (event) => {
-						event.preventDefault();
-						await syncService.logout();
-						await syncService.clean();
-						this.refresh();
-					},
-				},
 			});
 			DOM.append(
 				this.container,
 				summary,
 				DOM.create('div', {
 					class: 'manage',
-					childs: [importButton, exportButton, deleteLogout, logout],
+					childs: [this.importButton, this.exportButton, this.deleteLogoutButton, this.logoutButton],
 				})
 			);
 		} else DOM.append(this.container, ...this.cards);
+	};
+
+	toggleImportProgressState = (value: boolean): void => {
+		for (const card of this.cards) {
+			if (value) {
+				card.classList.add('loading');
+				card.title = 'Import in Progress, wait for it to finish.';
+			} else {
+				card.classList.remove('loading');
+				card.title = '';
+			}
+		}
+
+		const buttons = [this.importButton, this.exportButton, this.deleteLogoutButton, this.logoutButton];
+		for (const button of buttons) {
+			if (value) {
+				button.classList.add('loading');
+				button.title = 'Import in Progress, wait for it to finish.';
+			} else {
+				button.classList.remove('loading');
+				button.title = '';
+			}
+		}
 	};
 }

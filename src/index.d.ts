@@ -56,6 +56,8 @@ declare const enum MessageAction {
 	importStart = 'importStart',
 	importComplete = 'importComplete',
 	saveSync = 'saveSync',
+	saveSyncStart = 'saveSyncStart',
+	saveSyncComplete = 'saveSyncComplete',
 }
 
 interface RequestMessage {
@@ -85,10 +87,15 @@ interface ImportMessage {
 	action: MessageAction.silentImport | MessageAction.importStart | MessageAction.importComplete;
 }
 
-interface SaveSyncMessage {
-	action: MessageAction.saveSync;
-	delay?: number;
-}
+type SaveSyncMessage =
+	| {
+			action: MessageAction.saveSync;
+			delay?: number;
+			state?: SaveSyncState;
+	  }
+	| {
+			action: MessageAction.saveSyncStart | MessageAction.saveSyncComplete;
+	  };
 
 type Message = RequestMessage | OpenOptionsMessage | ImportMessage | SaveSyncMessage;
 
@@ -194,6 +201,7 @@ interface ExportedSave {
 	history?: HistoryObject;
 	dropboxState?: PKCEWaitingState;
 	saveSync?: SaveSyncState;
+	saveSyncInProgress?: boolean;
 	lastModified?: number;
 	[key: string]: import('./Core/Title').StorageTitle;
 }
