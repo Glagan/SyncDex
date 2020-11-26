@@ -4,7 +4,7 @@ import { log } from '../Core/Log';
 import { ModuleStatus } from '../Core/Module';
 import { DefaultOptions, Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
-import { SaveSync } from '../Core/SaveSync';
+import { SaveSync, SyncResult } from '../Core/SaveSync';
 import { SaveSyncServices } from '../Core/SaveSyncServices';
 import { Services } from '../Core/Services';
 import { LocalStorage } from '../Core/Storage';
@@ -271,10 +271,11 @@ async function syncSave() {
 				/// @ts-ignore saveSyncServiceClass is *NOT* abstract
 				const saveSyncService: SaveSync = new saveSyncServiceClass();
 				SaveSync.state = syncState;
-				if (!(await saveSyncService.sync())) {
+				const result = await saveSyncService.sync();
+				if (result == SyncResult.ERROR) {
 					await log(`Couldn't sync your local save with ${syncState.service}`);
-				} else await log(`Synced your save on ${syncState.service}`);
-				await LocalStorage.remove('saveSyncInPr ogress');
+				} else if (result != SyncResult.SYNCED) await log(`Synced your save with ${syncState.service}`);
+				await LocalStorage.remove('saveSyncInProgress');
 				await browser.runtime.sendMessage({ action: MessageAction.saveSyncComplete });
 				setIcon('SyncDex', '#058b00', '\u2713');
 			} else {
