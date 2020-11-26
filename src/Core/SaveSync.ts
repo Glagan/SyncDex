@@ -9,7 +9,7 @@ export abstract class SaveSync {
 	abstract onCardClick(node: HTMLButtonElement): Promise<void>;
 
 	abstract login(query: { [key: string]: string }): Promise<boolean>;
-	abstract lastModified(): Promise<number>;
+	abstract lastSync(): Promise<number>;
 	logout = async (): Promise<boolean> => {
 		return true;
 	};
@@ -18,31 +18,43 @@ export abstract class SaveSync {
 		return LocalStorage.remove('saveSync');
 	};
 
+	abstract uploadLocalSave(): Promise<number>;
 	abstract downloadExternalSave(): Promise<string | boolean>;
-	import = async (lastModified: number): Promise<boolean> => {
-		const file = await this.downloadExternalSave();
-		if (typeof file === 'string') {
-			try {
-				const save: ExportedSave = JSON.parse(file);
-				if (!save.lastModified || save.lastModified > lastModified) {
-					delete (save.options as any).tokens;
-					delete save.dropboxState;
-					delete save.saveSync;
-					delete save.lastModified;
-					delete save.importInProgress;
-					delete save.saveSyncInProgress;
-					if (save.import && typeof save.import !== 'number') {
-						delete save.import;
+
+	sync = async (): Promise<boolean> => {
+		const lastSync = await this.lastSync();
+		if (lastSync == 0) {
+			const result = await this.uploadLocalSave();
+			if (result > 0) {
+				await LocalStorage.set('lastSync', result);
+				return true;
+			} else return false;
+		} else if (lastSync > 0) {
+			const localSync = await LocalStorage.get('lastSync');
+			if (localSync === undefined || localSync < lastSync) {
+				const file = await this.downloadExternalSave();
+				if (typeof file === 'string') {
+					try {
+						await LocalStorage.raw('set', { ...JSON.parse(file), lastSync: lastSync });
+						return true;
+					} catch (error) {
+						await log(error);
 					}
-					//delete save.logs;
-					await LocalStorage.raw('set', save);
 				}
-			} catch (error) {
-				log(error);
-			}
+				return false;
+			} else if (lastSync != localSync) {
+				const result = await this.uploadLocalSave();
+				if (result > 0) {
+					await LocalStorage.set('lastSync', result);
+					return true;
+				} else return false;
+			} else return true;
+		} else {
+			SimpleNotification.error({
+				title: 'API Error',
+				text: `Could not sync your save with ${this.constructor.name}`,
+			});
 		}
 		return false;
 	};
-
-	abstract uploadLocalSave(): Promise<boolean>;
 }

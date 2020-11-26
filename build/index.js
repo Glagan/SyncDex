@@ -390,10 +390,14 @@ async function buildExtension(browser, nonVerbose) {
 				'--artifacts-dir',
 				'web-ext-artifacts',
 				'--filename',
-				`syncdex_${manifest.version}_${browser}`,
+				`syncdex_${manifest.version}_${browser}.zip`,
+				'--overwrite-dest',
 			],
-			{ windowsHide: true, stdio: 'ignore' }
+			{ windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] }
 		);
+		child.stderr.on('data', (data) => {
+			console.error(`${color(RED)}${data}${reset()}`);
+		});
 		await new Promise((resolve) => {
 			child.on('close', function (data) {
 				resolve();

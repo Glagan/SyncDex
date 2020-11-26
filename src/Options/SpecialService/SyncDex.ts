@@ -81,6 +81,14 @@ export class SyncDexImport extends SpecialService {
 			History.ids = [...new Set(History.ids.concat(history.ids))];
 			await History.save();
 		}
+		// Add other keys that can be imported
+		const otherValues: { logs?: LogLine[]; lastSync?: number; import?: number | string[] } = {};
+		if (data.logs) otherValues.logs = data.logs;
+		if (data.lastSync) otherValues.lastSync = data.lastSync;
+		if (data.import && typeof data.import === 'number') otherValues.import = data.import;
+		if (Object.keys(otherValues).length > 0) {
+			await LocalStorage.raw('set', otherValues);
+		}
 		await Options.save();
 
 		// Save

@@ -2,6 +2,7 @@ import { DOM } from '../../Core/DOM';
 import { LocalStorage } from '../../Core/Storage';
 import { SaveSync } from '../../Core/SaveSync';
 import { Dropbox } from '../../SaveSync/Dropbox';
+import { Runtime } from '../../Core/Runtime';
 
 interface Query {
 	[key: string]: string;
@@ -39,6 +40,7 @@ export class SaveSyncManager {
 			events: {
 				click: async (event) => {
 					event.preventDefault();
+					if (this.importButton.classList.contains('loading')) return;
 					if (!this.syncService) return;
 					// TODO
 				},
@@ -51,6 +53,7 @@ export class SaveSyncManager {
 			events: {
 				click: async (event) => {
 					event.preventDefault();
+					if (this.exportButton.classList.contains('loading')) return;
 					if (!this.syncService) return;
 					// TODO
 				},
@@ -62,12 +65,15 @@ export class SaveSyncManager {
 			events: {
 				click: async (event) => {
 					event.preventDefault();
+					if (this.exportButton.classList.contains('loading')) return;
+					this.toggleButtons(true);
 					if (!this.syncService) return;
 					if (await this.syncService.delete()) {
 						await this.syncService.logout();
 						await this.syncService.clean();
 						delete SaveSync.state;
 					} else SimpleNotification.error({ text: `Could not delete your save, check logs.` });
+					this.toggleButtons(false);
 					this.refresh();
 				},
 			},
@@ -78,6 +84,7 @@ export class SaveSyncManager {
 			events: {
 				click: async (event) => {
 					event.preventDefault();
+					if (this.exportButton.classList.contains('loading')) return;
 					if (!this.syncService) return;
 					await this.syncService.logout();
 					await this.syncService.clean();
@@ -90,6 +97,13 @@ export class SaveSyncManager {
 		this.initialize();
 	}
 
+	toggleButtons = (value: boolean) => {
+		this.importButton.disabled = value;
+		this.exportButton.disabled = value;
+		this.deleteLogoutButton.disabled = value;
+		this.logoutButton.disabled = value;
+	};
+
 	initialize = async () => {
 		// Check if there is a token being received for a save sync service
 		const query: Query = {};
@@ -99,11 +113,15 @@ export class SaveSyncManager {
 			.map((s) => s.split('='))
 			.forEach((s) => (query[s[0]] = s[1]));
 		if (query.for && query.for !== '') {
+			// Remove token from the URL and remove it from History
+			window.history.replaceState(null, '', `${window.location.origin}${window.location.pathname}`);
 			this.container.appendChild(DOM.create('p', { textContent: 'Loading...' }));
 			for (const key of Object.keys(this.saveSyncServices)) {
 				const syncService = this.saveSyncServices[key];
 				if (syncService.constructor.name == query.for) {
-					await syncService.login(query);
+					if (await syncService.login(query)) {
+						Runtime.sendMessage({ action: MessageAction.saveSync, state: SaveSync.state, delay: 0 });
+					}
 					break;
 				}
 			}

@@ -5,19 +5,82 @@ import { generateRandomString, pkceChallengeFromVerifier } from '../Options/PKCE
 import { SaveSync } from '../Core/SaveSync';
 import { log } from '../Core/Log';
 
-type DropboxFile = {
-	'.tag': string;
-	id: string;
-	name: string;
-	content_hash: string;
-	rev: string;
+interface DropboxTokenResponse {
+	uid: string;
+	access_token: string;
+	expires_in: number;
+	token_type: 'bearer';
+	scope: string;
+	refresh_token: string;
+	account_id: string;
+	error?: string;
+	error_description?: string;
+}
+
+interface DropboxFile {
+	'.tag': 'file';
 	client_modified: string;
-	server_modified: string;
-	is_downloadable: true;
+	content_hash: string;
+	has_explicit_shared_members: boolean;
+	id: string;
+	is_downloadable: boolean;
+	name: string;
 	path_display: string;
 	path_lower: string;
+	rev: string;
+	server_modified: string;
+	sharing_info: {
+		modified_by: string;
+		parent_shared_folder_id: string;
+		read_only: boolean;
+	};
+	modified_by: string;
+	parent_shared_folder_id: string;
+	read_only: boolean;
 	size: number;
-};
+}
+
+interface DropboxSearchResult {
+	has_more: boolean;
+	matches: {
+		match_type: { '.tag': 'filename' };
+		metadata: {
+			'.tag': 'metadata';
+			metadata: DropboxFile;
+		};
+	}[];
+}
+
+interface DropboxUploadResult {
+	name: string;
+	id: string;
+	client_modified: string;
+	server_modified: string;
+	rev: string;
+	size: number;
+	path_lower: string;
+	path_display: string;
+	sharing_info: {
+		read_only: boolean;
+		parent_shared_folder_id: string;
+		modified_by: string;
+	};
+	is_downloadable: boolean;
+	property_groups: {
+		template_id: string;
+		fields: {
+			name: string;
+			value: string;
+		}[];
+	}[];
+	has_explicit_shared_members: boolean;
+	content_hash: string;
+	file_lock_info: {
+		is_lockholder: boolean;
+		lockholder_name: string;
+		created: string;
+	};
+}
 
 // Dropbox retrieve save
 // Each line is a request
@@ -57,9 +120,9 @@ export class Dropbox extends SaveSync {
 	/**
 	 * Return a DropboxFile if it exists, true if it doesn't and false if the API returned an error.
 	 */
-	checkIfFileExists = async (): Promise<DropboxFile | null | false> => {
+	fileMetadata = async (): Promise<DropboxFile | boolean | null> => {
 		if (await this.refreshTokenIfNeeded()) {
-			const response = await Runtime.jsonRequest({
+			const response = await Runtime.jsonRequest<DropboxSearchResult>({
 				method: 'POST',
 				url: 'https://api.dropboxapi.com/2/files/search_v2',
 				headers: {
@@ -78,13 +141,12 @@ export class Dropbox extends SaveSync {
 		return false;
 	};
 
-	lastModified = async (): Promise<number> => {
+	lastSync = async (): Promise<number> => {
 		if (await this.refreshTokenIfNeeded()) {
-			const file = await this.checkIfFileExists();
+			const file = await this.fileMetadata();
 			if (typeof file === 'object' && file !== null) {
 				return new Date(file.server_modified).getTime();
-			}
-			return file === null ? 0 : -1;
+			} else if (file !== false) return 0;
 		}
 		return -1;
 	};
@@ -100,16 +162,16 @@ export class Dropbox extends SaveSync {
 				},
 			});
 			if (response.ok) {
-				await log(`Downloaded Dropbox save`);
+				await log(`Downloaded Dropbox Save`);
 				return response.body;
 			}
 		}
 		return false;
 	};
 
-	uploadLocalSave = async (): Promise<boolean> => {
+	uploadLocalSave = async (): Promise<number> => {
 		if (await this.refreshTokenIfNeeded()) {
-			const response = await Runtime.jsonRequest({
+			const response = await Runtime.jsonRequest<DropboxUploadResult>({
 				method: 'POST',
 				url: 'https://content.dropboxapi.com/2/files/upload',
 				headers: {
@@ -118,10 +180,12 @@ export class Dropbox extends SaveSync {
 				},
 				fileRequest: 'localSave',
 			});
-			if (response.ok) await log(`Uploaded Local Save to Dropbox`);
-			return response.ok;
+			if (response.ok) {
+				await log(`Uploaded Local Save to Dropbox`);
+				return new Date(response.body.server_modified).getTime();
+			}
 		}
-		return false;
+		return -1;
 	};
 
 	refreshTokenIfNeeded = async (): Promise<boolean> => {
@@ -199,7 +263,7 @@ export class Dropbox extends SaveSync {
 
 	handleTokenResponse = async (response: RawResponse): Promise<boolean> => {
 		try {
-			const body = JSON.parse(response.body);
+			const body: DropboxTokenResponse = JSON.parse(response.body);
 			if (response.ok) {
 				SimpleNotification.success({ text: `Connected to **Dropbox**` });
 				SaveSync.state = {

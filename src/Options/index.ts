@@ -49,10 +49,12 @@ import { ThemeHandler } from './ThemeHandler';
 
 	// Toggle import buttons when starting/ending an import
 	browser.runtime.onMessage.addListener((message: Message): void => {
+		const syncEnded = message.action == MessageAction.saveSyncComplete;
 		if (message.action == MessageAction.importStart || message.action == MessageAction.saveSyncStart) {
 			OptionsManager.instance.toggleImportProgressState(true);
-		} else if (message.action == MessageAction.importComplete || message.action == MessageAction.saveSyncComplete) {
+		} else if (message.action == MessageAction.importComplete || syncEnded) {
 			OptionsManager.instance.toggleImportProgressState(false);
 		}
+		if (syncEnded) OptionsManager.instance.reload();
 	});
 })();

@@ -75,7 +75,7 @@ export const Options: AvailableOptions & ManageOptions = Object.assign(
 			const options = await LocalStorage.get('options');
 			if (options !== undefined) {
 				Object.assign(Options, options);
-			} else return await Options.save();
+			} else return Options.save();
 		},
 
 		reloadTokens: async (): Promise<void> => {
@@ -86,13 +86,13 @@ export const Options: AvailableOptions & ManageOptions = Object.assign(
 			}
 		},
 
-		save: async (): Promise<void> => {
+		save: (): Promise<void> => {
 			const values = Object.assign({}, Options) as AvailableOptions & Partial<ManageOptions>;
 			delete values.load;
 			delete values.reloadTokens;
 			delete values.save;
 			delete values.reset;
-			return await LocalStorage.set('options', values);
+			return LocalStorage.set('options', values);
 		},
 
 		reset: (): void => {

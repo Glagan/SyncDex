@@ -12,7 +12,12 @@ import { LocalStorage } from '../Core/Storage';
 console.log('SyncDex :: Background');
 
 const SaveSyncAlarmName = 'saveSyncBackup';
-let SaveSyncState: SaveSyncState | undefined;
+
+function setIcon(title: string = '', bgColor: string = '', text: string = '') {
+	browser.browserAction.setTitle({ title: title });
+	browser.browserAction.setBadgeBackgroundColor({ color: bgColor == '' ? null : bgColor });
+	browser.browserAction.setBadgeText({ text: text });
+}
 
 Runtime.messageSender = (message: Message) => handleMessage(message);
 
@@ -64,6 +69,8 @@ function handleMessage(message: Message, sender?: BrowserRuntime.MessageSender) 
 				const save = await LocalStorage.getAll();
 				delete save.dropboxState;
 				delete save.saveSync;
+				delete save.saveSyncInProgress;
+				delete save.importInProgress;
 				body = new File([JSON.stringify(save)], 'application/json');
 			} else if (msg.form !== undefined) {
 				if (!(msg.form instanceof FormData)) {
@@ -137,16 +144,15 @@ function handleMessage(message: Message, sender?: BrowserRuntime.MessageSender) 
 		return silentImport(true);
 	} else if (message.action == MessageAction.saveSync) {
 		if (message.state) {
-			SaveSyncState = message.state;
 			return new Promise(async (resolve) => {
 				const alarm = await browser.alarms.get(SaveSyncAlarmName);
-				const delay = message.delay ? message.delay : 1;
+				const delay = message.delay !== undefined ? message.delay : 1;
 				if (delay == 0) {
 					if (alarm) browser.alarms.clear(SaveSyncAlarmName);
 					await syncSave();
 				} else if (!alarm) {
 					const scheduled = new Date(Date.now() + delay * 60 * 1000);
-					Runtime.setIcon(
+					setIcon(
 						`Save will Sync in less than ${delay}minute${
 							delay > 1 ? 's' : ''
 						} (${scheduled.toLocaleString()})`,
@@ -254,39 +260,32 @@ browser.alarms.onAlarm.addListener(async (alarm: Alarms.Alarm) => {
 });
 
 async function syncSave() {
-	Runtime.setIcon('Save Sync in progress', '#058b00', '~');
-	const syncState = SaveSyncState;
-	if (syncState !== undefined && !LocalStorage.get('saveSyncInProgress', false)) {
-		const saveSyncServiceClass = SaveSyncServices[syncState.service];
-		if (saveSyncServiceClass !== undefined) {
-			await LocalStorage.set('saveSyncInProgress', true);
-			await browser.runtime.sendMessage({ action: MessageAction.saveSyncStart });
-			/// @ts-ignore saveSyncServiceClass is *NOT* abstract
-			const saveSyncService: SaveSync = new saveSyncServiceClass();
-			SaveSync.state = syncState;
-			const serverModified = await saveSyncService.lastModified();
-			const localModified = await LocalStorage.get('lastModified', 0);
-			if (serverModified > localModified) {
-				await log(`Updating local save from ${saveSyncService.constructor.name}`);
-				if (!(await saveSyncService.import(localModified))) {
-					await log(`Couldn't update your local save`);
-				}
-			} else if (serverModified < localModified) {
-				await log(`Updating external save on ${saveSyncService.constructor.name}`);
-				if (!(await saveSyncService.uploadLocalSave())) {
-					await log(`Couldn't update the external save`);
-				}
-			} else await log(`Save up to date, nothing done`);
-			await LocalStorage.remove('saveSyncInProgress');
-			await browser.runtime.sendMessage({ action: MessageAction.saveSyncComplete });
-		} else {
-			delete (syncState as any).token;
-			delete (syncState as any).refresh;
-			await log(`Invalid Save Sync Service [${syncState}]`);
-			await LocalStorage.remove('saveSync');
+	setIcon('Save Sync in progress', '#45A1FF', '...');
+	const syncState = await LocalStorage.get('saveSync');
+	if (syncState !== undefined) {
+		if (!(await LocalStorage.get('saveSyncInProgress', false))) {
+			const saveSyncServiceClass = SaveSyncServices[syncState.service];
+			if (saveSyncServiceClass !== undefined) {
+				await LocalStorage.set('saveSyncInProgress', true);
+				await browser.runtime.sendMessage({ action: MessageAction.saveSyncStart });
+				/// @ts-ignore saveSyncServiceClass is *NOT* abstract
+				const saveSyncService: SaveSync = new saveSyncServiceClass();
+				SaveSync.state = syncState;
+				if (!(await saveSyncService.sync())) {
+					await log(`Couldn't sync your local save with ${syncState.service}`);
+				} else await log(`Synced your save on ${syncState.service}`);
+				await LocalStorage.remove('saveSyncInPr ogress');
+				await browser.runtime.sendMessage({ action: MessageAction.saveSyncComplete });
+				setIcon('SyncDex', '#058b00', '\u2713');
+			} else {
+				delete (syncState as any).token;
+				delete (syncState as any).refresh;
+				await log(`Invalid Save Sync Service [${syncState}]`);
+				await LocalStorage.remove('saveSync');
+				setIcon();
+			}
 		}
-	}
-	Runtime.setIcon();
+	} else setIcon();
 }
 async function silentImport(manual: boolean = false) {
 	await Options.load();
@@ -326,7 +325,8 @@ async function silentImport(manual: boolean = false) {
 }
 async function onStartup() {
 	browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
-	await LocalStorage.remove('saveSyncInProgress');
+	await LocalStorage.remove(['dropboxState', 'saveSyncInProgress']);
+
 	await syncSave();
 	await silentImport();
 }

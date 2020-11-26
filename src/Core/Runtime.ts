@@ -99,10 +99,4 @@ export class Runtime {
 	static icon(icon: string): string {
 		return Runtime.file(`/icons/${icon}.png`);
 	}
-
-	static setIcon(title: string = '', bgColor: string = '', text: string = '') {
-		browser.browserAction.setTitle({ title: title });
-		browser.browserAction.setBadgeBackgroundColor({ color: bgColor });
-		browser.browserAction.setBadgeText({ text: text });
-	}
 }

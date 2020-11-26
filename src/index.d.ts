@@ -202,7 +202,7 @@ interface ExportedSave {
 	dropboxState?: PKCEWaitingState;
 	saveSync?: SaveSyncState;
 	saveSyncInProgress?: boolean;
-	lastModified?: number;
+	lastSync?: number;
 	[key: string]: import('./Core/Title').StorageTitle;
 }
 

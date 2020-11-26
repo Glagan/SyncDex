@@ -1,6 +1,4 @@
-import { browser, Storage } from 'webextension-polyfill-ts';
-import { Runtime } from './Runtime';
-import { SaveSync } from './SaveSync';
+import { browser } from 'webextension-polyfill-ts';
 import { StorageTitle } from './Title';
 
 console.log('SyncDex :: Storage');
@@ -9,7 +7,7 @@ export enum SaveSpecialKeys {
 	Options = 'options',
 	History = 'history',
 	Logs = 'logs',
-	LastModified = 'lastModified',
+	LastSync = 'lastSync',
 	Import = 'import',
 	ImportProgress = 'importInProgress',
 	SaveSyncProgress = 'saveSyncInProgress',
@@ -23,14 +21,8 @@ export class LocalStorage {
 	 * Each keys in the returned object can be undefined if it wasn't saved.
 	 * Pass nothing to retrieve all Local Storage.
 	 */
-	static getAll(): Promise<ExportedSave>;
-	static getAll<T extends keyof ExportedSave>(keys?: T[]): Promise<{ [K in T]: ExportedSave[K] | undefined }> {
-		if (keys === undefined) {
-			/// @ts-ignore
-			return browser.storage.local.get(null) as Promise<ExportedSave>;
-		}
-		/// @ts-ignore
-		return browser.storage.local.get(keys);
+	static getAll(): Promise<ExportedSave> {
+		return browser.storage.local.get(null);
 	}
 
 	static getTitleList(keys: Omit<number | string, keyof ExportedSave>[]): Promise<Record<string, StorageTitle>> {
@@ -66,57 +58,34 @@ export class LocalStorage {
 	static raw(method: 'set', data: Object): Promise<void>;
 	static raw(method: 'get' | 'set', data: Object): Promise<{ [key: string]: any } | void> {
 		if (method == 'set') {
-			return browser.storage.local.set({ ...data, lastModified: Date.now() });
+			return browser.storage.local.set(data);
 		}
 		return browser.storage.local[method](data);
-		// TODO: send *syncSave* message ?
 	}
 
 	/**
 	 * Save the { key: data } object in Local Storage.
 	 */
-	static async set(key: number | string, data: any) {
+	static set(key: number | string, data: any) {
 		const isNumber = typeof key == 'number';
 		if (isNumber) key = key.toString();
-		await browser.storage.local.set({ [key]: data, lastModified: Date.now() });
-		// Avoid updating lastModified on keys that are local only
-		if (
-			isNumber ||
-			(key != SaveSpecialKeys.ImportProgress &&
-				key != SaveSpecialKeys.SaveSyncProgress &&
-				key != SaveSpecialKeys.DropboxState &&
-				key != SaveSpecialKeys.SaveSync)
-		) {
-			await Runtime.sendMessage({ action: MessageAction.saveSync, state: SaveSync.state });
-		}
+		return browser.storage.local.set({ [key]: data });
 	}
 
 	/**
 	 * Remove `key` from Local Storage.
 	 */
-	static async remove(key: number | string): Promise<void> {
+	static remove(key: number | string | string[]) {
 		const isNumber = typeof key == 'number';
 		if (isNumber) key = key.toString();
-		await browser.storage.local.remove(key as string);
-		// Avoid updating lastModified on keys that are local only
-		if (
-			isNumber ||
-			(key != SaveSpecialKeys.ImportProgress &&
-				key != SaveSpecialKeys.SaveSyncProgress &&
-				key != SaveSpecialKeys.DropboxState &&
-				key != SaveSpecialKeys.SaveSync)
-		) {
-			await browser.storage.local.set({ lastModified: Date.now() });
-			await Runtime.sendMessage({ action: MessageAction.saveSync, state: SaveSync.state });
-		}
+		return browser.storage.local.remove(key as string | string[]);
 	}
 
 	/**
 	 * Clear Local Storage.
 	 */
-	static async clear(): Promise<void> {
-		await browser.storage.local.clear();
-		return browser.storage.local.set({ lastModified: Date.now() });
+	static clear() {
+		return browser.storage.local.clear();
 	}
 
 	static specialKeys: string[] = Object.values(SaveSpecialKeys);
