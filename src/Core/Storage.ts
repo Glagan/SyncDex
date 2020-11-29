@@ -74,7 +74,9 @@ export class LocalStorage {
 		const isNumber = typeof key == 'number';
 		if (isNumber) key = key.toString();
 		await browser.storage.local.set({ [key]: data });
-		if (SaveSync.state) await Runtime.sendMessage({ action: MessageAction.saveSync });
+		if (SaveSync.state && LocalStorage.isSyncableKey(key as string)) {
+			await Runtime.sendMessage({ action: MessageAction.saveSync });
+		}
 	}
 
 	/**
@@ -84,7 +86,9 @@ export class LocalStorage {
 		const isNumber = typeof key == 'number';
 		if (isNumber) key = key.toString();
 		await browser.storage.local.remove(key as string | string[]);
-		if (SaveSync.state) await Runtime.sendMessage({ action: MessageAction.saveSync });
+		if (SaveSync.state && (typeof key !== 'string' || LocalStorage.isSyncableKey(key))) {
+			await Runtime.sendMessage({ action: MessageAction.saveSync });
+		}
 	}
 
 	/**
@@ -95,6 +99,16 @@ export class LocalStorage {
 	}
 
 	static specialKeys: string[] = Object.values(SaveSpecialKeys);
+
+	static isSyncableKey = (key: string): boolean => {
+		return (
+			key != 'saveSync' &&
+			key != 'googleDriveState' &&
+			key != 'dropboxState' &&
+			key != 'saveSyncInProgress' &&
+			key != 'importInProgress'
+		);
+	};
 
 	static isSpecialKey = (key: string): key is keyof typeof SaveSpecialKeys => {
 		return LocalStorage.specialKeys.includes(key);

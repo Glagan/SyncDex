@@ -5,6 +5,7 @@ import { Dropbox } from '../../SaveSync/Dropbox';
 import { Runtime } from '../../Core/Runtime';
 import { GoogleDrive } from '../../SaveSync/GoogleDrive';
 import { SaveSyncServices } from '../../Core/SaveSyncServices';
+import { OptionsManager } from '../OptionsManager';
 
 interface Query {
 	[key: string]: string;
@@ -44,26 +45,37 @@ export class SaveSyncManager {
 		this.importButton = DOM.create('button', {
 			class: 'primary',
 			childs: [DOM.icon('cloud-download-alt'), DOM.space(), DOM.text('Import')],
-			disabled: true,
 			events: {
 				click: async (event) => {
 					event.preventDefault();
 					if (this.importButton.classList.contains('loading')) return;
 					if (!this.syncService) return;
-					// TODO
+					this.toggleButtons(true);
+					OptionsManager.instance.toggleImportProgressState(true);
+					if ((await this.syncService.import()) == SaveSyncResult.DOWNLOADED) {
+						SimpleNotification.success({ text: 'Save successfully manually imported. ' });
+					}
+					this.toggleButtons(false);
+					OptionsManager.instance.toggleImportProgressState(false);
+					OptionsManager.instance.reload();
 				},
 			},
 		});
 		this.exportButton = DOM.create('button', {
 			class: 'primary',
 			childs: [DOM.icon('cloud-upload-alt'), DOM.space(), DOM.text('Export')],
-			disabled: true,
 			events: {
 				click: async (event) => {
 					event.preventDefault();
 					if (this.exportButton.classList.contains('loading')) return;
 					if (!this.syncService) return;
-					// TODO
+					this.toggleButtons(true);
+					OptionsManager.instance.toggleImportProgressState(true);
+					if ((await this.syncService.export()) == SaveSyncResult.UPLOADED) {
+						SimpleNotification.success({ text: 'Save successfully manually exported. ' });
+					}
+					this.toggleButtons(false);
+					OptionsManager.instance.toggleImportProgressState(false);
 				},
 			},
 		});
@@ -176,7 +188,7 @@ export class SaveSyncManager {
 						childs: [
 							(<typeof SaveSync>this.syncService.constructor).icon(),
 							DOM.space(),
-							DOM.text(this.syncService.constructor.name),
+							DOM.text((<typeof SaveSync>this.syncService.constructor).realName),
 						],
 					}),
 					DOM.text('.'),

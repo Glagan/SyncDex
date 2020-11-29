@@ -77,6 +77,8 @@ export class OptionsManager {
 					await LocalStorage.clear();
 					Options.reset();
 					await SaveOptions();
+					this.saveSync.toggleButtons(false);
+					this.saveSync.toggleImportProgressState(false);
 					this.reload();
 					clickCount = 0;
 					deleteSave.classList.remove('loading');

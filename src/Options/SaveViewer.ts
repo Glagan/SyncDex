@@ -78,13 +78,15 @@ export class SaveViewer {
 		});
 		this.deleteSelected = document.getElementById('delete-selected') as HTMLElement;
 		this.deleteSelected.addEventListener('click', async (event) => {
+			const ids: string[] = [];
 			for (const row of this.displayedRows) {
 				if (row.selected) {
-					await LocalStorage.remove(row.title.key.id!);
+					ids.push(`${row.title.key.id}`);
 					this.realTitles.remove(row.title.key.id!);
 					this.titles.remove(row.title.key.id!);
 				}
 			}
+			await LocalStorage.remove(ids);
 			this.updateDisplayedPage();
 		});
 
