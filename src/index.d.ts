@@ -58,6 +58,7 @@ declare const enum MessageAction {
 	saveSync = 'saveSync',
 	saveSyncStart = 'saveSyncStart',
 	saveSyncComplete = 'saveSyncComplete',
+	saveSyncLogout = 'saveSyncLogout',
 }
 
 interface RequestMessage {
@@ -72,7 +73,7 @@ interface RequestMessage {
 	headers?: HeadersInit;
 	redirect?: RequestRedirect;
 	credentials?: RequestCredentials;
-	fileRequest?: 'localSave';
+	fileRequest?: 'localSave' | 'namedLocalSave';
 }
 
 interface FetchJSONMessage extends RequestMessage {
@@ -87,14 +88,31 @@ interface ImportMessage {
 	action: MessageAction.silentImport | MessageAction.importStart | MessageAction.importComplete;
 }
 
+declare const enum SaveSyncLoginResult {
+	SUCCESS,
+	STATE_ERROR,
+	API_ERROR,
+	ERROR,
+}
+
+declare const enum SaveSyncResult {
+	UPLOADED,
+	DOWNLOADED,
+	SYNCED,
+	ERROR,
+}
+
 type SaveSyncMessage =
 	| {
 			action: MessageAction.saveSync;
 			delay?: number;
-			state?: SaveSyncState;
 	  }
 	| {
-			action: MessageAction.saveSyncStart | MessageAction.saveSyncComplete;
+			action: MessageAction.saveSyncStart | MessageAction.saveSyncLogout;
+	  }
+	| {
+			action: MessageAction.saveSyncComplete;
+			status?: SaveSyncResult;
 	  };
 
 type Message = RequestMessage | OpenOptionsMessage | ImportMessage | SaveSyncMessage;
@@ -181,6 +199,7 @@ interface SaveSyncState {
 	token: string;
 	expires: number;
 	refresh: string;
+	id?: string;
 }
 
 interface HistoryObject {
@@ -199,6 +218,7 @@ interface ExportedSave {
 	importInProgress?: boolean;
 	logs?: LogLine[];
 	history?: HistoryObject;
+	googleDriveState?: string;
 	dropboxState?: PKCEWaitingState;
 	saveSync?: SaveSyncState;
 	saveSyncInProgress?: boolean;

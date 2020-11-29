@@ -13,6 +13,7 @@ interface MangaDexAPIResponse {
 	data: {
 		userId: number;
 		mangaId: number;
+		mangaTitle: string;
 		followType: Status;
 		volume: string;
 		chapter: string;
@@ -116,6 +117,7 @@ export class MangaDexImport extends SpecialService {
 				if (!isNaN(volume) && volume > 0) titleProgress.volume = volume;
 				if (titleProgress.chapter > 0) localTitle.progress = titleProgress;
 				if (mdTitle.rating != null) localTitle.score = mdTitle.rating * 10; // 0-10 to 0-100
+				if (mdTitle.mangaTitle != null) localTitle.name = mdTitle.mangaTitle;
 				titles.add(new LocalTitle(mdTitle.mangaId, localTitle));
 			}
 			message.classList.remove('loading');
@@ -123,7 +125,7 @@ export class MangaDexImport extends SpecialService {
 
 			// Mochi
 			if (this.options.mochi.active) {
-				await this.mochi(titles, moduleInterface, { names: true });
+				await this.mochi(titles, moduleInterface);
 				if (moduleInterface.doStop) return moduleInterface.complete();
 			}
 

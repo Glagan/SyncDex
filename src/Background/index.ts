@@ -4,7 +4,7 @@ import { log } from '../Core/Log';
 import { ModuleStatus } from '../Core/Module';
 import { DefaultOptions, Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
-import { SaveSync, SyncResult } from '../Core/SaveSync';
+import { SaveSync } from '../Core/SaveSync';
 import { SaveSyncServices } from '../Core/SaveSyncServices';
 import { Services } from '../Core/Services';
 import { LocalStorage } from '../Core/Storage';
@@ -20,6 +20,16 @@ function setIcon(title: string = '', bgColor: string = '', text: string = '') {
 }
 
 Runtime.messageSender = (message: Message) => handleMessage(message);
+
+async function getCleanSave() {
+	const save = await LocalStorage.getAll();
+	delete save.dropboxState;
+	delete save.googleDriveState;
+	delete save.saveSync;
+	delete save.saveSyncInProgress;
+	delete save.importInProgress;
+	return save;
+}
 
 function findDomain(url: string): string {
 	// Simple domain search - not the best but simple
@@ -65,13 +75,33 @@ function handleMessage(message: Message, sender?: BrowserRuntime.MessageSender) 
 			msg.headers = msg.headers !== undefined ? (msg.headers as Record<string, string>) : {};
 			let body: File | FormData | string | undefined;
 			if (msg.fileRequest !== undefined) {
-				msg.headers['Content-Type'] = 'application/octet-stream';
-				const save = await LocalStorage.getAll();
-				delete save.dropboxState;
-				delete save.saveSync;
-				delete save.saveSyncInProgress;
-				delete save.importInProgress;
-				body = new File([JSON.stringify(save)], 'application/json');
+				const save = await getCleanSave();
+				if (msg.fileRequest == 'namedLocalSave') {
+					if (msg.headers['Content-Type']) delete msg.headers['Content-Type'];
+					body = new FormData();
+					body.append(
+						'Metadata',
+						new File(
+							[
+								JSON.stringify({
+									name: 'Save.json',
+									mimeType: 'application/json',
+									parents: ['appDataFolder'],
+									modifiedTime: new Date().toISOString(),
+								}),
+							],
+							'Metadata.json',
+							{ type: 'application/json; charset=UTF-8' }
+						)
+					);
+					body.append('Media', new File([JSON.stringify(save)], 'Save.json', { type: 'application/json' }));
+				} else {
+					if (msg.headers['Content-Type'] === undefined) {
+						msg.headers['Content-Type'] = 'application/octet-stream';
+					}
+					body = new File([JSON.stringify(save)], 'application/json');
+					//msg.headers['Content-Length'] = `${body.size}`;
+				}
 			} else if (msg.form !== undefined) {
 				if (!(msg.form instanceof FormData)) {
 					body = new FormData();
@@ -143,27 +173,28 @@ function handleMessage(message: Message, sender?: BrowserRuntime.MessageSender) 
 	} else if (message.action == MessageAction.silentImport) {
 		return silentImport(true);
 	} else if (message.action == MessageAction.saveSync) {
-		if (message.state) {
-			return new Promise(async (resolve) => {
-				const alarm = await browser.alarms.get(SaveSyncAlarmName);
-				const delay = message.delay !== undefined ? message.delay : 1;
-				if (delay == 0) {
-					if (alarm) browser.alarms.clear(SaveSyncAlarmName);
-					await syncSave();
-				} else if (!alarm) {
-					const scheduled = new Date(Date.now() + delay * 60 * 1000);
-					setIcon(
-						`Save will Sync in less than ${delay}minute${
-							delay > 1 ? 's' : ''
-						} (${scheduled.toLocaleString()})`,
-						'#45A1FF',
-						`${delay}m`
-					);
-					browser.alarms.create(SaveSyncAlarmName, { delayInMinutes: delay });
-				}
-				resolve(true);
-			});
-		}
+		return new Promise(async (resolve) => {
+			const alarm = await browser.alarms.get(SaveSyncAlarmName);
+			const delay = message.delay !== undefined ? message.delay : 1;
+			if (delay === 0) {
+				if (alarm) browser.alarms.clear(SaveSyncAlarmName);
+				await syncSave();
+			} else if (!alarm) {
+				const scheduled = new Date(Date.now() + delay * 60 * 1000);
+				setIcon(
+					`Save will Sync in less than ${delay}minute${delay > 1 ? 's' : ''} (${scheduled.toLocaleString()})`,
+					'#45A1FF',
+					`${delay}m`
+				);
+				browser.alarms.create(SaveSyncAlarmName, { delayInMinutes: delay });
+			}
+			resolve(true);
+		});
+	} else if (message.action == MessageAction.saveSyncLogout) {
+		setIcon();
+		browser.alarms.get(SaveSyncAlarmName).then((alarm) => {
+			if (alarm) browser.alarms.clear(SaveSyncAlarmName);
+		});
 	}
 	return Promise.resolve(true);
 }
@@ -272,13 +303,16 @@ async function syncSave() {
 				const saveSyncService: SaveSync = new saveSyncServiceClass();
 				SaveSync.state = syncState;
 				const result = await saveSyncService.sync();
-				if (result == SyncResult.ERROR) {
-					await log(`Couldn't sync your local save with ${syncState.service}`);
-				} else if (result != SyncResult.SYNCED) await log(`Synced your save with ${syncState.service}`);
+				if (result == SaveSyncResult.ERROR) {
+					await log(`Couldn't sync your local save with ${syncState.service}`, false);
+				} else if (result != SaveSyncResult.SYNCED) {
+					await log(`Synced your save with ${syncState.service}`, false);
+				}
 				await LocalStorage.remove('saveSyncInProgress');
-				await browser.runtime.sendMessage({ action: MessageAction.saveSyncComplete });
+				await browser.runtime.sendMessage({ action: MessageAction.saveSyncComplete, status: result });
 				setIcon('SyncDex', '#058b00', '\u2713');
 			} else {
+				SaveSync.state = undefined;
 				delete (syncState as any).token;
 				delete (syncState as any).refresh;
 				await log(`Invalid Save Sync Service [${syncState}]`);
@@ -326,7 +360,7 @@ async function silentImport(manual: boolean = false) {
 }
 async function onStartup() {
 	browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
-	await LocalStorage.remove(['dropboxState', 'saveSyncInProgress']);
+	await LocalStorage.remove(['dropboxState', 'googleDriveState', 'saveSyncInProgress']);
 
 	await syncSave();
 	await silentImport();

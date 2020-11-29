@@ -1,4 +1,6 @@
 import { browser } from 'webextension-polyfill-ts';
+import { Runtime } from './Runtime';
+import { SaveSync } from './SaveSync';
 import { StorageTitle } from './Title';
 
 console.log('SyncDex :: Storage');
@@ -12,6 +14,7 @@ export enum SaveSpecialKeys {
 	ImportProgress = 'importInProgress',
 	SaveSyncProgress = 'saveSyncInProgress',
 	DropboxState = 'dropboxState',
+	GoogleDriveState = 'googleDriveState',
 	SaveSync = 'saveSync',
 }
 
@@ -55,10 +58,11 @@ export class LocalStorage {
 	 * Allow to save multiple entries at the same time.
 	 */
 	static raw<T extends string>(method: 'get', data: T[]): Promise<{ [key in T]: any }>;
-	static raw(method: 'set', data: Object): Promise<void>;
-	static raw(method: 'get' | 'set', data: Object): Promise<{ [key: string]: any } | void> {
+	static async raw(method: 'set', data: Object): Promise<void>;
+	static async raw(method: 'get' | 'set', data: Object): Promise<{ [key: string]: any } | void> {
 		if (method == 'set') {
-			return browser.storage.local.set(data);
+			await browser.storage.local.set(data);
+			if (SaveSync.state) return Runtime.sendMessage({ action: MessageAction.saveSync });
 		}
 		return browser.storage.local[method](data);
 	}
@@ -66,19 +70,21 @@ export class LocalStorage {
 	/**
 	 * Save the { key: data } object in Local Storage.
 	 */
-	static set(key: number | string, data: any) {
+	static async set(key: number | string, data: any) {
 		const isNumber = typeof key == 'number';
 		if (isNumber) key = key.toString();
-		return browser.storage.local.set({ [key]: data });
+		await browser.storage.local.set({ [key]: data });
+		if (SaveSync.state) await Runtime.sendMessage({ action: MessageAction.saveSync });
 	}
 
 	/**
 	 * Remove `key` from Local Storage.
 	 */
-	static remove(key: number | string | string[]) {
+	static async remove(key: number | string | string[]) {
 		const isNumber = typeof key == 'number';
 		if (isNumber) key = key.toString();
-		return browser.storage.local.remove(key as string | string[]);
+		await browser.storage.local.remove(key as string | string[]);
+		if (SaveSync.state) await Runtime.sendMessage({ action: MessageAction.saveSync });
 	}
 
 	/**

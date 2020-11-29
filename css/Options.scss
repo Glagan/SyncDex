@@ -316,13 +316,26 @@ table {
 #save-sync-container {
 	.manage {
 		margin-top: 4px;
+	}
 
-		button {
-			margin-right: 8px;
+	& button {
+		margin-right: 8px;
 
-			&:last-child {
-				margin-right: 0;
-			}
+		&:last-child {
+			margin-right: 0;
+		}
+	}
+
+	.dropbox {
+		background-color: #007ee5;
+		color: white;
+	}
+
+	.googleDrive {
+		background-color: #ffd04b;
+
+		& > i {
+			color: #1fa463;
 		}
 	}
 }

@@ -3,13 +3,15 @@ import { LocalStorage } from '../../Core/Storage';
 import { SaveSync } from '../../Core/SaveSync';
 import { Dropbox } from '../../SaveSync/Dropbox';
 import { Runtime } from '../../Core/Runtime';
+import { GoogleDrive } from '../../SaveSync/GoogleDrive';
+import { SaveSyncServices } from '../../Core/SaveSyncServices';
 
 interface Query {
 	[key: string]: string;
 }
 
 export class SaveSyncManager {
-	saveSyncServices: { [key: string]: SaveSync } = { Dropbox: new Dropbox() };
+	saveSyncServices: { [key: string]: SaveSync } = {};
 	container: HTMLElement;
 	cards: HTMLButtonElement[] = [];
 	syncService?: SaveSync;
@@ -20,6 +22,12 @@ export class SaveSyncManager {
 
 	constructor() {
 		this.container = document.getElementById('save-sync-container')!;
+
+		// Create SaveSync class instances
+		for (const key of Object.keys(SaveSyncServices)) {
+			/// @ts-ignore saveSyncServiceClass is *NOT* abstract
+			this.saveSyncServices[key] = new SaveSyncServices[key]();
+		}
 
 		// Logged out nodes
 		for (const key of Object.keys(this.saveSyncServices)) {
@@ -74,6 +82,7 @@ export class SaveSyncManager {
 						delete SaveSync.state;
 					} else SimpleNotification.error({ text: `Could not delete your save, check logs.` });
 					this.toggleButtons(false);
+					await Runtime.sendMessage({ action: MessageAction.saveSyncLogout });
 					this.refresh();
 				},
 			},
@@ -89,6 +98,7 @@ export class SaveSyncManager {
 					await this.syncService.logout();
 					await this.syncService.clean();
 					delete SaveSync.state;
+					await Runtime.sendMessage({ action: MessageAction.saveSyncLogout });
 					this.refresh();
 				},
 			},
@@ -115,17 +125,39 @@ export class SaveSyncManager {
 		if (query.for && query.for !== '') {
 			// Remove token from the URL and remove it from History
 			window.history.replaceState(null, '', `${window.location.origin}${window.location.pathname}`);
-			this.container.appendChild(DOM.create('p', { textContent: 'Loading...' }));
-			for (const key of Object.keys(this.saveSyncServices)) {
-				const syncService = this.saveSyncServices[key];
-				if (syncService.constructor.name == query.for) {
-					if (await syncService.login(query)) {
-						Runtime.sendMessage({ action: MessageAction.saveSync, state: SaveSync.state, delay: 0 });
+			if (query.error !== undefined) {
+				SimpleNotification.error(
+					{
+						title: 'API Error',
+						text: `The API to retrieve a code returned an error: ${query.error}\n${query.error_description}`,
+					},
+					{ sticky: true }
+				);
+			} else {
+				this.container.appendChild(DOM.create('p', { textContent: 'Loading...' }));
+				for (const key of Object.keys(this.saveSyncServices)) {
+					const syncService = this.saveSyncServices[key];
+					if (syncService.constructor.name == query.for) {
+						const result = await syncService.login(query);
+						if (result == SaveSyncLoginResult.SUCCESS) {
+							SimpleNotification.success({
+								text: `Connected to **${(<typeof SaveSync>syncService.constructor).realName}**.`,
+							});
+							await Runtime.sendMessage({ action: MessageAction.saveSync, delay: 0 });
+						} else if (result == SaveSyncLoginResult.STATE_ERROR) {
+							SimpleNotification.error(
+								{
+									title: 'State Error',
+									text: `A code to generate a token was received but there is no saved state or it is invalid, try again.`,
+								},
+								{ sticky: true }
+							);
+						}
+						break;
 					}
-					break;
 				}
+				this.refresh();
 			}
-			this.refresh();
 		} else this.refresh();
 	};
 

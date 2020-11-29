@@ -32,6 +32,7 @@ let mainManifest = {
 		'alarms',
 		'http://127.0.0.1/*', // !
 		'http://localhost/mochi-v2/api/*', // !
+		'https://syncdex.nikurasu.org/*',
 		'https://myanimelist.net/about.php',
 		'https://myanimelist.net/manga/*',
 		'https://myanimelist.net/ownlist/manga/*',
@@ -45,6 +46,8 @@ let mainManifest = {
 		'https://*.anime-planet.com/api/*',
 		'https://api.dropboxapi.com/*',
 		'https://content.dropboxapi.com/*',
+		'https://www.googleapis.com/upload/drive/v3/files*',
+		'https://www.googleapis.com/drive/v3/files*',
 	],
 	icons: {
 		48: 'icons/48.png',
@@ -55,11 +58,6 @@ let mainManifest = {
 		page: 'background/index.html',
 	},
 	content_scripts: [
-		{
-			matches: ['https://anilist.co/api/v2/oauth/pin?syncdex*'],
-			js: ['dist/SimpleNotification.js', 'external/SyncDex_Anilist.js'],
-			css: ['dist/SimpleNotification.min.css'],
-		},
 		{
 			matches: [
 				'https://*.mangadex.org/follows*',
@@ -80,6 +78,16 @@ let mainManifest = {
 			],
 			js: ['dist/SimpleNotification.js', 'SyncDex.js'],
 			css: ['dist/SimpleNotification.min.css', 'css/SyncDex.css'],
+		},
+		{
+			matches: ['https://anilist.co/api/v2/oauth/pin?syncdex*'],
+			js: ['dist/SimpleNotification.js', 'external/SyncDex_Anilist.js'],
+			css: ['dist/SimpleNotification.min.css'],
+		},
+		{
+			matches: ['https://syncdex.nikurasu.org/?for=*'],
+			js: ['dist/SimpleNotification.js', 'external/SyncDex_Token.js'],
+			css: ['dist/SimpleNotification.min.css'],
 		},
 	],
 	browser_action: {
@@ -141,6 +149,7 @@ const Files = [
 	'build/scripts/SyncDex_options.js:options',
 	'src/Options/index.html:options',
 	'build/scripts/SyncDex_Anilist.js:external',
+	'build/scripts/SyncDex_Token.js:external',
 	'build/scripts/SyncDex.js',
 ];
 const DevFiles = [
@@ -190,6 +199,11 @@ let bundleList = [
 		name: 'Anilist',
 		input: 'src/External/Anilist.ts',
 		output: 'build/scripts/SyncDex_Anilist.js',
+	},
+	{
+		name: 'Token',
+		input: 'src/External/SyncDex.ts',
+		output: 'build/scripts/SyncDex_Token.js',
 	},
 ];
 const bundles = bundleList.map((bundle) => {

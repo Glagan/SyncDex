@@ -55,6 +55,11 @@ import { ThemeHandler } from './ThemeHandler';
 		} else if (message.action == MessageAction.importComplete || syncEnded) {
 			OptionsManager.instance.toggleImportProgressState(false);
 		}
-		if (syncEnded) OptionsManager.instance.reload();
+		if (message.action == MessageAction.saveSyncComplete) {
+			if (message.status == SaveSyncResult.ERROR) {
+				SimpleNotification.error({ text: `Save Sync failed, check logs.` });
+			}
+			OptionsManager.instance.reload();
+		}
 	});
 })();
