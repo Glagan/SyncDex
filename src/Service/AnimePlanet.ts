@@ -200,7 +200,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 	static service = AnimePlanet;
 	static readonly requireIdQuery: boolean = true;
 
-	token: string = '';
+	token?: string;
 	current: {
 		progress: Progress;
 		status: Status;
@@ -232,7 +232,6 @@ export class AnimePlanetTitle extends ExternalTitle {
 				chapter: parseInt(chapterSelect?.dataset?.eps ?? '') || undefined,
 				volume: parseInt(volumeSelect?.dataset?.eps ?? '') || undefined,
 			};
-			console.debug(values.max);
 		}
 		// No need to be logged in to have API ID
 		const mediaEntryForm = body.querySelector<HTMLFormElement>('form[id^=manga]')!;
@@ -267,7 +266,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 	}
 
 	persist = async (): Promise<RequestStatus> => {
-		if (this.status === Status.NONE) return RequestStatus.BAD_REQUEST;
+		if (this.status === Status.NONE || !this.token) return RequestStatus.BAD_REQUEST;
 		const id = this.key.id;
 		// Only update Status if it's different
 		if (this.current.status !== this.status) {
@@ -306,7 +305,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 	};
 
 	delete = async (): Promise<RequestStatus> => {
-		if (this.token == '') return RequestStatus.BAD_REQUEST;
+		if (this.status === Status.NONE || this.token == '') return RequestStatus.BAD_REQUEST;
 		const id = this.key.id;
 		const response = await Runtime.jsonRequest({
 			url: `${AnimePlanetAPI}/status/manga/${id}/0/${this.token}`,

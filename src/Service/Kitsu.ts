@@ -313,7 +313,7 @@ export class Kitsu extends Service {
 
 export class KitsuTitle extends ExternalTitle {
 	static service = Kitsu;
-	libraryEntryId?: number = 0;
+	libraryEntryId?: number;
 
 	// abstract static get(id): RequestStatus
 	static async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
@@ -351,8 +351,10 @@ export class KitsuTitle extends ExternalTitle {
 
 	persist = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
-		const method = this.libraryEntryId && this.libraryEntryId > 0 ? 'PATCH' : 'POST';
-		const url = `${KitsuAPI}${this.libraryEntryId && this.libraryEntryId > 0 ? `/${this.libraryEntryId}` : ''}`;
+		if (this.status === Status.NONE) return RequestStatus.MISSING_TOKEN;
+		const libraryEntryId = this.libraryEntryId ? this.libraryEntryId : 0;
+		const method = libraryEntryId > 0 ? 'PATCH' : 'POST';
+		const url = `${KitsuAPI}${libraryEntryId > 0 ? `/${this.libraryEntryId}` : ''}`;
 		// Convert 0-100 score to the 0-20 range -- round to the nearest
 		const kuScore = this.score !== undefined && this.score > 0 ? Math.round(this.score / 5) : undefined;
 		const response = await Runtime.jsonRequest<KitsuPersistResponse>({
@@ -399,7 +401,9 @@ export class KitsuTitle extends ExternalTitle {
 
 	delete = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
-		if (!this.libraryEntryId || this.libraryEntryId <= 0) return RequestStatus.BAD_REQUEST;
+		if (this.status === Status.NONE || !this.libraryEntryId || this.libraryEntryId <= 0) {
+			return RequestStatus.BAD_REQUEST;
+		}
 		let response = await Runtime.request({
 			url: `https://kitsu.io/api/edge/library-entries/${this.libraryEntryId}`,
 			method: 'DELETE',

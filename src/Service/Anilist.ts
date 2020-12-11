@@ -368,7 +368,7 @@ export class AnilistTitle extends ExternalTitle {
 			}
 		}`.replace(/\n\t+/g, ' ');
 
-	mediaEntryId: number = 0;
+	mediaEntryId?: number;
 
 	static dateFromAnilist = (date: AnilistDate): Date | undefined => {
 		if (date.day !== null && date.month !== null && date.year !== null) {
@@ -423,7 +423,7 @@ export class AnilistTitle extends ExternalTitle {
 
 	persist = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
-		if (this.status === Status.NONE) return RequestStatus.FAIL;
+		if (this.status === Status.NONE) return RequestStatus.BAD_REQUEST;
 		const response = await Runtime.jsonRequest<AnilistPersistResponse>({
 			url: AnilistAPI,
 			method: 'POST',
@@ -452,7 +452,7 @@ export class AnilistTitle extends ExternalTitle {
 
 	delete = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
-		if (this.mediaEntryId <= 0) return RequestStatus.BAD_REQUEST;
+		if (this.status === Status.NONE || !this.mediaEntryId) return RequestStatus.BAD_REQUEST;
 		const response = await Runtime.jsonRequest({
 			url: AnilistAPI,
 			method: 'POST',

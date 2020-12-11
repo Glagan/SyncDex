@@ -928,6 +928,12 @@ SimpleNotification.tags = {
 		open: '**',
 		close: '**',
 	},
+	floatRight: {
+		type: 'span',
+		class: 'gn-float-right',
+		open: '>*>',
+		close: '<',
+	},
 	italic: {
 		type: 'span',
 		class: 'gn-italic',
@@ -946,11 +952,5 @@ SimpleNotification.tags = {
 		textContent: false,
 		open: '\n',
 		close: '',
-	},
-	floatRight: {
-		type: 'span',
-		class: 'gn-float-right',
-		open: '>*>',
-		close: '<',
 	},
 };

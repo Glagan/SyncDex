@@ -288,7 +288,7 @@ export class MyAnimeList extends Service {
 export class MyAnimeListTitle extends ExternalTitle {
 	static service = MyAnimeList;
 
-	csrf: string = '';
+	csrf?: string;
 	additional: {
 		tags: string;
 		priority: string;
@@ -331,22 +331,20 @@ export class MyAnimeListTitle extends ExternalTitle {
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		const values: Partial<MyAnimeListTitle> = { key: key };
-		const csrf = /'csrf_token'\scontent='(.{40})'/.exec(response.body);
-		if (csrf !== null) {
-			values.csrf = csrf[1];
-		}
+		// name='csrf_token' content='0011223344556677788900112233445566777889'>
+		const csrf = /'csrf_token'\s*content='(.{40})'/.exec(response.body);
+		if (csrf !== null) values.csrf = csrf[1];
 		const parser = new DOMParser();
 		const body = parser.parseFromString(response.body, 'text/html');
 		const title = body.querySelector<HTMLElement>(`a[href^='/manga/']`);
 		if (!response.redirected) {
-			values.loggedIn = true;
+			values.loggedIn = csrf !== null;
 			if (title !== null) {
 				values.inList = true;
 				values.max = {
 					chapter: parseInt(body.getElementById('totalChap')!.textContent!) || undefined,
 					volume: parseInt(body.getElementById('totalVol')!.textContent!) || undefined,
 				};
-				console.debug(values.max);
 				values.name = title.textContent!;
 				values.status = MyAnimeListTitle.toStatus(
 					parseInt(GetField<HTMLSelectElement>(body, 'add_manga_status').value)
@@ -382,6 +380,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 	}
 
 	persist = async (): Promise<RequestStatus> => {
+		if (this.status === Status.NONE || !this.csrf) return RequestStatus.BAD_REQUEST;
 		let url = `https://myanimelist.net/ownlist/manga/${this.key.id}/edit?hideLayout`;
 		if (!this.inList) url = `https://myanimelist.net/ownlist/manga/add?selected_manga_id=${this.key.id}&hideLayout`;
 		const body: Record<string, string | number> = {
@@ -451,6 +450,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 	};
 
 	delete = async (): Promise<RequestStatus> => {
+		if (this.status === Status.NONE || !this.csrf) return RequestStatus.BAD_REQUEST;
 		const response = await Runtime.request<RawResponse>({
 			url: `https://myanimelist.net/ownlist/manga/${this.key.id}delete`,
 			method: 'POST',

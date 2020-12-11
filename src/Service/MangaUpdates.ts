@@ -153,11 +153,11 @@ export class MangaUpdatesTitle extends ExternalTitle {
 	static service = MangaUpdates;
 	static readonly missingFields: MissableField[] = ['start', 'end'];
 
-	current: {
+	current?: {
 		progress: Progress;
 		status: Status;
 		score?: number;
-	} = { progress: { chapter: 0 }, status: Status.NONE };
+	};
 
 	static listToStatus = (list?: string): MangaUpdatesStatus => {
 		if (!list) return MangaUpdatesStatus.READING;
@@ -265,6 +265,8 @@ export class MangaUpdatesTitle extends ExternalTitle {
 	};
 
 	persist = async (): Promise<RequestStatus> => {
+		if (this.status === Status.NONE) return RequestStatus.BAD_REQUEST;
+		if (!this.current) this.current = { progress: { chapter: 0 }, status: Status.NONE };
 		// Avoid updating status since reassigning the same status delete from the list
 		if (this.status !== this.current.status) {
 			// Status requirements
@@ -325,6 +327,7 @@ export class MangaUpdatesTitle extends ExternalTitle {
 	};
 
 	delete = async (): Promise<RequestStatus> => {
+		if (this.status === Status.NONE) return RequestStatus.BAD_REQUEST;
 		const response = await Runtime.request<RawResponse>({
 			url: `https://www.mangaupdates.com/ajax/list_update.php?s=${this.key.id}&r=1`,
 			credentials: 'include',

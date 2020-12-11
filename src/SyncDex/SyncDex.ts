@@ -251,7 +251,8 @@ export class SyncDex {
 			chapter: oneshot ? 0 : parseFloat(details._data.chapter),
 			oneshot: oneshot,
 		};
-		if (details._data.volume !== '') currentProgress.volume = parseInt(details._data.volume);
+		const volume = parseInt(details._data.volume);
+		if (!isNaN(volume) && volume) currentProgress.volume = volume;
 		// Exit early if there is no progress
 		if (isNaN(currentProgress.chapter)) {
 			if (Options.errorNotifications) {
