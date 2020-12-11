@@ -406,7 +406,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 			body['add_manga[start_date][year]'] = '';
 		}
 		if (this.end) {
-			body['add_manga[finish_date][month]'] = this.end.getMonth();
+			body['add_manga[finish_date][month]'] = this.end.getMonth() + 1;
 			body['add_manga[finish_date][day]'] = this.end.getDate();
 			body['add_manga[finish_date][year]'] = this.end.getFullYear();
 		} else {

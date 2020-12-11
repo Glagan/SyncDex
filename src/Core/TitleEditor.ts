@@ -417,12 +417,12 @@ export class TitleEditor {
 			} else title.score = 0;
 			// Start - YYYY-MM-DD, convert month from 1-12 to 0-11
 			if (form.start.value != '') {
-				const parts: number[] = (form.start.value as string).split('-').map((p) => parseInt(p));
+				const parts = (form.start.value as string).split('-').map((p) => parseInt(p));
 				title.start = new Date(parts[0], parts[1] - 1, parts[2]);
 			} else delete title.start;
 			// End - YYYY-MM-DD
 			if (form.end.value != '') {
-				const parts: number[] = (form.end.value as string).split('-').map((p) => parseInt(p));
+				const parts = (form.end.value as string).split('-').map((p) => parseInt(p));
 				title.end = new Date(parts[0], parts[1] - 1, parts[2]);
 			} else delete title.end;
 			// Services
@@ -450,7 +450,7 @@ export class TitleEditor {
 			} else syncModule.displayReportNotifications({}, { completed: completed }, previousState, onCancel);
 			modal.enableExit();
 			modal.remove();
-			if (postSubmit) postSubmit();
+			if (postSubmit) await postSubmit();
 		});
 		submitButton.addEventListener('click', (event) => {
 			event.preventDefault();

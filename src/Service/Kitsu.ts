@@ -369,8 +369,8 @@ export class KitsuTitle extends ExternalTitle {
 						progress: Math.floor(this.progress.chapter),
 						volumesOwned: this.progress.volume,
 						ratingTwenty: kuScore,
-						startedAt: this.start !== undefined ? this.start.toISOString() : undefined,
-						finishedAt: this.end !== undefined ? this.end.toISOString() : undefined,
+						startedAt: this.start !== undefined ? this.start.toISOString() : null,
+						finishedAt: this.end !== undefined ? this.end.toISOString() : null,
 					},
 					relationships: {
 						manga: {

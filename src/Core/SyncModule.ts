@@ -159,10 +159,7 @@ export class SyncModule {
 				this.title.mdStatus = this.title.status;
 				const response = await this.syncMangaDex(this.title.mdStatus == Status.NONE ? 'unfollow' : 'status');
 				if (response.ok) {
-					// MangaDex returns an empty response if not logged in
-					if (response.body.length == 0) {
-						this.loggedIn = false;
-					} else strings.success.push('**MangaDex Status** updated.');
+					strings.success.push('**MangaDex Status** updated.');
 				} else strings.error.push(`Error while updating **MangaDex Status**.\ncode: ${response.code}`);
 			}
 			if (

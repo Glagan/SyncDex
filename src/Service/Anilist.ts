@@ -414,11 +414,11 @@ export class AnilistTitle extends ExternalTitle {
 		return new AnilistTitle(values);
 	}
 
-	static dateToAnilist = (date?: Date): AnilistDate | undefined => {
+	static dateToAnilist = (date?: Date): AnilistDate | null => {
 		if (date !== undefined) {
 			return { day: date.getDate(), month: date.getMonth() + 1, year: date.getFullYear() };
 		}
-		return undefined;
+		return null;
 	};
 
 	persist = async (): Promise<RequestStatus> => {
