@@ -298,15 +298,20 @@ async function syncSave() {
 			const saveSyncServiceClass = SaveSyncServices[syncState.service];
 			if (saveSyncServiceClass !== undefined) {
 				await LocalStorage.set('saveSyncInProgress', true);
-				await browser.runtime.sendMessage({ action: MessageAction.saveSyncStart });
-				/// @ts-ignore saveSyncServiceClass is *NOT* abstract
-				const saveSyncService: SaveSync = new saveSyncServiceClass();
-				SaveSync.state = syncState;
-				const result = await saveSyncService.sync();
-				if (result == SaveSyncResult.ERROR) {
-					await log(`Couldn't sync your local save with ${syncState.service}`, false);
-				} else if (result != SaveSyncResult.SYNCED) {
-					await log(`Synced your save with ${syncState.service}`, false);
+				let result = SaveSyncResult.ERROR;
+				try {
+					await browser.runtime.sendMessage({ action: MessageAction.saveSyncStart });
+					/// @ts-ignore saveSyncServiceClass is *NOT* abstract
+					const saveSyncService: SaveSync = new saveSyncServiceClass();
+					SaveSync.state = syncState;
+					result = await saveSyncService.sync();
+					if (result == SaveSyncResult.ERROR) {
+						await log(`Couldn't sync your local save with ${syncState.service}`, false);
+					} else if (result != SaveSyncResult.SYNCED) {
+						await log(`Synced your save with ${syncState.service}`, false);
+					}
+				} catch (error) {
+					log(error);
 				}
 				await LocalStorage.remove('saveSyncInProgress');
 				await browser.runtime.sendMessage({ action: MessageAction.saveSyncComplete, status: result });
