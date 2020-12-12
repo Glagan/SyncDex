@@ -1,4 +1,5 @@
 import { DOM } from '../Core/DOM';
+import { log } from '../Core/Log';
 import { ExportModule, ImportModule } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { Runtime } from '../Core/Runtime';
@@ -380,7 +381,10 @@ export class MyAnimeListTitle extends ExternalTitle {
 	}
 
 	persist = async (): Promise<RequestStatus> => {
-		if (this.status === Status.NONE || !this.csrf) return RequestStatus.BAD_REQUEST;
+		if (this.status === Status.NONE || !this.csrf) {
+			await log(`Could not sync MyAnimeList: status ${this.status} csrf ${!!this.csrf}`);
+			return RequestStatus.BAD_REQUEST;
+		}
 		let url = `https://myanimelist.net/ownlist/manga/${this.key.id}/edit?hideLayout`;
 		if (!this.inList) url = `https://myanimelist.net/ownlist/manga/add?selected_manga_id=${this.key.id}&hideLayout`;
 		const body: Record<string, string | number> = {
@@ -450,7 +454,10 @@ export class MyAnimeListTitle extends ExternalTitle {
 	};
 
 	delete = async (): Promise<RequestStatus> => {
-		if (this.status === Status.NONE || !this.csrf) return RequestStatus.BAD_REQUEST;
+		if (this.status === Status.NONE || !this.csrf) {
+			await log(`Could not sync MyAnimeList: status ${this.status} csrf ${!!this.csrf}`);
+			return RequestStatus.BAD_REQUEST;
+		}
 		const response = await Runtime.request<RawResponse>({
 			url: `https://myanimelist.net/ownlist/manga/${this.key.id}delete`,
 			method: 'POST',

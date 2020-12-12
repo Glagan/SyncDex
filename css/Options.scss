@@ -92,6 +92,16 @@ nav {
 			font-weight: $light;
 			display: table;
 
+			a {
+				&[href] {
+					color: white;
+				}
+
+				&:hover {
+					text-decoration: underline;
+				}
+			}
+
 			&:first-child {
 				font-size: $display-20;
 				font-weight: $extralight;

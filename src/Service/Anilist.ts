@@ -6,6 +6,7 @@ import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { AppendableElement, DOM } from '../Core/DOM';
 import { LoginMethod } from '../Core/Service';
+import { log } from '../Core/Log';
 
 export const enum AnilistStatus {
 	NONE = 'NONE',
@@ -423,7 +424,10 @@ export class AnilistTitle extends ExternalTitle {
 
 	persist = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
-		if (this.status === Status.NONE) return RequestStatus.BAD_REQUEST;
+		if (this.status === Status.NONE) {
+			await log(`Could not sync Anilist: status ${this.status}`);
+			return RequestStatus.BAD_REQUEST;
+		}
 		const response = await Runtime.jsonRequest<AnilistPersistResponse>({
 			url: AnilistAPI,
 			method: 'POST',
@@ -452,7 +456,10 @@ export class AnilistTitle extends ExternalTitle {
 
 	delete = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
-		if (this.status === Status.NONE || !this.mediaEntryId) return RequestStatus.BAD_REQUEST;
+		if (this.status === Status.NONE || !this.mediaEntryId) {
+			await log(`Could not sync Anilist: status ${this.status}`);
+			return RequestStatus.BAD_REQUEST;
+		}
 		const response = await Runtime.jsonRequest({
 			url: AnilistAPI,
 			method: 'POST',

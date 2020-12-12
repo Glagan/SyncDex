@@ -729,7 +729,7 @@ export class TitleOverview extends Overview {
 			}
 		} else {
 			const newScore = Math.round(title.mdScore! / 10);
-			this.mdScore.ratings[newScore - 1].classList.add('disabled');
+			this.mdScore.ratings[Math.max(0, newScore - 1)].classList.add('disabled');
 			this.mdScore.button.childNodes[1].textContent = ` ${newScore} `;
 		}
 	};

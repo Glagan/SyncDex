@@ -1,4 +1,5 @@
 import { DOM } from '../Core/DOM';
+import { log } from '../Core/Log';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { Runtime } from '../Core/Runtime';
@@ -265,7 +266,10 @@ export class MangaUpdatesTitle extends ExternalTitle {
 	};
 
 	persist = async (): Promise<RequestStatus> => {
-		if (this.status === Status.NONE) return RequestStatus.BAD_REQUEST;
+		if (this.status === Status.NONE) {
+			await log(`Could not sync MangaUpdates: status ${this.status}`);
+			return RequestStatus.BAD_REQUEST;
+		}
 		if (!this.current) this.current = { progress: { chapter: 0 }, status: Status.NONE };
 		// Avoid updating status since reassigning the same status delete from the list
 		if (this.status !== this.current.status) {
@@ -327,7 +331,10 @@ export class MangaUpdatesTitle extends ExternalTitle {
 	};
 
 	delete = async (): Promise<RequestStatus> => {
-		if (this.status === Status.NONE) return RequestStatus.BAD_REQUEST;
+		if (this.status === Status.NONE) {
+			await log(`Could not sync MangaUpdates: status ${this.status}`);
+			return RequestStatus.BAD_REQUEST;
+		}
 		const response = await Runtime.request<RawResponse>({
 			url: `https://www.mangaupdates.com/ajax/list_update.php?s=${this.key.id}&r=1`,
 			credentials: 'include',

@@ -8,10 +8,66 @@ import { Changelog } from './Changelog';
 import { OptionsManager } from './OptionsManager';
 import { ThemeHandler } from './ThemeHandler';
 
+// Generate a simple Modal with all options and logs
+const quickDebug = document.getElementById('quickOptionsDebug');
+if (quickDebug) {
+	quickDebug.addEventListener('click', async (event) => {
+		event.preventDefault();
+		const save = await LocalStorage.getAll();
+		delete save.history;
+		// Remove all titles
+		for (const key in save) {
+			const id = parseInt(key);
+			if (!isNaN(id)) delete save[key];
+		}
+		// Remove tokens
+		if (save.options?.tokens) {
+			for (const key in save.options.tokens) {
+				(save.options.tokens as any)[key] = 'set';
+			}
+		}
+		// Remove Save Sync tokens
+		if (save.saveSync) {
+			save.saveSync.token = save.saveSync.token ? 'set' : 'missing';
+			save.saveSync.refresh = save.saveSync.refresh ? 'set' : 'missing';
+		}
+		const modal = new Modal('small');
+		modal.header.textContent = 'Options and Logs';
+		const input = DOM.create('textarea', {
+			value: JSON.stringify(save),
+			css: { width: '100%' },
+			rows: 8,
+			events: {
+				click: (event) => {
+					event.preventDefault();
+					input.select();
+				},
+			},
+		});
+		DOM.append(modal.body, DOM.message('default', 'Copy/paste the content of the input below.'), input);
+		modal.footer.classList.add('right');
+		modal.footer.appendChild(
+			DOM.create('button', {
+				class: 'default',
+				textContent: 'Close',
+				events: {
+					click: (event) => {
+						event.preventDefault();
+						modal.remove();
+					},
+				},
+			})
+		);
+		modal.show();
+	});
+}
+
 (async () => {
 	ThemeHandler.bind();
 	SimpleNotification._options.position = 'bottom-left';
 	await Options.load();
+	const versionSpan = document.getElementById('version');
+	if (versionSpan) versionSpan.textContent = `v${Options.version}`;
 	SaveSync.state = await LocalStorage.get('saveSync');
 	OptionsManager.instance = new OptionsManager();
 	// Check current import progress

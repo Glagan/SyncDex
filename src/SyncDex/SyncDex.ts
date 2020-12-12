@@ -175,7 +175,10 @@ export class SyncDex {
 		if (state.title == undefined) {
 			state.title = await LocalTitle.get(id);
 			if (Options.biggerHistory) await History.load();
-			if (details.manga._data.title != '') state.title.name = details.manga._data.title;
+			// Avoid always updating the name from the API since it can contain HTML entities
+			if (details.manga._data.title != '' && !state.title.name) {
+				state.title.name = details.manga._data.title;
+			}
 			firstRequest = true;
 			// Find Services
 			let fallback = false;

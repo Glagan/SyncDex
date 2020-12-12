@@ -1,4 +1,5 @@
 import { DOM } from '../Core/DOM';
+import { log } from '../Core/Log';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ModuleInterface } from '../Core/ModuleInterface';
 import { Options } from '../Core/Options';
@@ -350,8 +351,14 @@ export class KitsuTitle extends ExternalTitle {
 	}
 
 	persist = async (): Promise<RequestStatus> => {
-		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
-		if (this.status === Status.NONE) return RequestStatus.MISSING_TOKEN;
+		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) {
+			await log(`Could not sync Kitsu: token ${!!Options.tokens.kitsuToken} user ${Options.tokens.kitsuUser}`);
+			return RequestStatus.MISSING_TOKEN;
+		}
+		if (this.status === Status.NONE) {
+			await log(`Could not sync Kitsu: status ${this.status}`);
+			return RequestStatus.BAD_REQUEST;
+		}
 		const libraryEntryId = this.libraryEntryId ? this.libraryEntryId : 0;
 		const method = libraryEntryId > 0 ? 'PATCH' : 'POST';
 		const url = `${KitsuAPI}${libraryEntryId > 0 ? `/${this.libraryEntryId}` : ''}`;
@@ -402,6 +409,7 @@ export class KitsuTitle extends ExternalTitle {
 	delete = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		if (this.status === Status.NONE || !this.libraryEntryId || this.libraryEntryId <= 0) {
+			await log(`Could not sync Kitsu: status ${this.status} libraryEntryId ${this.libraryEntryId}`);
 			return RequestStatus.BAD_REQUEST;
 		}
 		let response = await Runtime.request({

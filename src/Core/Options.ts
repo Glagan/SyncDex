@@ -37,7 +37,7 @@ export const DefaultOptions: AvailableOptions = {
 	// Global
 	useMochi: true,
 	acceptLowScore: false,
-	updateMD: false,
+	updateMD: true,
 	checkOnStartup: false,
 	checkOnStartupMainOnly: true,
 	checkOnStartupCooldown: 30,

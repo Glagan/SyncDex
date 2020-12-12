@@ -4,6 +4,7 @@ import { ModuleInterface } from '../Core/ModuleInterface';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ExternalTitle, LocalTitle, MissableField } from '../Core/Title';
 import { DOM } from '../Core/DOM';
+import { log } from '../Core/Log';
 
 export const enum AnimePlanetStatus {
 	NONE = 0,
@@ -266,7 +267,10 @@ export class AnimePlanetTitle extends ExternalTitle {
 	}
 
 	persist = async (): Promise<RequestStatus> => {
-		if (this.status === Status.NONE || !this.token) return RequestStatus.BAD_REQUEST;
+		if (this.status === Status.NONE || !this.token) {
+			await log(`Could not sync AnimePlanet: status ${this.status} token ${!!this.token}`);
+			return RequestStatus.BAD_REQUEST;
+		}
 		const id = this.key.id;
 		// Only update Status if it's different
 		if (this.current.status !== this.status) {
@@ -305,7 +309,10 @@ export class AnimePlanetTitle extends ExternalTitle {
 	};
 
 	delete = async (): Promise<RequestStatus> => {
-		if (this.status === Status.NONE || this.token == '') return RequestStatus.BAD_REQUEST;
+		if (this.status === Status.NONE || !this.token) {
+			await log(`Could not sync AnimePlanet: status ${this.status} token ${!!this.token}`);
+			return RequestStatus.BAD_REQUEST;
+		}
 		const id = this.key.id;
 		const response = await Runtime.jsonRequest({
 			url: `${AnimePlanetAPI}/status/manga/${id}/0/${this.token}`,
