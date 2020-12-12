@@ -1,0 +1,18 @@
+{
+	"updates": [
+		{
+			"version": "0.1",
+			"description": [
+				"First version !",
+				"Support for MyMangaDex saves.",
+				"All MyMangaDex functionalities (and more).",
+				"Support for 5 Services: MyAnimeList, Anilist, Kitsu, MangaUpdates and AnimePlanet.",
+				"Import/Export to all Services.",
+				"Import/Export to MangaDex.",
+				"Save Sync to Dropbox or Google Drive.",
+				"Auto-sync on Startup.",
+				"Save Viewer/Editor."
+			]
+		}
+	]
+}

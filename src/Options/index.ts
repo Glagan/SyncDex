@@ -67,7 +67,7 @@ if (quickDebug) {
 	SimpleNotification._options.position = 'bottom-left';
 	await Options.load();
 	const versionSpan = document.getElementById('version');
-	if (versionSpan) versionSpan.textContent = `v${Options.version}`;
+	if (versionSpan) versionSpan.textContent = `${Options.version}`;
 	SaveSync.state = await LocalStorage.get('saveSync');
 	OptionsManager.instance = new OptionsManager();
 	// Check current import progress

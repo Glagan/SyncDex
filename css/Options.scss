@@ -92,14 +92,8 @@ nav {
 			font-weight: $light;
 			display: table;
 
-			a {
-				&[href] {
-					color: white;
-				}
-
-				&:hover {
-					text-decoration: underline;
-				}
+			a.github {
+				display: inline-block;
 			}
 
 			&:first-child {
