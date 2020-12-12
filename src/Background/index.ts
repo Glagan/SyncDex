@@ -306,9 +306,9 @@ async function syncSave() {
 					SaveSync.state = syncState;
 					result = await saveSyncService.sync();
 					if (result == SaveSyncResult.ERROR) {
-						await log(`Couldn't sync your local save with ${syncState.service}`, false);
+						await log(`Couldn't sync your local save with ${syncState.service}`);
 					} else if (result != SaveSyncResult.SYNCED) {
-						await log(`Synced your save with ${syncState.service}`, false);
+						await log(`Synced your save with ${syncState.service}`);
 					}
 				} catch (error) {
 					log(error);

@@ -1,3 +1,4 @@
+import { log } from './Log';
 import { Runtime } from './Runtime';
 import { ServiceName, StaticKey } from './Service';
 import { LocalTitle, SaveServiceList } from './Title';
@@ -54,7 +55,14 @@ export class Mochi {
 		const response = await Runtime.jsonRequest<MochiResult>({
 			url: Mochi.connections(id, source, extra),
 		});
-		if (!response.ok) return undefined;
+		if (!response.ok) {
+			await log(
+				`Mochi error: code ${response.code} body ${
+					typeof response.body === 'string' ? response.body : JSON.stringify(response.body)
+				}`
+			);
+			return undefined;
+		}
 		if (response.body.data === undefined) return undefined;
 		return response.body.data[+id];
 	}
@@ -72,7 +80,14 @@ export class Mochi {
 		const response = await Runtime.jsonRequest<MochiResult>({
 			url: Mochi.connections(ids, source, extra),
 		});
-		if (!response.ok) return undefined;
+		if (!response.ok) {
+			await log(
+				`Mochi error: code ${response.code} body ${
+					typeof response.body === 'string' ? response.body : JSON.stringify(response.body)
+				}`
+			);
+			return undefined;
+		}
 		return response.body.data;
 	}
 
