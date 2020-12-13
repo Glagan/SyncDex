@@ -219,9 +219,11 @@ export class SaveSyncManager {
 		const buttons = [this.importButton, this.exportButton, this.deleteLogoutButton, this.logoutButton];
 		for (const button of buttons) {
 			if (value) {
+				button.disabled = true;
 				button.classList.add('loading');
 				button.title = 'Import in Progress, wait for it to finish.';
 			} else {
+				button.disabled = false;
 				button.classList.remove('loading');
 				button.title = '';
 			}

@@ -23,6 +23,7 @@ Runtime.messageSender = (message: Message) => handleMessage(message);
 
 async function getCleanSave() {
 	const save = await LocalStorage.getAll();
+	if (save.options?.tokens) save.options.tokens = {};
 	delete save.dropboxState;
 	delete save.googleDriveState;
 	delete save.saveSync;

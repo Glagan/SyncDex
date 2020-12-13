@@ -106,7 +106,8 @@ export class LocalStorage {
 			key != 'googleDriveState' &&
 			key != 'dropboxState' &&
 			key != 'saveSyncInProgress' &&
-			key != 'importInProgress'
+			key != 'importInProgress' &&
+			key != 'logs'
 		);
 	};
 
