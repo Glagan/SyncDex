@@ -217,7 +217,7 @@ const bundles = bundleList.map((bundle) => {
 				commonjs(),
 			];
 			if (options.mode == 'prod' || options.mode == 'production') {
-				list.push(terser());
+				list.push(terser({ mangle: { keep_classnames: true } }));
 			}
 			return list;
 		})(),

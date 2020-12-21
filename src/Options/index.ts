@@ -8,6 +8,8 @@ import { Changelog } from './Changelog';
 import { OptionsManager } from './OptionsManager';
 import { ThemeHandler } from './ThemeHandler';
 
+console.log('SyncDex :: Options Manager');
+
 // Generate a simple Modal with all options and logs
 const quickDebug = document.getElementById('quickOptionsDebug');
 if (quickDebug) {

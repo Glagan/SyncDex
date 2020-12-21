@@ -147,6 +147,7 @@ export class SaveSyncManager {
 				);
 			} else {
 				this.container.appendChild(DOM.create('p', { textContent: 'Loading...' }));
+				let found = false;
 				for (const key of Object.keys(this.saveSyncServices)) {
 					const syncService = this.saveSyncServices[key];
 					if (syncService.constructor.name == query.for) {
@@ -165,8 +166,15 @@ export class SaveSyncManager {
 								{ sticky: true }
 							);
 						}
+						found = true;
 						break;
 					}
+				}
+				if (!found) {
+					SimpleNotification.error(
+						{ text: `No **Save Sync** manager found for **${query.for}**, open an issue.` },
+						{ sticky: true }
+					);
 				}
 				this.refresh();
 			}

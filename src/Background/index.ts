@@ -14,9 +14,11 @@ console.log('SyncDex :: Background');
 const SaveSyncAlarmName = 'saveSyncBackup';
 
 function setIcon(title: string = '', bgColor: string = '', text: string = '') {
-	browser.browserAction.setTitle({ title: title });
-	browser.browserAction.setBadgeBackgroundColor({ color: bgColor == '' ? null : bgColor });
-	browser.browserAction.setBadgeText({ text: text });
+	if (!isChrome) {
+		browser.browserAction.setTitle({ title: title });
+		browser.browserAction.setBadgeBackgroundColor({ color: bgColor == '' ? null : bgColor });
+		browser.browserAction.setBadgeText({ text: text });
+	}
 }
 
 Runtime.messageSender = (message: Message) => handleMessage(message);
@@ -257,7 +259,7 @@ interface Update {
 const updates: Update[] = [];
 
 browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstalledDetailsType) => {
-	browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
+	if (!isChrome) browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
 
 	// Apply each needed Updates
 	let updated = false;
@@ -364,7 +366,7 @@ async function silentImport(manual: boolean = false) {
 	} else if (Options.checkOnStartup) await log('Did not Import: No services enabled');
 }
 async function onStartup() {
-	browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
+	if (!isChrome) browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
 	await LocalStorage.remove(['dropboxState', 'googleDriveState', 'saveSyncInProgress']);
 
 	await syncSave();

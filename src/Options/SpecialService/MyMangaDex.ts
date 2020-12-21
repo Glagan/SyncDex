@@ -217,6 +217,10 @@ export class MyMangaDex extends SpecialService {
 		const inputId = `file_${StaticKey.MyMangaDex}`;
 		DOM.append(
 			moduleInterface.form,
+			DOM.message(
+				'warning',
+				'It is not recommended to import from MyMangaDex, since your score, start/end dates, status, and the name of each Title will be missing.\nA better option is to make sure your MyAnimeList is up to date and import from MyAnimeList.'
+			),
 			DOM.create('h2', {
 				childs: [DOM.create('label', { class: '', textContent: 'Save File', htmlFor: inputId })],
 			}),
