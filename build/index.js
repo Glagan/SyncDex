@@ -30,8 +30,7 @@ let mainManifest = {
 	permissions: [
 		'storage',
 		'alarms',
-		'http://127.0.0.1/*', // !
-		'http://localhost/mochi-v2/api/*', // !
+		'https://mochi.nikurasu.org/*',
 		'https://syncdex.nikurasu.org/*',
 		'https://myanimelist.net/about.php',
 		'https://myanimelist.net/manga/*',

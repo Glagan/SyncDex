@@ -23,7 +23,15 @@ interface MochiResult {
  * Wrapper for the Mochi API.
  */
 export class Mochi {
-	static server: string = 'http://localhost/mochi-v2/api';
+	static server: string = 'https://mochi.nikurasu.org';
+
+	static makeExtras(extra?: MochiExtra): string {
+		return extra
+			? `&${Object.keys(extra)
+					.map((key) => `${key}=${extra[key as keyof MochiExtra]}`)
+					.join('&')}`
+			: '';
+	}
 
 	/**
 	 * Create link to the `Connections` endpoint.
@@ -33,13 +41,9 @@ export class Mochi {
 		source: ServiceName = ServiceName.MangaDex,
 		extra?: MochiExtra
 	): string {
-		const extras = extra
-			? `&${Object.keys(extra)
-					.map((key) => `${key}=${extra[key as keyof MochiExtra]}`)
-					.join('&')}`
-			: '';
-		if (Array.isArray(id)) return `${Mochi.server}/connections.php?id=${id.join(',')}&source=${source}${extras}`;
-		return `${Mochi.server}/connections.php?id=${id}&source=${source}${extras}`;
+		// const extras = Mochi.makeExtras(extra);
+		if (Array.isArray(id)) return `${Mochi.server}/connections/${source}/${id.join(',')}`;
+		return `${Mochi.server}/connections/${source}/${id}`;
 	}
 
 	/**
@@ -54,10 +58,11 @@ export class Mochi {
 	): Promise<MochiService | undefined> {
 		const response = await Runtime.jsonRequest<MochiResult>({
 			url: Mochi.connections(id, source, extra),
+			headers: { Accept: 'application/json' },
 		});
 		if (!response.ok) {
 			await log(
-				`Mochi error: code ${response.code} body ${
+				`Mochi error: code ${response.code ?? 0} body ${
 					typeof response.body === 'string' ? response.body : JSON.stringify(response.body)
 				}`
 			);

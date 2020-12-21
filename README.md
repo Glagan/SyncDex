@@ -19,6 +19,7 @@ You can update your list on this services:
 * [ ] Better design
 * [ ] Original icon
 * [ ] Check Brave and Edge
+* [ ] Add permissions only when needed
 
 ## Support
 

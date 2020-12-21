@@ -34,7 +34,7 @@ async function getCleanSave() {
 
 function findDomain(url: string): string {
 	// Simple domain search - not the best but simple
-	const res = /https?:\/\/(?:.+\.)?([-\w\d]+\.(?:\w{2,5})|localhost)(?:$|\/)/i.exec(url);
+	const res = /https?:\/\/(?:.+\.)?[-\w\d]+\.(?:\w{2,5})(?:$|\/)/i.exec(url);
 	if (res !== null) {
 		return res[1];
 	}
@@ -45,7 +45,7 @@ let nextRequest: Record<string, number> = {};
 const cooldowns: Record<string, number> = {
 	'mangadex.org': 1250,
 	'myanimelist.net': 1500,
-	localhost: 250,
+	'mochi.nikurasu.org': 500,
 };
 // TODO: Handle containers in checkOnStartup since there is no sender
 // Probably gate which containers to update based on the future containers update with state for each containers
@@ -244,7 +244,6 @@ if (!isChrome) {
 				'https://*.mangaupdates.com/ajax/*',
 				'https://*.anime-planet.com/manga/*',
 				'https://*.anime-planet.com/api/*',
-				'localhost/*', // !
 			],
 		},
 		['blocking', 'requestHeaders']
