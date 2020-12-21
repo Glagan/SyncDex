@@ -81,6 +81,14 @@ if (quickDebug) {
 		modal.header.textContent = 'Thank you for installing SyncDex !';
 		DOM.append(
 			modal.body,
+			DOM.message(
+				'warning',
+				`SyncDex is still in beta, don't be afraid to open issues on Github, or contact me (see CONTACT.md on Github) ! You can find the link on the left.`
+			),
+			DOM.message(
+				'info',
+				`To start using SyncDex you need to enable Services, and you can initialize your local list by Importing it from the service you activated !`
+			),
 			DOM.create('p', {
 				class: 'paragraph',
 				textContent: `It is recommended that you look at the options to enable (or disable) functionalities you don't want, or to customize colors.`,

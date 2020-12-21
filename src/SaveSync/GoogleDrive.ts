@@ -99,7 +99,7 @@ export class GoogleDrive extends SaveSync {
 				headers: { Authorization: `Bearer ${SaveSync.state!.token}` },
 			});
 			if (response.ok) {
-				await log(`Downloaded Google Drive Save`, false);
+				await log(`Downloaded Google Drive Save`);
 				return response.body;
 			}
 		}
@@ -116,7 +116,7 @@ export class GoogleDrive extends SaveSync {
 					fileRequest: 'localSave',
 				});
 				if (response.ok && !response.body.error) {
-					await log(`Uploaded Local Save to Google Drive`, false);
+					await log(`Uploaded Local Save to Google Drive`);
 					if (SaveSync.state!.id !== response.body.id) {
 						SaveSync.state!.id = response.body.id;
 						await LocalStorage.set('saveSync', SaveSync.state);
@@ -131,7 +131,7 @@ export class GoogleDrive extends SaveSync {
 					fileRequest: 'namedLocalSave',
 				});
 				if (response.ok && !response.body.error) {
-					await log(`Uploaded Local Save to Google Drive`, false);
+					await log(`Uploaded Local Save to Google Drive`);
 					SaveSync.state!.id = response.body.id;
 					await LocalStorage.set('saveSync', SaveSync.state);
 					return new Date(response.body.modifiedTime).getTime();

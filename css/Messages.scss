@@ -50,6 +50,14 @@
 				content: '\f1ce';
 			}
 		}
+		&.info {
+			color: $white-100;
+			background: $blue-50;
+
+			& > div.icon::before {
+				content: '\f05a';
+			}
+		}
 		&.warning {
 			color: $yellow-90;
 			background: $yellow-50;

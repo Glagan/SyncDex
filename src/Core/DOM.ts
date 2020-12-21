@@ -10,7 +10,7 @@ interface DOMProperties {
 	dataset: DOMStringMap;
 }
 
-export type MessageType = 'default' | 'loading' | 'warning' | 'success' | 'error';
+export type MessageType = 'default' | 'loading' | 'info' | 'warning' | 'success' | 'error';
 
 export class DOM {
 	static create<K extends keyof HTMLElementTagNameMap>(
