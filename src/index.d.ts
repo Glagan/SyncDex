@@ -187,6 +187,7 @@ interface AvailableOptions {
 		openedChapter: string; // Title Page
 	};
 	version: number;
+	subVersion: number;
 }
 
 interface PKCEWaitingState {

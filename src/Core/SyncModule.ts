@@ -309,12 +309,25 @@ export class SyncModule {
 					)
 				);
 			} else {
-				errorRows.push(
-					this.reportNotificationRow(
-						key,
-						report[key] === RequestStatus.SERVER_ERROR ? 'Server Error' : 'Bad Request'
-					)
-				);
+				let error = '';
+				switch (report[key]) {
+					case RequestStatus.SERVER_ERROR:
+						error = 'Server Error';
+						break;
+					case RequestStatus.BAD_REQUEST:
+						error = 'Bad Request';
+						break;
+					case RequestStatus.MISSING_TOKEN:
+						error = 'Logged Out';
+						break;
+					case RequestStatus.NOT_FOUND:
+						error = 'Not Found';
+						break;
+					case RequestStatus.FAIL:
+					default:
+						error = 'Error';
+				}
+				errorRows.push(this.reportNotificationRow(key, error));
 			}
 		}
 		// Display Notifications

@@ -59,6 +59,7 @@ export const DefaultOptions: AvailableOptions = {
 		openedChapter: 'rgba(28, 135, 141, 0.4)', // Title Page
 	},
 	version: parseFloat(browser.runtime.getManifest().version),
+	subVersion: parseInt(/\.(\d+)$/.exec(browser.runtime.getManifest().version)![1]),
 };
 
 interface ManageOptions {

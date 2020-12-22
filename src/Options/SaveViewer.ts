@@ -346,7 +346,9 @@ export class SaveViewer {
 		}
 		this.titles.collection = Array.from(this.realTitles.collection);
 		if (this.sortBy.search !== '') {
-			this.titles.collection = this.titles.collection.filter((t) => t.name && t.name.match(this.sortBy.search));
+			this.titles.collection = this.titles.collection.filter(
+				(t) => t.name && t.name.toLocaleLowerCase().match(this.sortBy.search.toLocaleLowerCase())
+			);
 		}
 		if (this.sortBy.status !== undefined) {
 			this.titles.collection = this.titles.collection.filter((t) => t.status === this.sortBy.status);
