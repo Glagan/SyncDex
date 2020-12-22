@@ -1,14 +1,29 @@
 # SyncDex
 
-**SyncDex** update your manga list on many services when you read on [MangaDex](https://mangadex.org/).
+**SyncDex** update your manga list on many Services when you read on [MangaDex](https://mangadex.org/).
 
-You can update your list on this services:
+You can update your list on these Services:
 
 ![MyAnimeList Icon](icons/mal.png) MyAnimeList ([https://myanimelist.net/panel.php]())  
 ![Anilist Icon](icons/al.png) Anilist ([https://anilist.co/home]())  
 ![Kitsu Icon](icons/ku.png) Kitsu ([https://kitsu.io/]())  
 ![MangaUpdates Icon](icons/mu.png) MangaUpdates ([https://www.mangaupdates.com/index.html]())  
 ![Anime Planet Icon](icons/ap.png) Anime Planet ([https://www.anime-planet.com/]())
+
+You can also easily **Import**/**Export** your list between all of these services.
+
+## Features
+
+* Sync what you read on **MangaDex**, you can sync to multiple services at once
+* Import/Export to/from any of these services
+* Automatically update MangaDex status when you start reading/complete a Manga
+* Highlight your Follow list to quickly see what you already read, or what is the next chapter
+* Hide chapter you already read or chapter that are not your next
+* Display the cover of the Manga you hover on in lists
+* Group manga in Manga lists by language if you have multiple enabled
+* Enhance the History page of **MangaDex** and automatically check if there is new chapters
+
+Most of these options can be customized or disabled if you do not want them !
 
 ## TODO
 

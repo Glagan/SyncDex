@@ -372,7 +372,7 @@ async function buildExtension(browser, nonVerbose) {
 	}
 	fs.mkdirSync(folderName);
 	// Merge manifests
-	let manifest = Object.assign({}, mainManifest);
+	let manifest = JSON.parse(JSON.stringify(mainManifest));
 	for (const key in browser_manifests[browser]) {
 		const value = browser_manifests[browser][key];
 		if (manifest[key] === undefined) {
