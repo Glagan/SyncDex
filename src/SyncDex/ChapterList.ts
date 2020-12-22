@@ -77,12 +77,6 @@ export class ChapterList {
 						}
 					}
 				}
-				// Update Title
-				title.progress.chapter = row.progress.chapter;
-				if (title.status == Status.NONE) {
-					title.status = Status.READING;
-					title.start = new Date();
-				}
 				await title.persist();
 				syncModule.overview?.syncedLocal(title);
 				const report = await syncModule.syncExternal(true);

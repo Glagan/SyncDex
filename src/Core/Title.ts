@@ -511,16 +511,16 @@ export class LocalTitle extends Title {
 	setProgress = (progress: Progress): boolean => {
 		let completed = false;
 		const created = this.status == Status.NONE || this.status == Status.PLAN_TO_READ;
-		if (
-			progress.oneshot ||
-			(this.max?.chapter && this.max.chapter <= progress.chapter) ||
-			(progress.volume && this.max?.volume && this.max.volume <= progress.volume)
-		) {
+		if (progress.oneshot || (this.max?.chapter && this.max.chapter <= progress.chapter)) {
 			completed = this.status !== Status.COMPLETED || !this.end;
 			this.status = Status.COMPLETED;
 			if (!this.end) this.end = new Date();
 		} else this.status = Status.READING;
-		this.progress = progress;
+		this.progress.chapter = progress.chapter;
+		if (progress.volume && (!this.progress.volume || this.progress.volume < this.progress.volume)) {
+			this.progress.volume = progress.volume;
+		}
+		this.progress.oneshot = progress.oneshot;
 		if (created && !this.start) {
 			this.start = new Date();
 		}
