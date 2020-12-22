@@ -42,11 +42,10 @@ If you have a bug, open an issue, but if you want to send me a message, check [S
 
 ## Build
 
-You need to have **Node.js** and **npm** installed, initialize with ``npm install`` and run ``node build`` to build **SyncDex** in the **build** folder.  
+You need to have **Node.js** and **npm** installed, initialize with ``npm install`` and run ``npm run dev`` to build **SyncDex** in the **build** folder.  
 There will be one subfolder for each platforms (Firefox and Chrome).
 
 You can pass some options:
 
 * ``--web-ext``: Build the ``web-ext`` archives.
-* ``--mode=dev|prod``: Currently only minify code in ``prod`` mode.
 * ``--watch``: Watch all modules and re-compile on update.

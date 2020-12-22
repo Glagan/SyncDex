@@ -3,10 +3,11 @@ import { ModuleInterface } from './ModuleInterface';
 import { Service, ServiceList, StaticKey } from './Service';
 import { FoundTitle, LocalTitle, TitleCollection } from './Title';
 import { Mochi } from './Mochi';
-import { LocalStorage } from './Storage';
+import { LocalStorage, SaveSpecialKeys } from './Storage';
 import { Options } from './Options';
 import { Runtime } from './Runtime';
 import { log } from './Log';
+import { browser } from 'webextension-polyfill-ts';
 
 export const enum ModuleStatus {
 	SUCCESS,
@@ -268,7 +269,7 @@ export abstract class ImportModule extends Module {
 			this.summary.total = this.found.length;
 
 			// Find MangaDex ID for all FoundTitle
-			const titles: TitleCollection = await TitleCollection.get();
+			const titles = new TitleCollection();
 			let current = 0;
 			let progress = DOM.create('p');
 			const notification = this.interface?.message('loading', [progress]);
@@ -313,8 +314,19 @@ export abstract class ImportModule extends Module {
 
 			// Merge
 			if (!this.options.merge.active) {
-				if (this.options.save.active) await LocalStorage.clear();
-				await Options.save();
+				if (this.options.save.active) {
+					// Keep options, logs, saveSync, import and lastSync
+					const keepKeys: (keyof ExportedSave)[] = [
+						SaveSpecialKeys.Options,
+						SaveSpecialKeys.Logs,
+						SaveSpecialKeys.LastSync,
+						SaveSpecialKeys.Import,
+						SaveSpecialKeys.SaveSync,
+					];
+					const keep = await browser.storage.local.get(keepKeys);
+					await LocalStorage.clear();
+					await browser.storage.local.set(keep);
+				}
 			} else if (titles.length > 0) {
 				titles.merge(await TitleCollection.get(titles.ids));
 			}

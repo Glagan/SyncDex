@@ -10,7 +10,6 @@ const json = require('@rollup/plugin-json');
 const { terser } = require('rollup-plugin-terser');
 const nodeResolve = require('rollup-plugin-node-resolve');
 const commonjs = require('@rollup/plugin-commonjs');
-const { resolve } = require('path');
 const options = require('minimist')(process.argv.slice(2), {
 	default: {
 		'web-ext': false,
@@ -24,7 +23,7 @@ options.webExt = options['web-ext'];
 let mainManifest = {
 	manifest_version: 2,
 	name: 'SyncDex',
-	version: '0.1',
+	version: process.env.npm_package_version,
 	author: 'Glagan',
 	description: 'Automatically update your Manga lists when reading on MangaDex.',
 	permissions: [
@@ -216,9 +215,9 @@ const bundles = bundleList.map((bundle) => {
 				nodeResolve({ browser: true }),
 				commonjs(),
 			];
-			if (options.mode == 'prod' || options.mode == 'production') {
-				list.push(terser({ mangle: { keep_classnames: true } }));
-			}
+			// if (options.mode == 'prod' || options.mode == 'production') {
+			// 	list.push(terser({ mangle: { keep_classnames: true } }));
+			// }
 			return list;
 		})(),
 		output: {
