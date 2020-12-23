@@ -10,8 +10,8 @@
 
 You can also easily **Import**/**Export** your list between all of these services.
 
-![Chrome Web Store](https://img.shields.io/chrome-web-store/v/hdlogejanokfcmlbgfdcgnbnpmgdolaa?label=Chrome&logo=google%20chrome&style=for-the-badge)
-![Mozilla Add-on](https://img.shields.io/amo/v/syncdex?label=Firefox&logo=firefox&style=for-the-badge)
+[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/hdlogejanokfcmlbgfdcgnbnpmgdolaa?label=Chrome&logo=google%20chrome&style=for-the-badge)](https://chrome.google.com/webstore/detail/syncdex/hdlogejanokfcmlbgfdcgnbnpmgdolaa)
+[![Mozilla Add-on](https://img.shields.io/amo/v/syncdex?label=Firefox&logo=firefox&style=for-the-badge)](https://addons.mozilla.org/en-US/firefox/addon/syncdex/)
 
 ## Features
 

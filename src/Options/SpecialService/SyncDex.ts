@@ -37,8 +37,9 @@ export class SyncDexImport extends SpecialService {
 				(data.history.page === undefined || typeof data.history.page === 'number') &&
 				Array.isArray(data.history.ids)
 			) {
+				data.history.ids = Array.from(new Set(data.history.ids));
 				history = data.history;
-				moduleInterface.message('default', `Found ${data.history.ids} Titles in the History.`);
+				moduleInterface.message('default', `Found ${data.history.ids.length} Titles in the History.`);
 			} else moduleInterface.message('warning', 'History found but invalid and not Imported !');
 		}
 		message.classList.remove('loading');
@@ -56,8 +57,8 @@ export class SyncDexImport extends SpecialService {
 			}
 			moduleInterface.message(
 				'default',
-				`Imported ${total} Options ${
-					badOptions.length > 0 ? `(Found ${badOptions.length} bad options: ${badOptions.join(', ')})` : ''
+				`Imported ${total} Options${
+					badOptions.length > 0 ? ` (Found ${badOptions.length} bad options: ${badOptions.join(', ')})` : ''
 				}.`
 			);
 		} else moduleInterface.message('warning', 'No Options found !');

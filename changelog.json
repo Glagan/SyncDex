@@ -1,6 +1,10 @@
 {
 	"updates": [
 		{
+			"version": "0.1.3",
+			"description": ["Fix SyncDex mainService option and History while Importing."]
+		},
+		{
 			"version": "0.1.2",
 			"description": ["Fix all services delete function.", "Fix Kitsu export.", "Fix Export messages."]
 		},
