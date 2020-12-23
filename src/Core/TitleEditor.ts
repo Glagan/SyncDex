@@ -363,7 +363,7 @@ export class TitleEditor {
 				class: 'group history',
 				childs: [
 					DOM.create('label', {
-						textContent: 'History',
+						textContent: 'Opened Chapters',
 						title: 'Click to show the Chapter List for the Title.',
 						childs: [DOM.space(), showHistory],
 						events: {

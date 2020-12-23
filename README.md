@@ -2,8 +2,6 @@
 
 **SyncDex** update your manga list on many Services when you read on [MangaDex](https://mangadex.org/).
 
-You can update your list on these Services:
-
 ![MyAnimeList Icon](icons/mal.png) MyAnimeList ([https://myanimelist.net/panel.php]())  
 ![Anilist Icon](icons/al.png) Anilist ([https://anilist.co/home]())  
 ![Kitsu Icon](icons/ku.png) Kitsu ([https://kitsu.io/]())  
@@ -11,6 +9,9 @@ You can update your list on these Services:
 ![Anime Planet Icon](icons/ap.png) Anime Planet ([https://www.anime-planet.com/]())
 
 You can also easily **Import**/**Export** your list between all of these services.
+
+![Chrome Web Store](https://img.shields.io/chrome-web-store/v/hdlogejanokfcmlbgfdcgnbnpmgdolaa?label=Chrome&logo=google%20chrome&style=for-the-badge)
+![Mozilla Add-on](https://img.shields.io/amo/v/syncdex?label=Firefox&logo=firefox&style=for-the-badge)
 
 ## Features
 
@@ -43,9 +44,5 @@ If you have a bug, open an issue, but if you want to send me a message, check [S
 ## Build
 
 You need to have **Node.js** and **npm** installed, initialize with ``npm install`` and run ``npm run dev`` to build **SyncDex** in the **build** folder.  
-There will be one subfolder for each platforms (Firefox and Chrome).
-
-You can pass some options:
-
-* ``--web-ext``: Build the ``web-ext`` archives.
-* ``--watch``: Watch all modules and re-compile on update.
+There will be one subfolder for each platforms (Firefox and Chrome).  
+You can also run ``npm run watch`` to watch and build on update, or ``npm run build`` to create ``web-ext`` archives.
