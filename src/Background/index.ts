@@ -254,6 +254,7 @@ if (!isChrome) {
 
 interface Update {
 	version: number;
+	subVersion: number;
 	fnct: () => void;
 }
 const updates: Update[] = [];
@@ -265,16 +266,23 @@ browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstall
 	let updated = false;
 	if (details.reason === 'update') {
 		await Options.load();
-		if (Options.version !== DefaultOptions.version) {
-			await log(`Updating from version ${Options.version} to ${DefaultOptions.version}`);
+		const version = `${DefaultOptions.version}.${DefaultOptions.subVersion}`;
+		const currentVersion = `${Options.version}.${Options.subVersion}`;
+		if (version != currentVersion) {
+			await log(`Updating from version ${currentVersion} to ${version}`);
 			for (const update of updates) {
-				if (update.version >= Options.version) {
+				if (
+					update.version > Options.version ||
+					(update.version == Options.version && update.subVersion > Options.subVersion)
+				) {
 					update.fnct();
 					Options.version = update.version;
-					await log(`Applied patch version ${update.version}`);
+					Options.subVersion = update.subVersion;
+					await log(`Applied patch version ${update.version}.${update.subVersion}`);
 				}
 			}
 			Options.version = DefaultOptions.version;
+			Options.subVersion = DefaultOptions.subVersion;
 			await Options.save();
 			updated = true;
 		}
