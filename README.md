@@ -26,6 +26,11 @@ You can also easily **Import**/**Export** your list between all of these service
 
 Most of these options can be customized or disabled if you do not want them !
 
+## MyMangaDex
+
+If you come from **MyMangaDex**, it's not recommended to only import your **MyMangaDex** save only, since there was a lot less informations stored, and there will be missing names, score and other informations.  
+You should import your save first, and then import from **MyAnimeList**.
+
 ## TODO
 
 * [ ] Fix bugs

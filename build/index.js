@@ -227,7 +227,7 @@ const bundles = bundleList.map((bundle) => {
 			sourcemap: options.mode == 'dev' ? 'inline' : false,
 		},
 		watch: {
-			buildDelay: 1500,
+			buildDelay: 1000,
 			clearScreen: false,
 			chokidar: false,
 			exclude: ['node_modules/**/*', 'build/**/*', 'dist/**/*'],

@@ -456,7 +456,7 @@ export class AnilistTitle extends ExternalTitle {
 
 	delete = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
-		if (this.status === Status.NONE || !this.mediaEntryId) {
+		if (!this.inList || !this.mediaEntryId) {
 			await log(`Could not sync Anilist: status ${this.status}`);
 			return RequestStatus.BAD_REQUEST;
 		}
@@ -466,9 +466,7 @@ export class AnilistTitle extends ExternalTitle {
 			headers: AnilistHeaders(),
 			body: JSON.stringify({
 				query: AnilistTitle.deleteQuery,
-				variables: {
-					id: this.mediaEntryId,
-				},
+				variables: { id: this.mediaEntryId },
 			}),
 		});
 		if (!response.ok) return Runtime.responseStatus(response);

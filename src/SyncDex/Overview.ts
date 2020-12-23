@@ -130,7 +130,7 @@ class ServiceOverview {
 			);
 			return;
 		}
-		if (title.inList || this instanceof Title) {
+		if (title.inList) {
 			const missingFields = (<typeof Title>title.constructor).missingFields;
 			const rows: HTMLElement[] = [
 				DOM.create('div', { class: `status st${title.status}`, textContent: StatusMap[title.status] }),

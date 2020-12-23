@@ -13,7 +13,7 @@ export class Changelog {
 					class: 'paragraph',
 					childs: [
 						DOM.text('SyncDex has been updated to version '),
-						DOM.create('b', { textContent: `${Options.version}` }),
+						DOM.create('b', { textContent: `${Options.version}.${Options.subVersion}` }),
 						DOM.text('.'),
 					],
 				})
@@ -28,9 +28,10 @@ export class Changelog {
 
 	static generate(): HTMLElement {
 		const main = DOM.create('ul', { class: 'changelog' });
+		const currentVersion = `${Options.version}.${Options.subVersion}`;
 		for (const update of changelog.updates) {
 			const version = DOM.create('li', { class: 'section', textContent: update.version });
-			if (parseFloat(update.version) == Options.version) {
+			if (update.version == currentVersion) {
 				DOM.append(
 					version,
 					DOM.space(),

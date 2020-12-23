@@ -331,15 +331,15 @@ export class MyAnimeListTitle extends ExternalTitle {
 			redirect: 'follow',
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
-		const values: Partial<MyAnimeListTitle> = { key: key };
+		const values: Partial<MyAnimeListTitle> = { key: key, inList: false };
 		// name='csrf_token' content='0011223344556677788900112233445566777889'>
 		const csrf = /'csrf_token'\s*content='(.{40})'/.exec(response.body);
 		if (csrf !== null) values.csrf = csrf[1];
 		const parser = new DOMParser();
 		const body = parser.parseFromString(response.body, 'text/html');
-		const title = body.querySelector<HTMLElement>(`a[href^='/manga/']`);
 		if (!response.redirected) {
 			values.loggedIn = csrf !== null;
+			const title = body.querySelector<HTMLElement>(`a[href^='/manga/']`);
 			if (title !== null) {
 				values.inList = true;
 				values.max = {
@@ -454,12 +454,12 @@ export class MyAnimeListTitle extends ExternalTitle {
 	};
 
 	delete = async (): Promise<RequestStatus> => {
-		if (this.status === Status.NONE || !this.csrf) {
+		if (!this.inList || !this.csrf) {
 			await log(`Could not sync MyAnimeList: status ${this.status} csrf ${!!this.csrf}`);
 			return RequestStatus.BAD_REQUEST;
 		}
 		const response = await Runtime.request<RawResponse>({
-			url: `https://myanimelist.net/ownlist/manga/${this.key.id}delete`,
+			url: `https://myanimelist.net/ownlist/manga/${this.key.id}/delete`,
 			method: 'POST',
 			credentials: 'include',
 			headers: {
@@ -468,7 +468,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 			body: `csrf_token=${this.csrf}`,
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
-		this.inList = true;
+		this.inList = false;
 		return RequestStatus.DELETED;
 	};
 

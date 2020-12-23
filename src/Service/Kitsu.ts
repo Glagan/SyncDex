@@ -408,7 +408,7 @@ export class KitsuTitle extends ExternalTitle {
 
 	delete = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
-		if (this.status === Status.NONE || !this.libraryEntryId || this.libraryEntryId <= 0) {
+		if (!this.libraryEntryId || this.libraryEntryId <= 0) {
 			await log(`Could not sync Kitsu: status ${this.status} libraryEntryId ${this.libraryEntryId}`);
 			return RequestStatus.BAD_REQUEST;
 		}

@@ -309,7 +309,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 	};
 
 	delete = async (): Promise<RequestStatus> => {
-		if (this.status === Status.NONE || !this.token) {
+		if (!this.inList || !this.token) {
 			await log(`Could not sync AnimePlanet: status ${this.status} token ${!!this.token}`);
 			return RequestStatus.BAD_REQUEST;
 		}

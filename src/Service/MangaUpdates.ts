@@ -331,7 +331,7 @@ export class MangaUpdatesTitle extends ExternalTitle {
 	};
 
 	delete = async (): Promise<RequestStatus> => {
-		if (this.status === Status.NONE) {
+		if (!this.inList) {
 			await log(`Could not sync MangaUpdates: status ${this.status}`);
 			return RequestStatus.BAD_REQUEST;
 		}
