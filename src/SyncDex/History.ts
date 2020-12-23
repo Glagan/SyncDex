@@ -14,9 +14,7 @@ export class History {
 
 	static add(id: number) {
 		const index = History.find(id);
-		if (index > 0) {
-			History.ids.splice(index, 1);
-		}
+		if (index > 0) History.ids.splice(index, 1);
 		History.ids.unshift(id);
 	}
 

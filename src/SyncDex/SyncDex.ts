@@ -689,10 +689,22 @@ export class SyncDex {
 		}
 	};
 
-	async fetchFollowPage(parser: DOMParser, page: number): Promise<FollowPageResult | false> {
+	async fetchFollowPage(page: number): Promise<FollowPageResult | false> {
 		const before = Date.now();
-		const response = await Runtime.request({
-			url: `https://mangadex.org/follows/chapters/0/${page}/`,
+		const response = await Runtime.jsonRequest<{
+			data: {
+				chapters: {
+					id: number;
+					hash: string;
+					mangaId: number;
+					mangaTitle: string;
+					volume: string;
+					chapter: string;
+					title: string;
+				}[];
+			};
+		}>({
+			url: `https://mangadex.org/api/v2/user/me/followed-updates?type=1&p=${page}`,
 			method: 'GET',
 			cache: 'no-cache',
 			credentials: 'include',
@@ -706,34 +718,22 @@ export class SyncDex {
 			code: response.code,
 		};
 		if (response.code >= 200 && response.code < 400) {
+			const body = response.body;
 			// Get titles
-			const body = parser.parseFromString(response.body, 'text/html');
-			const rows = body.querySelectorAll<HTMLElement>('[data-manga-id]');
-			for (const row of rows) {
-				const id = parseInt(row.dataset.mangaId!);
-				const chapter = parseFloat(row.dataset.chapter!);
-				if (isNaN(id) || isNaN(chapter)) continue;
+			for (const chapter of body.data.chapters) {
+				const id = chapter.mangaId;
+				const progressChapter = parseFloat(chapter.chapter);
+				if (isNaN(id) || isNaN(progressChapter)) continue;
 				if (result.titles[id] === undefined) {
-					result.titles[id] = chapter;
+					result.titles[id] = progressChapter;
 				} else {
-					result.titles[id] = Math.max(result.titles[id], chapter);
+					result.titles[id] = Math.max(result.titles[id], progressChapter);
 				}
 			}
 			// Last page
-			const lastPageNode = body.querySelector('nav > ul.pagination > li.disabled:last-child');
-			result.isLastPage = lastPageNode != null;
-			// Page count
-			if (result.isLastPage) {
-				result.maxPage = page;
-			} else {
-				const maxPageNode = body.querySelector<HTMLAnchorElement>(
-					`nav > ul.pagination > .page-item:last-child > a[href^='/follows/chapters/0/']`
-				);
-				if (maxPageNode) {
-					const res = /\/follows\/chapters\/\d\/(\d+)\/?/.exec(maxPageNode.href);
-					result.maxPage = res !== null ? parseInt(res[1]) : page;
-				}
-			}
+			result.isLastPage = body.data.chapters.length < 100;
+			if (result.isLastPage) result.maxPage = page;
+			// else result.maxPage = body.meta.lastPage;
 		} else {
 			result.isLastPage = true;
 			SimpleNotification.error({
@@ -743,6 +743,50 @@ export class SyncDex {
 			return false;
 		}
 		return result;
+	}
+
+	async processFollowPage(
+		titles: { [key: number]: number },
+		loaded: number[],
+		localTitles: TitleCollection,
+		historyCards: { [key: number]: HTMLElement },
+		found: string[]
+	) {
+		const foundIds = Object.keys(titles).map((id) => parseInt(id));
+		let titleIds = foundIds.filter((id) => {
+			return loaded.indexOf(id) < 0;
+		});
+		// Update local data for new found titles
+		if (titleIds.length > 0) {
+			loaded.push(...titleIds);
+			localTitles.merge(await TitleCollection.get(titleIds));
+		}
+		const toSave = new TitleCollection();
+		for (const id in titles) {
+			// Only update if the title is in local save and has an history card
+			const title = localTitles.find(parseInt(id));
+			if (!title) continue;
+			const highestChapter = Math.max(titles[id], title.highest || 0);
+			// Update highest chapter for the titles
+			if (!title.highest || title.highest < highestChapter) {
+				title.highest = highestChapter;
+				toSave.add(title);
+			}
+			if (title.status !== Status.NONE && historyCards[id] !== undefined) {
+				if (highestChapter <= title.progress.chapter) {
+					historyCards[id].classList.remove('history-down');
+					historyCards[id].classList.add('history-up');
+				} else if (highestChapter > title.progress.chapter) {
+					historyCards[id].classList.remove('history-up');
+					historyCards[id].classList.add('history-down');
+				}
+				if (found.indexOf(id) < 0) {
+					found.push(id);
+				}
+			}
+		}
+		// Save updated titles every loop if the user reload the History.page
+		if (toSave.length > 0) await toSave.persist();
 	}
 
 	historyPage = async (): Promise<void> => {
@@ -761,15 +805,17 @@ export class SyncDex {
 
 		// Add current elements to the history - first one is inserted last
 		const currentHistory = Array.from(
-			document.querySelectorAll('.large_logo.rounded.position-relative.mx-1.my-2')
+			document.querySelectorAll<HTMLElement>('.large_logo.rounded.position-relative.mx-1.my-2')
 		).reverse();
+		const addedTitles = new TitleCollection();
 		for (const node of currentHistory) {
 			const chapterLink = node.querySelector<HTMLAnchorElement>(`a[href^='/chapter/']`)!;
 			const titleLink = node.querySelector<HTMLAnchorElement>(`a[href^='/title/']`)!;
 			const id = parseInt(/\/title\/(\d+)(?:\/.+)?/.exec(titleLink.href)![1]);
 			const chapter = parseInt(/\/chapter\/(\d+)/.exec(chapterLink.href)![1]);
-			// Update lastChapter
-			const title = History.find(id) < 0 ? await LocalTitle.get(id) : titles.find(id);
+			// Update lastChapter and create title if there is one
+			const wasInHistory = History.find(id) >= 0;
+			const title = wasInHistory ? titles.find(id) : await LocalTitle.get(id);
 			if (title) {
 				if (!title.inList) {
 					title.name = node.querySelector<HTMLElement>('.manga_title')!.textContent!;
@@ -779,15 +825,18 @@ export class SyncDex {
 					if (!progress) continue;
 					title.progress = progress;
 					// If it's not in history it wasn't loaded, add it to the collection
-					titles.add(title);
-					History.add(id);
+					addedTitles.add(title);
 				}
 				if (title.lastChapter !== chapter) {
 					title.lastChapter = chapter;
 				}
+				if (!wasInHistory) {
+					titles.add(title);
+					History.add(id);
+				}
 			}
 		}
-		await titles.persist();
+		await addedTitles.persist();
 		await History.save();
 
 		// Display History
@@ -800,9 +849,7 @@ export class SyncDex {
 				if (!exist) {
 					card = History.buildCard(title);
 					container.insertBefore(card, container.lastElementChild);
-				} else {
-					card = exist.parentElement!.parentElement!;
-				}
+				} else card = exist.parentElement!.parentElement!;
 				History.updateCard(card, title);
 				History.highlight(card, title);
 				historyCards[id] = card;
@@ -839,7 +886,6 @@ export class SyncDex {
 							refreshButton.disabled = true;
 							busy = true;
 							alert.classList.add('hidden', 'full');
-							const parser = new DOMParser();
 							const firstRow = document.createElement('span');
 							const secondRow = document.createElement('span');
 							const progress = DOM.create('div', {
@@ -851,7 +897,6 @@ export class SyncDex {
 							// Fetch ALL pages until it is done
 							const historySize = History.ids.length;
 							const localTitles = new TitleCollection();
-							const toSave = new TitleCollection();
 							const found: string[] = [];
 							if (History.page === undefined) History.page = 1;
 							let alreadyLoaded: number[] = [];
@@ -860,66 +905,24 @@ export class SyncDex {
 							const before = Date.now();
 							while (true) {
 								// Display loading status
-								firstRow.textContent = `Loading Follow page ${History.page} out of ${maxPage}, found ${found.length} out of ${historySize} Titles.`;
-								// Wait between MangaDex requests
-								if (History.page > 1) {
+								firstRow.textContent = `Loading Follow page ${History.page}, found ${found.length} out of ${historySize} Titles.`;
+								// Calculate estimated remaining time
+								/*if (History.page > 1) {
 									const estimated = Math.floor(((1500 + average) * (maxPage - History.page)) / 1000);
 									const disp = [];
 									if (estimated >= 60) disp.push(`${Math.floor(estimated / 60)}min `);
 									disp.push(`${estimated % 60}s`);
 									secondRow.textContent = `Estimated time to complete ${disp.join('')}.`;
 									await new Promise((resolve) => setTimeout(resolve, 1500));
-								}
-								const res = await this.fetchFollowPage(parser, History.page);
+								}*/
+								const res = await this.fetchFollowPage(History.page);
 								if (res === false) break;
 								const { titles, isLastPage, requestTime } = res;
-								// Filter found titles to avoid loading them again for nothing
-								const foundIds = Object.keys(titles).map((id) => parseInt(id));
-								let titleIds = foundIds.filter((id) => {
-									return alreadyLoaded.indexOf(id) < 0;
-								});
-								// Update local data for new found titles
-								if (titleIds.length > 0) {
-									alreadyLoaded.push(...titleIds);
-									localTitles.merge(await TitleCollection.get(titleIds));
-								}
-								for (const id in titles) {
-									// Only update if the title is in local save and has an history card
-									const title = localTitles.find(parseInt(id));
-									if (
-										title !== undefined &&
-										title.status !== Status.NONE &&
-										historyCards[id] !== undefined
-									) {
-										const highestChapter = Math.max(titles[id], title.highest || 0);
-										if (highestChapter <= title.progress.chapter) {
-											historyCards[id].classList.remove('history-down');
-											historyCards[id].classList.add('history-up');
-										} else if (highestChapter > title.progress.chapter) {
-											historyCards[id].classList.remove('history-up');
-											historyCards[id].classList.add('history-down');
-										}
-										if (found.indexOf(id) < 0) {
-											found.push(id);
-										}
-										// Update highest chapter for the titles
-										if (!title.highest || title.highest < highestChapter) {
-											title.highest = highestChapter;
-											toSave.add(title);
-										}
-									}
-								}
-								if (History.page == 1) {
-									average = requestTime;
-								} else {
-									average = (average + requestTime) / 2;
-								}
 								maxPage = res.maxPage;
-								// Save updated titles every loop if the user reload the History.page
-								if (toSave.length > 0) {
-									await toSave.persist();
-									toSave.collection = [];
-								}
+								await this.processFollowPage(titles, alreadyLoaded, localTitles, historyCards, found);
+								/*if (History.page == 1) {
+									average = requestTime;
+								} else average = (average + requestTime) / 2;*/
 								await History.save();
 								if (isLastPage) break;
 								History.page++;
@@ -965,15 +968,12 @@ export class SyncDex {
 
 		// Check status and update highlight every 30min
 		if (Options.chapterStatus) {
-			const parser = new DOMParser();
 			const timer = DOM.create('span', { textContent: '30min' });
 			const statusRow = DOM.create('p', { class: 'p-2' });
 			infoNode.parentElement!.insertBefore(statusRow, infoNode.nextElementSibling);
 			const checkHistoryLatest = async () => {
 				let page = 1;
-				let maxPage = 1;
 				const localTitles = new TitleCollection();
-				const toSave = new TitleCollection();
 				const alreadyLoaded: number[] = [];
 				const found: string[] = [];
 				while (page <= 2) {
@@ -983,47 +983,10 @@ export class SyncDex {
 					if (page > 1) {
 						await new Promise((resolve) => setTimeout(resolve, 1500));
 					}
-					const res = await this.fetchFollowPage(parser, page);
+					const res = await this.fetchFollowPage(page);
 					if (res === false) break;
 					const { titles, isLastPage } = res;
-					// Filter found titles to avoid loading them again for nothing
-					const foundIds = Object.keys(titles).map((id) => parseInt(id));
-					let titleIds = foundIds.filter((id) => {
-						return alreadyLoaded.indexOf(id) < 0;
-					});
-					// Update local data for new found titles
-					if (titleIds.length > 0) {
-						alreadyLoaded.push(...titleIds);
-						localTitles.merge(await TitleCollection.get(titleIds));
-					}
-					for (const id in titles) {
-						// Only update if the title is in local save and has an history card
-						const title = localTitles.find(parseInt(id));
-						if (title !== undefined && title.status !== Status.NONE && historyCards[id] !== undefined) {
-							const highestChapter = Math.max(titles[id], title.highest || 0);
-							if (highestChapter <= title.progress.chapter) {
-								historyCards[id].classList.remove('history-down');
-								historyCards[id].classList.add('history-up');
-							} else if (highestChapter > title.progress.chapter) {
-								historyCards[id].classList.remove('history-up');
-								historyCards[id].classList.add('history-down');
-							}
-							if (found.indexOf(id) < 0) {
-								found.push(id);
-							}
-							// Update highest chapter for the titles
-							if (!title.highest || title.highest < highestChapter) {
-								title.highest = highestChapter;
-								toSave.add(title);
-							}
-						}
-					}
-					maxPage = res.maxPage;
-					// Save updated titles every loop if the page is reloaded
-					if (toSave.length > 0) {
-						await toSave.persist();
-						toSave.collection = [];
-					}
+					await this.processFollowPage(titles, alreadyLoaded, localTitles, historyCards, found);
 					await History.save();
 					if (isLastPage) break;
 					page++;

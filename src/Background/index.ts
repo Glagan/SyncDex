@@ -45,7 +45,7 @@ function findDomain(url: string): string {
 let nextRequest: Record<string, number> = {};
 // Defaults to 1000ms
 const cooldowns: Record<string, number> = {
-	'mangadex.org': 1250,
+	'mangadex.org': 1500,
 	'myanimelist.net': 1500,
 	'mochi.nikurasu.org': 500,
 };

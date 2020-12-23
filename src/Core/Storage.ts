@@ -29,10 +29,11 @@ export class LocalStorage {
 	}
 
 	static getTitleList(keys: Omit<number | string, keyof ExportedSave>[]): Promise<Record<string, StorageTitle>> {
+		const strKeys: string[] = [];
 		for (const index in keys) {
-			if (typeof keys[index] === 'number') keys[index] = `${keys[index]}`;
+			if (typeof keys[index] === 'number') strKeys.push(`${keys[index]}`);
 		}
-		return browser.storage.local.get(keys);
+		return browser.storage.local.get(strKeys);
 	}
 
 	/**

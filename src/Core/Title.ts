@@ -605,6 +605,7 @@ export class TitleCollection {
 				}
 			}
 		} else {
+			if (list.length == 0) return collection;
 			const localTitles = await LocalStorage.getTitleList(list);
 			if (localTitles !== undefined) {
 				for (const id of list) {
