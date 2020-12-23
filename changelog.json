@@ -1,6 +1,20 @@
 {
 	"updates": [
 		{
+			"version": "0.1.2",
+			"description": ["Fix all services delete function.", "Fix Kitsu export.", "Fix Export messages."]
+		},
+		{
+			"version": "0.1.1",
+			"description": [
+				"Fix Merge options in Import.",
+				"Ignore case in Save Viewer.",
+				"Always keep the Highest found volume for a Title.",
+				"Use MangaDex API in the History page.",
+				"Fix History page."
+			]
+		},
+		{
 			"version": "0.1",
 			"description": [
 				"First version !",

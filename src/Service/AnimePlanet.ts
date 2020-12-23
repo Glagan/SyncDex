@@ -137,13 +137,15 @@ export class AnimePlanetExport extends ExportModule {
 		let average = 0;
 		for (let current = 0; !this.interface?.doStop && current < max; current++) {
 			const localTitle = titles[current];
-			let currentProgress = `Exporting Title ${current} out of ${max} (${localTitle.name})...`;
+			let currentProgress = `Exporting Title ${current + 1} out of ${max} (${
+				localTitle.name || `#${localTitle.services[AnimePlanet.key]!.id}`
+			})...`;
 			if (average > 0) currentProgress += `\nEstimated time remaining: ${duration((max - current) * average)}.`;
 			progress.textContent = currentProgress;
 			const before = Date.now();
 			const title = new AnimePlanetTitle({
 				...localTitle,
-				key: localTitle.services[ActivableKey.AnimePlanet],
+				key: localTitle.services[AnimePlanet.key],
 			});
 			const response = await title.persist();
 			if (average == 0) average = Date.now() - before;

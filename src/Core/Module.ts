@@ -379,53 +379,51 @@ export abstract class ExportModule extends Module {
 
 	displaySummary = (): void => {
 		if (this.interface) {
-			if (this.summary.total != this.summary.valid) {
+			if (this.summary.failed.length > 0) {
 				const content = DOM.create('p', {
 					textContent: `${this.summary.failed.length} titles were not exported or had an error while exporting.`,
 				});
 				this.interface.message('warning', [content]);
-				if (this.summary.failed.length > 0) {
-					const failedBlock = this.summaryFailBlock(content);
-					for (const title of this.summary.failed) {
-						const name = title.name ?? '[No Name]';
-						const row = DOM.create('li', {
-							childs: [
-								DOM.create('a', {
-									target: '_blank',
-									href: LocalTitle.link(title.key),
-									childs: [
-										DOM.create('img', { src: Runtime.icon(StaticKey.MangaDex), title: 'MangaDex' }),
-										DOM.space(),
-										DOM.text(name),
-										DOM.space(),
-										DOM.icon('external-link-alt'),
-									],
-									title: 'Open in new tab',
-								}),
-							],
-						});
-						if (title.services && title.services[this.service.key]) {
-							DOM.append(
-								row,
-								DOM.space(),
-								DOM.text('('),
-								DOM.create('a', {
-									target: '_blank',
-									href: this.service.link(title.services[this.service.key]!),
-									childs: [
-										DOM.create('img', { src: Runtime.icon(this.service.key), title: 'MangaDex' }),
-										DOM.space(),
-										DOM.text(name),
-										DOM.space(),
-										DOM.icon('external-link-alt'),
-									],
-									title: 'Open in new tab',
-								}),
-								DOM.text(')')
-							);
-						}
-						failedBlock.appendChild(row);
+				const failedBlock = this.summaryFailBlock(content);
+				for (const title of this.summary.failed) {
+					const name = title.name ?? '[No Name]';
+					const row = DOM.create('li', {
+						childs: [
+							DOM.create('a', {
+								target: '_blank',
+								href: LocalTitle.link(title.key),
+								childs: [
+									DOM.create('img', { src: Runtime.icon(StaticKey.MangaDex), title: 'MangaDex' }),
+									DOM.space(),
+									DOM.text(name),
+									DOM.space(),
+									DOM.icon('external-link-alt'),
+								],
+								title: 'Open in new tab',
+							}),
+						],
+					});
+					if (title.services && title.services[this.service.key]) {
+						DOM.append(
+							row,
+							DOM.space(),
+							DOM.text('('),
+							DOM.create('a', {
+								target: '_blank',
+								href: this.service.link(title.services[this.service.key]!),
+								childs: [
+									DOM.create('img', { src: Runtime.icon(this.service.key), title: 'MangaDex' }),
+									DOM.space(),
+									DOM.text(name),
+									DOM.space(),
+									DOM.icon('external-link-alt'),
+								],
+								title: 'Open in new tab',
+							}),
+							DOM.text(')')
+						);
 					}
+					failedBlock.appendChild(row);
 				}
 			}
 			this.interface.message('success', `Exported ${this.summary.valid} titles in ${this.summary.totalTime()} !`);

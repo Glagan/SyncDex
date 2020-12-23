@@ -232,12 +232,14 @@ export class KitsuExport extends ExportModule {
 		let average = 0;
 		for (let current = 0; !this.interface?.doStop && current < max; current++) {
 			const localTitle = titles[current];
-			let currentProgress = `Exporting Title ${current} out of ${max} (${localTitle.name})...`;
+			let currentProgress = `Exporting Title ${current + 1} out of ${max} (${
+				localTitle.name || `#${localTitle.services[Kitsu.key]!.id}`
+			})...`;
 			if (average > 0) currentProgress += `\nEstimated time remaining: ${duration((max - current) * average)}.`;
 			progress.textContent = currentProgress;
 			// Kitsu require a libraryEntryId to update a Title
 			const before = Date.now();
-			const title = new KitsuTitle({ ...localTitle, key: localTitle.services[ActivableKey.AnimePlanet] });
+			const title = new KitsuTitle({ ...localTitle, key: localTitle.services[Kitsu.key] });
 			title.libraryEntryId = this.onlineList[localTitle.services.ku!.id!];
 			const response = await title.persist();
 			if (average == 0) average = Date.now() - before;

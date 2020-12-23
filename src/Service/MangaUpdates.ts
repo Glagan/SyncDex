@@ -96,12 +96,14 @@ export class MangaUpdatesExport extends ExportModule {
 		let average = 0;
 		for (let current = 0; !this.interface?.doStop && current < max; current++) {
 			const localTitle = titles[current];
-			let currentProgress = `Exporting Title ${current} out of ${max} (${localTitle.name})...`;
+			let currentProgress = `Exporting Title ${current + 1} out of ${max} (${
+				localTitle.name || `#${localTitle.services[MangaUpdates.key]!.id}`
+			})...`;
 			if (average > 0) currentProgress += `\nEstimated time remaining: ${duration((max - current) * average)}.`;
 			progress.textContent = currentProgress;
 			const before = Date.now();
 			let failed = false;
-			const title = new MangaUpdatesTitle({ ...localTitle, key: localTitle.services[ActivableKey.MangaUpdates] });
+			const title = new MangaUpdatesTitle({ ...localTitle, key: localTitle.services[MangaUpdates.key] });
 			if (title.status !== Status.NONE) {
 				// Set current progress for the Title if there is one
 				const onlineTitle = this.onlineList[title.key.id!];
