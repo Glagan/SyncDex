@@ -191,7 +191,12 @@ export class KitsuImport extends ImportModule {
 }
 
 export class KitsuExport extends ExportModule {
-	onlineList: { [key: string]: number | undefined } = {};
+	onlineList: {
+		[key: string]: {
+			libraryEntryId?: number;
+			max?: Progress;
+		};
+	} = {};
 
 	preExecute = async (titles: LocalTitle[]): Promise<boolean> => {
 		const message = this.interface?.message('loading', 'Checking current status of each titles...');
@@ -204,7 +209,7 @@ export class KitsuExport extends ExportModule {
 					&filter[mangaId]=${ids.join(',')}
 					&fields[libraryEntries]=id,manga
 					&include=manga
-					&fields[manga]=id
+					&fields[manga]=id,chapterCount,volumeCount
 					&page[limit]=500`,
 				headers: KitsuHeaders(),
 			});
@@ -215,8 +220,25 @@ export class KitsuExport extends ExportModule {
 			}
 			const body = response.body;
 			for (const title of body.data) {
-				if (title.relationships.manga.data) {
-					this.onlineList[title.relationships.manga.data.id] = +title.id;
+				const titleId = title.relationships.manga.data?.id;
+				if (titleId) {
+					this.onlineList[titleId] = {
+						libraryEntryId: +title.id,
+					};
+					const included = response.body.included.find((title) => title.id == titleId);
+					if (included) {
+						this.onlineList[titleId].max = {} as Progress;
+						let addedMax = 0;
+						if (typeof included.attributes.chapterCount === 'number' && included.attributes.chapterCount) {
+							this.onlineList[titleId].max!.chapter = included.attributes.chapterCount;
+							addedMax++;
+						}
+						if (typeof included.attributes.volumeCount === 'number' && included.attributes.volumeCount) {
+							this.onlineList[titleId].max!.volume = included.attributes.volumeCount;
+							addedMax++;
+						}
+						if (!addedMax) delete this.onlineList[titleId].max;
+					}
 				}
 			}
 		}
@@ -240,7 +262,11 @@ export class KitsuExport extends ExportModule {
 			// Kitsu require a libraryEntryId to update a Title
 			const before = Date.now();
 			const title = new KitsuTitle({ ...localTitle, key: localTitle.services[Kitsu.key] });
-			title.libraryEntryId = this.onlineList[localTitle.services.ku!.id!];
+			const onlineTitle = this.onlineList[localTitle.services.ku!.id!];
+			if (onlineTitle) {
+				title.libraryEntryId = onlineTitle.libraryEntryId;
+				title.max = onlineTitle.max;
+			}
 			const response = await title.persist();
 			if (average == 0) average = Date.now() - before;
 			else average = (average + (Date.now() - before)) / 2;
@@ -366,6 +392,16 @@ export class KitsuTitle extends ExternalTitle {
 		const url = `${KitsuAPI}${libraryEntryId > 0 ? `/${this.libraryEntryId}` : ''}`;
 		// Convert 0-100 score to the 0-20 range -- round to the nearest
 		const kuScore = this.score !== undefined && this.score > 0 ? Math.round(this.score / 5) : undefined;
+		// Fix progress to avoid 422 Cannot exceed media length
+		const progress: Progress = JSON.parse(JSON.stringify(this.progress));
+		if (this.max) {
+			if (this.max.chapter && this.max.chapter < this.progress.chapter) {
+				progress.chapter = this.max.chapter;
+			}
+			if (this.progress.volume && this.max.volume && this.max.volume < this.progress.volume) {
+				progress.volume = this.max.volume;
+			}
+		}
 		const response = await Runtime.jsonRequest<KitsuPersistResponse>({
 			url: url,
 			method: method,
@@ -375,8 +411,8 @@ export class KitsuTitle extends ExternalTitle {
 					id: this.libraryEntryId ? this.libraryEntryId : undefined,
 					attributes: {
 						status: KitsuTitle.fromStatus(this.status),
-						progress: Math.floor(this.progress.chapter),
-						volumesOwned: this.progress.volume,
+						progress: Math.floor(progress.chapter),
+						volumesOwned: progress.volume,
 						ratingTwenty: kuScore,
 						startedAt: this.start !== undefined ? this.start.toISOString() : null,
 						finishedAt: this.end !== undefined ? this.end.toISOString() : null,

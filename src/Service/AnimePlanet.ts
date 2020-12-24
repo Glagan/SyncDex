@@ -125,11 +125,19 @@ export class AnimePlanetImport extends ImportModule {
 }
 
 export class AnimePlanetExport extends ExportModule {
-	execute = async (titles: LocalTitle[]): Promise<boolean> => {
+	preExecute = async (_filter: LocalTitle[]): Promise<boolean> => {
 		if (AnimePlanet.username == '') {
 			this.interface?.message('error', 'Username not found while checking if logged in.');
 			return false;
 		}
+		if (AnimePlanet.token == '') {
+			this.interface?.message('error', 'Token not found.');
+			return false;
+		}
+		return false;
+	};
+
+	execute = async (titles: LocalTitle[]): Promise<boolean> => {
 		const max = titles.length;
 		this.interface?.message('default', `Exporting ${max} Titles...`);
 		const progress = DOM.create('p');
@@ -147,6 +155,7 @@ export class AnimePlanetExport extends ExportModule {
 				...localTitle,
 				key: localTitle.services[AnimePlanet.key],
 			});
+			title.token = AnimePlanet.token;
 			const response = await title.persist();
 			if (average == 0) average = Date.now() - before;
 			else average = (average + (Date.now() - before)) / 2;
@@ -284,9 +293,11 @@ export class AnimePlanetTitle extends ExternalTitle {
 			this.current.status = this.status;
 		}
 		// Chapter progress
-		if (this.progress.chapter > 0 && this.current.progress.chapter !== this.progress.chapter) {
+		const chapterToUpdate =
+			this.max?.chapter && this.max.chapter < this.progress.chapter ? this.max.chapter : this.progress.chapter;
+		if (this.progress.chapter > 0 && this.current.progress.chapter !== chapterToUpdate) {
 			const response = await Runtime.jsonRequest({
-				url: `${AnimePlanetAPI}/update/manga/${id}/${Math.floor(this.progress.chapter)}/0/${this.token}`,
+				url: `${AnimePlanetAPI}/update/manga/${id}/${Math.floor(chapterToUpdate)}/0/${this.token}`,
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);

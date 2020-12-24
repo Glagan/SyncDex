@@ -44,6 +44,7 @@ function findDomain(url: string): string {
 }
 let nextRequest: Record<string, number> = {};
 // Defaults to 1000ms
+const DEFAULT_COOLDOWN = 1250;
 const cooldowns: Record<string, number> = {
 	'mangadex.org': 1500,
 	'myanimelist.net': 1500,
@@ -62,10 +63,10 @@ function handleMessage(message: Message, sender?: BrowserRuntime.MessageSender) 
 			// Sleep until cooldown is reached
 			if (nextRequest[domain] && nextRequest[domain] >= now) {
 				const diff = nextRequest[domain] - now;
-				nextRequest[domain] = now + diff + (cooldowns[domain] ?? 1000) + 100;
+				nextRequest[domain] = now + diff + (cooldowns[domain] ?? DEFAULT_COOLDOWN) + 100;
 				await new Promise((resolve) => setTimeout(resolve, diff));
 			} else {
-				nextRequest[domain] = now + (cooldowns[domain] ?? 1000) + 100;
+				nextRequest[domain] = now + (cooldowns[domain] ?? DEFAULT_COOLDOWN) + 100;
 			}
 			// Options
 			msg.isJson = msg.isJson !== undefined ? msg.isJson : false;

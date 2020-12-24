@@ -2,7 +2,13 @@
 	"updates": [
 		{
 			"version": "0.1.3",
-			"description": ["Fix SyncDex mainService option and History while Importing."]
+			"description": [
+				"Fix SyncDex mainService option and History while Importing.",
+				"Increase cooldown between requests to avoid 429 Too Many Requests for Anilist.",
+				"Update Progress before persist to avoid errors if there is a maximum value for Kitsu and AnimePlanet.",
+				"Fix AnimePlanet Export.",
+				"Search in IDs in Save Viewer."
+			]
 		},
 		{
 			"version": "0.1.2",

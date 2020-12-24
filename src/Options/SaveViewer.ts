@@ -346,8 +346,11 @@ export class SaveViewer {
 		}
 		this.titles.collection = Array.from(this.realTitles.collection);
 		if (this.sortBy.search !== '') {
+			const search = this.sortBy.search.toLocaleLowerCase();
 			this.titles.collection = this.titles.collection.filter(
-				(t) => t.name && t.name.toLocaleLowerCase().match(this.sortBy.search.toLocaleLowerCase())
+				(t) =>
+					(t.name && t.name.toLocaleLowerCase().match(search)) ||
+					Object.values(t.services).some((key) => key && (`${key.id}` == search || key.slug == search))
 			);
 		}
 		if (this.sortBy.status !== undefined) {
