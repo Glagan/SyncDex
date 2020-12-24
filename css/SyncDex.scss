@@ -291,15 +291,23 @@
 	box-shadow: 0 0 6px -1px $green-60;
 	border: 1px solid $green-60;
 }
-.history-up .car-caption {
+.history-up .car-caption,
+.help.history-up {
 	background-color: opacify($color: $green-60, $amount: 0.6);
 }
 .history-down {
 	box-shadow: 0 0 6px 1px $blue-40;
 	border: 1px solid $blue-40;
 }
-.history-down .car-caption {
+.history-down .car-caption,
+.help.history-down {
 	background-color: opacify($color: $blue-40, $amount: 0.6);
+}
+.help.history-down,
+.help.history-up {
+	color: white;
+	padding: 4px;
+	border-radius: 0.25rem;
 }
 
 // Title page

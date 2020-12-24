@@ -2,6 +2,7 @@ import { LocalStorage } from './Storage';
 import { Options } from './Options';
 import { dateCompare } from './Utility';
 import { ActivableKey, Service, ServiceList } from './Service';
+import { History } from '../SyncDex/History';
 
 export const StatusMap: { [key in Status]: string } = {
 	[Status.NONE]: 'No Status',
@@ -528,6 +529,14 @@ export class LocalTitle extends Title {
 			this.addChapter(progress.chapter);
 		}
 		return completed;
+	};
+
+	setHistory = async (chapterId: number, progress?: Progress): Promise<void> => {
+		this.lastChapter = chapterId;
+		this.lastRead = Date.now();
+		this.history = progress ? progress : this.progress;
+		History.add(this.key.id!);
+		await History.save();
 	};
 
 	static link = (key: MediaKey): string => {

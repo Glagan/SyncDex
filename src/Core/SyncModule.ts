@@ -244,10 +244,12 @@ export class SyncModule {
 		this.title.chapters = title.chapters;
 		this.title.mdStatus = title.mdStatus;
 		this.title.mdScore = title.mdScore;
-		this.title.lastRead = title.lastRead;
 		this.title.status = title.status;
 		this.title.score = title.score;
 		this.title.name = title.name;
+		this.title.lastChapter = title.lastChapter;
+		this.title.lastRead = title.lastRead;
+		this.title.history = title.history;
 		// Add back Date objects since JSON.stringify made them strings
 		this.title.start = title.start ? new Date(title.start) : undefined;
 		this.title.end = title.end ? new Date(title.end) : undefined;

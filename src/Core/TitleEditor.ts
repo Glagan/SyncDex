@@ -401,7 +401,6 @@ export class TitleEditor {
 			if (Options.saveOpenedChapters && oldChapter != title.progress.chapter) {
 				title.updateChapterList(chapter);
 			}
-			title.progress.chapter = chapter;
 			// Volume
 			if (form.volume.value != '') {
 				const volume = parseInt(form.volume.value);

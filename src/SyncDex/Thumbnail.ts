@@ -37,9 +37,7 @@ export class Thumbnail {
 		// Thumbnail
 		let tooltipThumb = DOM.create('img', {
 			class: 'thumbnail loading',
-			css: {
-				maxHeight: `${(window.innerHeight - 10) * (Options.thumbnailMaxHeight / 100)}px`,
-			},
+			css: { maxHeight: `${(window.innerHeight - 10) * (Options.thumbnailMaxHeight / 100)}px` },
 		});
 		tooltipThumb.style.length;
 		this.container.appendChild(tooltipThumb);
@@ -60,10 +58,10 @@ export class Thumbnail {
 				}, 1);
 			}
 		});
-		let extensions = ['jpg', 'png', 'jpeg', 'gif'];
+		const extensions = ['jpg', 'png', 'jpeg', 'gif'];
 		tooltipThumb.addEventListener('error', () => {
 			if (Options.originalThumbnail) {
-				let tryNumber = tooltipThumb.dataset.ext ? Math.floor(parseInt(tooltipThumb.dataset.ext)) : 1;
+				const tryNumber = tooltipThumb.dataset.ext ? Math.floor(parseInt(tooltipThumb.dataset.ext)) : 1;
 				if (tryNumber < extensions.length) {
 					tooltipThumb.src = `https://mangadex.org/images/manga/${id}.${extensions[tryNumber]}`;
 					tooltipThumb.dataset.ext = (tryNumber + 1).toString();
@@ -74,7 +72,7 @@ export class Thumbnail {
 		});
 
 		// Events
-		let activateTooltip = (rightColumn: boolean) => {
+		const activateTooltip = (rightColumn: boolean) => {
 			this.thumbnail.dataset.column = rightColumn.toString();
 			this.thumbnail.classList.add('active');
 			if (this.row.dataset.loading) {
@@ -93,7 +91,7 @@ export class Thumbnail {
 			}
 			this.updatePosition();
 		};
-		let disableTooltip = () => {
+		const disableTooltip = () => {
 			this.thumbnail.classList.remove('active');
 			this.thumbnail.style.left = '-5000px';
 		};
@@ -133,15 +131,18 @@ export class Thumbnail {
 
 	updateContent = (title: Title): void => {
 		DOM.clear(this.content);
-		this.container.appendChild(this.content);
-		DOM.append(
-			this.content,
-			DOM.icon('bookmark'),
-			DOM.space(),
-			DOM.text('Chapter'),
-			DOM.space(),
-			DOM.text(`${title.progress.chapter}`)
-		);
+		let hasContent = false;
+		if (title.progress.chapter) {
+			DOM.append(
+				this.content,
+				DOM.icon('bookmark'),
+				DOM.space(),
+				DOM.text('Chapter'),
+				DOM.space(),
+				DOM.text(`${title.progress.chapter}`)
+			);
+			hasContent = true;
+		}
 		if (title.progress.volume) {
 			DOM.append(
 				this.content,
@@ -152,7 +153,9 @@ export class Thumbnail {
 				DOM.space(),
 				DOM.text(`${title.progress.volume}`)
 			);
+			hasContent = true;
 		}
+		if (hasContent) this.container.appendChild(this.content);
 	};
 
 	updatePosition = (): void => {

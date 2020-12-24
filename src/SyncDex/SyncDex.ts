@@ -97,7 +97,7 @@ export class SyncDex {
 				// Still add thumbnails and the Group title if it's no in list
 				if (Options.thumbnail) {
 					for (const row of group.rows) {
-						new Thumbnail(group.id, row.node);
+						new Thumbnail(group.id, row.node, title);
 					}
 				}
 				group.rows[0].node.firstElementChild!.appendChild(group.titleLink());
@@ -364,11 +364,7 @@ export class SyncDex {
 		}
 		// Always Update History values if enabled, do not look at other options
 		if (Options.biggerHistory) {
-			state.title.lastChapter = details._data.id;
-			state.title.lastRead = Date.now();
-			state.title.history = state.title.progress;
-			History.add(state.title.key.id!);
-			History.save();
+			await state.title.setHistory(details._data.id, currentProgress);
 		}
 		await state.title.persist(); // Always save
 		// If all conditions are met we can sync to current progress
@@ -481,7 +477,9 @@ export class SyncDex {
 				}
 			}
 			// Do not display thumbnails in Grid and Detailed lists
-			if (Options.thumbnail && listType != ListType.Grid && listType != ListType.Detailed) new Thumbnail(id, row);
+			if (Options.thumbnail && listType != ListType.Grid && listType != ListType.Detailed) {
+				new Thumbnail(id, row, title);
+			}
 		}
 	};
 
@@ -616,10 +614,17 @@ export class SyncDex {
 		const imported = await syncModule.syncLocal();
 
 		// Add all chapters from the ChapterList if it's a new Title
-		if (Options.saveOpenedChapters && imported) {
-			title.updateChapterList(title.progress.chapter);
+		// Update lastChapter for the History if title was synced
+		if (imported && (Options.saveOpenedChapters || Options.biggerHistory)) {
+			if (Options.saveOpenedChapters) {
+				title.updateChapterList(title.progress.chapter);
+			}
 			for (const row of overview.chapterList.rows) {
-				if (row.progress.chapter < title.progress.chapter) {
+				if (Options.biggerHistory && row.progress.chapter == title.progress.chapter) {
+					title.lastChapter = row.chapterId;
+					if (!Options.saveOpenedChapters) break;
+				}
+				if (Options.saveOpenedChapters && row.progress.chapter < title.progress.chapter) {
 					title.addChapter(row.progress.chapter);
 				}
 			}
@@ -801,7 +806,24 @@ export class SyncDex {
 		// Helper function
 		const container = document.getElementById('history')!;
 		const infoNode = container.querySelector('p')!;
-		infoNode.textContent = `Your last read titles are listed below.`;
+		infoNode.textContent = '';
+		DOM.append(
+			infoNode,
+			DOM.create('p', {
+				childs: [
+					DOM.create('span', { class: 'help history-down', textContent: 'Blue' }),
+					DOM.space(),
+					DOM.text('Higher chapter available'),
+				],
+			}),
+			DOM.create('p', {
+				childs: [
+					DOM.create('span', { class: 'help history-up', textContent: 'Green' }),
+					DOM.space(),
+					DOM.text('Latest chapter read'),
+				],
+			})
+		);
 
 		// Add current elements to the history - first one is inserted last
 		const currentHistory = Array.from(
@@ -824,6 +846,7 @@ export class SyncDex {
 					const progress = stringToProgress(chapterLink.textContent!);
 					if (!progress) continue;
 					title.progress = progress;
+					title.history = progress;
 					// If it's not in history it wasn't loaded, add it to the collection
 					addedTitles.add(title);
 				}
@@ -836,6 +859,7 @@ export class SyncDex {
 				}
 			}
 		}
+		infoNode.appendChild(DOM.text(`Your last ${History.ids.length} opened titles are listed below.`));
 		await addedTitles.persist();
 		await History.save();
 
@@ -843,7 +867,7 @@ export class SyncDex {
 		const historyCards: { [key: number]: HTMLElement } = {};
 		for (const id of History.ids) {
 			const title = titles.find(id);
-			if (title !== undefined) {
+			if (title !== undefined && title.history !== undefined) {
 				const exist = container.querySelector(`a[href^='/title/${id}']`);
 				let card: HTMLElement;
 				if (!exist) {

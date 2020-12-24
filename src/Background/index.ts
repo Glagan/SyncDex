@@ -287,7 +287,7 @@ browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstall
 			await Options.save();
 			updated = true;
 		}
-	} else await log(`Installation version ${DefaultOptions.version}`);
+	} else await log(`Installation version ${DefaultOptions.version}.${DefaultOptions.subVersion}`);
 
 	// Open the options with a Modal
 	if (updated || details.reason === 'install') {

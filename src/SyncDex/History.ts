@@ -38,6 +38,18 @@ export class History {
 	}
 
 	static buildCard = (title: LocalTitle): HTMLElement => {
+		const chapterLink = DOM.create('a', {
+			class: 'white',
+			href: `/chapter/${title.lastChapter}`,
+			textContent: progressToString(title.history!),
+		});
+		if (!title.lastChapter) {
+			chapterLink.href = '#';
+			chapterLink.style.color = 'rgb(255, 167, 0)';
+			chapterLink.insertBefore(DOM.space(), chapterLink.firstChild);
+			chapterLink.insertBefore(DOM.icon('times-circle'), chapterLink.firstChild);
+			chapterLink.title = 'Missing Link';
+		}
 		return DOM.create('div', {
 			class: 'large_logo rounded position-relative mx-1 my-2 has-transition',
 			childs: [
@@ -73,13 +85,7 @@ export class History {
 						}),
 						DOM.create('p', {
 							class: 'text-truncate m-0',
-							childs: [
-								DOM.create('a', {
-									class: 'white',
-									href: `/chapter/${title.lastChapter}`,
-									textContent: progressToString(title.progress),
-								}),
-							],
+							childs: [chapterLink],
 						}),
 					],
 				}),
@@ -92,6 +98,9 @@ export class History {
 		card.dataset.placement = 'bottom';
 		card.dataset.html = 'true';
 		const content = [];
+		if (!title.lastChapter) {
+			content.push(`<span style='color:rgb(255,167,0)'>Missing chapter link</span>`);
+		}
 		if (title.lastTitle) {
 			content.push('Last visit', dateFormat(new Date(title.lastTitle), true));
 		}

@@ -77,6 +77,9 @@ export class ChapterList {
 						}
 					}
 				}
+				if (Options.biggerHistory) {
+					await title.setHistory(row.chapterId);
+				}
 				await title.persist();
 				syncModule.overview?.syncedLocal(title);
 				const report = await syncModule.syncExternal(true);

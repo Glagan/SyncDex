@@ -12,6 +12,7 @@ export class ChapterRow {
 	progress: Progress;
 	hidden: boolean;
 	language?: string;
+	chapterId: number;
 
 	static languageMap: { [key: string]: string } = {};
 	static rowLanguages: { code: string; node: HTMLElement }[] = [];
@@ -21,13 +22,15 @@ export class ChapterRow {
 		const fullRow = chapterRow.parentElement!.parentElement!;
 		this.isNext = false;
 		this.node = fullRow;
-		this.parent = chapterRow.querySelector(`a[href^='/chapter']`)!.parentElement!;
+		const chapterLink = chapterRow.querySelector<HTMLAnchorElement>(`a[href^='/chapter']`)!;
+		this.parent = chapterLink.parentElement!;
 		const oneshot = chapterRow.dataset.title == 'Oneshot';
 		this.progress = {
 			chapter: oneshot ? 0 : parseFloat(chapterRow.dataset.chapter!),
 			volume: parseFloat(chapterRow.dataset?.volume || '') || undefined,
 			oneshot: oneshot,
 		};
+		this.chapterId = parseInt(/\/chapter\/(\d+)/.exec(chapterLink.href)![1]);
 		this.hidden = false;
 
 		// Update CSS

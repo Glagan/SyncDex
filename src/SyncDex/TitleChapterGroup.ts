@@ -159,6 +159,9 @@ export class TitleChapterGroup {
 							title.status = Status.READING;
 							if (!title.start) title.start = new Date();
 						}
+						if (Options.biggerHistory) {
+							await title.setHistory(row.chapterId);
+						}
 						await title.persist();
 						this.findNextChapter(title);
 						this.updateDisplayedRows(title);
