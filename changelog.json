@@ -1,6 +1,14 @@
 {
 	"updates": [
 		{
+			"version": "0.1.4",
+			"description": [
+				"Update History when using the \"Set as Latest\" button.",
+				"Display help and History size in History page.",
+				"Display progress in Thumbnails in all pages."
+			]
+		},
+		{
 			"version": "0.1.3",
 			"description": [
 				"Fix SyncDex mainService option and History while Importing.",

@@ -485,6 +485,7 @@ export class SyncDex {
 
 	titlePage = async (): Promise<void> => {
 		console.log('SyncDex :: Title');
+		const overview = new TitleOverview();
 
 		// Get Title
 		const id = parseInt(document.querySelector<HTMLElement>('.row .fas.fa-hashtag')!.parentElement!.textContent!);
@@ -605,7 +606,6 @@ export class SyncDex {
 			}
 		}
 
-		const overview = new TitleOverview();
 		// Load each Services to Sync
 		const syncModule = new SyncModule(title, overview);
 		syncModule.initialize();

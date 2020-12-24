@@ -77,6 +77,11 @@ export class TitleEditor {
 				})
 			);
 		}
+		if (Options.services.indexOf(service.key) >= 0) {
+			for (const input of inputs) {
+				input.style.borderColor = '#00c8d7';
+			}
+		}
 		return inputs;
 	};
 

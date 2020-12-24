@@ -5,7 +5,7 @@ You can also **Import**/**Export** your list between all of these services, to e
 
 | ![MyAnimeList Icon](icons/mal.png) MyAnimeList | ![Anilist Icon](icons/al.png) Anilist | ![Kitsu Icon](icons/ku.png) Kitsu | ![MangaUpdates Icon](icons/mu.png) MangaUpdates | ![Anime Planet Icon](icons/ap.png) Anime Planet |
 |:---:|:---:|:---:|:---:|:---:|
-| [https://myanimelist.net/]() | [https://anilist.co/]() | [https://kitsu.io/]() | [https://www.mangaupdates.com/]() | [https://www.anime-planet.com/]() |
+| [myanimelist.net](https://myanimelist.net/) | [anilist.co](https://anilist.co/) | [kitsu.io](https://kitsu.io/) | [mangaupdates.com](https://www.mangaupdates.com/) | [anime-planet.com](https://www.anime-planet.com/) |
 
 > **SyncDex** is still in beta, expect bugs if you try using it.  
 > **Chrome** is always late, use **Firefox** or build your own version.
