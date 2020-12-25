@@ -120,6 +120,7 @@ export class TitleChapterGroup {
 									}
 								}
 							}
+							await title.persist();
 						});
 					}
 

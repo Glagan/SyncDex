@@ -5,7 +5,8 @@
 			"description": [
 				"Update History when using the \"Set as Latest\" button.",
 				"Display help and History size in History page.",
-				"Display progress in Thumbnails in all pages."
+				"Display progress in Thumbnails in all pages.",
+				"Fix opened chapters."
 			]
 		},
 		{

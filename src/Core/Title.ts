@@ -259,7 +259,7 @@ export class LocalTitle extends Title {
 	/**
 	 * List of all read Chapters.
 	 */
-	chapters: number[] = [];
+	chapters!: number[];
 	/**
 	 * Last time the Title page of the Title was visited.
 	 */
@@ -291,6 +291,7 @@ export class LocalTitle extends Title {
 		this.inList = title !== undefined;
 		this.synced = true;
 		this.loggedIn = true;
+		if (!this.chapters) this.chapters = [];
 		if (!title?.services || !this.services) this.services = {};
 	}
 
@@ -456,10 +457,10 @@ export class LocalTitle extends Title {
 
 	addChapter = (chapter: number): boolean => {
 		let max = this.chapters.length;
-		let hasChapter = this.chapters.indexOf(chapter) < 0;
+		const doAdd = this.chapters.indexOf(chapter) < 0;
 		let index = 0;
 		// Add to chapter list only if it's not already in
-		if (hasChapter) {
+		if (doAdd) {
 			// Sorted insert
 			for (; index <= max; index++) {
 				if (index == max) {
@@ -477,11 +478,11 @@ export class LocalTitle extends Title {
 			else this.chapters.pop();
 			max--;
 		}
-		return hasChapter;
+		return doAdd;
 	};
 
 	removeChapter = (chapter: number): void => {
-		let index = this.chapters.indexOf(chapter);
+		const index = this.chapters.indexOf(chapter);
 		if (index >= 0) this.chapters.splice(index, 1);
 	};
 

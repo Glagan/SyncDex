@@ -55,6 +55,7 @@ export class ChapterList {
 						}
 					}
 				}
+				await title.persist();
 			});
 
 			// Bind Set as Latest button
