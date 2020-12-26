@@ -1,6 +1,15 @@
 {
 	"updates": [
 		{
+			"version": "0.1.5",
+			"description": [
+				"Fix reading on Chrome.",
+				"Add iconsSilentAfterSync options to remove colors after sync while reading.",
+				"Fix logs being saved and erased on import with Save Sync.",
+				"Save Sync backend also has been fixed and tokens should refresh now."
+			]
+		},
+		{
 			"version": "0.1.4",
 			"description": [
 				"Update History when using the \"Set as Latest\" button.",

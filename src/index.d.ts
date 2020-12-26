@@ -152,6 +152,7 @@ interface AvailableOptions {
 	saveOnlyNext: boolean;
 	confirmChapter: boolean;
 	updateOnlyInList: boolean;
+	iconsSilentAfterSync: boolean;
 	// Title
 	linkToServices: boolean;
 	overviewMainOnly: boolean;

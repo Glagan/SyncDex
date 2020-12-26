@@ -775,13 +775,16 @@ export class ReadingOverview {
 	};
 
 	updateIcon = (icon: HTMLImageElement, res: Title | RequestStatus): void => {
-		if (res instanceof Title) {
-			if (!res.loggedIn) {
-				icon.classList.add('error');
-			} else {
-				icon.classList.add('synced');
-			}
-		} else icon.classList.add('warning');
+		icon.classList.remove('loading', 'error', 'synced', 'warning');
+		if (!Options.iconsSilentAfterSync) {
+			if (res instanceof Title) {
+				if (!res.loggedIn) {
+					icon.classList.add('error');
+				} else {
+					icon.classList.add('synced');
+				}
+			} else icon.classList.add('warning');
+		}
 	};
 
 	hasNoServices = (): void => {
@@ -803,7 +806,6 @@ export class ReadingOverview {
 	receivedInitialRequest = (key: ActivableKey, res: Title | RequestStatus, syncModule: SyncModule): void => {
 		const icon = this.icons[key];
 		if (!icon) return;
-		icon.classList.remove('loading');
 		this.updateIcon(icon, res);
 	};
 
@@ -816,7 +818,6 @@ export class ReadingOverview {
 	syncedService = (key: ActivableKey, res: Title | RequestStatus, title: Title): void => {
 		const icon = this.icons[key];
 		if (!icon) return;
-		icon.classList.remove('loading');
 		this.updateIcon(icon, res);
 	};
 

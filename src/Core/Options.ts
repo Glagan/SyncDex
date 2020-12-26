@@ -23,6 +23,7 @@ export const DefaultOptions: AvailableOptions = {
 	saveOnlyNext: false,
 	confirmChapter: true,
 	updateOnlyInList: false,
+	iconsSilentAfterSync: false,
 	// Title
 	linkToServices: true,
 	overviewMainOnly: true,

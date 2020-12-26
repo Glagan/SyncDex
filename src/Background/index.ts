@@ -341,7 +341,7 @@ async function syncSave(force: boolean = false) {
 				await LocalStorage.remove('saveSync');
 				setIcon();
 			}
-		}
+		} else setIcon();
 	} else setIcon();
 }
 async function silentImport(manual: boolean = false) {
