@@ -30,7 +30,7 @@ export class Changelog {
 		const main = DOM.create('ul', { class: 'changelog' });
 		const currentVersion = `${Options.version}.${Options.subVersion}`;
 		for (const update of changelog.updates) {
-			const version = DOM.create('li', { class: 'section', textContent: update.version });
+			const version = DOM.create('li', { textContent: update.version });
 			if (update.version == currentVersion) {
 				DOM.append(
 					version,

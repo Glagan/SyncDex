@@ -79,13 +79,7 @@ export class SyncDex {
 			return;
 
 		const groups = TitleChapterGroup.getGroups();
-		const titles = await TitleCollection.get([
-			...new Set(
-				groups.map((group) => {
-					return group.id;
-				})
-			),
-		]);
+		const titles = await TitleCollection.get([...new Set(groups.map((group) => group.id))]);
 
 		// Hide, Highlight and add Thumbnails to each row
 		for (const group of groups) {
@@ -310,7 +304,7 @@ export class SyncDex {
 		// Collect all warnings and reasons to not update to the current Chapter
 		let missingUpdateValidations: string[] = [];
 		// Update title state if not delayed -- Handle external titles as delayed
-		const delayed = details._data.status != 'OK'; // && details._data.status != 'external';
+		const delayed = details._data.status == 'delayed' || details._data.status == 'external';
 		if (delayed && Options.confirmChapter) {
 			missingUpdateValidations.push(
 				`**${state.title.name}** Chapter **${details._data.chapter}** is delayed or external and has not been updated.`
@@ -396,7 +390,7 @@ export class SyncDex {
 					{
 						type: 'info',
 						value: 'Options',
-						onClick: (notification: SimpleNotification) => {
+						onClick: (notification) => {
 							Runtime.openOptions();
 							notification.closeAnimated();
 						},
@@ -418,11 +412,10 @@ export class SyncDex {
 			// *window* is in the MangaDex page context
 			const addEventInterceptor = () =>
 				window.reader!.model.on('chapterchange', (event) => {
-					document.dispatchEvent(
-						new CustomEvent('ReaderChapterChange', {
-							detail: event,
-						})
-					);
+					// Chrome can't send class Objects
+					const detail = { _data: event._data, manga: event.manga };
+					delete detail.manga.response;
+					document.dispatchEvent(new CustomEvent('ReaderChapterChange', { detail }));
 				});
 			// If the MangaDex reader still hasn't been loaded, check every 50ms
 			if (window.reader === undefined) {
@@ -441,7 +434,7 @@ export class SyncDex {
 			syncModule: undefined,
 		};
 		document.addEventListener('ReaderChapterChange', async (event) => {
-			await this.chapterEvent((event as ChapterChangeEvent).detail, state);
+			await this.chapterEvent((event as CustomEvent).detail, state);
 		});
 	};
 

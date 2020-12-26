@@ -366,17 +366,11 @@ table {
 // Changelog
 ul.changelog {
 	list-style-type: disclosure-closed;
-	padding-left: 1rem;
 }
 ul.changelog {
-	ul {
+	& > li ul {
 		list-style-type: initial;
-	}
-
-	ul,
-	li {
-		margin: revert;
-		padding: revert;
+		padding-left: 2rem;
 	}
 }
 

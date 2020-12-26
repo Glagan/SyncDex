@@ -85,7 +85,7 @@ if (quickDebug) {
 			modal.body,
 			DOM.message(
 				'warning',
-				`SyncDex is still in beta, don't be afraid to open issues on Github, or contact me (see CONTACT.md on Github) ! You can find the link on the left.`
+				`SyncDex is still in beta, don't be afraid to open issues on Github, or contact me (see SUPPORT.md on Github) ! You can find the link on the left.`
 			),
 			DOM.message(
 				'info',
