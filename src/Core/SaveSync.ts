@@ -60,16 +60,21 @@ export abstract class SaveSync {
 	// Error when localSave is more recent than the external save and *should* be exported but there is no way to check.
 	// lastSync is never deleted, if there is no service change it shouldn't be a problem,
 	// 	the old save will have the same lastSync server side and it will export, and maybe that's enough.
-	sync = async (): Promise<SaveSyncResult> => {
+	sync = async (force: boolean = false): Promise<SaveSyncResult> => {
 		const lastSync = await this.lastSync();
-		if (lastSync == 0) {
+		if (force || lastSync == 0) {
+			await log(`No external lastSync or ${force ? 'forced' : 'not forced'}, uploading save.`);
 			return this.export();
 		} else if (lastSync > 0) {
 			const localSync = await LocalStorage.get('lastSync');
 			if (localSync === undefined || localSync < lastSync) {
+				await log(`No local lastSync or ${localSync} < ${lastSync}, downloading save.`);
 				return this.import(lastSync);
+			} else if (localSync > lastSync) {
+				await log(`${localSync} > ${lastSync}, uploading save.`);
+				return this.export();
 			}
-			return this.export();
+			return SaveSyncResult.NOTHING;
 		}
 		return SaveSyncResult.ERROR;
 	};

@@ -252,6 +252,7 @@ export class Dropbox extends SaveSync {
 					refresh: body.refresh_token,
 				};
 				await LocalStorage.set('saveSync', SaveSync.state);
+				await log('Obtained Dropbox token');
 				return SaveSyncLoginResult.SUCCESS;
 			}
 			/*SimpleNotification.error({
@@ -261,6 +262,7 @@ export class Dropbox extends SaveSync {
 			return SaveSyncLoginResult.API_ERROR;
 		} catch (error) {}
 		//SimpleNotification.error({ title: 'API Error', text: 'Could not parse a body from the Dropbox API.' });
+		await log('Failed to obtain Dropbox token');
 		return SaveSyncLoginResult.API_ERROR;
 	};
 }

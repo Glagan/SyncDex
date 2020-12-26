@@ -31,6 +31,7 @@ async function getCleanSave() {
 	delete save.saveSync;
 	delete save.saveSyncInProgress;
 	delete save.importInProgress;
+	delete save.logs;
 	return save;
 }
 
@@ -181,8 +182,11 @@ function handleMessage(message: Message, sender?: BrowserRuntime.MessageSender) 
 			const alarm = await browser.alarms.get(SaveSyncAlarmName);
 			const delay = message.delay !== undefined ? message.delay : 1;
 			if (delay === 0) {
-				if (alarm) browser.alarms.clear(SaveSyncAlarmName);
-				await syncSave();
+				if (alarm) {
+					browser.alarms.clear(SaveSyncAlarmName);
+					setIcon();
+				}
+				await syncSave(true);
 			} else if (!alarm) {
 				const scheduled = new Date(Date.now() + delay * 60 * 1000);
 				setIcon(
@@ -297,11 +301,11 @@ browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstall
 
 browser.alarms.onAlarm.addListener(async (alarm: Alarms.Alarm) => {
 	if (alarm.name == SaveSyncAlarmName) {
-		await syncSave();
+		await syncSave(true);
 	}
 });
 
-async function syncSave() {
+async function syncSave(force: boolean = false) {
 	setIcon('Save Sync in progress', '#45A1FF', '...');
 	const syncState = await LocalStorage.get('saveSync');
 	if (syncState !== undefined) {
@@ -315,8 +319,10 @@ async function syncSave() {
 					/// @ts-ignore saveSyncServiceClass is *NOT* abstract
 					const saveSyncService: SaveSync = new saveSyncServiceClass();
 					SaveSync.state = syncState;
-					result = await saveSyncService.sync();
-					if (result == SaveSyncResult.ERROR) {
+					result = await saveSyncService.sync(force);
+					if (result == SaveSyncResult.NOTHING) {
+						await log(`Save already synced with ${syncState.service}`);
+					} else if (result == SaveSyncResult.ERROR) {
 						await log(`Couldn't sync your local save with ${syncState.service}`);
 					} else if (result != SaveSyncResult.SYNCED) {
 						await log(`Synced your save with ${syncState.service}`);

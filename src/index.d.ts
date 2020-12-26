@@ -99,6 +99,7 @@ declare const enum SaveSyncResult {
 	UPLOADED,
 	DOWNLOADED,
 	SYNCED,
+	NOTHING,
 	ERROR,
 }
 

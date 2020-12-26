@@ -204,6 +204,7 @@ export class GoogleDrive extends SaveSync {
 					refresh: body.refresh_token,
 				};
 				await LocalStorage.set('saveSync', SaveSync.state);
+				await log('Obtained Google Drive token');
 				return SaveSyncLoginResult.SUCCESS;
 			}
 			/*SimpleNotification.error({
@@ -214,6 +215,7 @@ export class GoogleDrive extends SaveSync {
 			});*/
 		} catch (error) {}
 		//SimpleNotification.error({ title: 'API Error', text: 'Could not parse a body from the Dropbox API.' });
+		await log('Failed to obtain Google Drive token');
 		return SaveSyncLoginResult.API_ERROR;
 	};
 }
