@@ -197,11 +197,13 @@ export class GoogleDrive extends SaveSync {
 		try {
 			const body: GoogleDriveTokenResponse = JSON.parse(response.body);
 			if (response.ok && !body.error) {
+				// Avoid reseting refresh token
+				const refreshToken = SaveSync.state?.refresh ? SaveSync.state.refresh : body.refresh_token;
 				SaveSync.state = {
 					service: 'GoogleDrive',
 					token: body.access_token,
 					expires: Date.now() + body.expires_in * 1000,
-					refresh: body.refresh_token,
+					refresh: refreshToken,
 				};
 				await LocalStorage.set('saveSync', SaveSync.state);
 				await log('Obtained Google Drive token');
