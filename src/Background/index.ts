@@ -315,7 +315,7 @@ async function syncSave(force: boolean = false) {
 				await LocalStorage.set('saveSyncInProgress', true);
 				let result = SaveSyncResult.ERROR;
 				try {
-					await browser.runtime.sendMessage({ action: MessageAction.saveSyncStart });
+					await browser.runtime.sendMessage({ action: MessageAction.saveSyncStart }).catch((_e) => _e);
 					/// @ts-ignore saveSyncServiceClass is *NOT* abstract
 					const saveSyncService: SaveSync = new saveSyncServiceClass();
 					SaveSync.state = syncState;
@@ -331,7 +331,9 @@ async function syncSave(force: boolean = false) {
 					log(error);
 				}
 				await LocalStorage.remove('saveSyncInProgress');
-				await browser.runtime.sendMessage({ action: MessageAction.saveSyncComplete, status: result });
+				await browser.runtime
+					.sendMessage({ action: MessageAction.saveSyncComplete, status: result })
+					.catch((_e) => _e);
 				setIcon('SyncDex', '#058b00', '\u2713');
 			} else {
 				SaveSync.state = undefined;
@@ -351,7 +353,7 @@ async function silentImport(manual: boolean = false) {
 		const lastCheck: number | string[] = await LocalStorage.get('import', 0);
 		if (manual || typeof lastCheck !== 'number' || Date.now() - lastCheck > checkCooldown) {
 			await LocalStorage.set('importInProgress', true);
-			await browser.runtime.sendMessage({ action: MessageAction.importStart });
+			await browser.runtime.sendMessage({ action: MessageAction.importStart }).catch((_e) => _e);
 			await log('Importing lists');
 			const services =
 				!manual && Options.checkOnStartupMainOnly ? [Options.mainService!] : [...Options.services].reverse();
@@ -375,14 +377,14 @@ async function silentImport(manual: boolean = false) {
 			}
 			if (!manual) await LocalStorage.set('import', Date.now());
 			await LocalStorage.remove('importInProgress');
-			await browser.runtime.sendMessage({ action: MessageAction.importComplete });
+			await browser.runtime.sendMessage({ action: MessageAction.importComplete }).catch((_e) => _e);
 			await log(`Done Importing lists`);
 		} else await log(`Startup script executed less than ${Options.checkOnStartupCooldown}minutes ago, skipping`);
 	} else if (Options.checkOnStartup) await log('Did not Import: No services enabled');
 }
 async function onStartup() {
 	if (!isChrome) browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
-	await LocalStorage.remove(['dropboxState', 'googleDriveState', 'saveSyncInProgress']);
+	await LocalStorage.remove(['dropboxState', 'googleDriveState', 'saveSyncInProgress', 'importInProgress']);
 
 	await syncSave();
 	await silentImport();

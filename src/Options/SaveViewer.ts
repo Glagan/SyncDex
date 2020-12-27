@@ -42,6 +42,8 @@ export class SaveViewer {
 		field: 'key',
 		order: 'ASC',
 	};
+	// MangaDex login status for SyncModule
+	static loggedIn = false;
 
 	constructor() {
 		this.pagingPages = document.getElementById('paging-pages')!;
@@ -254,6 +256,7 @@ export class SaveViewer {
 		editButton.addEventListener('click', async (event) => {
 			event.preventDefault();
 			const syncModule = new SyncModule(title);
+			syncModule.loggedIn = SaveViewer.loggedIn;
 			syncModule.initialize();
 			let removed = false;
 			TitleEditor.create(
@@ -342,6 +345,11 @@ export class SaveViewer {
 		DOM.clear(this.pagingPages);
 		DOM.clear(this.body);
 		if (reload) {
+			const response = await Runtime.jsonRequest({
+				url: 'https://mangadex.org/api/v2/user/me/',
+				credentials: 'include',
+			});
+			SaveViewer.loggedIn = response.ok;
 			this.realTitles = await TitleCollection.get();
 		}
 		this.titles.collection = Array.from(this.realTitles.collection);

@@ -160,7 +160,7 @@ export class SyncModule {
 		}
 		// Update MangaDex List Status and Score
 		// Can't check loggedIn status since it can be called without MangaDex check first
-		if (Options.updateMD) {
+		if (Options.updateMD && this.loggedIn) {
 			const strings: { success: string[]; error: string[] } = { success: [], error: [] };
 			if (this.title.mdStatus != this.title.status) {
 				this.title.mdStatus = this.title.status;

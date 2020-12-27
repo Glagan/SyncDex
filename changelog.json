@@ -6,7 +6,9 @@
 				"Fix reading on Chrome.",
 				"Add iconsSilentAfterSync options to remove colors after sync while reading.",
 				"Fix logs being saved and erased on import with Save Sync.",
-				"Save Sync backend also has been fixed and tokens should refresh now."
+				"Save Sync backend also has been fixed and tokens should refresh now.",
+				"Avoid sending MangaDex status update while logged out.",
+				"Fix \"Check Lists on Startup\"."
 			]
 		},
 		{

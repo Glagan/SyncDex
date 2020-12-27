@@ -82,11 +82,15 @@ export class SyncDex {
 		const groups = TitleChapterGroup.getGroups();
 		const titles = await TitleCollection.get([...new Set(groups.map((group) => group.id))]);
 
+		// Check MangaDex login status
+		const loggedIn = document.querySelector(`a.nav-link[href^='/user']`) !== null;
 		// Hide, Highlight and add Thumbnails to each row
 		for (const group of groups) {
 			const title = titles.find(group.id);
 			if (title !== undefined && title.inList) {
-				group.initialize(new SyncModule(title));
+				const syncModule = new SyncModule(title);
+				syncModule.loggedIn = loggedIn;
+				group.initialize(syncModule);
 				group.updateDisplayedRows(title);
 			} else if (group.rows.length > 0) {
 				// Still add thumbnails and the Group title if it's no in list
@@ -610,9 +614,9 @@ export class SyncDex {
 
 			// Load each Services to Sync
 			const syncModule = new SyncModule(title, overview);
-			syncModule.initialize();
-			// Find if logged in on MangaDex
+			// Find MangaDex login status
 			syncModule.loggedIn = !document.querySelector('button[title="You need to log in to use this function."]');
+			syncModule.initialize();
 			const imported = await syncModule.syncLocal();
 
 			// Add all chapters from the ChapterList if it's a new Title
