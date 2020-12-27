@@ -5,6 +5,7 @@ import { Overview } from '../SyncDex/Overview';
 import { StaticKey, ActivableKey } from './Service';
 import { ExternalTitles } from './ExternalTitles';
 import { Services } from './Services';
+import { log } from './Log';
 
 export type SyncReport = {
 	[key in ActivableKey]?: RequestStatus | false;
@@ -142,12 +143,18 @@ export class SyncModule {
 				this.overview?.syncingService(key);
 				const promise = this.title.status == Status.NONE ? service.delete() : service.persist();
 				promises.push(promise);
-				promise.then((res) => {
-					if (res > RequestStatus.DELETED) {
-						this.overview?.syncedService(key, res, this.title);
-					} else this.overview?.syncedService(key, service, this.title);
-					report[key] = res;
-				});
+				promise
+					.then((res) => {
+						if (res > RequestStatus.DELETED) {
+							this.overview?.syncedService(key, res, this.title);
+						} else this.overview?.syncedService(key, service, this.title);
+						report[key] = res;
+					})
+					.catch(async (error) => {
+						this.overview?.syncedService(key, RequestStatus.FAIL, this.title);
+						report[key] = false;
+						await log(error);
+					});
 				// Always update the overview to check against possible imported ServiceTitle
 			} else this.overview?.syncedService(key, service, this.title);
 		}
