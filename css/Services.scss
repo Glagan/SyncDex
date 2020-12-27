@@ -26,6 +26,11 @@ $services-secondary: (
 	'al': #ffffff,
 );
 
+$services-colors-dark: (
+	'mal': #6d92e8,
+	'mu': #a5acb3,
+);
+
 $services-bg: (
 	'mmd': #ffffff,
 	'sc': #fefefe,
@@ -35,6 +40,12 @@ $services-bg: (
 	'ku': rgb(64, 47, 63),
 	'mu': rgb(240, 243, 247),
 	'ap': rgb(48, 48, 48),
+);
+
+$services-bg-dark: (
+	'sc': $grey-70,
+	'mal': $grey-70,
+	'mu': $grey-70,
 );
 
 // Custom separated Title

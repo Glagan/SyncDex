@@ -444,6 +444,10 @@ export class TitleOverview extends Overview {
 	constructor() {
 		super();
 		this.column = DOM.create('div', { class: 'overview col-lg-9 col-xl-10' });
+		const isDarkTheme =
+			document.querySelector('link[rel="stylesheet"][href*="Dark"]') !== null ||
+			document.querySelector('link[rel="stylesheet"][href*="Abyss"]') !== null;
+		if (isDarkTheme) this.column.classList.add('dark');
 		this.row = DOM.create('div', {
 			class: 'row m-0 py-1 px-0 border-top',
 			childs: [DOM.create('div', { class: 'col-lg-3 col-xl-2 strong', textContent: 'SyncDex:' }), this.column],

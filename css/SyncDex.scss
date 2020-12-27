@@ -235,6 +235,36 @@
 	&.sc .body {
 		color: black;
 	}
+	// Dark Theme
+	&.dark {
+		@each $key, $color in $services-colors-dark {
+			& .tab.#{$key} {
+				color: $color;
+				border-color: $color;
+			}
+			&.#{$key} .tabs::after {
+				border-color: $color;
+			}
+			&.#{$key} .body {
+				color: $color;
+				border-color: $color;
+			}
+		}
+		@each $key, $color in $services-bg-dark {
+			& .tab.#{$key} {
+				background-color: $color;
+			}
+			.tab.#{$key}.active {
+				border-bottom-color: $color;
+			}
+			&.#{$key} .body {
+				background-color: $color;
+			}
+		}
+	}
+	&.dark.sc .body {
+		color: $white-100;
+	}
 	.helper {
 		font-size: 0.75rem;
 		font-weight: lighter;
