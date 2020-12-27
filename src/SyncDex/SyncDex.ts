@@ -512,9 +512,7 @@ export class SyncDex {
 			if (maxChapter && maxChapter.nextSibling && maxChapter.nextSibling.textContent) {
 				const chapter = /\/(\d+)/.exec(maxChapter.nextSibling.textContent);
 				if (chapter) {
-					title.max = {
-						chapter: parseInt(chapter[1]),
-					};
+					title.max = { chapter: parseInt(chapter[1]) };
 				}
 			}
 			const maxVolume = document.getElementById('current_volume');
@@ -542,20 +540,19 @@ export class SyncDex {
 			let informationRow = Array.from(informationTable.children).find(
 				(row) => row.firstElementChild?.textContent == 'Information:'
 			);
-			if (pickLocalServices || Options.linkToServices) {
-				if (informationRow) {
-					const services = informationRow.querySelectorAll<HTMLImageElement>('img');
-					for (const serviceIcon of services) {
-						const serviceLink = serviceIcon.nextElementSibling as HTMLAnchorElement;
-						// Convert icon name to ServiceKey, only since kt is ku
-						const serviceKey = iconToService(serviceIcon.src);
-						if (serviceKey !== undefined) {
-							const id = ExternalTitles[serviceKey].idFromLink(serviceLink.href);
-							localServices[serviceKey] = [serviceLink.parentElement!, id];
-							if (pickLocalServices) title.services[serviceKey] = id;
-						}
+			// Nothing to do if there is no row
+			if ((pickLocalServices || Options.linkToServices) && informationRow) {
+				const services = informationRow.querySelectorAll<HTMLImageElement>('img');
+				for (const serviceIcon of services) {
+					const serviceLink = serviceIcon.nextElementSibling as HTMLAnchorElement;
+					// Convert icon name to ServiceKey, only since kt is ku
+					const serviceKey = iconToService(serviceIcon.src);
+					if (serviceKey !== undefined) {
+						const id = ExternalTitles[serviceKey].idFromLink(serviceLink.href);
+						localServices[serviceKey] = [serviceLink.parentElement!, id];
+						if (pickLocalServices) title.services[serviceKey] = id;
 					}
-				} // Nothing to do if there is no row
+				}
 			}
 			await title.persist(); // Always save
 

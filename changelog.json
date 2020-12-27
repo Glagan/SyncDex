@@ -1,6 +1,10 @@
 {
 	"updates": [
 		{
+			"version": "0.1.6",
+			"description": ["Fix AnimePlanet."]
+		},
+		{
 			"version": "0.1.5",
 			"description": [
 				"Fix reading on Chrome.",

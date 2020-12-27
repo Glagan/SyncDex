@@ -15,6 +15,7 @@ import { MangaDexImport, MangaDexExport } from './SpecialService/MangaDex';
 import { SpecialService } from './SpecialService';
 import { Logs } from './Logs';
 import { SaveSyncManager } from './Manager/SaveSync';
+import { Log } from '../Core/Log';
 
 export class OptionsManager {
 	highlightsManager: HighlightsManager;
@@ -74,6 +75,7 @@ export class OptionsManager {
 					window.clearTimeout(clearClickCount);
 					deleteSave.classList.add('loading');
 					if (notification) notification.remove();
+					Log.logs = [];
 					await LocalStorage.clear();
 					Options.reset();
 					await SaveOptions();

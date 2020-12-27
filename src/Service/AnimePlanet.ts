@@ -134,7 +134,7 @@ export class AnimePlanetExport extends ExportModule {
 			this.interface?.message('error', 'Token not found.');
 			return false;
 		}
-		return false;
+		return true;
 	};
 
 	execute = async (titles: LocalTitle[]): Promise<boolean> => {
@@ -221,7 +221,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 
 	static async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
 		const response = await Runtime.request<RawResponse>({
-			url: AnimePlanetTitle.link(key),
+			url: AnimePlanet.link(key),
 			method: 'GET',
 			credentials: 'include',
 		});

@@ -229,15 +229,6 @@ export abstract class Title {
 		if (this.name && this.name != '') title.name = title.name;
 	};
 
-	static link = (id: MediaKey): string => {
-		throw 'Title.link is an abstract function';
-		return '#';
-	};
-
-	getLink = (): string => {
-		return (<typeof Title>this.constructor).link(this.key);
-	};
-
 	isNextChapter = (progress: Progress): boolean => {
 		return progress.chapter > this.progress.chapter && progress.chapter < Math.floor(this.progress.chapter) + 2;
 	};

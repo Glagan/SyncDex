@@ -1,6 +1,6 @@
 import { Alarms, browser, Runtime as BrowserRuntime, WebRequest } from 'webextension-polyfill-ts';
 import { isChrome } from '../Core/IsChrome';
-import { log } from '../Core/Log';
+import { loadLogs, log } from '../Core/Log';
 import { ModuleStatus } from '../Core/Module';
 import { DefaultOptions, Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
@@ -312,6 +312,7 @@ async function syncSave(force: boolean = false) {
 		if (!(await LocalStorage.get('saveSyncInProgress', false))) {
 			const saveSyncServiceClass = SaveSyncServices[syncState.service];
 			if (saveSyncServiceClass !== undefined) {
+				await loadLogs(true);
 				await LocalStorage.set('saveSyncInProgress', true);
 				let result = SaveSyncResult.ERROR;
 				try {
