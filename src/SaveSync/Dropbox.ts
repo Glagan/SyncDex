@@ -245,11 +245,12 @@ export class Dropbox extends SaveSync {
 		try {
 			const body: DropboxTokenResponse = JSON.parse(response.body);
 			if (response.ok) {
+				const refreshToken = SaveSync.state?.refresh ? SaveSync.state.refresh : body.refresh_token;
 				SaveSync.state = {
 					service: 'Dropbox',
 					token: body.access_token,
 					expires: Date.now() + body.expires_in * 1000,
-					refresh: body.refresh_token,
+					refresh: refreshToken,
 				};
 				await LocalStorage.set('saveSync', SaveSync.state);
 				await log('Obtained Dropbox token');
