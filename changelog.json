@@ -2,7 +2,11 @@
 	"updates": [
 		{
 			"version": "0.1.6",
-			"description": ["Fix AnimePlanet.", "Dark mode for the Overview, Title Editor and all Modals."]
+			"description": [
+				"Fix AnimePlanet.",
+				"Dark mode for the Overview, Title Editor and all Modals.",
+				"Fix Overview showing wrong informations."
+			]
 		},
 		{
 			"version": "0.1.5",

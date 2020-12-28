@@ -261,7 +261,7 @@ class ServiceOverview {
 	update = (res: Title | RequestStatus, title: LocalTitle): void => {
 		this.clear();
 		if (typeof res === 'object') {
-			this.overview(title, this.content);
+			this.overview(res, this.content);
 			// Display *Sync* button only if the title is out of sync, with auto sync disabled and if the title is in a list
 			if (!Options.autoSync && !res.isSynced(title) && title.status !== Status.NONE && res.loggedIn) {
 				this.setTabIcon('sync has-error');
