@@ -379,9 +379,6 @@ body:not(.light) {
 	color: $white-100;
 
 	.scs {
-		&.modal .card .body {
-			color: $grey-90;
-		}
 		&.card {
 			box-shadow: $light-shadow-10;
 		}

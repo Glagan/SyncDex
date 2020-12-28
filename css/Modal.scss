@@ -50,4 +50,16 @@
 	&.medium .card {
 		max-width: 40rem;
 	}
+
+	body:not(.light) & .card,
+	&.dark .card {
+		& .header {
+			border-color: $grey-70;
+		}
+		& .body,
+		& .footer {
+			background-color: $grey-70;
+			color: $white-100;
+		}
+	}
 }
