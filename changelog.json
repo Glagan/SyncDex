@@ -2,7 +2,10 @@
 	"updates": [
 		{
 			"version": "0.1.8",
-			"description": ["Fix History, last read and last title being deleted after Import."]
+			"description": [
+				"Fix History, last read and last title being deleted after Import.",
+				"Fix duplicate progress update when changing chapter too quickly."
+			]
 		},
 		{
 			"version": "0.1.7",

@@ -34,6 +34,9 @@ console.log('SyncDex :: Core');
 
 export class SyncDex {
 	router: Router = new Router();
+	// Chapter page
+	readingQueue: ChapterChangeEventDetails[] = [];
+	processingReadingQueue: boolean = false;
 
 	constructor() {
 		this.router.register(
@@ -166,7 +169,10 @@ export class SyncDex {
 		syncModule.displayReportNotifications(report, informations, previousState);
 	};
 
-	chapterEvent = async (details: ChapterChangeEventDetails, state: ReadingState): Promise<void> => {
+	processReadingQueue = async (state: ReadingState): Promise<void> => {
+		const details = this.readingQueue.shift();
+		if (!details) return;
+
 		// Get the Title and Services initial state on the first chapter change
 		const id = details.manga._data.id;
 		let firstRequest = false;
@@ -214,6 +220,7 @@ export class SyncDex {
 					url: `https://mangadex.org/api/v2/user/me/manga/${id}`,
 					credentials: 'include',
 				});
+				// ! API is bugged, followType is sometimes null
 				if (response.ok) {
 					if (typeof response.body.data.followType === 'number') {
 						state.title.mdStatus = response.body.data.followType;
@@ -294,7 +301,7 @@ export class SyncDex {
 					notification.closeAnimated();
 					const completed = state.title!.setProgress(currentProgress);
 					await state.title!.persist();
-					this.syncShowResult(
+					await this.syncShowResult(
 						state.syncModule!,
 						{
 							created: created,
@@ -373,7 +380,7 @@ export class SyncDex {
 		await state.title.persist(); // Always save
 		// If all conditions are met we can sync to current progress
 		if (doUpdate) {
-			this.syncShowResult(
+			await this.syncShowResult(
 				state.syncModule,
 				{
 					created: created,
@@ -386,6 +393,11 @@ export class SyncDex {
 		}
 		// If we do not need to update, we still sync to the current non updated progress but no output
 		else if (firstRequest && Options.services.length > 0) await state.syncModule.syncExternal();
+
+		// Next
+		if (this.readingQueue.length > 0) {
+			return this.processReadingQueue(state);
+		}
 	};
 
 	chapterPage = (): void => {
@@ -444,7 +456,12 @@ export class SyncDex {
 			syncModule: undefined,
 		};
 		document.addEventListener('ReaderChapterChange', async (event) => {
-			await this.chapterEvent((event as CustomEvent).detail, state);
+			this.readingQueue.push((event as CustomEvent).detail);
+			if (!this.processingReadingQueue) {
+				this.processingReadingQueue = true;
+				await this.processReadingQueue(state);
+				this.processingReadingQueue = false;
+			}
 		});
 	};
 
