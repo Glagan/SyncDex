@@ -849,19 +849,14 @@ export class SyncDex {
 			const wasInHistory = History.find(id) >= 0;
 			const title = wasInHistory ? titles.find(id) : await LocalTitle.get(id);
 			if (title) {
+				const progress = stringToProgress(chapterLink.textContent!);
+				if (!progress) continue;
+				if (!title.history) title.history = progress;
+				if (title.lastChapter !== chapter) title.lastChapter = chapter;
 				if (!title.inList) {
 					title.name = node.querySelector<HTMLElement>('.manga_title')!.textContent!;
-					title.lastChapter = chapter;
-					// Progress
-					const progress = stringToProgress(chapterLink.textContent!);
-					if (!progress) continue;
 					title.progress = progress;
-					title.history = progress;
-					// If it's not in history it wasn't loaded, add it to the collection
 					addedTitles.add(title);
-				}
-				if (title.lastChapter !== chapter) {
-					title.lastChapter = chapter;
 				}
 				if (!wasInHistory) {
 					titles.add(title);

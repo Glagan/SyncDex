@@ -1,6 +1,10 @@
 {
 	"updates": [
 		{
+			"version": "0.1.8",
+			"description": ["Fix History, last read and last title being deleted after Import."]
+		},
+		{
 			"version": "0.1.7",
 			"description": [
 				"Fix Dropbox.",

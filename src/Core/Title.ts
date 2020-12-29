@@ -427,7 +427,7 @@ export class LocalTitle extends Title {
 	 * Select highest values of both Titles and assign them to the receiving Title.
 	 */
 	localMerge = (other: LocalTitle): void => {
-		// Update all 'number' properties to select the highest ones -- except for dates
+		// Update all 'number' properties to select the highest ones
 		for (let k in this) {
 			const key = k as keyof Title;
 			if (this[key] && other[key] && typeof this[key] === 'number' && typeof other[key] === 'number') {
@@ -444,6 +444,12 @@ export class LocalTitle extends Title {
 			const diff = Options.chaptersSaved - this.chapters.length;
 			this.chapters.splice(-diff, diff);
 		}
+		// Add missing History fields
+		if (!this.history) this.history = other.history;
+		if (!this.lastRead) this.lastRead = other.lastRead;
+		if (!this.lastChapter) this.lastChapter = other.lastChapter;
+		if (!this.lastTitle) this.lastTitle = other.lastTitle;
+		if (!this.highest) this.highest = other.highest;
 	};
 
 	addChapter = (chapter: number): boolean => {
