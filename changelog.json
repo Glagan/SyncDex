@@ -4,7 +4,8 @@
 			"version": "0.1.8",
 			"description": [
 				"Fix History, last read and last title being deleted after Import.",
-				"Fix duplicate progress update when changing chapter too quickly."
+				"Fix duplicate progress update when changing chapter too quickly.",
+				"Add notification when SyncDex is already loaded on the page."
 			]
 		},
 		{

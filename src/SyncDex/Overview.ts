@@ -802,7 +802,9 @@ export class ReadingOverview {
 		});
 		if (hasId) {
 			icon.classList.add('loading');
-		} else icon.classList.add('error');
+		} else if (!Options.iconsSilentAfterSync) {
+			icon.classList.add('error');
+		}
 		this.serviceRow.insertBefore(icon, this.serviceRow.lastElementChild);
 		this.icons[key] = icon;
 	};
