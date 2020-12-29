@@ -64,13 +64,13 @@ export class MyAnimeListImport extends ImportModule {
 		return Status.NONE;
 	};
 
-	// Convert a DD-MM-YYYY MyAnimeList date to a Date timestamp
+	// Convert a MM-DD-YYYY MyAnimeList date to a Date timestamp
 	dateToTime = (date?: string): Date | undefined => {
 		if (date === undefined) return undefined;
 		const parts = date.split('-').map((p) => parseInt(p));
 		if (parts.length != 3) return undefined;
 		const year = parts[2] > 25 ? 1900 + parts[2] : 2000 + parts[2];
-		return new Date(year, Math.min(0, parts[1] - 1), parts[0]);
+		return new Date(year, Math.max(0, parts[0] - 1), parts[1]);
 	};
 
 	preExecute = async (): Promise<boolean> => {
@@ -115,7 +115,7 @@ export class MyAnimeListImport extends ImportModule {
 					score: title.score * 10,
 					start: this.dateToTime(title.start_date_string ?? undefined),
 					end: this.dateToTime(title.finish_date_string ?? undefined),
-					name: title.manga_title,
+					name: `${title.manga_title}`,
 					mochi: title.manga_id,
 				};
 				// Find Max Chapter if the Title is Completed
@@ -319,7 +319,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 		if (month == null || day == null || year == null) return undefined;
 		const parts: number[] = [parseInt(year.value), parseInt(month.value), parseInt(day.value)];
 		if (parts.some((part) => isNaN(part))) return undefined;
-		return new Date(parts[0], parts[1] - 1, parts[2]);
+		return new Date(parts[0], Math.max(0, parts[1] - 1), parts[2]);
 	};
 
 	static async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {

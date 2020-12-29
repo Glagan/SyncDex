@@ -200,6 +200,7 @@ export class GoogleDrive extends SaveSync {
 				// Avoid reseting refresh token
 				const refreshToken = SaveSync.state?.refresh ? SaveSync.state.refresh : body.refresh_token;
 				SaveSync.state = {
+					id: SaveSync.state?.id,
 					service: 'GoogleDrive',
 					token: body.access_token,
 					expires: Date.now() + body.expires_in * 1000,

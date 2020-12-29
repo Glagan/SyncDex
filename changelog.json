@@ -1,6 +1,15 @@
 {
 	"updates": [
 		{
+			"version": "0.1.7",
+			"description": [
+				"Fix Dropbox.",
+				"Avoid force upload save when logging in on a Save Sync Service.",
+				"Fix MyAnimeList invalid day and month in dates.",
+				"Fix MyAnimeList importing invalid Title names and breaking Save Viewer."
+			]
+		},
+		{
 			"version": "0.1.6",
 			"description": [
 				"Fix AnimePlanet.",

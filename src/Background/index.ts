@@ -186,7 +186,7 @@ function handleMessage(message: Message, sender?: BrowserRuntime.MessageSender) 
 					browser.alarms.clear(SaveSyncAlarmName);
 					setIcon();
 				}
-				await syncSave(true);
+				await syncSave();
 			} else if (!alarm) {
 				const scheduled = new Date(Date.now() + delay * 60 * 1000);
 				setIcon(
