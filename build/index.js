@@ -13,105 +13,14 @@ const commonjs = require('@rollup/plugin-commonjs');
 const options = require('minimist')(process.argv.slice(2), {
 	default: {
 		'web-ext': false,
-		mode: 'dev',
 		watch: false,
 	},
 });
 options.webExt = options['web-ext'];
 
 // Manifest
-let mainManifest = {
-	manifest_version: 2,
-	name: 'SyncDex',
-	version: process.env.npm_package_version,
-	author: 'Glagan',
-	description: 'Automatically update your Manga lists when reading on MangaDex.',
-	permissions: [
-		'storage',
-		'alarms',
-		'https://mochi.nikurasu.org/*',
-		'https://syncdex.nikurasu.org/*',
-		'https://myanimelist.net/about.php',
-		'https://myanimelist.net/manga/*',
-		'https://myanimelist.net/ownlist/manga/*',
-		'https://myanimelist.net/mangalist/*',
-		'https://mangadex.org/*',
-		'https://graphql.anilist.co/',
-		'https://kitsu.io/api/*',
-		'https://*.mangaupdates.com/series.html?id=*',
-		'https://*.mangaupdates.com/ajax/*',
-		'https://*.anime-planet.com/manga/*',
-		'https://*.anime-planet.com/api/*',
-		'https://api.dropboxapi.com/*',
-		'https://content.dropboxapi.com/*',
-		'https://www.googleapis.com/upload/drive/v3/files*',
-		'https://www.googleapis.com/drive/v3/files*',
-	],
-	icons: {
-		48: 'icons/48.png',
-		96: 'icons/96.png',
-		128: 'icons/128.png',
-	},
-	background: {
-		page: 'background/index.html',
-	},
-	content_scripts: [
-		{
-			matches: [
-				'https://*.mangadex.org/follows*',
-				'https://*.mangadex.org/manga*',
-				'https://*.mangadex.org/titles*',
-				'https://*.mangadex.org/title*',
-				'https://*.mangadex.org/chapter/*',
-				'https://*.mangadex.org/search*',
-				'https://*.mangadex.org/?page=search*',
-				'https://*.mangadex.org/?page=titles*',
-				'https://*.mangadex.org/featured',
-				'https://*.mangadex.org/group*',
-				'https://*.mangadex.org/genre*',
-				'https://*.mangadex.org/user*',
-				'https://*.mangadex.org/list*',
-				'https://*.mangadex.org/updates*',
-				'https://*.mangadex.org/history*',
-			],
-			js: ['dist/SimpleNotification.js', 'SyncDex.js'],
-			css: ['dist/SimpleNotification.min.css', 'css/SyncDex.css'],
-		},
-		{
-			matches: ['https://anilist.co/api/v2/oauth/pin?syncdex*'],
-			js: ['dist/SimpleNotification.js', 'external/SyncDex_Anilist.js'],
-			css: ['dist/SimpleNotification.min.css'],
-		},
-		{
-			matches: ['https://syncdex.nikurasu.org/?for=*'],
-			js: ['dist/SimpleNotification.js', 'external/SyncDex_Token.js'],
-			css: ['dist/SimpleNotification.min.css'],
-		},
-	],
-	browser_action: {
-		default_icon: {
-			48: 'icons/48.png',
-			96: 'icons/96.png',
-			128: 'icons/128.png',
-		},
-		default_title: 'SyncDex',
-	},
-	options_ui: {
-		page: 'options/index.html',
-		open_in_tab: true,
-	},
-	web_accessible_resources: [
-		'icons/sc.png',
-		'icons/mmd.png',
-		'icons/md.png',
-		'icons/mal.png',
-		'icons/al.png',
-		'icons/ku.png',
-		'icons/mu.png',
-		'icons/ap.png',
-		'options/index.html',
-	],
-};
+let mainManifest = require('../manifest.json');
+mainManifest.version = process.env.npm_package_version;
 const browsers = ['firefox', 'chrome'];
 let browser_manifests = {
 	firefox: {
@@ -121,17 +30,8 @@ let browser_manifests = {
 				strict_min_version: '61.0',
 			},
 		},
-		options_ui: {
-			page: 'options/index.html',
-			open_in_tab: true,
-		},
+		// Required permissions for Containers
 		permissions: ['webRequest', 'webRequestBlocking', 'cookies'],
-	},
-	chrome: {
-		options_ui: {
-			page: 'options/index.html',
-			open_in_tab: true,
-		},
 	},
 };
 
@@ -150,16 +50,6 @@ const Files = [
 	'build/scripts/SyncDex_Token.js:external',
 	'build/scripts/SyncDex.js',
 ];
-const DevFiles = [
-	//'build/scripts/SyncDex_background.js.map:background',
-	//'build/scripts/SyncDex_options.js.map:options',
-	//'build/scripts/SyncDex.js.map',
-	//'build/scripts/SyncDex_Anilist.js.map:external',
-];
-if (options.mode == 'dev') {
-	Files.unshift('src:src');
-	Files.push(...DevFiles);
-}
 
 // Startup
 // prettier-ignore
@@ -169,11 +59,9 @@ const reset = () => `\u001b[0m`;
 const optionColor = (option, content = undefined, theme = [GREEN, ORANGE]) =>
 	`${option ? color(theme[0]) : color(theme[1])}${content ? content : option}${reset()}`;
 console.log(
-	`${color(CYAN)}SyncDex ${mainManifest.version}${reset()} :: mode: ${optionColor(
-		options.mode == 'prod',
-		options.mode,
-		[GREEN, BLUE]
-	)} | web-ext: ${optionColor(options.webExt)} | watch: ${optionColor(options.watch)} `
+	`${color(CYAN)}SyncDex ${mainManifest.version}${reset()} :: web-ext: ${optionColor(
+		options.webExt
+	)} | watch: ${optionColor(options.watch)} `
 );
 
 // Compile and Build
@@ -224,7 +112,7 @@ const bundles = bundleList.map((bundle) => {
 			//dir: `build/scripts/`,
 			file: bundle.output,
 			format: 'es',
-			sourcemap: options.mode == 'dev' ? 'inline' : false,
+			sourcemap: 'inline',
 		},
 		watch: {
 			buildDelay: 1000,
@@ -292,7 +180,7 @@ const waitLine = async () => {
 					includePaths: ['css'],
 					sourceMap: true,
 					sourceMapEmbed: true,
-					outputStyle: options.mode == 'dev' ? 'expanded' : 'compressed',
+					outputStyle: options.webExt ? 'compressed' : 'expanded',
 				});
 				fs.writeFileSync(`build/css/${name}.css`, result.css.toString());
 				//fs.writeFileSync(`build/css/${name}.css.map`, result.map.toString());
@@ -372,15 +260,17 @@ async function buildExtension(browser, nonVerbose) {
 	fs.mkdirSync(folderName);
 	// Merge manifests
 	let manifest = JSON.parse(JSON.stringify(mainManifest));
-	for (const key in browser_manifests[browser]) {
-		const value = browser_manifests[browser][key];
-		if (manifest[key] === undefined) {
-			manifest[key] = value;
-		} else if (Array.isArray(manifest[key])) {
-			manifest[key].push(...value);
-		} else if (typeof manifest[key] === 'object') {
-			Object.assign(manifest[key], value);
-		} else manifest[key] = value;
+	if (browser_manifests[browser]) {
+		for (const key in browser_manifests[browser]) {
+			const value = browser_manifests[browser][key];
+			if (manifest[key] === undefined) {
+				manifest[key] = value;
+			} else if (Array.isArray(manifest[key])) {
+				manifest[key].push(...value);
+			} else if (typeof manifest[key] === 'object') {
+				Object.assign(manifest[key], value);
+			} else manifest[key] = value;
+		}
 	}
 	// Write in file
 	let bundleManifestStream = fs.createWriteStream(`${folderName}/manifest.json`, {
@@ -459,7 +349,7 @@ function deepFileCopy(bases, destination, ignore = []) {
 				let currentDestination = `${destinationBase}/${file}`;
 				if (fs.statSync(currentFolder).isDirectory()) {
 					deepFileCopy(currentFolder, currentDestination, ignore);
-				} else if (options.mode == 'dev' || path.extname(currentDestination) != '.ts') {
+				} else if (path.extname(currentDestination) != '.ts') {
 					// console.log(`> '${file}' into '${destination}'`);
 					fs.copyFileSync(currentFolder, currentDestination);
 				}
