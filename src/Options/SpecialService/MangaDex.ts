@@ -36,26 +36,14 @@ export class MangaDexHelper {
 	};
 
 	static getUser = async (): Promise<number> => {
-		const response = await Runtime.request<RawResponse>({
-			url: `https://mangadex.org/about`,
+		const response = await Runtime.jsonRequest<{
+			data: { id: number };
+		}>({
+			url: `https://mangadex.org/api/v2/user/me`,
 			credentials: 'include',
 		});
-		if (!response.ok) return Runtime.responseStatus(response);
-		try {
-			const parser = new DOMParser();
-			const body = parser.parseFromString(response.body, 'text/html');
-			const profileLink = body.querySelector('a[href^="/user/"]');
-			if (profileLink === null) {
-				throw 'Could not find Profile link';
-			}
-			const res = /\/user\/(\d+)\//.exec(profileLink.getAttribute('href') ?? '');
-			if (res === null) {
-				throw 'Could not find User ID';
-			}
-			return parseInt(res[1]);
-		} catch (error) {
-			return 0;
-		}
+		if (!response.ok) return 0;
+		return response.body.data.id;
 	};
 
 	static getAllTitles = (user: number): Promise<JSONResponse<MangaDexAPIResponse>> => {
@@ -89,9 +77,7 @@ export class MangaDexImport extends SpecialService {
 				return moduleInterface.complete();
 			}
 
-			// Use v2 API to retrieve all follows in one request, nice
-			// The only problem is there is no names for each titles
-			// But the API has the current progress while the /list page doesn't
+			// Use v2 API to retrieve all follows in one request
 			message = moduleInterface.message('loading', 'Fetching all Titles...');
 			const response = await MangaDexHelper.getAllTitles(user);
 			message.classList.remove('loading');

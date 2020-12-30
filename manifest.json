@@ -1,0 +1,93 @@
+{
+	"manifest_version": 2,
+	"name": "SyncDex",
+	"author": "Glagan",
+	"description": "Automatically update your Manga lists when reading on MangaDex.",
+	"permissions": [
+		"storage",
+		"alarms",
+		"https://mangadex.org/v2/api/*",
+		"https://mangadex.org/ajax/*",
+		"https://mochi.nikurasu.org/*"
+	],
+	"optional_permissions": [
+		"https://myanimelist.net/about.php",
+		"https://myanimelist.net/manga/*",
+		"https://myanimelist.net/ownlist/manga/*",
+		"https://myanimelist.net/mangalist/*",
+		"https://graphql.anilist.co/",
+		"https://kitsu.io/api/*",
+		"https://*.mangaupdates.com/series.html?id=*",
+		"https://*.mangaupdates.com/ajax/*",
+		"https://*.anime-planet.com/manga/*",
+		"https://*.anime-planet.com/api/*",
+		"https://api.dropboxapi.com/*",
+		"https://content.dropboxapi.com/*",
+		"https://www.googleapis.com/upload/drive/v3/files*",
+		"https://www.googleapis.com/drive/v3/files*"
+	],
+	"icons": {
+		"48": "icons/48.png",
+		"96": "icons/96.png",
+		"128": "icons/128.png"
+	},
+	"background": {
+		"page": "background/index.html"
+	},
+	"content_scripts": [
+		{
+			"matches": [
+				"https://*.mangadex.org/follows*",
+				"https://*.mangadex.org/manga*",
+				"https://*.mangadex.org/titles*",
+				"https://*.mangadex.org/title*",
+				"https://*.mangadex.org/chapter/*",
+				"https://*.mangadex.org/search*",
+				"https://*.mangadex.org/?page=search*",
+				"https://*.mangadex.org/?page=titles*",
+				"https://*.mangadex.org/featured",
+				"https://*.mangadex.org/group*",
+				"https://*.mangadex.org/genre*",
+				"https://*.mangadex.org/user*",
+				"https://*.mangadex.org/list*",
+				"https://*.mangadex.org/updates*",
+				"https://*.mangadex.org/history*"
+			],
+			"js": ["dist/SimpleNotification.js", "SyncDex.js"],
+			"css": ["dist/SimpleNotification.min.css", "css/SyncDex.css"]
+		},
+		{
+			"matches": ["https://anilist.co/api/v2/oauth/pin?syncdex*"],
+			"js": ["dist/SimpleNotification.js", "external/SyncDex_Anilist.js"],
+			"css": ["dist/SimpleNotification.min.css"]
+		},
+		{
+			"matches": ["https://syncdex.nikurasu.org/?for=*"],
+			"js": ["dist/SimpleNotification.js", "external/SyncDex_Token.js"],
+			"css": ["dist/SimpleNotification.min.css"]
+		}
+	],
+	"browser_action": {
+		"default_icon": {
+			"48": "icons/48.png",
+			"96": "icons/96.png",
+			"128": "icons/128.png"
+		},
+		"default_title": "SyncDex"
+	},
+	"options_ui": {
+		"page": "options/index.html",
+		"open_in_tab": true
+	},
+	"web_accessible_resources": [
+		"icons/sc.png",
+		"icons/mmd.png",
+		"icons/md.png",
+		"icons/mal.png",
+		"icons/al.png",
+		"icons/ku.png",
+		"icons/mu.png",
+		"icons/ap.png",
+		"options/index.html"
+	]
+}

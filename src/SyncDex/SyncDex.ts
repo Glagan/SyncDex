@@ -220,7 +220,6 @@ export class SyncDex {
 					url: `https://mangadex.org/api/v2/user/me/manga/${id}`,
 					credentials: 'include',
 				});
-				// ! API is bugged, followType is sometimes null
 				if (response.ok) {
 					if (typeof response.body.data.followType === 'number') {
 						state.title.mdStatus = response.body.data.followType;
