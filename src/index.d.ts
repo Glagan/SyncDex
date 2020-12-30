@@ -92,6 +92,7 @@ declare const enum SaveSyncLoginResult {
 	SUCCESS,
 	STATE_ERROR,
 	API_ERROR,
+	PERMISSIONS_ERROR,
 	ERROR,
 }
 

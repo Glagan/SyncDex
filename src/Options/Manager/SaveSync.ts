@@ -101,6 +101,7 @@ export class SaveSyncManager {
 						await this.syncService.clean();
 						delete SaveSync.state;
 					} else SimpleNotification.error({ text: `Could not delete your save, check logs.` });
+					await this.syncService.removePermissions();
 					this.toggleButtons(false);
 					await Runtime.sendMessage({ action: MessageAction.saveSyncLogout });
 					this.refresh();
@@ -118,6 +119,7 @@ export class SaveSyncManager {
 					await this.syncService.logout();
 					await this.syncService.clean();
 					delete SaveSync.state;
+					await this.syncService.removePermissions();
 					await Runtime.sendMessage({ action: MessageAction.saveSyncLogout });
 					this.refresh();
 				},
@@ -159,17 +161,26 @@ export class SaveSyncManager {
 				for (const key of Object.keys(this.saveSyncServices)) {
 					const syncService = this.saveSyncServices[key];
 					if (syncService.constructor.name == query.for) {
+						SimpleNotification.success({ text: `Login in on **${syncService.name}**...` });
 						const result = await syncService.login(query);
 						if (result == SaveSyncLoginResult.SUCCESS) {
-							SimpleNotification.success({
-								text: `Connected to **${(<typeof SaveSync>syncService.constructor).realName}**.`,
-							});
+							SimpleNotification.success({ text: `Connected to **${syncService.name}**.` });
 							await Runtime.sendMessage({ action: MessageAction.saveSync, delay: 0 });
 						} else if (result == SaveSyncLoginResult.STATE_ERROR) {
 							SimpleNotification.error(
 								{
 									title: 'State Error',
 									text: `A code to generate a token was received but there is no saved state or it is invalid, try again.`,
+								},
+								{ sticky: true }
+							);
+						} else if (result == SaveSyncLoginResult.API_ERROR) {
+							SimpleNotification.error({ title: 'API Error', text: `Retry later.` });
+						} else if (result == SaveSyncLoginResult.PERMISSIONS_ERROR) {
+							SimpleNotification.error(
+								{
+									title: 'Permissions Error',
+									text: `Missing permissions, they are required to communicate with ${syncService.name}.`,
 								},
 								{ sticky: true }
 							);
@@ -201,11 +212,7 @@ export class SaveSyncManager {
 					DOM.text('Logged in on'),
 					DOM.space(),
 					DOM.create('b', {
-						childs: [
-							(<typeof SaveSync>this.syncService.constructor).icon(),
-							DOM.space(),
-							DOM.text((<typeof SaveSync>this.syncService.constructor).realName),
-						],
+						childs: [this.syncService.icon, DOM.space(), DOM.text(this.syncService.name)],
 					}),
 					DOM.text('.'),
 				],

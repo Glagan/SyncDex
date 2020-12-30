@@ -17,6 +17,10 @@ export abstract class SaveSync extends Permissible {
 		return (<typeof SaveSync>this.constructor).realName;
 	}
 
+	get icon(): HTMLElement {
+		return (<typeof SaveSync>this.constructor).icon();
+	}
+
 	abstract createCard(): HTMLButtonElement;
 	abstract onCardClick(): Promise<void>;
 

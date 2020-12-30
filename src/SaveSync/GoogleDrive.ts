@@ -64,7 +64,7 @@ export class GoogleDrive extends SaveSync {
 	};
 
 	lastSync = async (): Promise<number> => {
-		if (await this.refreshTokenIfNeeded()) {
+		if ((await this.hasPermissions()) && (await this.refreshTokenIfNeeded())) {
 			if (SaveSync.state?.id) {
 				// Get the file Metadata if it exists
 				const response = await Runtime.jsonRequest<GoogleDriveMetadata>({
@@ -95,7 +95,7 @@ export class GoogleDrive extends SaveSync {
 	};
 
 	downloadExternalSave = async (): Promise<string | boolean> => {
-		if (await this.refreshTokenIfNeeded()) {
+		if ((await this.hasPermissions()) && (await this.refreshTokenIfNeeded())) {
 			if (!SaveSync.state?.id) return '{}';
 			const response = await Runtime.request({
 				method: 'GET',
@@ -111,7 +111,7 @@ export class GoogleDrive extends SaveSync {
 	};
 
 	uploadLocalSave = async (): Promise<number> => {
-		if (await this.refreshTokenIfNeeded()) {
+		if ((await this.hasPermissions()) && (await this.refreshTokenIfNeeded())) {
 			if (SaveSync.state?.id) {
 				const response = await Runtime.jsonRequest<GoogleDriveMetadata>({
 					method: 'PATCH',
@@ -146,7 +146,7 @@ export class GoogleDrive extends SaveSync {
 	};
 
 	refreshTokenIfNeeded = async (): Promise<boolean> => {
-		if (!SaveSync.state) return false;
+		if (!SaveSync.state || !(await this.hasPermissions())) return false;
 		if (SaveSync.state.expires < Date.now()) {
 			await log(`Refreshing Google Drive token (expired ${SaveSync.state.expires})`);
 			const response = await Runtime.request<RawResponse>({
@@ -164,6 +164,9 @@ export class GoogleDrive extends SaveSync {
 	};
 
 	login = async (query: { [key: string]: string }): Promise<SaveSyncLoginResult> => {
+		if (!(await this.hasPermissions())) {
+			return SaveSyncLoginResult.PERMISSIONS_ERROR;
+		}
 		const googleDriveState = await LocalStorage.get('googleDriveState');
 		await LocalStorage.remove('googleDriveState');
 		if (googleDriveState == undefined || googleDriveState !== query.state) {
