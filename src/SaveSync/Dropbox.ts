@@ -85,6 +85,7 @@ interface DropboxUploadResult {
 export class Dropbox extends SaveSync {
 	static realName = 'Dropbox';
 	static icon = () => DOM.icon('b', 'dropbox');
+
 	static CLIENT_ID = 'd8aw9vtzpdqg93y';
 	static REDIRECT_URI = SaveSync.redirectURI('Dropbox');
 
@@ -95,8 +96,7 @@ export class Dropbox extends SaveSync {
 		});
 	};
 
-	onCardClick = async (node: HTMLButtonElement) => {
-		node.classList.add('loading');
+	onCardClick = async () => {
 		const state = generateRandomString();
 		const codeVerifier = generateRandomString();
 		const codeChallenge = await pkceChallengeFromVerifier(codeVerifier);

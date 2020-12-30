@@ -32,6 +32,11 @@ interface GoogleDriveMetadata {
 export class GoogleDrive extends SaveSync {
 	static realName = 'Google Drive';
 	static icon = () => DOM.icon('b', 'google-drive');
+	static readonly optionalPermissions: string[] = [
+		'https://www.googleapis.com/upload/drive/v3/files*',
+		'https://www.googleapis.com/drive/v3/files*',
+	];
+
 	static CLIENT_ID = '589655435156-a6hi0egsv77ub9au4lqghia3pqnorgfr.apps.googleusercontent.com';
 	static REDIRECT_URI = SaveSync.redirectURI('GoogleDrive');
 	static SCOPE = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file';
@@ -43,8 +48,7 @@ export class GoogleDrive extends SaveSync {
 		});
 	};
 
-	onCardClick = async (node: HTMLButtonElement) => {
-		node.classList.add('loading');
+	onCardClick = async () => {
 		const state = generateRandomString();
 		await LocalStorage.set('googleDriveState', state);
 		const url = `https://accounts.google.com/o/oauth2/v2/auth?${Runtime.buildQuery({

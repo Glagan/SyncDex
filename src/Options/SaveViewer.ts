@@ -346,7 +346,7 @@ export class SaveViewer {
 		DOM.clear(this.body);
 		if (reload) {
 			const response = await Runtime.jsonRequest({
-				url: 'https://mangadex.org/api/v2/user/me/',
+				url: 'https://mangadex.org/api/v2/user/me',
 				credentials: 'include',
 			});
 			SaveViewer.loggedIn = response.ok;

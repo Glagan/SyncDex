@@ -7,7 +7,7 @@ export class Runtime {
 	/**
 	 * Send a message to the background running script.
 	 */
-	static async sendMessage<R extends RequestResponse | void>(message: Message): Promise<R> {
+	static async sendMessage<T>(message: Message): Promise<T> {
 		return Runtime.messageSender(message);
 	}
 
@@ -22,7 +22,7 @@ export class Runtime {
 				Object.assign(message, {
 					action: MessageAction.request,
 					isJson: true,
-				})
+				}) as RequestMessage
 			);
 		} catch (error) {
 			await log(`Error in Runtime.jsonRequest: ${error}`);
@@ -46,7 +46,7 @@ export class Runtime {
 			return Runtime.sendMessage<R>(
 				Object.assign(message, {
 					action: MessageAction.request,
-				})
+				}) as RequestMessage
 			);
 		} catch (error) {
 			await log(`Error in Runtime.request: ${error}`);

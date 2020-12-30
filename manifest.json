@@ -6,23 +6,28 @@
 	"permissions": [
 		"storage",
 		"alarms",
-		"https://mangadex.org/v2/api/*",
+		"https://mangadex.org/api/v2/*",
 		"https://mangadex.org/ajax/*",
-		"https://mochi.nikurasu.org/*"
+		"https://mochi.nikurasu.org/*",
+		"https://syncdex.nikurasu.org/*"
 	],
 	"optional_permissions": [
 		"https://myanimelist.net/about.php",
 		"https://myanimelist.net/manga/*",
 		"https://myanimelist.net/ownlist/manga/*",
 		"https://myanimelist.net/mangalist/*",
+
 		"https://graphql.anilist.co/",
+
 		"https://kitsu.io/api/*",
+
 		"https://*.mangaupdates.com/series.html?id=*",
 		"https://*.mangaupdates.com/ajax/*",
+
+		"https://*.anime-planet.com/contact",
 		"https://*.anime-planet.com/manga/*",
 		"https://*.anime-planet.com/api/*",
-		"https://api.dropboxapi.com/*",
-		"https://content.dropboxapi.com/*",
+
 		"https://www.googleapis.com/upload/drive/v3/files*",
 		"https://www.googleapis.com/drive/v3/files*"
 	],

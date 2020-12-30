@@ -1,11 +1,10 @@
 import { DOM } from '../../Core/DOM';
 import { LocalStorage } from '../../Core/Storage';
 import { SaveSync } from '../../Core/SaveSync';
-import { Dropbox } from '../../SaveSync/Dropbox';
 import { Runtime } from '../../Core/Runtime';
-import { GoogleDrive } from '../../SaveSync/GoogleDrive';
 import { SaveSyncServices } from '../../Core/SaveSyncServices';
 import { OptionsManager } from '../OptionsManager';
+import { browser } from 'webextension-polyfill-ts';
 
 interface Query {
 	[key: string]: string;
@@ -34,9 +33,18 @@ export class SaveSyncManager {
 		for (const key of Object.keys(this.saveSyncServices)) {
 			const syncService = this.saveSyncServices[key];
 			const card = syncService.createCard();
-			card.addEventListener('click', (event) => {
+			card.addEventListener('click', async (event) => {
 				event.preventDefault();
-				syncService.onCardClick(card);
+				card.classList.add('loading');
+				if (syncService.permissions.length > 0) {
+					const hasPermissions = await browser.permissions.request({ origins: syncService.permissions });
+					if (!hasPermissions) {
+						card.classList.remove('loading');
+						SimpleNotification.error({ text: `Missing permissions to enable ${syncService.name}.` });
+						return;
+					}
+				}
+				syncService.onCardClick();
 			});
 			this.cards.push(card);
 		}

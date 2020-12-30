@@ -1,8 +1,9 @@
 import { browser } from 'webextension-polyfill-ts';
 import { log } from './Log';
+import { Permissible } from './Permissible';
 import { LocalStorage } from './Storage';
 
-export abstract class SaveSync {
+export abstract class SaveSync extends Permissible {
 	static FILENAME = '/Save.json';
 
 	static realName: string;
@@ -12,8 +13,12 @@ export abstract class SaveSync {
 		return `https://syncdex.nikurasu.org/?for=${service}`;
 	}
 
+	get name(): string {
+		return (<typeof SaveSync>this.constructor).realName;
+	}
+
 	abstract createCard(): HTMLButtonElement;
-	abstract onCardClick(node: HTMLButtonElement): Promise<void>;
+	abstract onCardClick(): Promise<void>;
 
 	abstract login(query: { [key: string]: string }): Promise<SaveSyncLoginResult>;
 	abstract lastSync(): Promise<number>;
