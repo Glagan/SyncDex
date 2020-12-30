@@ -238,6 +238,11 @@ class ServiceOverview {
 					ServiceOverview.alert('danger', 'The Media was not found on the Service, probably a bad ID.')
 				);
 				break;
+			case RequestStatus.PERMISSIONS_ERROR:
+				this.content.appendChild(
+					ServiceOverview.alert('danger', 'Missing permissions, refresh in the options to enable them.')
+				);
+				break;
 			case RequestStatus.FAIL:
 			case RequestStatus.SERVER_ERROR:
 				this.content.appendChild(

@@ -332,6 +332,9 @@ export class SyncModule {
 					case RequestStatus.NOT_FOUND:
 						error = 'Not Found';
 						break;
+					case RequestStatus.PERMISSIONS_ERROR:
+						error = 'Permissions';
+						break;
 					case RequestStatus.FAIL:
 					default:
 						error = 'Error';

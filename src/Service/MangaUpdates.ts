@@ -131,6 +131,12 @@ export class MangaUpdates extends Service {
 	static readonly serviceName: ActivableName = ActivableName.MangaUpdates;
 	static readonly key: ActivableKey = ActivableKey.MangaUpdates;
 
+	static readonly optionalPermissions: string[] = [
+		'https://www.mangaupdates.com/aboutus.html',
+		'https://www.mangaupdates.com/series.html?id=*',
+		'https://www.mangaupdates.com/ajax/*',
+	];
+
 	static loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	static loginUrl: string = 'https://www.mangaupdates.com/login.html';
 

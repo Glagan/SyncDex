@@ -44,6 +44,7 @@ declare const enum RequestStatus {
 	DELETED,
 	MISSING_TOKEN,
 	FAIL,
+	PERMISSIONS_ERROR,
 	SERVER_ERROR,
 	BAD_REQUEST,
 	NOT_FOUND,

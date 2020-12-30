@@ -171,6 +171,12 @@ export class AnimePlanet extends Service {
 	static readonly serviceName = ActivableName.AnimePlanet;
 	static readonly key = ActivableKey.AnimePlanet;
 
+	static readonly optionalPermissions: string[] = [
+		'https://*.anime-planet.com/contact',
+		'https://*.anime-planet.com/manga/*',
+		'https://*.anime-planet.com/api/*',
+	];
+
 	static readonly usesSlug = true;
 	static readonly missingFields: MissableField[] = ['volume', 'start', 'end'];
 

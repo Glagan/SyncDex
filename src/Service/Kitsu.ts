@@ -282,6 +282,8 @@ export class Kitsu extends Service {
 	static readonly serviceName: ActivableName = ActivableName.Kitsu;
 	static readonly key: ActivableKey = ActivableKey.Kitsu;
 
+	// static readonly optionalPermissions: string[] = ['https://kitsu.io/api/*'];
+
 	static loginMethod: LoginMethod = LoginMethod.FORM;
 
 	static importModule = (moduleInterface?: ModuleInterface) => new KitsuImport(Kitsu, moduleInterface);

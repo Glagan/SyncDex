@@ -1,4 +1,5 @@
 import { AppendableElement, DOM } from './DOM';
+import { Permissible } from './Permissible';
 import { ExportModule, ImportModule } from './Module';
 import { ModuleInterface } from './ModuleInterface';
 import { MissableField } from './Title';
@@ -50,7 +51,7 @@ export const enum LoginMethod {
 	FORM,
 }
 
-export abstract class Service {
+export abstract class Service extends Permissible {
 	static readonly serviceName: ActivableName;
 	static readonly key: ActivableKey;
 

@@ -17,12 +17,9 @@
 		"https://myanimelist.net/ownlist/manga/*",
 		"https://myanimelist.net/mangalist/*",
 
-		"https://graphql.anilist.co/",
-
-		"https://kitsu.io/api/*",
-
-		"https://*.mangaupdates.com/series.html?id=*",
-		"https://*.mangaupdates.com/ajax/*",
+		"https://www.mangaupdates.com/aboutus.html",
+		"https://www.mangaupdates.com/series.html?id=*",
+		"https://www.mangaupdates.com/ajax/*",
 
 		"https://*.anime-planet.com/contact",
 		"https://*.anime-planet.com/manga/*",

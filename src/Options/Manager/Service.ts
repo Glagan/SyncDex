@@ -7,6 +7,7 @@ import { SaveOptions } from '../Utility';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { OptionsManager } from '../OptionsManager';
 import { Runtime } from '../../Core/Runtime';
+import { browser } from 'webextension-polyfill-ts';
 
 class ServiceCard {
 	manager: ServiceManager;
@@ -152,6 +153,14 @@ class ServiceCard {
 			this.loginButton.href = this.service.loginUrl;
 		}
 		this.activateButton.addEventListener('click', async () => {
+			// Duplicate since permission request can't be nested
+			if (this.service.optionalPermissions.length > 0) {
+				const hasPermissions = await browser.permissions.request({ origins: this.service.optionalPermissions });
+				if (!hasPermissions) {
+					SimpleNotification.error({ text: `Missing permissions to activate ${this.service.serviceName}.` });
+					return;
+				}
+			}
 			Options.services.push(this.service.key);
 			if (Options.services.length == 1) {
 				Options.mainService = this.service.key;
@@ -166,15 +175,15 @@ class ServiceCard {
 					activeCards[activeCards.length - 1].nextElementSibling
 				);
 			}
-			SaveOptions();
+			await SaveOptions();
 			this.manager.reloadCard(this.service.key);
 		});
-		this.mainButton.addEventListener('click', () => {
+		this.mainButton.addEventListener('click', async () => {
 			// Make service the first in the list
 			const index = Options.services.indexOf(this.service.key);
 			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
 			Options.mainService = this.service.key;
-			SaveOptions();
+			await SaveOptions();
 			// Update old card
 			if (this.manager.mainService && this.manager.mainCard) {
 				const oldMainContent = this.manager.mainCard.activeCardContent;
@@ -188,6 +197,20 @@ class ServiceCard {
 			if (!busy) {
 				busy = true;
 				this.checkStatusButton.disabled = true;
+				// Duplicate since permission request can't be nested
+				if (this.service.optionalPermissions.length > 0) {
+					const hasPermissions = await browser.permissions.request({
+						origins: this.service.optionalPermissions,
+					});
+					if (!hasPermissions) {
+						SimpleNotification.error({
+							text: `Missing permissions to activate ${this.service.serviceName}.`,
+						});
+						this.checkStatusButton.disabled = false;
+						busy = false;
+						return;
+					}
+				}
 				this.loginButton.remove();
 				this.activeCardContent.insertBefore(this.loadingMessage, this.statusMessage);
 				this.statusMessage.remove();
@@ -215,7 +238,10 @@ class ServiceCard {
 			if (this.service.logout !== undefined) {
 				await this.service.logout();
 			}
-			SaveOptions();
+			await SaveOptions();
+			if (this.service.optionalPermissions.length > 0) {
+				await browser.permissions.remove({ origins: this.service.optionalPermissions });
+			}
 			// Disable card
 			this.manager.removeActiveService(this.service.key);
 			this.desactivate();
@@ -237,10 +263,23 @@ class ServiceCard {
 				this.manager.mainCard = undefined;
 			}
 		});
-		this.loginButton.addEventListener('click', (event) => {
+		this.loginButton.addEventListener('click', async (event) => {
 			if (this.service.loginMethod == LoginMethod.FORM) {
 				event.preventDefault();
 				if (!this) return;
+				// Duplicate since permission request can't be nested
+				if (this.service.optionalPermissions.length > 0) {
+					const hasPermissions = await browser.permissions.request({
+						origins: this.service.optionalPermissions,
+					});
+					if (!hasPermissions) {
+						SimpleNotification.error({
+							text: `Missing permissions to activate ${this.service.serviceName}.`,
+						});
+						event.preventDefault();
+						return;
+					}
+				}
 				// Create modal
 				const modal = new Modal('small');
 				modal.header.classList.add(this.service.key);
@@ -311,7 +350,7 @@ class ServiceCard {
 						modal.enableExit();
 						modal.wrapper.classList.remove('loading');
 						if (res == RequestStatus.SUCCESS) {
-							SaveOptions();
+							await SaveOptions();
 							SimpleNotification.success({ text: `Logged in on **${this.service.serviceName}** !` });
 							this.loginButton.remove();
 							this.updateStatus(res);
@@ -375,7 +414,7 @@ export class ServiceManager {
 	activeServices: ActivableKey[] = [];
 	inactiveServices: ActivableKey[] = [];
 	inactiveWarning: HTMLElement;
-	mainService?: Service;
+	mainService?: typeof Service;
 	mainCard?: ServiceCard;
 	cards = {} as { [key in ActivableKey]: ServiceCard };
 	importAllButton: HTMLButtonElement;

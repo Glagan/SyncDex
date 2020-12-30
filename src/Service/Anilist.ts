@@ -272,6 +272,8 @@ export class Anilist extends Service {
 	static readonly serviceName: ActivableName = ActivableName.Anilist;
 	static readonly key: ActivableKey = ActivableKey.Anilist;
 
+	// static readonly optionalPermissions: string[] = ['https://graphql.anilist.co/'];
+
 	static loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	static loginUrl: string = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
 

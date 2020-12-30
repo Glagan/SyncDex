@@ -2,21 +2,22 @@ import { browser } from 'webextension-polyfill-ts';
 
 export abstract class Permissible {
 	static readonly optionalPermissions: string[] = [];
-	_permissions?: boolean;
+	static _permissions?: boolean;
 
 	get permissions(): string[] {
 		return (<typeof Permissible>this.constructor).optionalPermissions;
 	}
 
 	async hasPermissions(): Promise<boolean> {
-		if (this._permissions === undefined) {
+		const that = <typeof Permissible>this.constructor;
+		if (that._permissions === undefined) {
 			if (this.permissions.length > 0) {
-				this._permissions = await browser.permissions.contains({ origins: this.permissions });
+				that._permissions = await browser.permissions.contains({ origins: this.permissions });
 			} else {
-				this._permissions = true;
+				that._permissions = true;
 			}
 		}
-		return new Promise((resolve) => resolve(this._permissions!));
+		return new Promise((resolve) => resolve(that._permissions!));
 	}
 
 	/*async requestPermissions(): Promise<boolean> {

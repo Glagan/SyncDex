@@ -255,6 +255,13 @@ export class MyAnimeList extends Service {
 	static readonly serviceName: ActivableName = ActivableName.MyAnimeList;
 	static readonly key: ActivableKey = ActivableKey.MyAnimeList;
 
+	static readonly optionalPermissions: string[] = [
+		'https://myanimelist.net/about.php',
+		'https://myanimelist.net/manga/*',
+		'https://myanimelist.net/ownlist/manga/*',
+		'https://myanimelist.net/mangalist/*',
+	];
+
 	static loginMethod: LoginMethod = LoginMethod.EXTERNAL;
 	static loginUrl: string = 'https://myanimelist.net/login.php';
 
