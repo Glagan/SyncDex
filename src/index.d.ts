@@ -171,6 +171,7 @@ interface AvailableOptions {
 	checkOnStartup: boolean;
 	checkOnStartupMainOnly: boolean;
 	checkOnStartupCooldown: number;
+	silentUpdate: boolean;
 	// Services
 	services: import('./Core/Service').ActivableKey[];
 	mainService: import('./Core/Service').ActivableKey | null;
