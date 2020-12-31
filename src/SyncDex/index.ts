@@ -10,13 +10,13 @@ console.log('SyncDex :: Index');
 	if (document.body.classList.contains('sc-loaded')) {
 		SimpleNotification.info(
 			{
-				title: 'SyncDex reloaded',
+				text: 'SyncDex reloaded',
 				buttons: [
 					{ value: 'Reload Page', type: 'success', onClick: () => window.location.reload() },
 					{ value: 'Close', type: 'message', onClick: (n) => n.closeAnimated() },
 				],
 			},
-			{ duration: 10000 }
+			{ sticky: true }
 		);
 		return;
 	}

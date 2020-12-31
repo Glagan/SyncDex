@@ -25,6 +25,7 @@
 		"https://*.mangaupdates.com/series.html?id=*",
 		"https://*.mangaupdates.com/ajax/*",
 
+		"https://*.anime-planet.com/contact",
 		"https://*.anime-planet.com/manga/*",
 		"https://*.anime-planet.com/api/*",
 

@@ -139,7 +139,6 @@ class ServiceCard {
 	};
 
 	makeMain = (): void => {
-		this.manager.mainService = this.service;
 		this.manager.mainCard = this;
 		this.mainButton.remove();
 		this.activeCardContent.insertBefore(this.mainMessage, this.activeCardContent.firstElementChild);
@@ -166,17 +165,17 @@ class ServiceCard {
 					activeCards[activeCards.length - 1].nextElementSibling
 				);
 			}
-			SaveOptions();
+			await SaveOptions();
 			this.manager.reloadCard(this.service.key);
 		});
-		this.mainButton.addEventListener('click', () => {
+		this.mainButton.addEventListener('click', async () => {
 			// Make service the first in the list
 			const index = Options.services.indexOf(this.service.key);
 			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
 			Options.mainService = this.service.key;
-			SaveOptions();
+			await SaveOptions();
 			// Update old card
-			if (this.manager.mainService && this.manager.mainCard) {
+			if (this.manager.mainCard) {
 				const oldMainContent = this.manager.mainCard.activeCardContent;
 				oldMainContent.insertBefore(this.manager.mainCard.mainButton, oldMainContent.firstElementChild);
 				this.manager.mainCard.mainMessage.remove();
@@ -215,7 +214,7 @@ class ServiceCard {
 			if (this.service.logout !== undefined) {
 				await this.service.logout();
 			}
-			SaveOptions();
+			await SaveOptions();
 			// Disable card
 			this.manager.removeActiveService(this.service.key);
 			this.desactivate();
@@ -233,7 +232,6 @@ class ServiceCard {
 			if (Options.mainService) {
 				this.manager.cards[Options.mainService].makeMain();
 			} else {
-				this.manager.mainService = undefined;
 				this.manager.mainCard = undefined;
 			}
 		});
@@ -311,7 +309,7 @@ class ServiceCard {
 						modal.enableExit();
 						modal.wrapper.classList.remove('loading');
 						if (res == RequestStatus.SUCCESS) {
-							SaveOptions();
+							await SaveOptions();
 							SimpleNotification.success({ text: `Logged in on **${this.service.serviceName}** !` });
 							this.loginButton.remove();
 							this.updateStatus(res);
@@ -375,7 +373,6 @@ export class ServiceManager {
 	activeServices: ActivableKey[] = [];
 	inactiveServices: ActivableKey[] = [];
 	inactiveWarning: HTMLElement;
-	mainService?: Service;
 	mainCard?: ServiceCard;
 	cards = {} as { [key in ActivableKey]: ServiceCard };
 	importAllButton: HTMLButtonElement;
@@ -457,7 +454,6 @@ export class ServiceManager {
 	refreshActive = (): void => {
 		// Remove previous
 		DOM.clear(this.activeContainer);
-		this.mainService = undefined;
 		this.mainCard = undefined;
 		this.activeServices = [];
 		this.inactiveServices = [];
@@ -467,7 +463,6 @@ export class ServiceManager {
 		for (const key of Object.values(ActivableKey)) {
 			this.reloadCard(key);
 			if (Options.mainService == key) {
-				this.mainService = Services[key];
 				this.mainCard = this.cards[key];
 			}
 		}
@@ -488,7 +483,6 @@ export class ServiceManager {
 		const card = this.cards[key];
 		const index = Options.services.indexOf(key);
 		if (Options.mainService == key) {
-			this.mainService = Services[key];
 			this.mainCard = card;
 			this.activeContainer.insertBefore(this.mainCard.activeCard, this.activeContainer.firstElementChild);
 			this.mainCard.activeCard.classList.add('active');

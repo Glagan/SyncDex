@@ -43,8 +43,7 @@ export class GoogleDrive extends SaveSync {
 		});
 	};
 
-	onCardClick = async (node: HTMLButtonElement) => {
-		node.classList.add('loading');
+	onCardClick = async () => {
 		const state = generateRandomString();
 		await LocalStorage.set('googleDriveState', state);
 		const url = `https://accounts.google.com/o/oauth2/v2/auth?${Runtime.buildQuery({

@@ -36,7 +36,8 @@ export class SaveSyncManager {
 			const card = syncService.createCard();
 			card.addEventListener('click', (event) => {
 				event.preventDefault();
-				syncService.onCardClick(card);
+				card.classList.add('loading');
+				syncService.onCardClick();
 			});
 			this.cards.push(card);
 		}
@@ -151,10 +152,11 @@ export class SaveSyncManager {
 				for (const key of Object.keys(this.saveSyncServices)) {
 					const syncService = this.saveSyncServices[key];
 					if (syncService.constructor.name == query.for) {
+						SimpleNotification.success({ text: `Login in on **${syncService.name}**...` });
 						const result = await syncService.login(query);
 						if (result == SaveSyncLoginResult.SUCCESS) {
 							SimpleNotification.success({
-								text: `Connected to **${(<typeof SaveSync>syncService.constructor).realName}**.`,
+								text: `Connected to **${syncService.name}**.`,
 							});
 							await Runtime.sendMessage({ action: MessageAction.saveSync, delay: 0 });
 						} else if (result == SaveSyncLoginResult.STATE_ERROR) {
@@ -165,6 +167,8 @@ export class SaveSyncManager {
 								},
 								{ sticky: true }
 							);
+						} else if (result == SaveSyncLoginResult.API_ERROR) {
+							SimpleNotification.error({ title: 'API Error', text: `Retry later.` });
 						}
 						found = true;
 						break;
@@ -193,11 +197,7 @@ export class SaveSyncManager {
 					DOM.text('Logged in on'),
 					DOM.space(),
 					DOM.create('b', {
-						childs: [
-							(<typeof SaveSync>this.syncService.constructor).icon(),
-							DOM.space(),
-							DOM.text((<typeof SaveSync>this.syncService.constructor).realName),
-						],
+						childs: [this.syncService.icon, DOM.space(), DOM.text(this.syncService.name)],
 					}),
 					DOM.text('.'),
 				],

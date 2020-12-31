@@ -95,8 +95,7 @@ export class Dropbox extends SaveSync {
 		});
 	};
 
-	onCardClick = async (node: HTMLButtonElement) => {
-		node.classList.add('loading');
+	onCardClick = async () => {
 		const state = generateRandomString();
 		const codeVerifier = generateRandomString();
 		const codeChallenge = await pkceChallengeFromVerifier(codeVerifier);

@@ -12,8 +12,16 @@ export abstract class SaveSync {
 		return `https://syncdex.nikurasu.org/?for=${service}`;
 	}
 
+	get name(): string {
+		return (<typeof SaveSync>this.constructor).realName;
+	}
+
+	get icon(): HTMLElement {
+		return (<typeof SaveSync>this.constructor).icon();
+	}
+
 	abstract createCard(): HTMLButtonElement;
-	abstract onCardClick(node: HTMLButtonElement): Promise<void>;
+	abstract onCardClick(): Promise<void>;
 
 	abstract login(query: { [key: string]: string }): Promise<SaveSyncLoginResult>;
 	abstract lastSync(): Promise<number>;
