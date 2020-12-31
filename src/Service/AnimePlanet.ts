@@ -5,6 +5,7 @@ import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ExternalTitle, LocalTitle, MissableField } from '../Core/Title';
 import { DOM } from '../Core/DOM';
 import { log } from '../Core/Log';
+import { RequirePermissions } from '../Core/Title';
 
 export const enum AnimePlanetStatus {
 	NONE = 0,
@@ -225,6 +226,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 		score?: number;
 	} = { progress: { chapter: 0 }, status: Status.NONE };
 
+	@RequirePermissions
 	static async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
 		const response = await Runtime.request<RawResponse>({
 			url: AnimePlanet.link(key),
@@ -283,6 +285,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 		return new AnimePlanetTitle(values);
 	}
 
+	@RequirePermissions
 	persist = async (): Promise<RequestStatus> => {
 		if (this.status === Status.NONE || !this.token) {
 			await log(`Could not sync AnimePlanet: status ${this.status} token ${!!this.token}`);
@@ -327,6 +330,7 @@ export class AnimePlanetTitle extends ExternalTitle {
 		return RequestStatus.SUCCESS;
 	};
 
+	@RequirePermissions
 	delete = async (): Promise<RequestStatus> => {
 		if (!this.inList || !this.token) {
 			await log(`Could not sync AnimePlanet: status ${this.status} token ${!!this.token}`);

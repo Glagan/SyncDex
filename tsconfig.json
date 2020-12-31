@@ -1,7 +1,7 @@
 {
 	"compilerOptions": {
 		/* Basic Options */
-		"incremental": true,                   /* Enable incremental compilation */
+		"incremental": true /* Enable incremental compilation */,
 		"target": "es2017" /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2015', 'ES2017', 'ES2018', 'ES2019', 'ES2020', or 'ESNEXT'. */,
 		"module": "es2015" /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', 'es2020', or 'ESNext'. */,
 		"lib": ["es2017", "DOM", "DOM.Iterable"] /* Specify library files to be included in the compilation. */,
@@ -17,7 +17,7 @@
 		// "composite": true,                     /* Enable project compilation */
 		// "tsBuildInfoFile": "./",               /* Specify file to store incremental compilation information */
 		// "removeComments": true,                /* Do not emit comments to output. */
-		"noEmit": true,                        /* Do not emit outputs. */
+		"noEmit": true /* Do not emit outputs. */,
 		// "importHelpers": true,                 /* Import emit helpers from 'tslib'. */
 		// "downlevelIteration": true,            /* Provide full support for iterables in 'for-of', spread, and destructuring when targeting 'ES5' or 'ES3'. */
 		// "isolatedModules": true,               /* Transpile each file as a separate module (similar to 'ts.transpileModule'). */
@@ -58,12 +58,12 @@
 		// "inlineSources": true,                 /* Emit the source alongside the sourcemaps within a single file; requires '--inlineSourceMap' or '--sourceMap' to be set. */
 
 		/* Experimental Options */
-		// "experimentalDecorators": true,        /* Enables experimental support for ES7 decorators. */
-		// "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
+		"experimentalDecorators": true /* Enables experimental support for ES7 decorators. */,
+		"emitDecoratorMetadata": true /* Enables experimental support for emitting type metadata for decorators. */,
 
 		/* Advanced Options */
 		"forceConsistentCasingInFileNames": true /* Disallow inconsistently-cased references to the same file. */,
-		"skipLibCheck": true,
+		"skipLibCheck": true
 		// "listFiles": true
 	},
 	"exclude": ["node_modules", "build"]

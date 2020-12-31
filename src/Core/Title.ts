@@ -3,6 +3,7 @@ import { Options } from './Options';
 import { dateCompare } from './Utility';
 import { ActivableKey, Service, ServiceList } from './Service';
 import { History } from '../SyncDex/History';
+import { browser } from 'webextension-polyfill-ts';
 
 export const StatusMap: { [key in Status]: string } = {
 	[Status.NONE]: 'No Status',
@@ -540,6 +541,18 @@ export class LocalTitle extends Title {
 	static link = (key: MediaKey): string => {
 		return `https://mangadex.org/title/${key.id}`;
 	};
+}
+
+export function RequirePermissions(target: typeof ExternalTitle, key: string, descriptor: PropertyDescriptor) {
+	const originalMethod = descriptor.value;
+	descriptor.value = async function (...args: any) {
+		console.log(browser);
+		if (!(await target.service.checkPermissions())) {
+			return RequestStatus.PERMISSIONS_ERROR;
+		}
+		return originalMethod.apply(this, args);
+	};
+	return descriptor;
 }
 
 export abstract class ExternalTitle extends Title {
