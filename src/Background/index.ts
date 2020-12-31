@@ -294,7 +294,7 @@ browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstall
 	} else await log(`Installation version ${DefaultOptions.version}.${DefaultOptions.subVersion}`);
 
 	// Open the options with a Modal
-	if (updated || details.reason === 'install') {
+	if ((updated && !Options.silentUpdate) || details.reason === 'install') {
 		browser.tabs.create({ url: browser.runtime.getURL(`options/index.html#${details.reason}`) });
 	}
 });

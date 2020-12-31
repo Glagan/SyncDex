@@ -1,6 +1,10 @@
 {
 	"updates": [
 		{
+			"version": "0.1.9",
+			"description": ["Add an option to avoid opening a tab with changelogs after an update."]
+		},
+		{
 			"version": "0.1.8",
 			"description": [
 				"Fix History, last read and last title being deleted after Import.",

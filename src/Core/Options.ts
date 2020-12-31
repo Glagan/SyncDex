@@ -42,6 +42,7 @@ export const DefaultOptions: AvailableOptions = {
 	checkOnStartup: false,
 	checkOnStartupMainOnly: true,
 	checkOnStartupCooldown: 30,
+	silentUpdate: false,
 	// Services
 	services: [],
 	mainService: null,
