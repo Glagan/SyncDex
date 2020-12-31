@@ -1,11 +1,9 @@
-import { ActivableKey, ActivableName, Service } from '../Core/Service';
+import { ActivableKey, ActivableName, Declare, ExternalLogin, Modules, Service } from '../Core/Service';
 import { Runtime } from '../Core/Runtime';
 import { ExternalTitle, LocalTitle } from '../Core/Title';
 import { Options } from '../Core/Options';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
-import { ModuleInterface } from '../Core/ModuleInterface';
 import { AppendableElement, DOM } from '../Core/DOM';
-import { LoginMethod } from '../Core/Service';
 import { log } from '../Core/Log';
 
 export const enum AnilistStatus {
@@ -268,13 +266,10 @@ export class AnilistExport extends ExportModule {
 	};
 }
 
+@Declare(ActivableName.Anilist, ActivableKey.Anilist)
+@ExternalLogin('https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token')
+@Modules(AnilistImport, AnilistExport)
 export class Anilist extends Service {
-	static readonly serviceName: ActivableName = ActivableName.Anilist;
-	static readonly key: ActivableKey = ActivableKey.Anilist;
-
-	static loginMethod: LoginMethod = LoginMethod.EXTERNAL;
-	static loginUrl: string = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
-
 	static async loggedIn(): Promise<RequestStatus> {
 		if (Options.tokens.anilistToken === undefined) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest({
@@ -289,9 +284,6 @@ export class Anilist extends Service {
 	static async logout(): Promise<void> {
 		delete Options.tokens.anilistToken;
 	}
-
-	static importModule = (moduleInterface?: ModuleInterface) => new AnilistImport(Anilist, moduleInterface);
-	static exportModule = (moduleInterface?: ModuleInterface) => new AnilistExport(Anilist, moduleInterface);
 
 	static link(key: MediaKey) {
 		return `https://anilist.co/manga/${key.id}`;

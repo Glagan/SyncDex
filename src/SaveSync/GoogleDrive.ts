@@ -2,7 +2,7 @@ import { DOM } from '../Core/DOM';
 import { Runtime } from '../Core/Runtime';
 import { LocalStorage } from '../Core/Storage';
 import { generateRandomString } from '../Options/PKCEHelper';
-import { SaveSync } from '../Core/SaveSync';
+import { Declare, SaveSync } from '../Core/SaveSync';
 import { log } from '../Core/Log';
 
 interface GoogleDriveTokenResponse {
@@ -29,11 +29,9 @@ interface GoogleDriveMetadata {
 	error?: string;
 }
 
+@Declare('Google Drive', () => DOM.icon('b', 'google-drive'))
 export class GoogleDrive extends SaveSync {
-	static realName = 'Google Drive';
-	static icon = () => DOM.icon('b', 'google-drive');
 	static CLIENT_ID = '589655435156-a6hi0egsv77ub9au4lqghia3pqnorgfr.apps.googleusercontent.com';
-	static REDIRECT_URI = SaveSync.redirectURI('GoogleDrive');
 	static SCOPE = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file';
 
 	createCard = (): HTMLButtonElement => {

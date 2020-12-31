@@ -2,15 +2,20 @@ import { browser } from 'webextension-polyfill-ts';
 import { log } from './Log';
 import { LocalStorage } from './Storage';
 
+export function Declare(serviceName: string, iconFct: () => HTMLElement) {
+	return function (constructor: typeof SaveSync) {
+		constructor.realName = serviceName;
+		constructor.icon = iconFct;
+	};
+}
+
 export abstract class SaveSync {
 	static FILENAME = '/Save.json';
 
 	static realName: string;
 	static icon: () => HTMLElement;
 	static state?: SaveSyncState;
-	static redirectURI(service: string) {
-		return `https://syncdex.nikurasu.org/?for=${service}`;
-	}
+	static REDIRECT_URI: string;
 
 	get name(): string {
 		return (<typeof SaveSync>this.constructor).realName;
@@ -18,6 +23,11 @@ export abstract class SaveSync {
 
 	get icon(): HTMLElement {
 		return (<typeof SaveSync>this.constructor).icon();
+	}
+
+	constructor() {
+		const that = <typeof SaveSync>this.constructor;
+		that.REDIRECT_URI = `https://syncdex.nikurasu.org/?for=${that.name}`;
 	}
 
 	abstract createCard(): HTMLButtonElement;

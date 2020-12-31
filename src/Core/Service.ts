@@ -50,16 +50,53 @@ export const enum LoginMethod {
 	FORM,
 }
 
+export function Declare(serviceName: ActivableName, serviceKey: ActivableKey) {
+	return function (constructor: typeof Service) {
+		constructor.serviceName = serviceName;
+		constructor.key = serviceKey;
+	};
+}
+export function ExternalLogin(url: string) {
+	return function (constructor: typeof Service) {
+		constructor.loginMethod = LoginMethod.EXTERNAL;
+		constructor.loginUrl = url;
+	};
+}
+export function FormLogin(identifierField?: [string, string]) {
+	return function (constructor: typeof Service) {
+		constructor.loginMethod = LoginMethod.FORM;
+		if (identifierField) constructor.identifierField = identifierField;
+	};
+}
+export function MissingFields(fields: MissableField[]) {
+	return function (constructor: typeof Service) {
+		constructor.missingFields = fields;
+	};
+}
+export function UseSlug(constructor: typeof Service) {
+	constructor.usesSlug = true;
+}
+export function Modules(importModule: typeof ImportModule, exportModule: typeof ExportModule) {
+	return function (constructor: typeof Service) {
+		constructor.importModule = (moduleInterface?: ModuleInterface) =>
+			/// @ts-ignore
+			new importModule(constructor, moduleInterface);
+		constructor.exportModule = (moduleInterface?: ModuleInterface) =>
+			/// @ts-ignore
+			new exportModule(constructor, moduleInterface);
+	};
+}
+
 export abstract class Service {
-	static readonly serviceName: ActivableName;
-	static readonly key: ActivableKey;
+	static serviceName: ActivableName;
+	static key: ActivableKey;
 
-	static readonly usesSlug: boolean = false;
-	static readonly missingFields: MissableField[] = [];
+	static usesSlug: boolean = false;
+	static missingFields: MissableField[] = [];
 
-	static readonly loginMethod: LoginMethod;
-	static readonly loginUrl?: string;
-	static readonly identifierField: [string, string] = ['Email', 'email'];
+	static loginMethod: LoginMethod;
+	static loginUrl?: string;
+	static identifierField: [string, string] = ['Email', 'email'];
 
 	static loggedIn = async (): Promise<RequestStatus> => {
 		throw 'Service.loggedIn is an abstract function';

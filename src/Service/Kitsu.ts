@@ -1,10 +1,9 @@
 import { DOM } from '../Core/DOM';
 import { log } from '../Core/Log';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
-import { ModuleInterface } from '../Core/ModuleInterface';
 import { Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
-import { ActivableKey, ActivableName, LoginMethod, Service } from '../Core/Service';
+import { ActivableKey, ActivableName, Declare, FormLogin, Modules, Service } from '../Core/Service';
 import { ExternalTitle, FoundTitle, LocalTitle } from '../Core/Title';
 
 interface KitsuHeaders {
@@ -278,15 +277,10 @@ export class KitsuExport extends ExportModule {
 	};
 }
 
+@Declare(ActivableName.Kitsu, ActivableKey.Kitsu)
+@FormLogin()
+@Modules(KitsuImport, KitsuExport)
 export class Kitsu extends Service {
-	static readonly serviceName: ActivableName = ActivableName.Kitsu;
-	static readonly key: ActivableKey = ActivableKey.Kitsu;
-
-	static loginMethod: LoginMethod = LoginMethod.FORM;
-
-	static importModule = (moduleInterface?: ModuleInterface) => new KitsuImport(Kitsu, moduleInterface);
-	static exportModule = (moduleInterface?: ModuleInterface) => new KitsuExport(Kitsu, moduleInterface);
-
 	static getUserId = async (): Promise<RequestStatus> => {
 		if (Options.tokens.kitsuToken === undefined) return RequestStatus.MISSING_TOKEN;
 		let response = await Runtime.jsonRequest<KitsuUserResponse>({

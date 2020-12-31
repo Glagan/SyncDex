@@ -1,6 +1,14 @@
 import { Runtime } from '../Core/Runtime';
-import { ActivableKey, ActivableName, LoginMethod, Service } from '../Core/Service';
-import { ModuleInterface } from '../Core/ModuleInterface';
+import {
+	ActivableKey,
+	ActivableName,
+	Declare,
+	ExternalLogin,
+	MissingFields,
+	Modules,
+	Service,
+	UseSlug,
+} from '../Core/Service';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ExternalTitle, LocalTitle, MissableField } from '../Core/Title';
 import { DOM } from '../Core/DOM';
@@ -167,16 +175,12 @@ export class AnimePlanetExport extends ExportModule {
 	};
 }
 
+@Declare(ActivableName.AnimePlanet, ActivableKey.AnimePlanet)
+@ExternalLogin('https://www.anime-planet.com/login')
+@MissingFields(['volume', 'start', 'end'])
+@Modules(AnimePlanetImport, AnimePlanetExport)
+@UseSlug
 export class AnimePlanet extends Service {
-	static readonly serviceName = ActivableName.AnimePlanet;
-	static readonly key = ActivableKey.AnimePlanet;
-
-	static readonly usesSlug = true;
-	static readonly missingFields: MissableField[] = ['volume', 'start', 'end'];
-
-	static loginMethod: LoginMethod = LoginMethod.EXTERNAL;
-	static loginUrl: string = 'https://www.anime-planet.com/login';
-
 	static username: string = '';
 	static token: string = '';
 
@@ -198,9 +202,6 @@ export class AnimePlanet extends Service {
 		}
 		return RequestStatus.FAIL;
 	}
-
-	static importModule = (moduleInterface?: ModuleInterface) => new AnimePlanetImport(AnimePlanet, moduleInterface);
-	static exportModule = (moduleInterface?: ModuleInterface) => new AnimePlanetExport(AnimePlanet, moduleInterface);
 
 	static link(key: MediaKey) {
 		return `https://www.anime-planet.com/manga/${key.slug}`;

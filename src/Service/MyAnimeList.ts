@@ -1,9 +1,8 @@
 import { DOM } from '../Core/DOM';
 import { log } from '../Core/Log';
 import { ExportModule, ImportModule } from '../Core/Module';
-import { ModuleInterface } from '../Core/ModuleInterface';
 import { Runtime } from '../Core/Runtime';
-import { ActivableKey, ActivableName, LoginMethod, Service } from '../Core/Service';
+import { ActivableKey, ActivableName, Declare, ExternalLogin, Modules, Service } from '../Core/Service';
 import { ExternalTitle, FoundTitle, LocalTitle } from '../Core/Title';
 import { dateFormatInput } from '../Core/Utility';
 
@@ -251,16 +250,10 @@ export class MyAnimeListExport extends ExportModule {
 	};
 }
 
+@Declare(ActivableName.MyAnimeList, ActivableKey.MyAnimeList)
+@ExternalLogin('https://myanimelist.net/login.php')
+@Modules(MyAnimeListImport, MyAnimeListExport)
 export class MyAnimeList extends Service {
-	static readonly serviceName: ActivableName = ActivableName.MyAnimeList;
-	static readonly key: ActivableKey = ActivableKey.MyAnimeList;
-
-	static loginMethod: LoginMethod = LoginMethod.EXTERNAL;
-	static loginUrl: string = 'https://myanimelist.net/login.php';
-
-	static importModule = (moduleInterface?: ModuleInterface) => new MyAnimeListImport(MyAnimeList, moduleInterface);
-	static exportModule = (moduleInterface?: ModuleInterface) => new MyAnimeListExport(MyAnimeList, moduleInterface);
-
 	static username: string = '';
 
 	static loggedIn = async (): Promise<RequestStatus> => {

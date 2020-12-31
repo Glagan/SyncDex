@@ -1,9 +1,8 @@
 import { DOM } from '../Core/DOM';
 import { log } from '../Core/Log';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
-import { ModuleInterface } from '../Core/ModuleInterface';
 import { Runtime } from '../Core/Runtime';
-import { ActivableKey, ActivableName, LoginMethod, Service } from '../Core/Service';
+import { ActivableKey, ActivableName, Declare, ExternalLogin, Modules, Service } from '../Core/Service';
 import { MissableField, ExternalTitle, FoundTitle, LocalTitle } from '../Core/Title';
 
 export const enum MangaUpdatesStatus {
@@ -127,16 +126,10 @@ export class MangaUpdatesExport extends ExportModule {
 	};
 }
 
+@Declare(ActivableName.MangaUpdates, ActivableKey.MangaUpdates)
+@ExternalLogin('https://www.mangaupdates.com/login.html')
+@Modules(MangaUpdatesImport, MangaUpdatesExport)
 export class MangaUpdates extends Service {
-	static readonly serviceName: ActivableName = ActivableName.MangaUpdates;
-	static readonly key: ActivableKey = ActivableKey.MangaUpdates;
-
-	static loginMethod: LoginMethod = LoginMethod.EXTERNAL;
-	static loginUrl: string = 'https://www.mangaupdates.com/login.html';
-
-	static importModule = (moduleInterface?: ModuleInterface) => new MangaUpdatesImport(MangaUpdates, moduleInterface);
-	static exportModule = (moduleInterface?: ModuleInterface) => new MangaUpdatesExport(MangaUpdates, moduleInterface);
-
 	static loggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: 'https://www.mangaupdates.com/aboutus.html',

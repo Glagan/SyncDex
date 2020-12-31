@@ -2,7 +2,7 @@ import { DOM } from '../Core/DOM';
 import { Runtime } from '../Core/Runtime';
 import { LocalStorage } from '../Core/Storage';
 import { generateRandomString, pkceChallengeFromVerifier } from '../Options/PKCEHelper';
-import { SaveSync } from '../Core/SaveSync';
+import { Declare, SaveSync } from '../Core/SaveSync';
 import { log } from '../Core/Log';
 
 interface DropboxTokenResponse {
@@ -82,11 +82,9 @@ interface DropboxUploadResult {
 	};
 }
 
+@Declare('Dropbox', () => DOM.icon('b', 'dropbox'))
 export class Dropbox extends SaveSync {
-	static realName = 'Dropbox';
-	static icon = () => DOM.icon('b', 'dropbox');
 	static CLIENT_ID = 'd8aw9vtzpdqg93y';
-	static REDIRECT_URI = SaveSync.redirectURI('Dropbox');
 
 	createCard = (): HTMLButtonElement => {
 		return DOM.create('button', {
