@@ -217,13 +217,13 @@ export class SaveViewer {
 	};
 
 	createRow = (title: LocalTitle): SaveRow => {
-		const selectCheckbox = DOM.create('input', { type: 'checkbox', id: `save_${title.key}` });
+		const selectCheckbox = DOM.create('input', { type: 'checkbox', id: `save_${title.key.id}` });
 		const editButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('edit')], title: 'Edit' });
 		const deleteButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('trash')], title: 'Delete' });
 		const row = DOM.create('tr', {
 			childs: [
 				DOM.create('td', {
-					childs: [selectCheckbox, DOM.create('label', { htmlFor: `save_${title.key}` })],
+					childs: [selectCheckbox, DOM.create('label', { htmlFor: `save_${title.key.id}` })],
 				}),
 				DOM.create('td', {
 					class: 'mangadex',
@@ -358,6 +358,7 @@ export class SaveViewer {
 			this.titles.collection = this.titles.collection.filter(
 				(t) =>
 					(typeof t.name === 'string' && t.name.toLocaleLowerCase().match(search)) ||
+					`${t.key.id}` == search ||
 					Object.values(t.services).some((key) => key && (`${key.id}` == search || key.slug == search))
 			);
 		}
