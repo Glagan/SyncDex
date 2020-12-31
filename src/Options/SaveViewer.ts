@@ -357,7 +357,7 @@ export class SaveViewer {
 			const search = this.sortBy.search.toLocaleLowerCase();
 			this.titles.collection = this.titles.collection.filter(
 				(t) =>
-					(t.name === 'string' && t.name.toLocaleLowerCase().match(search)) ||
+					(typeof t.name === 'string' && t.name.toLocaleLowerCase().match(search)) ||
 					Object.values(t.services).some((key) => key && (`${key.id}` == search || key.slug == search))
 			);
 		}

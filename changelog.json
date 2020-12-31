@@ -2,7 +2,10 @@
 	"updates": [
 		{
 			"version": "0.1.9",
-			"description": ["Add an option to avoid opening a tab with changelogs after an update."]
+			"description": [
+				"Add an option to avoid opening a tab with changelogs after an update.",
+				"Fix Save Viewer search."
+			]
 		},
 		{
 			"version": "0.1.8",

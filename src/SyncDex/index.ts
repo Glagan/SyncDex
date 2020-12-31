@@ -12,7 +12,7 @@ console.log('SyncDex :: Index');
 			{
 				text: 'SyncDex reloaded',
 				buttons: [
-					{ value: 'Reload Page', type: 'success', onClick: () => window.location.reload() },
+					{ value: 'Reload', type: 'success', onClick: () => window.location.reload() },
 					{ value: 'Close', type: 'message', onClick: (n) => n.closeAnimated() },
 				],
 			},

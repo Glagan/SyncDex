@@ -45,7 +45,6 @@ You should import your save first, and then import from **MyAnimeList**.
 * [ ] Better design
 * [ ] Original icon
 * [ ] Check Brave and Edge
-* [ ] Add permissions only when needed
 
 ## Support
 
