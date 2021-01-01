@@ -334,7 +334,7 @@ export class TitleChapterGroup {
 				if (!chapterRow || !chapterRow.dataset.mangaId) continue;
 				const firstChild = row.firstElementChild;
 				if (firstChild) {
-					const id = Math.floor(parseInt(chapterRow.dataset.mangaId));
+					const id = parseInt(chapterRow.dataset.mangaId);
 					const isFirstRow = firstChild && firstChild.childElementCount > 0;
 					// Is this is a new entry push the current group and create a new one
 					if (!currentTitleGroup || isFirstRow) {

@@ -39,27 +39,35 @@ export function injectScript(func: Function) {
 	script.remove();
 }
 
-export function stringToProgress(str: string): Progress | undefined {
-	// Handle Oneshot as chapter 0
-	const progressReg: (string[] | null)[] = [
-		/Vol(?:\.|ume)\s*(\d+)/.exec(str),
-		/Ch(?:\.|apter)\s*(\d+(\.\d+)?)/.exec(str),
-	];
-	// Handle Oneshot as chapter 0
-	let oneshot = false;
-	if (progressReg[1] === null) {
-		if (str != 'Oneshot') return undefined;
-		progressReg[1] = ['Oneshot', '0'];
-		oneshot = true;
-	}
-	return {
-		volume: progressReg[0] !== null ? parseInt(progressReg[0][1]) : undefined,
-		chapter: parseFloat(progressReg[1][1]),
-		oneshot: oneshot,
-	};
-}
-
 export function progressToString(progress: Progress): string {
 	const volume = progress.volume && progress.volume > 0 ? `Vol. ${progress.volume}` : '';
 	return `${progress.oneshot ? 'Oneshot' : `${volume ? `${volume} Ch.` : 'Chapter'} ${progress.chapter}`}`;
+}
+
+/**
+ * Convert a chapter name with a chapter progress inside.
+ * Found formats:
+ * 	 	(Volume X) Chapter Y(.Z)
+ * 		(Vol. X) Ch. Y(.Z)
+ * Progress.chapter is kept as NaN on error
+ * @param chapter Chapter name
+ */
+export function progressFromString(chapter: string): Progress {
+	// (Volume X) Chapter Y(.Z) | (Vol. X) Ch. Y(.Z)
+	const result = /(?:Vol(?:\.|ume)\s*)?([0-9]+)?\s*(?:Ch(?:\.|apter)\s*)([0-9]+(?:\.[0-9]+)?)/.exec(chapter);
+
+	// If it's a Oneshot
+	if (result == null) {
+		return { chapter: NaN };
+	}
+
+	const volume = parseInt(result[1]);
+	const progress: Progress = {
+		chapter: parseFloat(result[2]),
+		volume: isNaN(volume) ? 0 : volume,
+	};
+	if (chapter.toLocaleLowerCase() == 'oneshot') {
+		progress.oneshot = true;
+	}
+	return progress;
 }

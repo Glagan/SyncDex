@@ -4,7 +4,7 @@ import { DOM } from '../Core/DOM';
 import { TitleCollection, StatusMap, iconToService, LocalTitle } from '../Core/Title';
 import { TitleOverview, ReadingOverview } from './Overview';
 import { Mochi } from '../Core/Mochi';
-import { injectScript, stringToProgress } from '../Core/Utility';
+import { injectScript, progressFromString } from '../Core/Utility';
 import { Runtime } from '../Core/Runtime';
 import { Thumbnail } from './Thumbnail';
 import { SyncModule, ReportInformations } from '../Core/SyncModule';
@@ -259,13 +259,17 @@ export class SyncDex {
 		// Find current Chapter Progress
 		const created = state.title.status == Status.NONE || state.title.status == Status.PLAN_TO_READ;
 		let completed = false;
-		const oneshot = details._data.title == 'Oneshot';
-		const currentProgress: Progress = {
+		const oneshot = details._data.title.toLocaleLowerCase() == 'oneshot';
+		let currentProgress: Progress = {
 			chapter: oneshot ? 0 : parseFloat(details._data.chapter),
 			oneshot: oneshot,
 		};
 		const volume = parseInt(details._data.volume);
 		if (!isNaN(volume) && volume) currentProgress.volume = volume;
+		// Fallback if there is no valid chapter in API response
+		if (isNaN(currentProgress.chapter)) {
+			currentProgress = progressFromString(details._data.title);
+		}
 		// Exit early if there is no progress
 		if (isNaN(currentProgress.chapter)) {
 			if (Options.errorNotifications) {
@@ -865,8 +869,8 @@ export class SyncDex {
 			const wasInHistory = History.find(id) >= 0;
 			const title = wasInHistory ? titles.find(id) : await LocalTitle.get(id);
 			if (title) {
-				const progress = stringToProgress(chapterLink.textContent!);
-				if (!progress) continue;
+				const progress = progressFromString(chapterLink.textContent!);
+				if (isNaN(progress.chapter)) continue;
 				if (!title.history) title.history = progress;
 				if (title.lastChapter !== chapter) title.lastChapter = chapter;
 				if (!title.inList) {

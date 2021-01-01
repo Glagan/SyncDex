@@ -1,5 +1,6 @@
 import { DOM } from '../Core/DOM';
 import { Options } from '../Core/Options';
+import { progressFromString } from '../Core/Utility';
 
 export class ChapterRow {
 	isNext: boolean;
@@ -24,12 +25,16 @@ export class ChapterRow {
 		this.node = fullRow;
 		const chapterLink = chapterRow.querySelector<HTMLAnchorElement>(`a[href^='/chapter']`)!;
 		this.parent = chapterLink.parentElement!;
-		const oneshot = chapterRow.dataset.title == 'Oneshot';
+		const oneshot = chapterRow.dataset.title?.toLocaleLowerCase() == 'oneshot';
 		this.progress = {
 			chapter: oneshot ? 0 : parseFloat(chapterRow.dataset.chapter!),
 			volume: parseFloat(chapterRow.dataset?.volume || '') || undefined,
 			oneshot: oneshot,
 		};
+		// Fallback to progress in chapter name
+		if (isNaN(this.progress.chapter)) {
+			this.progress = progressFromString(chapterLink.textContent!);
+		}
 		this.chapterId = parseInt(/\/chapter\/(\d+)/.exec(chapterLink.href)![1]);
 		this.hidden = false;
 

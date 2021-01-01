@@ -1,5 +1,5 @@
 import { Options } from '../Core/Options';
-import { stringToProgress } from '../Core/Utility';
+import { progressFromString } from '../Core/Utility';
 import { Title } from '../Core/Title';
 
 interface ChapterRow {
@@ -112,8 +112,8 @@ export class UpdateGroup {
 			} else if (currentGroup != undefined) {
 				const chapterLink = row.querySelector<HTMLAnchorElement>(`a[href^='/chapter/'`);
 				if (!chapterLink) continue;
-				const progress = stringToProgress(chapterLink.textContent!);
-				if (!progress) continue;
+				const progress = progressFromString(chapterLink.textContent!);
+				if (isNaN(progress.chapter)) continue;
 				currentGroup.chapters.unshift({
 					node: row,
 					progress: progress,
