@@ -1,56 +1,16 @@
+import { ActivableKey } from '../Service/Keys';
+import { ServiceName } from '../Service/Names';
 import { AppendableElement, DOM } from './DOM';
 import { ExportModule, ImportModule } from './Module';
 import { ModuleInterface } from './ModuleInterface';
 import { MissableField } from './Title';
-
-export enum StaticName {
-	'MyMangaDex' = 'MyMangaDex',
-	'SyncDex' = 'SyncDex',
-	'MangaDex' = 'MangaDex',
-}
-
-export enum ActivableName {
-	'MyAnimeList' = 'MyAnimeList',
-	'MangaUpdates' = 'MangaUpdates',
-	'Anilist' = 'Anilist',
-	'Kitsu' = 'Kitsu',
-	'AnimePlanet' = 'AnimePlanet',
-}
-
-export const ServiceName = {
-	...StaticName,
-	...ActivableName,
-};
-export type ServiceName = StaticName | ActivableName;
-
-export enum StaticKey {
-	'MyMangaDex' = 'mmd',
-	'SyncDex' = 'sc',
-	'MangaDex' = 'md',
-}
-
-export enum ActivableKey {
-	'MyAnimeList' = 'mal',
-	'MangaUpdates' = 'mu',
-	'Anilist' = 'al',
-	'Kitsu' = 'ku',
-	'AnimePlanet' = 'ap',
-}
-
-export const ServiceKey = {
-	...StaticKey,
-	...ActivableKey,
-};
-export type ServiceKey = StaticKey | ActivableKey;
-
-export type ServiceList = { [key in ActivableKey]?: MediaKey };
 
 export const enum LoginMethod {
 	EXTERNAL,
 	FORM,
 }
 
-export function Declare(serviceName: ActivableName, serviceKey: ActivableKey) {
+export function Declare(serviceName: ServiceName, serviceKey: ActivableKey) {
 	return function (constructor: typeof Service) {
 		constructor.serviceName = serviceName;
 		constructor.key = serviceKey;
@@ -88,7 +48,7 @@ export function Modules(importModule: typeof ImportModule, exportModule: typeof 
 }
 
 export abstract class Service {
-	static serviceName: ActivableName;
+	static serviceName: ServiceName;
 	static key: ActivableKey;
 
 	static usesSlug: boolean = false;

@@ -1,12 +1,13 @@
 import { DOM, MessageType } from '../../Core/DOM';
-import { Services } from '../../Core/Services';
+import { Services } from '../../Service/Map';
 import { Modal } from '../../Core/Modal';
 import { Options } from '../../Core/Options';
-import { ActivableKey, LoginMethod, Service } from '../../Core/Service';
+import { LoginMethod, Service } from '../../Core/Service';
 import { SaveOptions } from '../Utility';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { OptionsManager } from '../OptionsManager';
 import { Runtime } from '../../Core/Runtime';
+import { ActivableKey } from '../../Service/Keys';
 
 class ServiceCard {
 	manager: ServiceManager;
@@ -99,7 +100,7 @@ class ServiceCard {
 
 	loading = (): void => {
 		DOM.clear(this.activeCardContent);
-		if (Options.mainService == this.service.key) {
+		if (Options.services[0] == this.service.key) {
 			DOM.append(this.activeCardContent, this.mainMessage);
 		}
 		DOM.append(
@@ -115,7 +116,7 @@ class ServiceCard {
 	activate = (): void => {
 		this.activeCard.classList.add('active');
 		DOM.clear(this.activeCardContent);
-		if (Options.mainService == this.service.key) {
+		if (Options.services[0] == this.service.key) {
 			DOM.append(this.activeCardContent, this.mainMessage);
 		} else {
 			DOM.append(this.activeCardContent, this.mainButton);
@@ -153,7 +154,6 @@ class ServiceCard {
 		this.activateButton.addEventListener('click', async () => {
 			Options.services.push(this.service.key);
 			if (Options.services.length == 1) {
-				Options.mainService = this.service.key;
 				const containerFirstChild = this.manager.activeContainer.firstElementChild;
 				if (this.activeCard != containerFirstChild) {
 					this.manager.activeContainer.insertBefore(this.activeCard, containerFirstChild);
@@ -172,7 +172,6 @@ class ServiceCard {
 			// Make service the first in the list
 			const index = Options.services.indexOf(this.service.key);
 			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
-			Options.mainService = this.service.key;
 			await SaveOptions();
 			// Update old card
 			if (this.manager.mainCard) {
@@ -206,9 +205,6 @@ class ServiceCard {
 			const index = Options.services.indexOf(this.service.key);
 			if (index > -1) {
 				Options.services.splice(index, 1);
-				if (Options.mainService == this.service.key) {
-					Options.mainService = Options.services.length > 0 ? Options.services[0] : null;
-				}
 			}
 			// Execute logout actions
 			if (this.service.logout !== undefined) {
@@ -229,8 +225,8 @@ class ServiceCard {
 				);
 			}
 			// Set the new main
-			if (Options.mainService) {
-				this.manager.cards[Options.mainService].makeMain();
+			if (Options.services.length > 0) {
+				this.manager.cards[Options.services[0]].makeMain();
 			} else {
 				this.manager.mainCard = undefined;
 			}
@@ -462,7 +458,7 @@ export class ServiceManager {
 		// Reload all Service cards
 		for (const key of Object.values(ActivableKey)) {
 			this.reloadCard(key);
-			if (Options.mainService == key) {
+			if (Options.services[0] == key) {
 				this.mainCard = this.cards[key];
 			}
 		}
@@ -482,7 +478,7 @@ export class ServiceManager {
 	reloadCard = async (key: ActivableKey): Promise<void> => {
 		const card = this.cards[key];
 		const index = Options.services.indexOf(key);
-		if (Options.mainService == key) {
+		if (index === 0) {
 			this.mainCard = card;
 			this.activeContainer.insertBefore(this.mainCard.activeCard, this.activeContainer.firstElementChild);
 			this.mainCard.activeCard.classList.add('active');

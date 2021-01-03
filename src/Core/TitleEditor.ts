@@ -5,8 +5,9 @@ import { dateFormatInput } from './Utility';
 import { Runtime } from './Runtime';
 import { Options } from './Options';
 import { SyncModule } from './SyncModule';
-import { ActivableKey, ActivableName, Service, ServiceKey } from './Service';
-import { Services } from './Services';
+import { Service } from './Service';
+import { Services } from '../Service/Map';
+import { ActivableKey } from '../Service/Keys';
 
 interface HistoryChapter {
 	node: HTMLElement;
@@ -133,9 +134,9 @@ export class TitleEditor {
 		});
 		// Active Service on the Title
 		const services = DOM.create('div', { class: 'services' });
-		for (const sn in ActivableName) {
-			const serviceName = sn as ActivableName;
-			const serviceKey = ServiceKey[serviceName];
+		for (const sn of Object.values(ActivableKey)) {
+			const serviceKey = sn as ActivableKey;
+			const serviceName = Services[serviceKey].serviceName;
 			const link = DOM.create('a', {
 				href: '#',
 				title: serviceName,

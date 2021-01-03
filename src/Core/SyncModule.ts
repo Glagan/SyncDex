@@ -2,10 +2,10 @@ import { Title, LocalTitle, ExternalTitle, StatusMap } from './Title';
 import { Options } from './Options';
 import { Runtime } from './Runtime';
 import { Overview } from '../SyncDex/Overview';
-import { StaticKey, ActivableKey } from './Service';
 import { ExternalTitles } from './ExternalTitles';
-import { Services } from './Services';
+import { Services } from '../Service/Map';
 import { log } from './Log';
+import { ActivableKey, StaticKey } from '../Service/Keys';
 
 export type SyncReport = {
 	[key in ActivableKey]?: RequestStatus | false;
@@ -163,11 +163,14 @@ export class SyncModule {
 		if (Options.updateMD && this.loggedIn) {
 			const strings: { success: string[]; error: string[] } = { success: [], error: [] };
 			if (this.title.mdStatus != this.title.status) {
+				const oldStatus = this.title.mdStatus;
 				this.title.mdStatus = this.title.status;
 				const response = await this.syncMangaDex(this.title.mdStatus == Status.NONE ? 'unfollow' : 'status');
-				if (response.ok) {
-					strings.success.push('**MangaDex Status** updated.');
-				} else strings.error.push(`Error while updating **MangaDex Status**.\ncode: ${response.code}`);
+				if (response.ok) strings.success.push('**MangaDex Status** updated.');
+				else {
+					this.title.mdStatus = oldStatus;
+					strings.error.push(`Error while updating **MangaDex Status**.\ncode: ${response.code}`);
+				}
 			}
 			if (
 				this.loggedIn &&
@@ -175,10 +178,14 @@ export class SyncModule {
 				Math.round(this.title.mdScore / 10) != Math.round(this.title.score / 10)
 			) {
 				// Convert 0-100 SyncDex Score to 0-10
+				const oldScore = this.title.mdScore;
 				this.title.mdScore = this.title.score;
 				const response = await this.syncMangaDex('score');
 				if (response.ok) strings.success.push('**MangaDex Score** updated.');
-				else strings.error.push(`Error while updating **MangaDex Score**.\ncode: ${response.code}`);
+				else {
+					this.title.mdScore = oldScore;
+					strings.error.push(`Error while updating **MangaDex Score**.\ncode: ${response.code}`);
+				}
 			}
 			if (strings.success.length > 0) {
 				SimpleNotification.success({ text: strings.success.join('\n') });

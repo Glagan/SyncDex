@@ -2,10 +2,10 @@ import { DOM } from '../../Core/DOM';
 import { log } from '../../Core/Log';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { Options } from '../../Core/Options';
-import { StaticKey } from '../../Core/Service';
 import { LocalStorage } from '../../Core/Storage';
 import { LocalTitle, StorageTitle, TitleCollection } from '../../Core/Title';
 import { dateFormat } from '../../Core/Utility';
+import { ServiceKey } from '../../Service/Keys';
 import { History } from '../../SyncDex/History';
 import { SpecialService } from '../SpecialService';
 
@@ -116,11 +116,11 @@ export class SyncDexImport extends SpecialService {
 					}),
 				],
 			}),
-			StaticKey.SyncDex
+			ServiceKey.SyncDex
 		);
 
 		// Add File input
-		const inputId = `file_${StaticKey.SyncDex}`;
+		const inputId = `file_${ServiceKey.SyncDex}`;
 		DOM.append(
 			moduleInterface.form,
 			DOM.create('h2', {

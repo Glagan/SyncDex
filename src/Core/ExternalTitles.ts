@@ -1,4 +1,4 @@
-import { ActivableKey } from './Service';
+import { ActivableKey } from '../Service/Keys';
 import { ExternalTitle } from './Title';
 import { AnilistTitle } from '../Service/Anilist';
 import { AnimePlanetTitle } from '../Service/AnimePlanet';

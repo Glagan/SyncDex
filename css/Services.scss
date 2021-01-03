@@ -1,69 +1,51 @@
+/** Generated File */
 $services: (
-	'mmd': 'MyMangaDex',
 	'sc': 'SyncDex',
+	'mmd': 'MyMangaDex',
 	'md': 'MangaDex',
 	'mal': 'MyAnimeList',
 	'al': 'Anilist',
 	'ku': 'Kitsu',
-	'mu': 'MangaUpdates',
 	'ap': 'AnimePlanet',
+	'mu': 'MangaUpdates',
 );
-
 $services-color: (
-	'mmd': rgb(47, 82, 162),
 	'sc': rgb(81, 165, 234),
+	'mmd': rgb(47, 82, 162),
 	'md': rgb(247, 148, 33),
 	'mal': rgb(47, 82, 162),
 	'al': rgb(2, 169, 255),
 	'ku': #ffffff,
-	'mu': rgb(82, 102, 124),
 	'ap': rgb(252, 83, 66),
+	'mu': rgb(82, 102, 124),
 );
-
 $services-secondary: (
 	'sc': rgb(247, 148, 33),
 	'md': #ffffff,
 	'al': #ffffff,
 );
-
-$services-colors-dark: (
-	'mal': #6d92e8,
-	'mu': #a5acb3,
-);
-
 $services-bg: (
-	'mmd': #ffffff,
 	'sc': #fefefe,
+	'mmd': #ffffff,
 	'md': #2a2f34,
 	'mal': #ffffff,
 	'al': rgb(31, 38, 49),
 	'ku': rgb(64, 47, 63),
-	'mu': rgb(240, 243, 247),
 	'ap': rgb(48, 48, 48),
+	'mu': rgb(240, 243, 247),
 );
-
+$services-color-dark: (
+	'mal': #6d92e8,
+	'mu': #a5acb3,
+);
 $services-bg-dark: (
 	'sc': $grey-70,
 	'mal': $grey-70,
 	'mu': $grey-70,
 );
-
-// Custom separated Title
-.sync {
-	color: map.get($services-color, 'sc');
-}
-.sync .dex {
-	color: map.get($services-secondary, 'sc');
-}
-.manga {
-	color: map.get($services-secondary, 'md');
-}
-.manga .dex {
-	color: map.get($services-color, 'md');
-}
-.ani {
-	color: map.get($services-secondary, 'al');
-}
-.ani .list {
-	color: map.get($services-color, 'al');
-}
+.sync { color: map.get($services-color, 'sc'); }
+.sync .dex { color: map.get($services-secondary, 'sc'); }
+.manga { color: map.get($services-secondary, 'md'); }
+.manga .dex { color: map.get($services-color, 'md'); }
+.ani { color: map.get($services-secondary, 'al'); }
+.ani .list { color: map.get($services-color, 'al'); }

@@ -6,7 +6,7 @@ import { DefaultOptions, Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
 import { SaveSync } from '../Core/SaveSync';
 import { SaveSyncServices } from '../Core/SaveSyncServices';
-import { Services } from '../Core/Services';
+import { Services } from '../Service/Map';
 import { LocalStorage } from '../Core/Storage';
 
 console.log('SyncDex :: Background');
@@ -357,7 +357,7 @@ async function silentImport(manual: boolean = false) {
 			await browser.runtime.sendMessage({ action: MessageAction.importStart }).catch((_e) => _e);
 			await log('Importing lists');
 			const services =
-				!manual && Options.checkOnStartupMainOnly ? [Options.mainService!] : [...Options.services].reverse();
+				!manual && Options.checkOnStartupMainOnly ? [Options.services[0]] : [...Options.services].reverse();
 			const done: string[] = typeof lastCheck === 'object' ? lastCheck : [];
 			for (const key of services) {
 				if (done.indexOf(key) < 0) {

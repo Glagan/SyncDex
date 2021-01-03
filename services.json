@@ -1,0 +1,74 @@
+[
+	{
+		"name": "SyncDex",
+		"key": "sc",
+		"activable": false,
+		"theme": {
+			"separator": ["sync", "dex"],
+			"light": { "font": ["rgb(81, 165, 234)", "rgb(247, 148, 33)"], "background": "#fefefe" },
+			"dark": { "background": "$grey-70" }
+		}
+	},
+	{
+		"name": "MyMangaDex",
+		"key": "mmd",
+		"activable": false,
+		"theme": {
+			"light": { "font": "rgb(47, 82, 162)", "background": "#ffffff" }
+		}
+	},
+	{
+		"name": "MangaDex",
+		"key": "md",
+		"activable": false,
+		"theme": {
+			"separator": ["manga", "dex"],
+			"reverse": true,
+			"light": { "font": ["rgb(247, 148, 33)", "#ffffff"], "background": "#2a2f34" }
+		}
+	},
+	{
+		"name": "MyAnimeList",
+		"key": "mal",
+		"activable": true,
+		"theme": {
+			"light": { "font": "rgb(47, 82, 162)", "background": "#ffffff" },
+			"dark": { "font": "#6d92e8", "background": "$grey-70" }
+		}
+	},
+	{
+		"name": "Anilist",
+		"key": "al",
+		"activable": true,
+		"theme": {
+			"separator": ["ani", "list"],
+			"reverse": true,
+			"light": { "font": ["rgb(2, 169, 255)", "#ffffff"], "background": "rgb(31, 38, 49)" }
+		}
+	},
+	{
+		"name": "Kitsu",
+		"key": "ku",
+		"activable": true,
+		"theme": {
+			"light": { "font": "#ffffff", "background": "rgb(64, 47, 63)" }
+		}
+	},
+	{
+		"name": "AnimePlanet",
+		"key": "ap",
+		"activable": true,
+		"theme": {
+			"light": { "font": "rgb(252, 83, 66)", "background": "rgb(48, 48, 48)" }
+		}
+	},
+	{
+		"name": "MangaUpdates",
+		"key": "mu",
+		"activable": true,
+		"theme": {
+			"light": { "font": "rgb(82, 102, 124)", "background": "rgb(240, 243, 247)" },
+			"dark": { "font": "#a5acb3", "background": "$grey-70" }
+		}
+	}
+]

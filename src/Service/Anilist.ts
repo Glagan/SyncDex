@@ -1,10 +1,12 @@
-import { ActivableKey, ActivableName, Declare, ExternalLogin, Modules, Service } from '../Core/Service';
+import { Declare, ExternalLogin, Modules, Service } from '../Core/Service';
 import { Runtime } from '../Core/Runtime';
 import { ExternalTitle, LocalTitle } from '../Core/Title';
 import { Options } from '../Core/Options';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { AppendableElement, DOM } from '../Core/DOM';
 import { log } from '../Core/Log';
+import { ActivableKey } from './Keys';
+import { ServiceName } from './Names';
 
 export const enum AnilistStatus {
 	NONE = 'NONE',
@@ -266,7 +268,7 @@ export class AnilistExport extends ExportModule {
 	};
 }
 
-@Declare(ActivableName.Anilist, ActivableKey.Anilist)
+@Declare(ServiceName.Anilist, ActivableKey.Anilist)
 @ExternalLogin('https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token')
 @Modules(AnilistImport, AnilistExport)
 export class Anilist extends Service {

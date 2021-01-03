@@ -45,7 +45,6 @@ export const DefaultOptions: AvailableOptions = {
 	silentUpdate: false,
 	// Services
 	services: [],
-	mainService: null,
 	noReloadStatus: true,
 	tokens: {
 		anilistToken: undefined,

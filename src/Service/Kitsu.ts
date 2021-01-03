@@ -3,8 +3,10 @@ import { log } from '../Core/Log';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
-import { ActivableKey, ActivableName, Declare, FormLogin, Modules, Service } from '../Core/Service';
+import { Declare, FormLogin, Modules, Service } from '../Core/Service';
 import { ExternalTitle, FoundTitle, LocalTitle } from '../Core/Title';
+import { ActivableKey } from './Keys';
+import { ServiceName } from './Names';
 
 interface KitsuHeaders {
 	Accept: string;
@@ -277,7 +279,7 @@ export class KitsuExport extends ExportModule {
 	};
 }
 
-@Declare(ActivableName.Kitsu, ActivableKey.Kitsu)
+@Declare(ServiceName.Kitsu, ActivableKey.Kitsu)
 @FormLogin()
 @Modules(KitsuImport, KitsuExport)
 export class Kitsu extends Service {

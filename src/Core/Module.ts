@@ -1,6 +1,6 @@
 import { DOM } from './DOM';
 import { ModuleInterface } from './ModuleInterface';
-import { Service, ServiceList, StaticKey } from './Service';
+import { Service } from './Service';
 import { FoundTitle, LocalTitle, TitleCollection } from './Title';
 import { Mochi } from './Mochi';
 import { LocalStorage, SaveSpecialKeys } from './Storage';
@@ -8,6 +8,7 @@ import { Options } from './Options';
 import { Runtime } from './Runtime';
 import { log } from './Log';
 import { browser } from 'webextension-polyfill-ts';
+import { ServiceKey } from '../Service/Keys';
 
 export const enum ModuleStatus {
 	SUCCESS,
@@ -393,7 +394,7 @@ export abstract class ExportModule extends Module {
 								target: '_blank',
 								href: LocalTitle.link(title.key),
 								childs: [
-									DOM.create('img', { src: Runtime.icon(StaticKey.MangaDex), title: 'MangaDex' }),
+									DOM.create('img', { src: Runtime.icon(ServiceKey.MangaDex), title: 'MangaDex' }),
 									DOM.space(),
 									DOM.text(name),
 									DOM.space(),

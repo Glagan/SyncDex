@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 const fs = require('fs');
 const { spawn } = require('child_process');
 const rimraf = require('rimraf');
@@ -7,7 +8,6 @@ const rollup = require('rollup');
 const sass = require('sass');
 const typescript = require('rollup-plugin-typescript2');
 const json = require('@rollup/plugin-json');
-const { terser } = require('rollup-plugin-terser');
 const nodeResolve = require('rollup-plugin-node-resolve');
 const commonjs = require('@rollup/plugin-commonjs');
 const options = require('minimist')(process.argv.slice(2), {

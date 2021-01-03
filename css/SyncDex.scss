@@ -237,7 +237,7 @@
 	}
 	// Dark Theme
 	&.dark {
-		@each $key, $color in $services-colors-dark {
+		@each $key, $color in $services-color-dark {
 			& .tab.#{$key} {
 				color: $color;
 				border-color: $color;

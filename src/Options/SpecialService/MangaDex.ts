@@ -2,9 +2,9 @@ import { DOM } from '../../Core/DOM';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { Options } from '../../Core/Options';
 import { Runtime } from '../../Core/Runtime';
-import { StaticKey } from '../../Core/Service';
 import { LocalStorage } from '../../Core/Storage';
 import { LocalTitle, TitleCollection } from '../../Core/Title';
+import { ServiceKey } from '../../Service/Keys';
 import { SpecialService } from '../SpecialService';
 
 interface MangaDexAPIResponse {
@@ -58,7 +58,7 @@ export class MangaDexImport extends SpecialService {
 		// Create a ModuleInterface from scratch
 		const moduleInterface = new ModuleInterface();
 		moduleInterface.createOptions(this.options);
-		moduleInterface.setStyle(MangaDexHelper.createTitle(), StaticKey.MangaDex);
+		moduleInterface.setStyle(MangaDexHelper.createTitle(), ServiceKey.MangaDex);
 
 		// Show the Modal
 		moduleInterface.bindFormSubmit(async () => {
@@ -166,7 +166,7 @@ export class MangaDexExport extends SpecialService {
 	start = async (): Promise<void> => {
 		// Create a ModuleInterface from scratch
 		const moduleInterface = new ModuleInterface();
-		moduleInterface.setStyle(MangaDexHelper.createTitle(), StaticKey.MangaDex);
+		moduleInterface.setStyle(MangaDexHelper.createTitle(), ServiceKey.MangaDex);
 
 		// Show the Modal
 		moduleInterface.bindFormSubmit(async () => {

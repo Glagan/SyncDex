@@ -1,8 +1,9 @@
 import { LocalStorage } from './Storage';
 import { Options } from './Options';
 import { dateCompare } from './Utility';
-import { ActivableKey, Service, ServiceList } from './Service';
+import { Service } from './Service';
 import { History } from '../SyncDex/History';
+import { ActivableKey } from '../Service/Keys';
 
 export const StatusMap: { [key in Status]: string } = {
 	[Status.NONE]: 'No Status',

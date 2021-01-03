@@ -12,10 +12,11 @@ import { UpdateGroup } from './UpdateGroup';
 import { TitleChapterGroup } from './TitleChapterGroup';
 import { History } from './History';
 import { ChapterRow } from './ChapterRow';
-import { ActivableKey, Service } from '../Core/Service';
+import { Service } from '../Core/Service';
 import { ExternalTitles } from '../Core/ExternalTitles';
-import { Services } from '../Core/Services';
+import { Services } from '../Service/Map';
 import { log } from '../Core/Log';
+import { ActivableKey } from '../Service/Keys';
 
 interface ReadingState {
 	syncModule?: SyncModule;

@@ -2,9 +2,10 @@ import { DOM } from '../../Core/DOM';
 import { log } from '../../Core/Log';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { Options } from '../../Core/Options';
-import { ActivableKey, StaticKey, StaticName } from '../../Core/Service';
 import { LocalStorage } from '../../Core/Storage';
 import { LocalTitle, TitleCollection } from '../../Core/Title';
+import { ServiceKey } from '../../Service/Keys';
+import { ServiceName } from '../../Service/Names';
 import { History } from '../../SyncDex/History';
 import { SpecialService } from '../SpecialService';
 
@@ -94,9 +95,8 @@ export class MyMangaDex extends SpecialService {
 			};
 		}
 		// Add MyAnimeList and save options
-		if (Options.services.indexOf(ActivableKey.MyAnimeList) < 0) {
-			Options.services.unshift(ActivableKey.MyAnimeList);
-			Options.mainService = ActivableKey.MyAnimeList;
+		if (Options.services.indexOf(ServiceKey.MyAnimeList) < 0) {
+			Options.services.unshift(ServiceKey.MyAnimeList);
 		}
 	};
 
@@ -211,10 +211,10 @@ export class MyMangaDex extends SpecialService {
 		// Create a ModuleInterface from scratch
 		const moduleInterface = new ModuleInterface();
 		moduleInterface.createOptions(this.options);
-		moduleInterface.setStyle(DOM.text(StaticName.MyMangaDex), StaticKey.MyMangaDex);
+		moduleInterface.setStyle(DOM.text(ServiceName.MyMangaDex), ServiceName.MyMangaDex);
 
 		// Add File input
-		const inputId = `file_${StaticKey.MyMangaDex}`;
+		const inputId = `file_${ServiceKey.MyMangaDex}`;
 		DOM.append(
 			moduleInterface.form,
 			DOM.message(

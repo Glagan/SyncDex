@@ -2,9 +2,11 @@ import { DOM } from '../Core/DOM';
 import { log } from '../Core/Log';
 import { ExportModule, ImportModule } from '../Core/Module';
 import { Runtime } from '../Core/Runtime';
-import { ActivableKey, ActivableName, Declare, ExternalLogin, Modules, Service } from '../Core/Service';
+import { Declare, ExternalLogin, Modules, Service } from '../Core/Service';
 import { ExternalTitle, FoundTitle, LocalTitle } from '../Core/Title';
 import { dateFormatInput } from '../Core/Utility';
+import { ActivableKey } from './Keys';
+import { ServiceName } from './Names';
 
 export enum MyAnimeListStatus {
 	NONE = 0,
@@ -250,7 +252,7 @@ export class MyAnimeListExport extends ExportModule {
 	};
 }
 
-@Declare(ActivableName.MyAnimeList, ActivableKey.MyAnimeList)
+@Declare(ServiceName.MyAnimeList, ActivableKey.MyAnimeList)
 @ExternalLogin('https://myanimelist.net/login.php')
 @Modules(MyAnimeListImport, MyAnimeListExport)
 export class MyAnimeList extends Service {

@@ -7,8 +7,8 @@ import { TitleEditor } from '../Core/TitleEditor';
 import { ChapterList } from './ChapterList';
 import { ChapterRow } from './ChapterRow';
 import { dateCompare, dateFormat, isDate } from '../Core/Utility';
-import { ActivableKey, ServiceKey, StaticKey } from '../Core/Service';
-import { Services } from '../Core/Services';
+import { Services } from '../Service/Map';
+import { ActivableKey, ServiceKey, StaticKey } from '../Service/Keys';
 
 export abstract class Overview {
 	bind?(syncModule: SyncModule): void;
@@ -59,7 +59,7 @@ class ServiceOverview {
 		this.manage = DOM.create('div', { class: 'manage' });
 		this.body = DOM.create('div', { class: 'body hidden' });
 		DOM.append(this.body, this.content, this.manage);
-		if (Options.mainService == key) this.tab.classList.add('main');
+		if (Options.services[0] == key) this.tab.classList.add('main');
 		this.refreshButton = DOM.create('button', {
 			class: 'btn btn-secondary',
 			childs: [DOM.icon('download'), DOM.space(), DOM.text('Refresh')],
@@ -613,7 +613,7 @@ export class TitleOverview extends Overview {
 	};
 
 	initializeService = (key: ActivableKey, hasId: boolean): void => {
-		if (Options.overviewMainOnly && key !== Options.mainService) return;
+		if (Options.overviewMainOnly && key !== Options.services[0]) return;
 		const overview = this.createOverview(key);
 		if (hasId) {
 			overview.syncing();

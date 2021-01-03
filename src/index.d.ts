@@ -132,6 +132,8 @@ interface JSONResponse<T extends {} = Record<string, any>> extends RequestRespon
 
 interface RawResponse extends RequestResponse<string> {}
 
+type ServiceList = { [key in import('./Service/Keys').ActivableKey]?: MediaKey };
+
 interface AvailableOptions {
 	// Chapter and Title List / Updates
 	hideHigher: boolean;
@@ -173,8 +175,7 @@ interface AvailableOptions {
 	checkOnStartupCooldown: number;
 	silentUpdate: boolean;
 	// Services
-	services: import('./Core/Service').ActivableKey[];
-	mainService: import('./Core/Service').ActivableKey | null;
+	services: import('./Service/Keys').ActivableKey[];
 	noReloadStatus: boolean;
 	tokens: Partial<{
 		anilistToken: string | undefined;

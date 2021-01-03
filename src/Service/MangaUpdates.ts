@@ -2,8 +2,10 @@ import { DOM } from '../Core/DOM';
 import { log } from '../Core/Log';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { Runtime } from '../Core/Runtime';
-import { ActivableKey, ActivableName, Declare, ExternalLogin, Modules, Service } from '../Core/Service';
+import { Declare, ExternalLogin, Modules, Service } from '../Core/Service';
 import { MissableField, ExternalTitle, FoundTitle, LocalTitle } from '../Core/Title';
+import { ActivableKey } from './Keys';
+import { ServiceName } from './Names';
 
 export const enum MangaUpdatesStatus {
 	NONE = -1,
@@ -126,7 +128,7 @@ export class MangaUpdatesExport extends ExportModule {
 	};
 }
 
-@Declare(ActivableName.MangaUpdates, ActivableKey.MangaUpdates)
+@Declare(ServiceName.MangaUpdates, ActivableKey.MangaUpdates)
 @ExternalLogin('https://www.mangaupdates.com/login.html')
 @Modules(MangaUpdatesImport, MangaUpdatesExport)
 export class MangaUpdates extends Service {

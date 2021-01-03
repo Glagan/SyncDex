@@ -1,18 +1,11 @@
 import { Runtime } from '../Core/Runtime';
-import {
-	ActivableKey,
-	ActivableName,
-	Declare,
-	ExternalLogin,
-	MissingFields,
-	Modules,
-	Service,
-	UseSlug,
-} from '../Core/Service';
+import { Declare, ExternalLogin, MissingFields, Modules, Service, UseSlug } from '../Core/Service';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ExternalTitle, LocalTitle, MissableField } from '../Core/Title';
 import { DOM } from '../Core/DOM';
 import { log } from '../Core/Log';
+import { ActivableKey } from './Keys';
+import { ServiceName } from './Names';
 
 export const enum AnimePlanetStatus {
 	NONE = 0,
@@ -175,7 +168,7 @@ export class AnimePlanetExport extends ExportModule {
 	};
 }
 
-@Declare(ActivableName.AnimePlanet, ActivableKey.AnimePlanet)
+@Declare(ServiceName.AnimePlanet, ActivableKey.AnimePlanet)
 @ExternalLogin('https://www.anime-planet.com/login')
 @MissingFields(['volume', 'start', 'end'])
 @Modules(AnimePlanetImport, AnimePlanetExport)

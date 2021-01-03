@@ -1,6 +1,7 @@
+import { ServiceKey } from '../Service/Keys';
+import { ServiceName } from '../Service/Names';
 import { log } from './Log';
 import { Runtime } from './Runtime';
-import { ServiceName, StaticKey } from './Service';
 import { LocalTitle, SaveServiceList } from './Title';
 
 export interface MochiExtra {
@@ -9,7 +10,7 @@ export interface MochiExtra {
 
 interface MochiService extends SaveServiceList {
 	name?: string;
-	[StaticKey.MangaDex]?: number;
+	[ServiceKey.MangaDex]?: number;
 }
 
 interface MochiResult {
@@ -103,7 +104,7 @@ export class Mochi {
 		for (const key in connections) {
 			const serviceKey = key as keyof MochiService;
 			const mediaKey = connections[serviceKey]!;
-			if (serviceKey == StaticKey.MangaDex) {
+			if (serviceKey == ServiceKey.MangaDex) {
 				if (typeof mediaKey === 'number') title.key.id = mediaKey as number;
 			} else if (serviceKey == 'name') {
 				title.name = mediaKey as string;
