@@ -74,7 +74,7 @@ export type ModuleOptions = { [key: string]: ModuleOption };
  * An optionnal ModuleInterface can be provided and need to be checked before calling it in `execute`.
  */
 export abstract class Module {
-	service: typeof Service;
+	service: Service;
 	interface?: ModuleInterface;
 	summary: Summary;
 	perConvert: number = 250;
@@ -82,7 +82,7 @@ export abstract class Module {
 
 	extendOptions?(): void;
 
-	constructor(service: typeof Service, moduleInterface?: ModuleInterface) {
+	constructor(service: Service, moduleInterface?: ModuleInterface) {
 		this.service = service;
 		this.interface ??= moduleInterface;
 		this.summary = new Summary();
@@ -182,7 +182,7 @@ export abstract class ImportModule extends Module {
 		},
 	};
 
-	constructor(service: typeof Service, moduleInterface?: ModuleInterface) {
+	constructor(service: Service, moduleInterface?: ModuleInterface) {
 		super(service, moduleInterface);
 		if (this.extendOptions) this.extendOptions();
 		this.bindInterface();
@@ -211,7 +211,7 @@ export abstract class ImportModule extends Module {
 										childs: [
 											DOM.create('img', {
 												src: Runtime.icon(this.service.key),
-												title: this.service.serviceName,
+												title: this.service.name,
 											}),
 											DOM.space(),
 											DOM.text(title.name ?? '[No Name]'),
@@ -246,7 +246,7 @@ export abstract class ImportModule extends Module {
 			const loginMessage = this.interface?.message('loading', 'Checking login status...');
 			if ((await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
 				loginMessage?.classList.remove('loading');
-				this.interface?.message('error', `Importing need you to be logged in on ${this.service.serviceName} !`);
+				this.interface?.message('error', `Importing need you to be logged in on ${this.service.name} !`);
 				this.interface?.complete();
 				return ModuleStatus.LOGIN_FAIL;
 			}
@@ -266,7 +266,7 @@ export abstract class ImportModule extends Module {
 				}
 				return ModuleStatus.EXECUTE_FAIL;
 			}
-			this.interface?.message('default', `Found ${this.found.length} Titles on ${this.service.serviceName}.`);
+			this.interface?.message('default', `Found ${this.found.length} Titles on ${this.service.name}.`);
 			this.summary.total = this.found.length;
 
 			// Find MangaDex ID for all FoundTitle
@@ -284,7 +284,7 @@ export abstract class ImportModule extends Module {
 				)} out of ${this.summary.total}.`;
 				const allConnections = await Mochi.findMany(
 					titleList.map((t) => t.mochi),
-					this.service.serviceName
+					this.service.name
 				);
 				const found: (number | string)[] = [];
 				if (allConnections !== undefined) {
@@ -295,7 +295,6 @@ export abstract class ImportModule extends Module {
 							if (title) {
 								const localTitle = new LocalTitle(connections['md'], title);
 								Mochi.assign(localTitle, connections);
-								localTitle.services[this.service.key] = title.key;
 								titles.add(localTitle);
 								this.summary.valid++;
 								found.push(title.mochi);
@@ -368,7 +367,7 @@ export abstract class ExportModule extends Module {
 		},
 	};
 
-	constructor(service: typeof Service, moduleInterface?: ModuleInterface) {
+	constructor(service: Service, moduleInterface?: ModuleInterface) {
 		super(service, moduleInterface);
 		if (this.extendOptions) this.extendOptions();
 		this.bindInterface();
@@ -450,7 +449,7 @@ export abstract class ExportModule extends Module {
 			const loginMessage = this.interface?.message('loading', 'Checking login status...');
 			if ((await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
 				loginMessage?.classList.remove('loading');
-				this.interface?.message('error', `Exporting need you to be logged in on ${this.service.serviceName} !`);
+				this.interface?.message('error', `Exporting need you to be logged in on ${this.service.name} !`);
 				this.interface?.complete();
 				return ModuleStatus.LOGIN_FAIL;
 			}

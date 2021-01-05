@@ -7,10 +7,10 @@ import { Kitsu } from './Kitsu';
 import { AnimePlanet } from './AnimePlanet';
 import { MangaUpdates } from './MangaUpdates';
 
-export const Services: { [key in ActivableKey]: typeof Service } = {
-	[ActivableKey.MyAnimeList]: MyAnimeList,
-	[ActivableKey.Anilist]: Anilist,
-	[ActivableKey.Kitsu]: Kitsu,
-	[ActivableKey.AnimePlanet]: AnimePlanet,
-	[ActivableKey.MangaUpdates]: MangaUpdates,
+export const Services: { [key in ActivableKey]: Service } = {
+	[ActivableKey.MyAnimeList]: new MyAnimeList(),
+	[ActivableKey.Anilist]: new Anilist(),
+	[ActivableKey.Kitsu]: new Kitsu(),
+	[ActivableKey.AnimePlanet]: new AnimePlanet(),
+	[ActivableKey.MangaUpdates]: new MangaUpdates(),
 };

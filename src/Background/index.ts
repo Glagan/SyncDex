@@ -5,7 +5,7 @@ import { ModuleStatus } from '../Core/Module';
 import { DefaultOptions, Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
 import { SaveSync } from '../Core/SaveSync';
-import { SaveSyncServices } from '../Core/SaveSyncServices';
+import { SaveSyncServices } from '../SaveSync/Map';
 import { Services } from '../Service/Map';
 import { LocalStorage } from '../Core/Storage';
 
@@ -363,18 +363,19 @@ async function silentImport(manual: boolean = false) {
 				if (done.indexOf(key) < 0) {
 					try {
 						const start = Date.now();
-						await log(`Importing ${Services[key].serviceName}`);
-						const module = Services[key].importModule();
+						await log(`Importing ${Services[key].name}`);
+						const module = Services[key].createImportModule();
+						if (!module) continue;
 						const moduleResult = await module.run();
 						if (moduleResult == ModuleStatus.SUCCESS) {
-							await log(`Imported ${Services[key].serviceName} in ${Date.now() - start}ms`);
-						} else await log(`Could not import ${Services[key].serviceName} | Status: ${moduleResult}`);
+							await log(`Imported ${Services[key].name} in ${Date.now() - start}ms`);
+						} else await log(`Could not import ${Services[key].name} | Status: ${moduleResult}`);
 					} catch (error) {
-						await log(`Error while importing ${Services[key].serviceName} ${error.stack}`);
+						await log(`Error while importing ${Services[key].name} ${error.stack}`);
 					}
 					done.push(key);
 					if (!manual) await LocalStorage.set('import', { done: done });
-				} else await log(`Skipping ${Services[key].serviceName} already imported`);
+				} else await log(`Skipping ${Services[key].name} already imported`);
 			}
 			if (!manual) await LocalStorage.set('import', Date.now());
 			await LocalStorage.remove('importInProgress');

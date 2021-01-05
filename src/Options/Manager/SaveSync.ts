@@ -1,10 +1,8 @@
 import { DOM } from '../../Core/DOM';
 import { LocalStorage } from '../../Core/Storage';
 import { SaveSync } from '../../Core/SaveSync';
-import { Dropbox } from '../../SaveSync/Dropbox';
 import { Runtime } from '../../Core/Runtime';
-import { GoogleDrive } from '../../SaveSync/GoogleDrive';
-import { SaveSyncServices } from '../../Core/SaveSyncServices';
+import { SaveSyncServices } from '../../SaveSync/Map';
 import { OptionsManager } from '../OptionsManager';
 
 interface Query {

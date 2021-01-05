@@ -52,7 +52,7 @@ class ServiceOverview {
 			childs: [
 				DOM.create('img', { src: Runtime.icon(key) }),
 				DOM.space(),
-				DOM.text(key == StaticKey.SyncDex ? 'SyncDex' : Services[key].serviceName),
+				key == ServiceKey.SyncDex ? DOM.text('SyncDex') : Services[key].createTitle(),
 			],
 		});
 		this.content = DOM.create('div', { class: 'content', textContent: 'Loading...' });
@@ -172,7 +172,7 @@ class ServiceOverview {
 					this.overviewRow(
 						'ban',
 						`No ${ServiceOverview.missingFieldsMap[missingField]} available on ${
-							(<typeof ExternalTitle>title.constructor).service.serviceName
+							(<typeof ExternalTitle>title.constructor).service.name
 						}`
 					)
 				);
@@ -622,7 +622,7 @@ export class TitleOverview extends Overview {
 			overview.content.appendChild(
 				ServiceOverview.alert(
 					'info',
-					`No ID for ${Services[key].serviceName}, you can manually add one in the Save Editor.`
+					`No ID for ${Services[key].name}, you can manually add one in the Save Editor.`
 				)
 			);
 			overview.setTabIcon('times has-error');
@@ -798,7 +798,7 @@ export class ReadingOverview {
 	initializeService = (key: ActivableKey, hasId: boolean): void => {
 		const icon = DOM.create('img', {
 			src: Runtime.icon(key),
-			title: Services[key].serviceName,
+			title: Services[key].name,
 		});
 		if (hasId) {
 			icon.classList.add('loading');

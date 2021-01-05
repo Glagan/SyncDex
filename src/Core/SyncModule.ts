@@ -2,7 +2,6 @@ import { Title, LocalTitle, ExternalTitle, StatusMap } from './Title';
 import { Options } from './Options';
 import { Runtime } from './Runtime';
 import { Overview } from '../SyncDex/Overview';
-import { ExternalTitles } from './ExternalTitles';
 import { Services } from '../Service/Map';
 import { log } from './Log';
 import { ActivableKey, StaticKey } from '../Service/Keys';
@@ -48,7 +47,7 @@ export class SyncModule {
 			const hasId = activeServices.indexOf(key) >= 0;
 			this.overview?.initializeService(key, hasId);
 			if (hasId) {
-				const initialRequest = ExternalTitles[key].get(this.title.services[key]!);
+				const initialRequest = Services[key].get(this.title.services[key]!);
 				this.loadingServices.push(initialRequest);
 				initialRequest.then((res) => {
 					this.overview?.receivedInitialRequest(key, res, this);
@@ -271,7 +270,7 @@ export class SyncModule {
 
 	refreshService = async (key: ActivableKey): Promise<void> => {
 		if (!this.title.services[key]) return;
-		const res = await ExternalTitles[key].get(this.title.services[key]!);
+		const res = await Services[key].get(this.title.services[key]!);
 		this.services[key] = res;
 		await this.syncLocal();
 		await this.syncExternal(true);
@@ -289,7 +288,7 @@ export class SyncModule {
 	};
 
 	reportNotificationRow = (key: ActivableKey | StaticKey.SyncDex, status: string) => {
-		const name = key === StaticKey.SyncDex ? 'SyncDex' : Services[key].serviceName;
+		const name = key === StaticKey.SyncDex ? 'SyncDex' : Services[key].name;
 		return `![${name}|${Runtime.icon(key)}] **${name}**>*>[${status}]<`;
 	};
 

@@ -1,4 +1,4 @@
-import { Declare, ExternalLogin, Modules, Service } from '../Core/Service';
+import { LoginMethod, Service } from '../Core/Service';
 import { Runtime } from '../Core/Runtime';
 import { ExternalTitle, LocalTitle } from '../Core/Title';
 import { Options } from '../Core/Options';
@@ -251,12 +251,12 @@ export class AnilistExport extends ExportModule {
 		for (let current = 0; !this.interface?.doStop && current < max; current++) {
 			const localTitle = titles[current];
 			let currentProgress = `Exporting Title ${current + 1} out of ${max} (${
-				localTitle.name || `#${localTitle.services[Anilist.key]!.id}`
+				localTitle.name || `#${localTitle.services[ActivableKey.Anilist]!.id}`
 			})...`;
 			if (average > 0) currentProgress += `\nEstimated time remaining: ${duration((max - current) * average)}.`;
 			progress.textContent = currentProgress;
 			const before = Date.now();
-			const title = new AnilistTitle({ ...localTitle, key: localTitle.services[Anilist.key] });
+			const title = new AnilistTitle({ ...localTitle, key: localTitle.services[ActivableKey.Anilist] });
 			const response = await title.persist();
 			if (average == 0) average = Date.now() - before;
 			else average = (average + (Date.now() - before)) / 2;
@@ -268,11 +268,18 @@ export class AnilistExport extends ExportModule {
 	};
 }
 
-@Declare(ServiceName.Anilist, ActivableKey.Anilist)
-@ExternalLogin('https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token')
-@Modules(AnilistImport, AnilistExport)
 export class Anilist extends Service {
-	static async loggedIn(): Promise<RequestStatus> {
+	name = ServiceName.Anilist;
+	key = ActivableKey.Anilist;
+	activable = true;
+
+	loginMethod = LoginMethod.EXTERNAL;
+	loginUrl = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
+
+	importModule = AnilistImport;
+	exportModule = AnilistExport;
+
+	async loggedIn(): Promise<RequestStatus> {
 		if (Options.tokens.anilistToken === undefined) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest({
 			method: 'POST',
@@ -283,15 +290,52 @@ export class Anilist extends Service {
 		return Runtime.responseStatus(response);
 	}
 
-	static async logout(): Promise<void> {
+	async get(key: MediaKey): Promise<AnilistTitle | RequestStatus> {
+		const id = key.id!;
+		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
+		const response = await Runtime.jsonRequest<AnilistGetResponse>({
+			url: AnilistAPI,
+			method: 'POST',
+			headers: AnilistHeaders(),
+			body: JSON.stringify({
+				query: AnilistTitle.getQuery,
+				variables: {
+					mediaId: id,
+				},
+			}),
+		});
+		if (!response.ok) return Runtime.responseStatus<JSONResponse>(response);
+		// Convert Response to AnilistTitle
+		const body = response.body;
+		const mediaEntry = body.data.Media.mediaListEntry;
+		const values: Partial<AnilistTitle> = {
+			key: key,
+			name: body.data.Media.title.userPreferred,
+			loggedIn: true,
+			max: { chapter: body.data.Media.chapters ?? undefined, volume: body.data.Media.volumes ?? undefined },
+		};
+		if (mediaEntry) {
+			values.mediaEntryId = mediaEntry.id;
+			values.inList = true;
+			values.progress = { chapter: mediaEntry.progress };
+			if (mediaEntry.progressVolumes > 0) values.progress.volume = mediaEntry.progressVolumes;
+			values.status = AnilistTitle.toStatus(mediaEntry.status);
+			values.score = mediaEntry.score ? mediaEntry.score : 0;
+			values.start = AnilistTitle.dateFromAnilist(mediaEntry.startedAt);
+			values.end = AnilistTitle.dateFromAnilist(mediaEntry.completedAt);
+		} else values.inList = false;
+		return new AnilistTitle(values);
+	}
+
+	async logout(): Promise<void> {
 		delete Options.tokens.anilistToken;
 	}
 
-	static link(key: MediaKey) {
+	link(key: MediaKey) {
 		return `https://anilist.co/manga/${key.id}`;
 	}
 
-	static createTitle(): AppendableElement {
+	createTitle = (): AppendableElement => {
 		return DOM.create('span', {
 			class: 'ani',
 			textContent: 'Ani',
@@ -302,11 +346,17 @@ export class Anilist extends Service {
 				}),
 			],
 		});
-	}
+	};
+
+	idFromLink = (href: string): MediaKey => {
+		const regexp = /https:\/\/(?:www\.)?anilist\.co\/manga\/(\d+)\/?/.exec(href);
+		if (regexp !== null) return { id: parseInt(regexp[1]) };
+		return { id: 0 };
+	};
 }
 
 export class AnilistTitle extends ExternalTitle {
-	static service = Anilist;
+	static service = new Anilist();
 
 	static readonly getQuery = `
 		query ($mediaId: Int) {
@@ -373,43 +423,6 @@ export class AnilistTitle extends ExternalTitle {
 		}
 		return undefined;
 	};
-
-	static async get(key: MediaKey): Promise<AnilistTitle | RequestStatus> {
-		const id = key.id!;
-		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
-		const response = await Runtime.jsonRequest<AnilistGetResponse>({
-			url: AnilistAPI,
-			method: 'POST',
-			headers: AnilistHeaders(),
-			body: JSON.stringify({
-				query: AnilistTitle.getQuery,
-				variables: {
-					mediaId: id,
-				},
-			}),
-		});
-		if (!response.ok) return Runtime.responseStatus<JSONResponse>(response);
-		// Convert Response to AnilistTitle
-		const body = response.body;
-		const mediaEntry = body.data.Media.mediaListEntry;
-		const values: Partial<AnilistTitle> = {
-			key: key,
-			name: body.data.Media.title.userPreferred,
-			loggedIn: true,
-			max: { chapter: body.data.Media.chapters ?? undefined, volume: body.data.Media.volumes ?? undefined },
-		};
-		if (mediaEntry) {
-			values.mediaEntryId = mediaEntry.id;
-			values.inList = true;
-			values.progress = { chapter: mediaEntry.progress };
-			if (mediaEntry.progressVolumes > 0) values.progress.volume = mediaEntry.progressVolumes;
-			values.status = AnilistTitle.toStatus(mediaEntry.status);
-			values.score = mediaEntry.score ? mediaEntry.score : 0;
-			values.start = AnilistTitle.dateFromAnilist(mediaEntry.startedAt);
-			values.end = AnilistTitle.dateFromAnilist(mediaEntry.completedAt);
-		} else values.inList = false;
-		return new AnilistTitle(values);
-	}
 
 	static dateToAnilist = (date?: Date): AnilistDate | null => {
 		if (date !== undefined) {
@@ -505,16 +518,6 @@ export class AnilistTitle extends ExternalTitle {
 				return AnilistStatus.REREADING;
 		}
 		return AnilistStatus.NONE;
-	};
-
-	static idFromLink = (href: string): MediaKey => {
-		const regexp = /https:\/\/(?:www\.)?anilist\.co\/manga\/(\d+)\/?/.exec(href);
-		if (regexp !== null) return { id: parseInt(regexp[1]) };
-		return { id: 0 };
-	};
-
-	static idFromString = (str: string): MediaKey => {
-		return { id: parseInt(str) };
 	};
 
 	get mochi(): number {

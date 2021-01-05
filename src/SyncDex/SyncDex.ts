@@ -13,7 +13,6 @@ import { TitleChapterGroup } from './TitleChapterGroup';
 import { History } from './History';
 import { ChapterRow } from './ChapterRow';
 import { Service } from '../Core/Service';
-import { ExternalTitles } from '../Core/ExternalTitles';
 import { Services } from '../Service/Map';
 import { log } from '../Core/Log';
 import { ActivableKey } from '../Service/Keys';
@@ -198,7 +197,7 @@ export class SyncDex {
 				for (const key in services) {
 					const serviceKey = iconToService(key);
 					if (serviceKey !== undefined) {
-						state.title.services[serviceKey] = ExternalTitles[serviceKey].idFromString(
+						state.title.services[serviceKey] = Services[serviceKey].idFromString(
 							services[key as MangaDexExternalKeys]
 						);
 					}
@@ -569,7 +568,7 @@ export class SyncDex {
 					// Convert icon name to ServiceKey, only since kt is ku
 					const serviceKey = iconToService(serviceIcon.src);
 					if (serviceKey !== undefined) {
-						const id = ExternalTitles[serviceKey].idFromLink(serviceLink.href);
+						const id = Services[serviceKey].idFromLink(serviceLink.href);
 						localServices[serviceKey] = [serviceLink.parentElement!, id];
 						if (pickLocalServices) title.services[serviceKey] = id;
 					}
@@ -600,7 +599,7 @@ export class SyncDex {
 				for (const key of Object.values(ActivableKey)) {
 					const localService = localServices[key];
 					if (title.services[key] == undefined) continue;
-					const serviceName = Services[key].serviceName;
+					const serviceName = Services[key].name;
 					// If there is no localService add a link
 					if (localService == undefined) {
 						const link = DOM.create('li', {

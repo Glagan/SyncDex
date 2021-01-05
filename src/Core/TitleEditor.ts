@@ -59,7 +59,7 @@ export class TitleEditor {
 		return chapterNode;
 	};
 
-	static createServiceInput = (service: typeof Service, value?: MediaKey): HTMLElement[] => {
+	static createServiceInput = (service: Service, value?: MediaKey): HTMLElement[] => {
 		const inputs: HTMLElement[] = [
 			DOM.create('input', {
 				type: 'number',
@@ -136,7 +136,7 @@ export class TitleEditor {
 		const services = DOM.create('div', { class: 'services' });
 		for (const sn of Object.values(ActivableKey)) {
 			const serviceKey = sn as ActivableKey;
-			const serviceName = Services[serviceKey].serviceName;
+			const serviceName = Services[serviceKey].name;
 			const link = DOM.create('a', {
 				href: '#',
 				title: serviceName,

@@ -134,7 +134,7 @@ serviceMap.imports.push(`import { ActivableKey } from './Keys';`);
 services.forEach((def) => {
 	if (def.activable) {
 		serviceMap.imports.push(`import { ${def.name} } from './${def.name}';`);
-		serviceMap.services.push(`\t[ActivableKey.${def.name}]: ${def.name},`);
+		serviceMap.services.push(`\t[ActivableKey.${def.name}]: new ${def.name}(),`);
 	}
 });
 
@@ -142,6 +142,6 @@ const imports = serviceMap.imports.join('\n');
 const serviceMapValues = serviceMap.services.join('\n');
 fs.writeFileSync(
 	serviceMapPath,
-	`/** Generated File */\n${imports}\n\nexport const Services: { [key in ActivableKey]: typeof Service } = {\n${serviceMapValues}\n};\n`
+	`/** Generated File */\n${imports}\n\nexport const Services: { [key in ActivableKey]: Service } = {\n${serviceMapValues}\n};\n`
 );
 console.info('Generated Service Map.');

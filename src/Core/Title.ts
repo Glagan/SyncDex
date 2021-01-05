@@ -544,7 +544,7 @@ export class LocalTitle extends Title {
 }
 
 export abstract class ExternalTitle extends Title {
-	static readonly service: typeof Service;
+	static readonly service: Service;
 	static readonly updateKeyOnFirstFetch: boolean = false;
 
 	static idFromLink = (href: string): MediaKey => {

@@ -7,11 +7,11 @@ import { SaveOptions } from '../Utility';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { OptionsManager } from '../OptionsManager';
 import { Runtime } from '../../Core/Runtime';
-import { ActivableKey } from '../../Service/Keys';
+import { ActivableKey, ServiceKey } from '../../Service/Keys';
 
 class ServiceCard {
 	manager: ServiceManager;
-	service: typeof Service;
+	service: Service;
 
 	activeCard: HTMLElement;
 	activeCardContent: HTMLElement;
@@ -53,7 +53,7 @@ class ServiceCard {
 		});
 	}
 
-	constructor(manager: ServiceManager, service: typeof Service) {
+	constructor(manager: ServiceManager, service: Service) {
 		this.manager = manager;
 		this.service = service;
 		// Create
@@ -306,7 +306,7 @@ class ServiceCard {
 						modal.wrapper.classList.remove('loading');
 						if (res == RequestStatus.SUCCESS) {
 							await SaveOptions();
-							SimpleNotification.success({ text: `Logged in on **${this.service.serviceName}** !` });
+							SimpleNotification.success({ text: `Logged in on **${this.service.name}** !` });
 							this.loginButton.remove();
 							this.updateStatus(res);
 							modal.remove();
@@ -331,16 +331,20 @@ class ServiceCard {
 		this.importButton.addEventListener('click', async (event) => {
 			event.preventDefault();
 			const moduleInterface = new ModuleInterface();
-			const importModule = this.service.importModule(moduleInterface);
-			importModule.postExecute = () => OptionsManager.instance.saveViewer.updateAll(true);
-			moduleInterface.modal.show();
+			const importModule = this.service.createImportModule(moduleInterface);
+			if (importModule) {
+				importModule.postExecute = () => OptionsManager.instance.saveViewer.updateAll(true);
+				moduleInterface.modal.show();
+			}
 		});
 		this.exportButton.addEventListener('click', (event) => {
 			event.preventDefault();
 			const moduleInterface = new ModuleInterface();
-			const exportModule = this.service.exportModule(moduleInterface);
-			exportModule.postExecute = () => OptionsManager.instance.saveViewer.updateAll(true);
-			moduleInterface.modal.show();
+			const exportModule = this.service.createExportModule(moduleInterface);
+			if (exportModule) {
+				exportModule.postExecute = () => OptionsManager.instance.saveViewer.updateAll(true);
+				moduleInterface.modal.show();
+			}
 		});
 	};
 
@@ -370,7 +374,7 @@ export class ServiceManager {
 	inactiveServices: ActivableKey[] = [];
 	inactiveWarning: HTMLElement;
 	mainCard?: ServiceCard;
-	cards = {} as { [key in ActivableKey]: ServiceCard };
+	cards = {} as { [key in ServiceKey]: ServiceCard };
 	importAllButton: HTMLButtonElement;
 
 	constructor() {

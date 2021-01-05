@@ -1,5 +1,5 @@
 import { Runtime } from '../Core/Runtime';
-import { Declare, ExternalLogin, MissingFields, Modules, Service, UseSlug } from '../Core/Service';
+import { LoginMethod, Service } from '../Core/Service';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { ExternalTitle, LocalTitle, MissableField } from '../Core/Title';
 import { DOM } from '../Core/DOM';
@@ -147,14 +147,14 @@ export class AnimePlanetExport extends ExportModule {
 		for (let current = 0; !this.interface?.doStop && current < max; current++) {
 			const localTitle = titles[current];
 			let currentProgress = `Exporting Title ${current + 1} out of ${max} (${
-				localTitle.name || `#${localTitle.services[AnimePlanet.key]!.id}`
+				localTitle.name || `#${localTitle.services[ActivableKey.AnimePlanet]!.id}`
 			})...`;
 			if (average > 0) currentProgress += `\nEstimated time remaining: ${duration((max - current) * average)}.`;
 			progress.textContent = currentProgress;
 			const before = Date.now();
 			const title = new AnimePlanetTitle({
 				...localTitle,
-				key: localTitle.services[AnimePlanet.key],
+				key: localTitle.services[ActivableKey.AnimePlanet],
 			});
 			title.token = AnimePlanet.token;
 			const response = await title.persist();
@@ -168,16 +168,24 @@ export class AnimePlanetExport extends ExportModule {
 	};
 }
 
-@Declare(ServiceName.AnimePlanet, ActivableKey.AnimePlanet)
-@ExternalLogin('https://www.anime-planet.com/login')
-@MissingFields(['volume', 'start', 'end'])
-@Modules(AnimePlanetImport, AnimePlanetExport)
-@UseSlug
 export class AnimePlanet extends Service {
+	name = ServiceName.AnimePlanet;
+	key = ActivableKey.AnimePlanet;
+	activable = true;
+
+	loginMethod = LoginMethod.EXTERNAL;
+	loginUrl = 'https://www.anime-planet.com/login';
+
+	usesSlug = true;
+	missingFields: MissableField[] = ['volume', 'start', 'end'];
+
+	importModule = AnimePlanetImport;
+	exportModule = AnimePlanetExport;
+
 	static username: string = '';
 	static token: string = '';
 
-	static async loggedIn(): Promise<RequestStatus> {
+	async loggedIn(): Promise<RequestStatus> {
 		const response = await Runtime.request<RawResponse>({
 			url: 'https://www.anime-planet.com/contact',
 			credentials: 'include',
@@ -188,34 +196,17 @@ export class AnimePlanet extends Service {
 		const body = parser.parseFromString(response.body, 'text/html');
 		const profileLink = body.querySelector('.loggedIn a[href^="/users/"]');
 		if (profileLink !== null) {
-			this.username = profileLink.getAttribute('title') ?? '';
+			AnimePlanet.username = profileLink.getAttribute('title') ?? '';
 			const token = /TOKEN\s*=\s*'(.{40})';/.exec(response.body);
-			if (token !== null) this.token = token[1];
+			if (token !== null) AnimePlanet.token = token[1];
 			return RequestStatus.SUCCESS;
 		}
 		return RequestStatus.FAIL;
 	}
 
-	static link(key: MediaKey) {
-		return `https://www.anime-planet.com/manga/${key.slug}`;
-	}
-}
-
-export const AnimePlanetAPI = 'https://www.anime-planet.com/api/list';
-export class AnimePlanetTitle extends ExternalTitle {
-	static service = AnimePlanet;
-	static readonly requireIdQuery: boolean = true;
-
-	token?: string;
-	current: {
-		progress: Progress;
-		status: Status;
-		score?: number;
-	} = { progress: { chapter: 0 }, status: Status.NONE };
-
-	static async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
+	async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
 		const response = await Runtime.request<RawResponse>({
-			url: AnimePlanet.link(key),
+			url: this.link(key),
 			method: 'GET',
 			credentials: 'include',
 		});
@@ -270,6 +261,33 @@ export class AnimePlanetTitle extends ExternalTitle {
 		values.name = body.querySelector(`h1[itemprop='name']`)!.textContent!;
 		return new AnimePlanetTitle(values);
 	}
+
+	link(key: MediaKey) {
+		return `https://www.anime-planet.com/manga/${key.slug}`;
+	}
+
+	idFromLink = (href: string): MediaKey => {
+		const regexp = /https:\/\/(?:www\.)?anime-planet\.com\/manga\/(.+)\/?/.exec(href);
+		if (regexp !== null) return { slug: regexp[1] };
+		return { slug: '', id: 0 };
+	};
+
+	idFromString = (str: string): MediaKey => {
+		return { slug: str };
+	};
+}
+
+export const AnimePlanetAPI = 'https://www.anime-planet.com/api/list';
+export class AnimePlanetTitle extends ExternalTitle {
+	static service = new AnimePlanet();
+	static readonly requireIdQuery: boolean = true;
+
+	token?: string;
+	current: {
+		progress: Progress;
+		status: Status;
+		score?: number;
+	} = { progress: { chapter: 0 }, status: Status.NONE };
 
 	persist = async (): Promise<RequestStatus> => {
 		if (this.status === Status.NONE || !this.token) {
@@ -366,16 +384,6 @@ export class AnimePlanetTitle extends ExternalTitle {
 				return AnimePlanetStatus.WONT_READ;
 		}
 		return AnimePlanetStatus.NONE;
-	};
-
-	static idFromLink = (href: string): MediaKey => {
-		const regexp = /https:\/\/(?:www\.)?anime-planet\.com\/manga\/(.+)\/?/.exec(href);
-		if (regexp !== null) return { slug: regexp[1] };
-		return { slug: '', id: 0 };
-	};
-
-	static idFromString = (str: string): MediaKey => {
-		return { slug: str };
 	};
 
 	get mochi(): number {

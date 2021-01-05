@@ -1,82 +1,63 @@
-import { ActivableKey } from '../Service/Keys';
+import { ActivableKey, ServiceKey, StaticKey } from '../Service/Keys';
 import { ServiceName } from '../Service/Names';
 import { AppendableElement, DOM } from './DOM';
 import { ExportModule, ImportModule } from './Module';
 import { ModuleInterface } from './ModuleInterface';
-import { MissableField } from './Title';
+import { ExternalTitle, MissableField } from './Title';
 
 export const enum LoginMethod {
 	EXTERNAL,
 	FORM,
 }
 
-export function Declare(serviceName: ServiceName, serviceKey: ActivableKey) {
-	return function (constructor: typeof Service) {
-		constructor.serviceName = serviceName;
-		constructor.key = serviceKey;
-	};
-}
-export function ExternalLogin(url: string) {
-	return function (constructor: typeof Service) {
-		constructor.loginMethod = LoginMethod.EXTERNAL;
-		constructor.loginUrl = url;
-	};
-}
-export function FormLogin(identifierField?: [string, string]) {
-	return function (constructor: typeof Service) {
-		constructor.loginMethod = LoginMethod.FORM;
-		if (identifierField) constructor.identifierField = identifierField;
-	};
-}
-export function MissingFields(fields: MissableField[]) {
-	return function (constructor: typeof Service) {
-		constructor.missingFields = fields;
-	};
-}
-export function UseSlug(constructor: typeof Service) {
-	constructor.usesSlug = true;
-}
-export function Modules(importModule: typeof ImportModule, exportModule: typeof ExportModule) {
-	return function (constructor: typeof Service) {
-		constructor.importModule = (moduleInterface?: ModuleInterface) =>
-			/// @ts-ignore
-			new importModule(constructor, moduleInterface);
-		constructor.exportModule = (moduleInterface?: ModuleInterface) =>
-			/// @ts-ignore
-			new exportModule(constructor, moduleInterface);
-	};
-}
-
 export abstract class Service {
-	static serviceName: ServiceName;
-	static key: ActivableKey;
+	abstract name: ServiceName;
+	abstract key: ActivableKey;
 
-	static usesSlug: boolean = false;
-	static missingFields: MissableField[] = [];
+	usesSlug: boolean = false;
+	missingFields: MissableField[] = [];
 
-	static loginMethod: LoginMethod;
-	static loginUrl?: string;
-	static identifierField: [string, string] = ['Email', 'email'];
+	abstract loginMethod: LoginMethod;
+	loginUrl?: string;
+	identifierField: [string, string] = ['Email', 'email'];
 
-	static loggedIn = async (): Promise<RequestStatus> => {
-		throw 'Service.loggedIn is an abstract function';
-		return RequestStatus.FAIL;
+	abstract loggedIn(): Promise<RequestStatus>;
+	abstract get(key: MediaKey): Promise<ExternalTitle | RequestStatus>;
+	login?(username: string, password: string): Promise<RequestStatus>;
+	logout?(): Promise<void>;
+
+	importModule?: typeof ImportModule;
+	createImportModule = (moduleInterface?: ModuleInterface): ImportModule | false => {
+		if (!this.importModule) return false;
+		const module = this.importModule;
+		console.log('module', module);
+		/// @ts-ignore
+		return new module(this, moduleInterface);
 	};
-	static login?(username: string, password: string): Promise<RequestStatus>;
-	static logout?(): Promise<void>;
-
-	static importModule: (moduleInterface?: ModuleInterface) => ImportModule;
-	static exportModule: (moduleInterface?: ModuleInterface) => ExportModule;
-
-	static link = (key: MediaKey): string => {
-		throw 'Service.link is an abstract function';
-		return '';
+	exportModule?: typeof ExportModule;
+	createExportModule = (moduleInterface?: ModuleInterface): ExportModule | false => {
+		if (!this.exportModule) return false;
+		const module = this.exportModule;
+		console.log('module', module);
+		/// @ts-ignore
+		return new module(this, moduleInterface);
 	};
-	static createTitle(): AppendableElement {
-		return DOM.text(this.serviceName);
-	}
 
-	static compareId = (id1: MediaKey, id2: MediaKey): boolean => {
+	abstract link(key: MediaKey): string;
+	createTitle = (): AppendableElement => {
+		return DOM.text(this.name);
+	};
+
+	compareId = (id1: MediaKey, id2: MediaKey): boolean => {
+		return Service.compareId(id1, id2);
+	};
+
+	abstract idFromLink(href: string): MediaKey;
+	idFromString = (str: string): MediaKey => {
+		return { id: parseInt(str) };
+	};
+
+	static compareId(id1: MediaKey, id2: MediaKey): boolean {
 		return id1.id === id2.id && id1.slug === id2.slug;
-	};
+	}
 }

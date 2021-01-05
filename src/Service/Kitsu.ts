@@ -3,7 +3,7 @@ import { log } from '../Core/Log';
 import { duration, ExportModule, ImportModule } from '../Core/Module';
 import { Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
-import { Declare, FormLogin, Modules, Service } from '../Core/Service';
+import { LoginMethod, Service } from '../Core/Service';
 import { ExternalTitle, FoundTitle, LocalTitle } from '../Core/Title';
 import { ActivableKey } from './Keys';
 import { ServiceName } from './Names';
@@ -256,13 +256,13 @@ export class KitsuExport extends ExportModule {
 		for (let current = 0; !this.interface?.doStop && current < max; current++) {
 			const localTitle = titles[current];
 			let currentProgress = `Exporting Title ${current + 1} out of ${max} (${
-				localTitle.name || `#${localTitle.services[Kitsu.key]!.id}`
+				localTitle.name || `#${localTitle.services[ActivableKey.Kitsu]!.id}`
 			})...`;
 			if (average > 0) currentProgress += `\nEstimated time remaining: ${duration((max - current) * average)}.`;
 			progress.textContent = currentProgress;
 			// Kitsu require a libraryEntryId to update a Title
 			const before = Date.now();
-			const title = new KitsuTitle({ ...localTitle, key: localTitle.services[Kitsu.key] });
+			const title = new KitsuTitle({ ...localTitle, key: localTitle.services[ActivableKey.Kitsu] });
 			const onlineTitle = this.onlineList[localTitle.services.ku!.id!];
 			if (onlineTitle) {
 				title.libraryEntryId = onlineTitle.libraryEntryId;
@@ -279,11 +279,17 @@ export class KitsuExport extends ExportModule {
 	};
 }
 
-@Declare(ServiceName.Kitsu, ActivableKey.Kitsu)
-@FormLogin()
-@Modules(KitsuImport, KitsuExport)
 export class Kitsu extends Service {
-	static getUserId = async (): Promise<RequestStatus> => {
+	name = ServiceName.Kitsu;
+	key = ActivableKey.Kitsu;
+	activable = true;
+
+	loginMethod = LoginMethod.FORM;
+
+	importModule = KitsuImport;
+	exportModule = KitsuExport;
+
+	getUserId = async (): Promise<RequestStatus> => {
 		if (Options.tokens.kitsuToken === undefined) return RequestStatus.MISSING_TOKEN;
 		let response = await Runtime.jsonRequest<KitsuUserResponse>({
 			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
@@ -295,7 +301,7 @@ export class Kitsu extends Service {
 		return RequestStatus.SUCCESS;
 	};
 
-	static loggedIn = async (): Promise<RequestStatus> => {
+	loggedIn = async (): Promise<RequestStatus> => {
 		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<KitsuUserResponse>({
 			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
@@ -307,7 +313,7 @@ export class Kitsu extends Service {
 		return Runtime.responseStatus(response);
 	};
 
-	static login = async (username: string, password: string): Promise<RequestStatus> => {
+	login = async (username: string, password: string): Promise<RequestStatus> => {
 		let response = await Runtime.jsonRequest({
 			url: 'https://kitsu.io/api/oauth/token',
 			method: 'POST',
@@ -321,27 +327,12 @@ export class Kitsu extends Service {
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		Options.tokens.kitsuToken = response.body.access_token;
-		const userIdResp = await Kitsu.getUserId();
+		const userIdResp = await this.getUserId();
 		if (userIdResp !== RequestStatus.SUCCESS) return userIdResp;
 		return RequestStatus.SUCCESS;
 	};
 
-	static logout = async (): Promise<void> => {
-		delete Options.tokens.kitsuToken;
-		delete Options.tokens.kitsuUser;
-	};
-
-	static link(key: MediaKey): string {
-		return `https://kitsu.io/manga/${key.id}`;
-	}
-}
-
-export class KitsuTitle extends ExternalTitle {
-	static service = Kitsu;
-	libraryEntryId?: number;
-
-	// abstract static get(id): RequestStatus
-	static async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
+	async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<KitsuResponse>({
 			url: `${KitsuAPI}?filter[manga_id]=${key.id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=chapterCount,volumeCount,canonicalTitle`,
@@ -373,6 +364,26 @@ export class KitsuTitle extends ExternalTitle {
 		} else values.inList = false;
 		return new KitsuTitle(values);
 	}
+
+	logout = async (): Promise<void> => {
+		delete Options.tokens.kitsuToken;
+		delete Options.tokens.kitsuUser;
+	};
+
+	link(key: MediaKey): string {
+		return `https://kitsu.io/manga/${key.id}`;
+	}
+
+	idFromLink = (href: string): MediaKey => {
+		const regexp = /https:\/\/(?:www\.)?kitsu\.io\/manga\/(\d+)\/?/.exec(href);
+		if (regexp !== null) return { id: parseInt(regexp[1]) };
+		return { id: 0 };
+	};
+}
+
+export class KitsuTitle extends ExternalTitle {
+	static service = new Kitsu();
+	libraryEntryId?: number;
 
 	persist = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) {
@@ -488,16 +499,6 @@ export class KitsuTitle extends ExternalTitle {
 				return KitsuStatus.PLAN_TO_READ;
 		}
 		return KitsuStatus.NONE;
-	};
-
-	static idFromLink = (href: string): MediaKey => {
-		const regexp = /https:\/\/(?:www\.)?kitsu\.io\/manga\/(\d+)\/?/.exec(href);
-		if (regexp !== null) return { id: parseInt(regexp[1]) };
-		return { id: 0 };
-	};
-
-	static idFromString = (str: string): MediaKey => {
-		return { id: parseInt(str) };
 	};
 
 	get mochi(): number {

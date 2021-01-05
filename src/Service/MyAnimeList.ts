@@ -2,7 +2,7 @@ import { DOM } from '../Core/DOM';
 import { log } from '../Core/Log';
 import { ExportModule, ImportModule } from '../Core/Module';
 import { Runtime } from '../Core/Runtime';
-import { Declare, ExternalLogin, Modules, Service } from '../Core/Service';
+import { LoginMethod, Service } from '../Core/Service';
 import { ExternalTitle, FoundTitle, LocalTitle } from '../Core/Title';
 import { dateFormatInput } from '../Core/Utility';
 import { ActivableKey } from './Keys';
@@ -252,13 +252,20 @@ export class MyAnimeListExport extends ExportModule {
 	};
 }
 
-@Declare(ServiceName.MyAnimeList, ActivableKey.MyAnimeList)
-@ExternalLogin('https://myanimelist.net/login.php')
-@Modules(MyAnimeListImport, MyAnimeListExport)
 export class MyAnimeList extends Service {
+	name = ServiceName.MyAnimeList;
+	key = ActivableKey.MyAnimeList;
+	activable = true;
+
+	loginMethod = LoginMethod.EXTERNAL;
+	loginUrl = 'https://myanimelist.net/login.php';
+
+	importModule = MyAnimeListImport;
+	exportModule = MyAnimeListExport;
+
 	static username: string = '';
 
-	static loggedIn = async (): Promise<RequestStatus> => {
+	loggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: 'https://myanimelist.net/about.php',
 			method: 'GET',
@@ -276,38 +283,7 @@ export class MyAnimeList extends Service {
 		return RequestStatus.FAIL;
 	};
 
-	static link(key: MediaKey): string {
-		return `https://myanimelist.net/manga/${key.id}`;
-	}
-}
-
-export class MyAnimeListTitle extends ExternalTitle {
-	static service = MyAnimeList;
-
-	csrf?: string;
-	additional: {
-		tags: string;
-		priority: string;
-		storage: string;
-		retailVolumes: string;
-		rereadCount: string;
-		rereadPriority: string;
-		comments: string;
-		askToDiscuss: string;
-		postToSns: string;
-	} = {
-		tags: '',
-		priority: '0',
-		storage: '',
-		retailVolumes: '0',
-		rereadCount: '0',
-		rereadPriority: '',
-		comments: '',
-		askToDiscuss: '0',
-		postToSns: '0',
-	};
-
-	static dateRowToDate = (body: Document, row: 'start' | 'finish'): Date | undefined => {
+	dateRowToDate = (body: Document, row: 'start' | 'finish'): Date | undefined => {
 		const year = body.getElementById(`add_manga_${row}_date_year`) as HTMLSelectElement,
 			month = body.getElementById(`add_manga_${row}_date_month`) as HTMLSelectElement,
 			day = body.getElementById(`add_manga_${row}_date_day`) as HTMLSelectElement;
@@ -317,7 +293,7 @@ export class MyAnimeListTitle extends ExternalTitle {
 		return new Date(parts[0], Math.max(0, parts[1] - 1), parts[2]);
 	};
 
-	static async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
+	async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
 		const response = await Runtime.request<RawResponse>({
 			url: `https://myanimelist.net/ownlist/manga/${key.id}/edit?hideLayout`,
 			method: 'GET',
@@ -351,8 +327,8 @@ export class MyAnimeListTitle extends ExternalTitle {
 				};
 				const score = GetField<HTMLSelectElement>(body, 'add_manga_score').value;
 				if (score !== '') values.score = parseInt(score) * 10;
-				values.start = MyAnimeListTitle.dateRowToDate(body, 'start');
-				values.end = MyAnimeListTitle.dateRowToDate(body, 'finish');
+				values.start = this.dateRowToDate(body, 'start');
+				values.end = this.dateRowToDate(body, 'finish');
 				// Additional fields
 				values.additional = {
 					tags: GetField<HTMLTextAreaElement>(body, 'add_manga_tags').value,
@@ -374,6 +350,43 @@ export class MyAnimeListTitle extends ExternalTitle {
 		}
 		return new MyAnimeListTitle(values);
 	}
+
+	link(key: MediaKey): string {
+		return `https://myanimelist.net/manga/${key.id}`;
+	}
+
+	idFromLink = (href: string): MediaKey => {
+		const regexp = /https:\/\/(?:www\.)?myanimelist\.net\/manga\/(\d+)\/?/.exec(href);
+		if (regexp !== null) return { id: parseInt(regexp[1]) };
+		return { id: 0 };
+	};
+}
+
+export class MyAnimeListTitle extends ExternalTitle {
+	static service = new MyAnimeList();
+
+	csrf?: string;
+	additional: {
+		tags: string;
+		priority: string;
+		storage: string;
+		retailVolumes: string;
+		rereadCount: string;
+		rereadPriority: string;
+		comments: string;
+		askToDiscuss: string;
+		postToSns: string;
+	} = {
+		tags: '',
+		priority: '0',
+		storage: '',
+		retailVolumes: '0',
+		rereadCount: '0',
+		rereadPriority: '',
+		comments: '',
+		askToDiscuss: '0',
+		postToSns: '0',
+	};
 
 	persist = async (): Promise<RequestStatus> => {
 		if (this.status === Status.NONE || !this.csrf) {
@@ -500,16 +513,6 @@ export class MyAnimeListTitle extends ExternalTitle {
 		}
 		// Status.WONT_READ
 		return MyAnimeListStatus.NONE;
-	};
-
-	static idFromLink = (href: string): MediaKey => {
-		const regexp = /https:\/\/(?:www\.)?myanimelist\.net\/manga\/(\d+)\/?/.exec(href);
-		if (regexp !== null) return { id: parseInt(regexp[1]) };
-		return { id: 0 };
-	};
-
-	static idFromString = (str: string): MediaKey => {
-		return { id: parseInt(str) };
 	};
 
 	get mochi(): number {
