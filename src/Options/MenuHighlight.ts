@@ -25,7 +25,8 @@ export class MenuHighlight {
 		document.querySelectorAll<HTMLElement>('[data-link]').forEach((link) => {
 			const menu = new Menu(link);
 			link.addEventListener('click', () => {
-				this.node.scroll({
+				const scrollNode = window.innerWidth < 768 ? document.body : this.node;
+				scrollNode.scroll({
 					top: menu.header.offsetTop - menu.marginTop,
 					behavior: 'smooth',
 				});
