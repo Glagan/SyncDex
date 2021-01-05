@@ -92,9 +92,11 @@ class ServiceCard {
 		this.importButton = DOM.create('button', {
 			childs: [DOM.icon('download'), DOM.text('Import')],
 		});
+		if (!this.service.importModule) this.importButton.style.display = 'none';
 		this.exportButton = DOM.create('button', {
 			childs: [DOM.icon('upload'), DOM.text('Export')],
 		});
+		if (!this.service.exportModule) this.exportButton.style.display = 'none';
 		this.bind();
 	}
 

@@ -17,12 +17,24 @@ export interface ReportInformations {
 	localUpdated?: boolean;
 }
 
+interface MangaDexState {
+	status: Status;
+	score: number;
+}
+
 export class SyncModule {
 	title: LocalTitle;
 	overview?: Overview;
 	loadingServices: Promise<Title | RequestStatus>[] = [];
 	services: { [key in ActivableKey]?: Title | RequestStatus } = {};
-	loggedIn: boolean = true; // Logged in on MangaDex
+	// Logged in on MangaDex
+	loggedIn: boolean = true;
+	// MangaDex Status and Score
+	previousMdState?: MangaDexState;
+	mdState: MangaDexState = {
+		status: Status.NONE,
+		score: 0,
+	};
 
 	constructor(title: LocalTitle, overview?: Overview) {
 		this.title = title;
@@ -105,7 +117,7 @@ export class SyncModule {
 					doSave = true;
 				}
 				// Finish retrieving the ID if required -- AnimePlanet has 2 fields
-				if ((<typeof ExternalTitle>response.constructor).updateKeyOnFirstFetch) {
+				if (response.service.updateKeyOnFirstFetch) {
 					this.title.services[key] = response.key;
 					doSave = true;
 				}
@@ -161,28 +173,28 @@ export class SyncModule {
 		// Can't check loggedIn status since it can be called without MangaDex check first
 		if (Options.updateMD && this.loggedIn) {
 			const strings: { success: string[]; error: string[] } = { success: [], error: [] };
-			if (this.title.mdStatus != this.title.status) {
-				const oldStatus = this.title.mdStatus;
-				this.title.mdStatus = this.title.status;
-				const response = await this.syncMangaDex(this.title.mdStatus == Status.NONE ? 'unfollow' : 'status');
+			if (this.mdState.status != this.title.status) {
+				const oldStatus = this.mdState.status;
+				this.mdState.status = this.title.status;
+				const response = await this.syncMangaDex(this.mdState.status == Status.NONE ? 'unfollow' : 'status');
 				if (response.ok) strings.success.push('**MangaDex Status** updated.');
 				else {
-					this.title.mdStatus = oldStatus;
+					this.mdState.status = oldStatus;
 					strings.error.push(`Error while updating **MangaDex Status**.\ncode: ${response.code}`);
 				}
 			}
 			if (
 				this.loggedIn &&
 				this.title.score > 0 &&
-				Math.round(this.title.mdScore / 10) != Math.round(this.title.score / 10)
+				Math.round(this.mdState.score / 10) != Math.round(this.title.score / 10)
 			) {
 				// Convert 0-100 SyncDex Score to 0-10
-				const oldScore = this.title.mdScore;
-				this.title.mdScore = this.title.score;
+				const oldScore = this.mdState.score;
+				this.mdState.score = this.title.score;
 				const response = await this.syncMangaDex('score');
 				if (response.ok) strings.success.push('**MangaDex Score** updated.');
 				else {
-					this.title.mdScore = oldScore;
+					this.mdState.score = oldScore;
 					strings.error.push(`Error while updating **MangaDex Score**.\ncode: ${response.code}`);
 				}
 			}
@@ -211,12 +223,12 @@ export class SyncModule {
 			case 'status':
 				action = 'manga_follow';
 				field = 'type';
-				value = this.title.mdStatus!;
+				value = this.mdState.status!;
 				break;
 			case 'score':
 				action = 'manga_rating';
 				field = 'rating';
-				value = Math.round(this.title.mdScore! / 10);
+				value = Math.round(this.mdState.score! / 10);
 				break;
 		}
 		return `${baseAPI}?function=${action}&id=${this.title.key.id}&${field}=${value}&_=${Date.now()}`;
@@ -233,7 +245,7 @@ export class SyncModule {
 			headers: { 'X-Requested-With': 'XMLHttpRequest' },
 		});
 		if (this.overview?.syncedMangaDex) {
-			this.overview?.syncedMangaDex(fct, this.title);
+			this.overview?.syncedMangaDex(fct, this);
 		}
 		return response;
 	};
@@ -243,6 +255,7 @@ export class SyncModule {
 	 * 	in the this.displayReportNotifications function.
 	 */
 	saveState = (): LocalTitle => {
+		this.previousMdState = { status: this.mdState.status, score: this.mdState.score };
 		return JSON.parse(JSON.stringify(this.title)); // Deep copy
 	};
 
@@ -251,12 +264,14 @@ export class SyncModule {
 	 * 	inList, status, progress, score, start, end from previousState.
 	 */
 	restoreState = (title: LocalTitle): void => {
+		if (this.previousMdState) {
+			this.mdState.status = this.previousMdState.status;
+			this.mdState.score = this.previousMdState.score;
+		}
 		this.title.inList = title.inList;
 		this.title.synced = title.synced;
 		this.title.progress = title.progress;
 		this.title.chapters = title.chapters;
-		this.title.mdStatus = title.mdStatus;
-		this.title.mdScore = title.mdScore;
 		this.title.status = title.status;
 		this.title.score = title.score;
 		this.title.name = title.name;

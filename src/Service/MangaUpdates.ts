@@ -387,8 +387,4 @@ export class MangaUpdatesTitle extends ExternalTitle {
 		}
 		return MangaUpdatesStatus.NONE;
 	};
-
-	get mochi(): number {
-		return this.key.id!;
-	}
 }

@@ -21,7 +21,7 @@ export abstract class Overview {
 	abstract syncedService(key: ServiceKey, res: Title | RequestStatus, title: LocalTitle): void;
 	abstract syncingLocal(): void;
 	abstract syncedLocal(title: LocalTitle): void;
-	syncedMangaDex?(type: 'unfollow' | 'status' | 'score', title: LocalTitle): void;
+	syncedMangaDex?(type: 'unfollow' | 'status' | 'score', syncModule: SyncModule): void;
 }
 
 type OverviewKey = ActivableKey | StaticKey.SyncDex;
@@ -534,7 +534,7 @@ export class TitleOverview extends Overview {
 
 	bindStatusUpdate = async (event: Event, syncModule: SyncModule, status: Status): Promise<void> => {
 		event.preventDefault();
-		if (syncModule.title.mdStatus == status) return;
+		if (syncModule.mdState.status == status) return;
 		if (Options.mdUpdateSyncDex) {
 			syncModule.title.status = status;
 			await syncModule.title.persist();
@@ -542,7 +542,7 @@ export class TitleOverview extends Overview {
 			await syncModule.syncExternal(true);
 		}
 		if (!Options.mdUpdateSyncDex || !Options.updateMD) {
-			syncModule.title.mdStatus = status;
+			syncModule.mdState.status = status;
 			const response = await syncModule.syncMangaDex(status == Status.NONE ? 'unfollow' : 'status');
 			if (response.ok) {
 				SimpleNotification.success({ text: '**MangaDex Status** updated.' });
@@ -587,7 +587,7 @@ export class TitleOverview extends Overview {
 					await syncModule.syncExternal(true);
 				}
 				if (!Options.mdUpdateSyncDex || !Options.updateMD) {
-					syncModule.title.mdScore = score;
+					syncModule.mdState.score = score;
 					const response = await syncModule.syncMangaDex('score');
 					if (response.ok) {
 						SimpleNotification.success({ text: '**MangaDex Score** updated.' });
@@ -698,7 +698,7 @@ export class TitleOverview extends Overview {
 		});
 	};
 
-	syncedMangaDex = (type: 'unfollow' | 'status' | 'score', title: LocalTitle): void => {
+	syncedMangaDex = (type: 'unfollow' | 'status' | 'score', syncModule: SyncModule): void => {
 		const dropdown = type == 'score' ? this.mdScore.dropdown : this.mdStatus?.dropdown;
 		if (!dropdown) return;
 		// Remove old value
@@ -714,25 +714,28 @@ export class TitleOverview extends Overview {
 			this.mdStatus.button.appendChild(DOM.create('span', { class: 'sr-only', textContent: 'Toggle Dropdown' }));
 			this.mdStatus.unfollow.remove();
 		} else if (this.mdStatus && type == 'status') {
-			if (title.mdStatus !== Status.NONE) {
-				const status = dropdown.querySelector(`[id='${title.mdStatus}']`);
-				if (!title.mdStatus || !status) return;
+			if (syncModule.mdState.status !== Status.NONE) {
+				const status = dropdown.querySelector(`[id='${syncModule.mdState.status}']`);
+				if (!syncModule.mdState.status || !status) return;
 				status.classList.add('disabled');
 				// Update button style
-				const description = TitleOverview.statusDescription[title.mdStatus]!;
+				const description = TitleOverview.statusDescription[syncModule.mdState.status]!;
 				DOM.clear(this.mdStatus.button);
 				DOM.append(
 					this.mdStatus.button,
 					DOM.icon(`${description[0]} fa-fw`),
 					DOM.space(),
-					DOM.create('span', { class: 'd-none d-xl-inline', textContent: StatusMap[title.mdStatus] })
+					DOM.create('span', {
+						class: 'd-none d-xl-inline',
+						textContent: StatusMap[syncModule.mdState.status],
+					})
 				);
 				this.mdStatus.button.className = `btn btn-${description[1]} dropdown-toggle`;
 				this.mdStatus.dropdown.insertBefore(this.mdStatus.unfollow, this.mdStatus.dropdown.firstElementChild);
 				this.mdStatus.followButton.remove();
 			}
 		} else {
-			const newScore = Math.round(title.mdScore! / 10);
+			const newScore = Math.round(syncModule.mdState.score / 10);
 			this.mdScore.ratings[Math.max(0, newScore - 1)].classList.add('disabled');
 			this.mdScore.button.childNodes[1].textContent = ` ${newScore} `;
 		}

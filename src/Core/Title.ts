@@ -119,15 +119,6 @@ export abstract class Title {
 	}
 
 	/**
-	 * Pull the current status of the Media identified by ID.
-	 * Return a `RequestStatus` on error.
-	 */
-	static get = async (id: MediaKey): Promise<Title | RequestStatus> => {
-		throw 'Title.get is an abstract function';
-		return RequestStatus.FAIL;
-	};
-
-	/**
 	 * Send any necessary requests to save the Media on the Service.
 	 */
 	abstract persist(): Promise<RequestStatus>;
@@ -233,17 +224,16 @@ export abstract class Title {
 	isNextChapter = (progress: Progress): boolean => {
 		return progress.chapter > this.progress.chapter && progress.chapter < Math.floor(this.progress.chapter) + 2;
 	};
+
+	/**
+	 * Get the ID used by Mochi that can only be a number or a string.
+	 */
+	get mochi(): number | string {
+		return this.key.id!;
+	}
 }
 
 export class LocalTitle extends Title {
-	/**
-	 * External MangaDex List Status
-	 */
-	mdStatus: Status = Status.NONE;
-	/**
-	 * External MangaDex List Score
-	 */
-	mdScore: number = 0;
 	/**
 	 * `ServiceKey` list of mapped Service for the Title.
 	 */
@@ -340,7 +330,7 @@ export class LocalTitle extends Title {
 	/**
 	 * Retrieve a Title by it's MangaDex ID from Local Storage.
 	 */
-	static async get(id: number | string | object): Promise<LocalTitle> {
+	static async get(id: number | string): Promise<LocalTitle> {
 		if (typeof id !== 'number' && typeof id !== 'string') throw 'LocalTitle.id need to be a number or a string.';
 		const title = await LocalStorage.get(id);
 		const rid = typeof id === 'number' ? id : parseInt(id);
@@ -545,21 +535,10 @@ export class LocalTitle extends Title {
 
 export abstract class ExternalTitle extends Title {
 	static readonly service: Service;
-	static readonly updateKeyOnFirstFetch: boolean = false;
 
-	static idFromLink = (href: string): MediaKey => {
-		throw 'ExternalTitle.idFromLink is an abstract function';
-		return { id: 0 };
-	};
-	static idFromString = (str: string): MediaKey => {
-		throw 'ExternalTitle.idFromString is an abstract function';
-		return { id: 0 };
-	};
-
-	/**
-	 * Get the ID used by Mochi that can only be a number or a string.
-	 */
-	abstract get mochi(): number | string;
+	get service(): Service {
+		return (<typeof ExternalTitle>this.constructor).service;
+	}
 }
 
 export class TitleCollection {

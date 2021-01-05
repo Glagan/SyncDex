@@ -14,6 +14,8 @@ export abstract class Service {
 	abstract name: ServiceName;
 	abstract key: ActivableKey;
 
+	// Enable if an ExternalTitle.key need to be updated after initial request
+	updateKeyOnFirstFetch: boolean = false;
 	usesSlug: boolean = false;
 	missingFields: MissableField[] = [];
 
@@ -30,7 +32,6 @@ export abstract class Service {
 	createImportModule = (moduleInterface?: ModuleInterface): ImportModule | false => {
 		if (!this.importModule) return false;
 		const module = this.importModule;
-		console.log('module', module);
 		/// @ts-ignore
 		return new module(this, moduleInterface);
 	};
@@ -38,7 +39,6 @@ export abstract class Service {
 	createExportModule = (moduleInterface?: ModuleInterface): ExportModule | false => {
 		if (!this.exportModule) return false;
 		const module = this.exportModule;
-		console.log('module', module);
 		/// @ts-ignore
 		return new module(this, moduleInterface);
 	};

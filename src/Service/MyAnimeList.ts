@@ -514,8 +514,4 @@ export class MyAnimeListTitle extends ExternalTitle {
 		// Status.WONT_READ
 		return MyAnimeListStatus.NONE;
 	};
-
-	get mochi(): number {
-		return this.key.id!;
-	}
 }

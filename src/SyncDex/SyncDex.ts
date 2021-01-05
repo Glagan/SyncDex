@@ -203,6 +203,21 @@ export class SyncDex {
 					}
 				}
 			}
+			// Find max from MangaDex
+			const lastChapter = parseFloat(details.manga._data.last_chapter);
+			if (!isNaN(lastChapter) && lastChapter > 0) {
+				state.title.max = {
+					chapter: lastChapter,
+					volume: details.manga._data.last_volume ? details.manga._data.last_volume : undefined,
+				};
+			}
+		}
+		// Send initial requests -- Another if block to tell Typescript state.syncModule does exist
+		if (state.syncModule == undefined) {
+			state.syncModule = new SyncModule(state.title, new ReadingOverview());
+			// Check if we're logged in on MangaDex
+			state.syncModule.loggedIn = document.querySelector(`a.nav-link[href^='/user']`) !== null;
+			state.syncModule.initialize();
 			// Find MangaDex status if needed
 			if (Options.updateOnlyInList || Options.updateMD) {
 				const response = await Runtime.jsonRequest<{
@@ -222,10 +237,10 @@ export class SyncDex {
 				});
 				if (response.ok) {
 					if (typeof response.body.data.followType === 'number') {
-						state.title.mdStatus = response.body.data.followType;
+						state.syncModule.mdState.status = response.body.data.followType;
 					}
 					if (typeof response.body.data.rating === 'number') {
-						state.title.mdScore = response.body.data.rating * 10;
+						state.syncModule.mdState.score = response.body.data.rating * 10;
 					}
 				} // 403 Error is expected if not logged in
 				else if (response.code >= 500) {
@@ -234,21 +249,6 @@ export class SyncDex {
 					});
 				}
 			}
-			// Find max from MangaDex
-			const lastChapter = parseFloat(details.manga._data.last_chapter);
-			if (!isNaN(lastChapter) && lastChapter > 0) {
-				state.title.max = {
-					chapter: lastChapter,
-					volume: details.manga._data.last_volume ? details.manga._data.last_volume : undefined,
-				};
-			}
-		}
-		// Send initial requests -- Another if block to tell Typescript state.syncModule does exist
-		if (state.syncModule == undefined) {
-			state.syncModule = new SyncModule(state.title, new ReadingOverview());
-			// Check if we're logged in on MangaDex
-			state.syncModule.loggedIn = document.querySelector(`a.nav-link[href^='/user']`) !== null;
-			state.syncModule.initialize();
 		}
 		// Check initial Status if it's the first time
 		if (firstRequest && Options.services.length > 0) {
@@ -339,7 +339,8 @@ export class SyncDex {
 					text: `You are not logged in on **MangaDex** but you have the *Update Only in List** option enabled.\nDisable it or login on **MangaDex** !`,
 				});
 			}
-			mdListOptionValid = state.title.mdStatus !== undefined && state.title.mdStatus !== Status.NONE;
+			mdListOptionValid =
+				state.syncModule.mdState.status !== undefined && state.syncModule.mdState.status !== Status.NONE;
 			if (!mdListOptionValid && Options.confirmChapter) {
 				missingUpdateValidations.push(
 					`**${state.title.name}** is not your **MangaDex** List and wasn't updated.`
@@ -521,12 +522,6 @@ export class SyncDex {
 				const headerTitle = document.querySelector('h6.card-header');
 				if (headerTitle) title.name = headerTitle.textContent!.trim();
 			}
-			// Get MangaDex Status
-			const statusButton = document.querySelector('.manga_follow_button.disabled');
-			if (statusButton) title.mdStatus = parseInt(statusButton.id.trim());
-			// Get MangaDex Score
-			const scoreButton = document.querySelector('.manga_rating_button.disabled');
-			if (scoreButton) title.mdScore = parseInt(scoreButton.id.trim()) * 10;
 			// Max progress if it's available
 			const maxChapter = document.getElementById('current_chapter');
 			if (maxChapter && maxChapter.nextSibling && maxChapter.nextSibling.textContent) {
@@ -543,7 +538,6 @@ export class SyncDex {
 					else title.max.volume = parseInt(volume[1]);
 				}
 			}
-
 			// Always Find Services
 			let fallback = false;
 			if (Options.useMochi) {
@@ -634,6 +628,12 @@ export class SyncDex {
 			// Find MangaDex login status
 			syncModule.loggedIn = !document.querySelector('button[title="You need to log in to use this function."]');
 			syncModule.initialize();
+			// Get MangaDex Status
+			const statusButton = document.querySelector('.manga_follow_button.disabled');
+			if (statusButton) syncModule.mdState.status = parseInt(statusButton.id.trim());
+			// Get MangaDex Score
+			const scoreButton = document.querySelector('.manga_rating_button.disabled');
+			if (scoreButton) syncModule.mdState.score = parseInt(scoreButton.id.trim()) * 10;
 			const imported = await syncModule.syncLocal();
 
 			// Add all chapters from the ChapterList if it's a new Title

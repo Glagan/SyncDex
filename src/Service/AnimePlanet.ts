@@ -176,6 +176,7 @@ export class AnimePlanet extends Service {
 	loginMethod = LoginMethod.EXTERNAL;
 	loginUrl = 'https://www.anime-planet.com/login';
 
+	updateKeyOnFirstFetch = true;
 	usesSlug = true;
 	missingFields: MissableField[] = ['volume', 'start', 'end'];
 
@@ -385,8 +386,4 @@ export class AnimePlanetTitle extends ExternalTitle {
 		}
 		return AnimePlanetStatus.NONE;
 	};
-
-	get mochi(): number {
-		return this.key.id!;
-	}
 }

@@ -519,8 +519,4 @@ export class AnilistTitle extends ExternalTitle {
 		}
 		return AnilistStatus.NONE;
 	};
-
-	get mochi(): number {
-		return this.key.id!;
-	}
 }

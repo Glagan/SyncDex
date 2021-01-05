@@ -500,8 +500,4 @@ export class KitsuTitle extends ExternalTitle {
 		}
 		return KitsuStatus.NONE;
 	};
-
-	get mochi(): number {
-		return this.key.id!;
-	}
 }
