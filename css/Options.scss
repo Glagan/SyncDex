@@ -78,15 +78,55 @@ table {
 	}
 }
 
+// Body
+html {
+	width: 100vw;
+	overflow-x: hidden;
+}
+body {
+	height: 100vh;
+	display: flex;
+	flex-flow: column nowrap;
+	background-color: $grey-10;
+	color: $grey-90;
+	transition: all 250ms $animation;
+	font-size: 100%;
+	overflow-x: hidden;
+}
+main {
+	padding: 0 16px;
+}
+hr {
+	margin-bottom: 8px;
+}
+.section-content {
+	border-radius: 3px;
+	border: 1px solid $grey-40;
+	background-color: $grey-20;
+	padding: 8px;
+
+	& .block:last-child {
+		margin-bottom: 0;
+	}
+
+	.scs & .parameter:last-child {
+		margin-bottom: 0;
+	}
+}
+
 // Navigation
 nav {
 	padding: 16px;
 
 	ul {
 		list-style-type: none;
+		display: flex;
+		flex-flow: row wrap;
+		align-items: center;
+		justify-content: center;
 
 		li {
-			padding: 8px 0;
+			padding: 16px;
 			cursor: pointer;
 			transition: all 150ms $animation;
 			font-weight: $light;
@@ -101,12 +141,6 @@ nav {
 				font-weight: $extralight;
 				cursor: default;
 			}
-			&:first-child:hover {
-				font-weight: $extralight;
-			}
-			&:hover {
-				font-weight: $bold;
-			}
 			img {
 				vertical-align: middle;
 			}
@@ -117,38 +151,35 @@ nav {
 	}
 }
 
-// Body
-body {
-	min-height: 100vh;
-	display: grid;
-	grid-template-columns: 18% 82%;
-	background-color: $grey-10;
-	color: $grey-90;
-	transition: all 250ms $animation;
-	font-size: 100%;
-}
-main {
-	max-height: 100vh;
-	overflow-y: auto;
-	overflow-x: auto;
-	padding: 0 16px;
-}
-hr {
-	margin-bottom: 8px;
-}
-
-.section-content {
-	border-radius: 3px;
-	border: 1px solid $grey-40;
-	background-color: $grey-20;
-	padding: 8px;
-
-	& .block:last-child {
-		margin-bottom: 0;
+// Smaller width
+@media (min-width: 768px) {
+	body {
+		display: grid;
+		grid-template-columns: 18% 82%;
+		overflow-x: unset;
 	}
 
-	.scs & .parameter:last-child {
-		margin-bottom: 0;
+	nav {
+		height: 100vh;
+		overflow: auto;
+
+		ul {
+			display: block;
+
+			li {
+				padding: 8px 0;
+
+				&:hover {
+					font-weight: $bold;
+				}
+			}
+		}
+	}
+
+	main {
+		height: 100vh;
+		overflow-y: auto;
+		overflow-x: auto;
 	}
 }
 
