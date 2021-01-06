@@ -13,7 +13,7 @@ import { TitleChapterGroup } from './TitleChapterGroup';
 import { History } from './History';
 import { ChapterRow } from './ChapterRow';
 import { Service } from '../Core/Service';
-import { Services } from '../Service/Map';
+import { Services } from '../Service/Class/Map';
 import { log } from '../Core/Log';
 import { ActivableKey } from '../Service/Keys';
 

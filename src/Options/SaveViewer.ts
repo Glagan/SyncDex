@@ -4,7 +4,7 @@ import { LocalStorage } from '../Core/Storage';
 import { dateFormat, progressToString } from '../Core/Utility';
 import { TitleEditor } from '../Core/TitleEditor';
 import { SyncModule } from '../Core/SyncModule';
-import { Services } from '../Service/Map';
+import { Services } from '../Service/Class/Map';
 import { Runtime } from '../Core/Runtime';
 import { ActivableKey } from '../Service/Keys';
 

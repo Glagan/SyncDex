@@ -10,38 +10,9 @@ export const enum LoginMethod {
 	FORM,
 }
 
-export abstract class Service {
+export abstract class Service<K extends ServiceKey> {
 	abstract name: ServiceName;
-	abstract key: ActivableKey;
-
-	// Enable if an ExternalTitle.key need to be updated after initial request
-	updateKeyOnFirstFetch: boolean = false;
-	usesSlug: boolean = false;
-	missingFields: MissableField[] = [];
-
-	abstract loginMethod: LoginMethod;
-	loginUrl?: string;
-	identifierField: [string, string] = ['Email', 'email'];
-
-	abstract loggedIn(): Promise<RequestStatus>;
-	abstract get(key: MediaKey): Promise<ExternalTitle | RequestStatus>;
-	login?(username: string, password: string): Promise<RequestStatus>;
-	logout?(): Promise<void>;
-
-	importModule?: typeof ImportModule;
-	createImportModule = (moduleInterface?: ModuleInterface): ImportModule | false => {
-		if (!this.importModule) return false;
-		const module = this.importModule;
-		/// @ts-ignore
-		return new module(this, moduleInterface);
-	};
-	exportModule?: typeof ExportModule;
-	createExportModule = (moduleInterface?: ModuleInterface): ExportModule | false => {
-		if (!this.exportModule) return false;
-		const module = this.exportModule;
-		/// @ts-ignore
-		return new module(this, moduleInterface);
-	};
+	abstract key: K;
 
 	abstract link(key: MediaKey): string;
 	createTitle = (): AppendableElement => {
@@ -52,12 +23,30 @@ export abstract class Service {
 		return Service.compareId(id1, id2);
 	};
 
+	static compareId(id1: MediaKey, id2: MediaKey): boolean {
+		return id1.id === id2.id && id1.slug === id2.slug;
+	}
+}
+
+export abstract class StaticService extends Service<StaticKey> {}
+
+export abstract class ExternalService extends Service<ActivableKey> {
+	// Enable if an ExternalTitle.key need to be updated after initial request
+	updateKeyOnFirstFetch: boolean = false;
+	usesSlug: boolean = false;
+	missingFields: MissableField[] = [];
+
+	abstract loginMethod: LoginMethod;
+	loginUrl?: string;
+	identifierField?: [string, string];
+
+	abstract loggedIn(): Promise<RequestStatus>;
+	abstract get(key: MediaKey): Promise<ExternalTitle | RequestStatus>;
+	login?(username: string, password: string): Promise<RequestStatus>;
+	logout?(): Promise<void>;
+
 	abstract idFromLink(href: string): MediaKey;
 	idFromString = (str: string): MediaKey => {
 		return { id: parseInt(str) };
 	};
-
-	static compareId(id1: MediaKey, id2: MediaKey): boolean {
-		return id1.id === id2.id && id1.slug === id2.slug;
-	}
 }

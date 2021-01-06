@@ -1,17 +1,16 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
-const rimraf = require('rimraf');
 const path = require('path');
 const services = require('../services.json');
-const { reverse } = require('dns');
 
 // Paths
 
 const scssPath = path.resolve('css/Services.scss');
 const namesPath = path.resolve('src/Service/Names.ts');
 const keysPath = path.resolve('src/Service/Keys.ts');
-const serviceMapPath = path.resolve('src/Service/Map.ts');
+const serviceMapPath = path.resolve('src/Service/Class/Map.ts');
+const importExportMapPath = path.resolve('src/Service/ImportExport/Map.ts');
 
 // Generate SCSS file
 
@@ -129,12 +128,24 @@ console.info('Generated Name and Keys.');
 // Generate global Service Map
 
 const serviceMap = { imports: [], services: [] };
-serviceMap.imports.push(`import { Service } from '../Core/Service';`);
-serviceMap.imports.push(`import { ActivableKey } from './Keys';`);
+const importExportMap = { imports: [], import: [], export: [] };
+serviceMap.imports.push(`import { ExternalService } from '../../Core/Service';`);
+serviceMap.imports.push(`import { ActivableKey } from '../Keys';`);
+importExportMap.imports.push(`import { ActivableKey } from '../Keys';`);
+importExportMap.imports.push(`import { ImportModule, ExportModule } from '../../Core/Module';`);
 services.forEach((def) => {
 	if (def.activable) {
 		serviceMap.imports.push(`import { ${def.name} } from './${def.name}';`);
 		serviceMap.services.push(`\t[ActivableKey.${def.name}]: new ${def.name}(),`);
+
+		// TODO: Import OR Export
+		importExportMap.imports.push(`import { ${def.name}Import, ${def.name}Export } from './${def.name}';`);
+		if (def.hasImport) {
+			importExportMap.import.push(`\t[ActivableKey.${def.name}]: ${def.name}Import,`);
+		}
+		if (def.hasExport) {
+			importExportMap.export.push(`\t[ActivableKey.${def.name}]: ${def.name}Export,`);
+		}
 	}
 });
 
@@ -142,6 +153,15 @@ const imports = serviceMap.imports.join('\n');
 const serviceMapValues = serviceMap.services.join('\n');
 fs.writeFileSync(
 	serviceMapPath,
-	`/** Generated File */\n${imports}\n\nexport const Services: { [key in ActivableKey]: Service } = {\n${serviceMapValues}\n};\n`
+	`/** Generated File */\n${imports}\n\nexport const Services: { [key in ActivableKey]: ExternalService } = {\n${serviceMapValues}\n};\n`
 );
-console.info('Generated Service Map.');
+console.info('Generated Service Class Map.');
+
+const ieImports = importExportMap.imports.join('\n');
+const importMapValues = importExportMap.import.join('\n');
+const exportMapValues = importExportMap.export.join('\n');
+fs.writeFileSync(
+	importExportMapPath,
+	`/** Generated File */\n${ieImports}\n\nexport const ServicesImport: { [key in ActivableKey]?: typeof ImportModule } = {\n${importMapValues}\n};\n\nexport const ServicesExport: { [key in ActivableKey]?: typeof ExportModule } = {\n${exportMapValues}\n};\n`
+);
+console.info('Generated Service Import/Export Map.');

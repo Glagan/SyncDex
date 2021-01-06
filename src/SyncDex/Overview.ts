@@ -7,7 +7,7 @@ import { TitleEditor } from '../Core/TitleEditor';
 import { ChapterList } from './ChapterList';
 import { ChapterRow } from './ChapterRow';
 import { dateCompare, dateFormat, isDate } from '../Core/Utility';
-import { Services } from '../Service/Map';
+import { Services } from '../Service/Class/Map';
 import { ActivableKey, ServiceKey, StaticKey } from '../Service/Keys';
 
 export abstract class Overview {

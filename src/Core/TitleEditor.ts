@@ -5,8 +5,8 @@ import { dateFormatInput } from './Utility';
 import { Runtime } from './Runtime';
 import { Options } from './Options';
 import { SyncModule } from './SyncModule';
-import { Service } from './Service';
-import { Services } from '../Service/Map';
+import { ExternalService } from './Service';
+import { Services } from '../Service/Class/Map';
 import { ActivableKey } from '../Service/Keys';
 
 interface HistoryChapter {
@@ -59,7 +59,7 @@ export class TitleEditor {
 		return chapterNode;
 	};
 
-	static createServiceInput = (service: Service, value?: MediaKey): HTMLElement[] => {
+	static createServiceInput = (service: ExternalService, value?: MediaKey): HTMLElement[] => {
 		const inputs: HTMLElement[] = [
 			DOM.create('input', {
 				type: 'number',

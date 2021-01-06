@@ -1,17 +1,20 @@
 import { DOM, MessageType } from '../../Core/DOM';
-import { Services } from '../../Service/Map';
+import { Services } from '../../Service/Class/Map';
 import { Modal } from '../../Core/Modal';
 import { Options } from '../../Core/Options';
-import { LoginMethod, Service } from '../../Core/Service';
+import { ExternalService, LoginMethod } from '../../Core/Service';
 import { SaveOptions } from '../Utility';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { OptionsManager } from '../OptionsManager';
 import { Runtime } from '../../Core/Runtime';
 import { ActivableKey, ServiceKey } from '../../Service/Keys';
+import { ServicesExport, ServicesImport } from '../../Service/ImportExport/Map';
+import { ExportModule, ImportModule } from '../../Core/Module';
+import { createModule } from '../../Service/ImportExport/Utility';
 
 class ServiceCard {
 	manager: ServiceManager;
-	service: Service;
+	service: ExternalService;
 
 	activeCard: HTMLElement;
 	activeCardContent: HTMLElement;
@@ -53,7 +56,7 @@ class ServiceCard {
 		});
 	}
 
-	constructor(manager: ServiceManager, service: Service) {
+	constructor(manager: ServiceManager, service: ExternalService) {
 		this.manager = manager;
 		this.service = service;
 		// Create
@@ -92,11 +95,11 @@ class ServiceCard {
 		this.importButton = DOM.create('button', {
 			childs: [DOM.icon('download'), DOM.text('Import')],
 		});
-		if (!this.service.importModule) this.importButton.style.display = 'none';
+		if (!ServicesImport[this.service.key]) this.importButton.style.display = 'none';
 		this.exportButton = DOM.create('button', {
 			childs: [DOM.icon('upload'), DOM.text('Export')],
 		});
-		if (!this.service.exportModule) this.exportButton.style.display = 'none';
+		if (!ServicesExport[this.service.key]) this.exportButton.style.display = 'none';
 		this.bind();
 	}
 
@@ -332,8 +335,9 @@ class ServiceCard {
 		});
 		this.importButton.addEventListener('click', async (event) => {
 			event.preventDefault();
+			if (!ServicesImport[this.service.key]) return;
 			const moduleInterface = new ModuleInterface();
-			const importModule = this.service.createImportModule(moduleInterface);
+			const importModule = createModule(this.service.key, 'import', moduleInterface);
 			if (importModule) {
 				importModule.postExecute = () => OptionsManager.instance.saveViewer.updateAll(true);
 				moduleInterface.modal.show();
@@ -341,8 +345,9 @@ class ServiceCard {
 		});
 		this.exportButton.addEventListener('click', (event) => {
 			event.preventDefault();
+			if (!ServicesExport[this.service.key]) return;
 			const moduleInterface = new ModuleInterface();
-			const exportModule = this.service.createExportModule(moduleInterface);
+			const exportModule = createModule(this.service.key, 'export', moduleInterface);
 			if (exportModule) {
 				exportModule.postExecute = () => OptionsManager.instance.saveViewer.updateAll(true);
 				moduleInterface.modal.show();

@@ -6,8 +6,9 @@ import { DefaultOptions, Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
 import { SaveSync } from '../Core/SaveSync';
 import { SaveSyncServices } from '../SaveSync/Map';
-import { Services } from '../Service/Map';
+import { Services } from '../Service/Class/Map';
 import { LocalStorage } from '../Core/Storage';
+import { createModule } from '../Service/ImportExport/Utility';
 
 console.log('SyncDex :: Background');
 
@@ -364,7 +365,7 @@ async function silentImport(manual: boolean = false) {
 					try {
 						const start = Date.now();
 						await log(`Importing ${Services[key].name}`);
-						const module = Services[key].createImportModule();
+						const module = createModule(key, 'import');
 						if (!module) continue;
 						const moduleResult = await module.run();
 						if (moduleResult == ModuleStatus.SUCCESS) {

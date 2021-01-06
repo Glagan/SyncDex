@@ -1,7 +1,7 @@
 import { LocalStorage } from './Storage';
 import { Options } from './Options';
 import { dateCompare } from './Utility';
-import { Service } from './Service';
+import { ExternalService, Service } from './Service';
 import { History } from '../SyncDex/History';
 import { ActivableKey } from '../Service/Keys';
 
@@ -534,9 +534,9 @@ export class LocalTitle extends Title {
 }
 
 export abstract class ExternalTitle extends Title {
-	static readonly service: Service;
+	static readonly service: ExternalService;
 
-	get service(): Service {
+	get service(): ExternalService {
 		return (<typeof ExternalTitle>this.constructor).service;
 	}
 }

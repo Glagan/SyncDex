@@ -2,7 +2,7 @@ import { Title, LocalTitle, ExternalTitle, StatusMap } from './Title';
 import { Options } from './Options';
 import { Runtime } from './Runtime';
 import { Overview } from '../SyncDex/Overview';
-import { Services } from '../Service/Map';
+import { Services } from '../Service/Class/Map';
 import { log } from './Log';
 import { ActivableKey, StaticKey } from '../Service/Keys';
 

@@ -1,6 +1,6 @@
 import { DOM } from './DOM';
 import { ModuleInterface } from './ModuleInterface';
-import { Service } from './Service';
+import { ExternalService } from './Service';
 import { FoundTitle, LocalTitle, TitleCollection } from './Title';
 import { Mochi } from './Mochi';
 import { LocalStorage, SaveSpecialKeys } from './Storage';
@@ -74,7 +74,7 @@ export type ModuleOptions = { [key: string]: ModuleOption };
  * An optionnal ModuleInterface can be provided and need to be checked before calling it in `execute`.
  */
 export abstract class Module {
-	service: Service;
+	service: ExternalService;
 	interface?: ModuleInterface;
 	summary: Summary;
 	perConvert: number = 250;
@@ -82,7 +82,7 @@ export abstract class Module {
 
 	extendOptions?(): void;
 
-	constructor(service: Service, moduleInterface?: ModuleInterface) {
+	constructor(service: ExternalService, moduleInterface?: ModuleInterface) {
 		this.service = service;
 		this.interface ??= moduleInterface;
 		this.summary = new Summary();
@@ -182,7 +182,7 @@ export abstract class ImportModule extends Module {
 		},
 	};
 
-	constructor(service: Service, moduleInterface?: ModuleInterface) {
+	constructor(service: ExternalService, moduleInterface?: ModuleInterface) {
 		super(service, moduleInterface);
 		if (this.extendOptions) this.extendOptions();
 		this.bindInterface();
@@ -367,7 +367,7 @@ export abstract class ExportModule extends Module {
 		},
 	};
 
-	constructor(service: Service, moduleInterface?: ModuleInterface) {
+	constructor(service: ExternalService, moduleInterface?: ModuleInterface) {
 		super(service, moduleInterface);
 		if (this.extendOptions) this.extendOptions();
 		this.bindInterface();

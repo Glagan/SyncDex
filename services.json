@@ -3,6 +3,8 @@
 		"name": "SyncDex",
 		"key": "sc",
 		"activable": false,
+		"hasImport": true,
+		"hasExport": true,
 		"theme": {
 			"separator": ["sync", "dex"],
 			"light": { "font": ["rgb(81, 165, 234)", "rgb(247, 148, 33)"], "background": "#fefefe" },
@@ -13,6 +15,8 @@
 		"name": "MyMangaDex",
 		"key": "mmd",
 		"activable": false,
+		"hasImport": true,
+		"hasExport": false,
 		"theme": {
 			"light": { "font": "rgb(47, 82, 162)", "background": "#ffffff" }
 		}
@@ -21,6 +25,8 @@
 		"name": "MangaDex",
 		"key": "md",
 		"activable": false,
+		"hasImport": true,
+		"hasExport": true,
 		"theme": {
 			"separator": ["manga", "dex"],
 			"reverse": true,
@@ -31,6 +37,8 @@
 		"name": "MyAnimeList",
 		"key": "mal",
 		"activable": true,
+		"hasImport": true,
+		"hasExport": true,
 		"theme": {
 			"light": { "font": "rgb(47, 82, 162)", "background": "#ffffff" },
 			"dark": { "font": "#6d92e8", "background": "$grey-70" }
@@ -40,6 +48,8 @@
 		"name": "Anilist",
 		"key": "al",
 		"activable": true,
+		"hasImport": true,
+		"hasExport": true,
 		"theme": {
 			"separator": ["ani", "list"],
 			"reverse": true,
@@ -50,6 +60,8 @@
 		"name": "Kitsu",
 		"key": "ku",
 		"activable": true,
+		"hasImport": true,
+		"hasExport": true,
 		"theme": {
 			"light": { "font": "#ffffff", "background": "rgb(64, 47, 63)" }
 		}
@@ -58,6 +70,8 @@
 		"name": "AnimePlanet",
 		"key": "ap",
 		"activable": true,
+		"hasImport": true,
+		"hasExport": true,
 		"theme": {
 			"light": { "font": "rgb(252, 83, 66)", "background": "rgb(48, 48, 48)" }
 		}
@@ -66,6 +80,8 @@
 		"name": "MangaUpdates",
 		"key": "mu",
 		"activable": true,
+		"hasImport": true,
+		"hasExport": true,
 		"theme": {
 			"light": { "font": "rgb(82, 102, 124)", "background": "rgb(240, 243, 247)" },
 			"dark": { "font": "#a5acb3", "background": "$grey-70" }
