@@ -1,5 +1,5 @@
 import { DOM, AppendableElement } from '../Core/DOM';
-import { LocalTitle, Title, StatusMap, MissableField, ExternalTitle } from '../Core/Title';
+import { LocalTitle, StatusMap, MissableField, Title } from '../Core/Title';
 import { Runtime } from '../Core/Runtime';
 import { Options } from '../Core/Options';
 import { SyncModule } from '../Core/SyncModule';
@@ -131,7 +131,7 @@ class ServiceOverview {
 			return;
 		}
 		if (title.inList) {
-			const missingFields = (<typeof Title>title.constructor).missingFields;
+			const missingFields = title.missingFields;
 			const rows: HTMLElement[] = [
 				DOM.create('div', { class: `status st${title.status}`, textContent: StatusMap[title.status] }),
 			];
@@ -158,7 +158,7 @@ class ServiceOverview {
 						title && title.score > 0 ? `${title.score} out of 100` : undefined
 					)
 				);
-			} else if (missingFields.indexOf('score') < 0)
+			} else if (missingFields.indexOf('score') < 0) {
 				rows.push(
 					this.overviewRow(
 						'star',
@@ -167,13 +167,12 @@ class ServiceOverview {
 						title && title.score > 0 ? `${title.score} out of 100` : undefined
 					)
 				);
+			}
 			for (const missingField of missingFields) {
 				rows.push(
 					this.overviewRow(
 						'ban',
-						`No ${ServiceOverview.missingFieldsMap[missingField]} available on ${
-							(<typeof ExternalTitle>title.constructor).service.name
-						}`
+						`No ${ServiceOverview.missingFieldsMap[missingField]} available on ${title.service.name}`
 					)
 				);
 			}

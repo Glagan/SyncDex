@@ -52,7 +52,7 @@ export class MangaUpdatesImport extends ImportModule {
 						status: MangaUpdatesTitle.toStatus(status),
 						score: score,
 						name: name.textContent as string,
-						mochi: parseInt(row.id.slice(1)),
+						mochiKey: parseInt(row.id.slice(1)),
 					});
 				}
 			}

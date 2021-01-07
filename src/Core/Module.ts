@@ -283,7 +283,7 @@ export abstract class ImportModule extends Module {
 					current + this.perConvert
 				)} out of ${this.summary.total}.`;
 				const allConnections = await Mochi.findMany(
-					titleList.map((t) => t.mochi),
+					titleList.map((t) => t.mochiKey),
 					this.service.name
 				);
 				const found: (number | string)[] = [];
@@ -291,19 +291,19 @@ export abstract class ImportModule extends Module {
 					for (const key in allConnections) {
 						const connections = allConnections[key];
 						if (connections['md'] !== undefined) {
-							const title = titleList.find((t) => t.mochi == key);
+							const title = titleList.find((t) => t.mochiKey == key);
 							if (title) {
 								const localTitle = new LocalTitle(connections['md'], title);
 								Mochi.assign(localTitle, connections);
 								titles.add(localTitle);
 								this.summary.valid++;
-								found.push(title.mochi);
+								found.push(title.mochiKey);
 							}
 						}
 					}
 				}
 				// Add missing titles to the failed Summary
-				this.summary.failed.push(...titleList.filter((t) => found.indexOf(t.mochi) < 0));
+				this.summary.failed.push(...titleList.filter((t) => found.indexOf(t.mochiKey) < 0));
 			}
 			notification?.classList.remove('loading');
 			if (this.interface?.doStop) {

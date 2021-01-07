@@ -1,6 +1,6 @@
 import { Runtime } from '../../Core/Runtime';
 import { ExternalService, LoginMethod } from '../../Core/Service';
-import { ExternalTitle, MissableField } from '../../Core/Title';
+import { Title, MissableField } from '../../Core/Title';
 import { log } from '../../Core/Log';
 import { ActivableKey } from '../Keys';
 import { ServiceName } from '../Names';
@@ -56,7 +56,7 @@ export class AnimePlanet extends ExternalService {
 		return RequestStatus.FAIL;
 	}
 
-	async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
+	async get(key: MediaKey): Promise<Title | RequestStatus> {
 		const response = await Runtime.request<RawResponse>({
 			url: this.link(key),
 			method: 'GET',
@@ -130,7 +130,7 @@ export class AnimePlanet extends ExternalService {
 }
 
 export const AnimePlanetAPI = 'https://www.anime-planet.com/api/list';
-export class AnimePlanetTitle extends ExternalTitle {
+export class AnimePlanetTitle extends Title {
 	static service = new AnimePlanet();
 	static readonly requireIdQuery: boolean = true;
 

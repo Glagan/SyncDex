@@ -1,10 +1,8 @@
-import { DOM } from '../../Core/DOM';
 import { log } from '../../Core/Log';
-import { duration, ExportModule, ImportModule } from '../../Core/Module';
 import { Options } from '../../Core/Options';
 import { Runtime } from '../../Core/Runtime';
 import { LoginMethod, ExternalService } from '../../Core/Service';
-import { ExternalTitle, FoundTitle, LocalTitle } from '../../Core/Title';
+import { Title } from '../../Core/Title';
 import { ActivableKey } from '../Keys';
 import { ServiceName } from '../Names';
 
@@ -160,7 +158,7 @@ export class Kitsu extends ExternalService {
 		return RequestStatus.SUCCESS;
 	};
 
-	async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
+	async get(key: MediaKey): Promise<Title | RequestStatus> {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<KitsuResponse>({
 			url: `${KitsuAPI}?filter[manga_id]=${key.id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=chapterCount,volumeCount,canonicalTitle`,
@@ -209,7 +207,7 @@ export class Kitsu extends ExternalService {
 	};
 }
 
-export class KitsuTitle extends ExternalTitle {
+export class KitsuTitle extends Title {
 	static service = new Kitsu();
 	libraryEntryId?: number;
 

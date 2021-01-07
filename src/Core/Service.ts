@@ -1,9 +1,7 @@
 import { ActivableKey, ServiceKey, StaticKey } from '../Service/Keys';
 import { ServiceName } from '../Service/Names';
 import { AppendableElement, DOM } from './DOM';
-import { ExportModule, ImportModule } from './Module';
-import { ModuleInterface } from './ModuleInterface';
-import { ExternalTitle, MissableField } from './Title';
+import { Title, MissableField } from './Title';
 
 export const enum LoginMethod {
 	EXTERNAL,
@@ -41,7 +39,7 @@ export abstract class ExternalService extends Service<ActivableKey> {
 	identifierField?: [string, string];
 
 	abstract loggedIn(): Promise<RequestStatus>;
-	abstract get(key: MediaKey): Promise<ExternalTitle | RequestStatus>;
+	abstract get(key: MediaKey): Promise<Title | RequestStatus>;
 	login?(username: string, password: string): Promise<RequestStatus>;
 	logout?(): Promise<void>;
 

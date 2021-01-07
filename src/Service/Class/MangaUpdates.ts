@@ -1,7 +1,7 @@
 import { log } from '../../Core/Log';
 import { Runtime } from '../../Core/Runtime';
 import { LoginMethod, ExternalService } from '../../Core/Service';
-import { MissableField, ExternalTitle } from '../../Core/Title';
+import { MissableField, Title } from '../../Core/Title';
 import { ActivableKey } from '../Keys';
 import { ServiceName } from '../Names';
 
@@ -34,7 +34,7 @@ export class MangaUpdates extends ExternalService {
 		return RequestStatus.FAIL;
 	};
 
-	async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
+	async get(key: MediaKey): Promise<Title | RequestStatus> {
 		const response = await Runtime.request<RawResponse>({
 			url: this.link(key),
 			method: 'GET',
@@ -88,7 +88,7 @@ export class MangaUpdates extends ExternalService {
 	};
 }
 
-export class MangaUpdatesTitle extends ExternalTitle {
+export class MangaUpdatesTitle extends Title {
 	static service = new MangaUpdates();
 
 	current?: {

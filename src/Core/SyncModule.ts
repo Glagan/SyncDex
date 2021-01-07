@@ -1,4 +1,4 @@
-import { Title, LocalTitle, ExternalTitle, StatusMap } from './Title';
+import { LocalTitle, Title, StatusMap } from './Title';
 import { Options } from './Options';
 import { Runtime } from './Runtime';
 import { Overview } from '../SyncDex/Overview';
@@ -77,7 +77,7 @@ export class SyncModule {
 			// Find pepper
 			for (const key in this.services) {
 				const response = this.services[key as ActivableKey];
-				if (response instanceof ExternalTitle && response.max) {
+				if (response instanceof Title && response.max) {
 					if (!this.title.max) {
 						this.title.max = { chapter: undefined, volume: undefined };
 					}
@@ -108,7 +108,7 @@ export class SyncModule {
 		for (const key of [...Options.services].reverse()) {
 			if (this.services[key] === undefined) continue;
 			const response = this.services[key];
-			if (response instanceof ExternalTitle && response.loggedIn) {
+			if (response instanceof Title && response.loggedIn) {
 				// Check if any of the ServiceTitle is more recent than the local Title
 				if (response.inList && (this.title.inList || response.isMoreRecent(this.title))) {
 					// If there is one, sync with it and save
@@ -117,7 +117,7 @@ export class SyncModule {
 					doSave = true;
 				}
 				// Finish retrieving the ID if required -- AnimePlanet has 2 fields
-				if (response.service.updateKeyOnFirstFetch) {
+				if (Services[key].updateKeyOnFirstFetch) {
 					this.title.services[key] = response.key;
 					doSave = true;
 				}
@@ -139,7 +139,7 @@ export class SyncModule {
 		for (const key of Options.services) {
 			const service = this.services[key];
 			if (service === undefined) continue;
-			if (!(service instanceof ExternalTitle)) {
+			if (!(service instanceof Title)) {
 				report[key] = service as RequestStatus;
 				continue;
 			}

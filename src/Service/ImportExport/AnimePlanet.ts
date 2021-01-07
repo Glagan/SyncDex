@@ -84,7 +84,7 @@ export class AnimePlanetImport extends ImportModule {
 						status: status,
 						score: parseFloat(score.getAttribute('name') as string) * 20,
 						name: name.textContent as string,
-						mochi: parseInt(form.dataset.id as string),
+						mochiKey: parseInt(form.dataset.id as string),
 					});
 				}
 			}

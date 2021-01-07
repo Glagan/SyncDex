@@ -150,7 +150,7 @@ export class AnilistImport extends ImportModule {
 					start: AnilistTitle.dateFromAnilist(entry.startedAt),
 					end: AnilistTitle.dateFromAnilist(entry.completedAt),
 					score: entry.score ? entry.score : 0,
-					mochi: entry.mediaId,
+					mochiKey: entry.mediaId,
 				});
 			}
 		}

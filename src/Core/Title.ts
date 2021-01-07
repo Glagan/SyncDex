@@ -1,9 +1,9 @@
 import { LocalStorage } from './Storage';
 import { Options } from './Options';
 import { dateCompare } from './Utility';
-import { ExternalService, Service } from './Service';
+import { Service } from './Service';
 import { History } from '../SyncDex/History';
-import { ActivableKey } from '../Service/Keys';
+import { ActivableKey, ServiceKey } from '../Service/Keys';
 
 export const StatusMap: { [key in Status]: string } = {
 	[Status.NONE]: 'No Status',
@@ -95,10 +95,11 @@ export interface FoundTitle {
 	score?: number;
 	start?: Date;
 	end?: Date;
-	mochi: number | string;
+	mochiKey: number | string;
 }
 
 export abstract class Title {
+	static service: Service<ServiceKey>;
 	key: MediaKey = { id: 0 };
 	inList: boolean = false;
 	synced: boolean = false;
@@ -118,6 +119,14 @@ export abstract class Title {
 		if (title != undefined) Object.assign(this, title);
 	}
 
+	get service() {
+		return (<typeof Title>this.constructor).service;
+	}
+
+	get missingFields() {
+		return (<typeof Title>this.constructor).missingFields;
+	}
+
 	/**
 	 * Send any necessary requests to save the Media on the Service.
 	 */
@@ -133,7 +142,7 @@ export abstract class Title {
 	 * A different score always trigger a true, since higher Services are tested last.
 	 */
 	isMoreRecent = (other: Title): boolean => {
-		const missingFields = (<typeof Title>this.constructor).missingFields;
+		const missingFields = this.missingFields;
 		return (
 			this.progress.chapter > other.progress.chapter ||
 			(missingFields.indexOf('volume') < 0 &&
@@ -154,7 +163,7 @@ export abstract class Title {
 	 * Avoid checking fields that cannot exist on the Service.
 	 */
 	isSynced = (title: Title): boolean => {
-		const missingFields = (<typeof Title>this.constructor).missingFields;
+		const missingFields = this.missingFields;
 		this.synced =
 			title.status === this.status &&
 			Math.floor(title.progress.chapter) === Math.floor(this.progress.chapter) &&
@@ -173,7 +182,7 @@ export abstract class Title {
 	 * Assign all values from the Title to *this*.
 	 */
 	import = (title: Title): void => {
-		const missingFields = (<typeof Title>this.constructor).missingFields;
+		const missingFields = this.missingFields;
 		this.synced = true;
 		this.status = title.status;
 		this.progress.chapter = title.progress.chapter;
@@ -194,7 +203,7 @@ export abstract class Title {
 	 * Score is always export to the Title if it exists.
 	 */
 	merge = (title: Title): void => {
-		const missingFields = (<typeof Title>title.constructor).missingFields;
+		const missingFields = title.missingFields;
 		this.synced = true;
 		if (title.status !== Status.NONE) {
 			this.status = title.status;
@@ -531,14 +540,6 @@ export class LocalTitle extends Title {
 	static link = (key: MediaKey): string => {
 		return `https://mangadex.org/title/${key.id}`;
 	};
-}
-
-export abstract class ExternalTitle extends Title {
-	static readonly service: ExternalService;
-
-	get service(): ExternalService {
-		return (<typeof ExternalTitle>this.constructor).service;
-	}
 }
 
 export class TitleCollection {

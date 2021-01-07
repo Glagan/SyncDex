@@ -1,7 +1,7 @@
 import { log } from '../../Core/Log';
 import { Runtime } from '../../Core/Runtime';
 import { LoginMethod, ExternalService } from '../../Core/Service';
-import { ExternalTitle } from '../../Core/Title';
+import { Title } from '../../Core/Title';
 import { ActivableKey } from '../Keys';
 import { ServiceName } from '../Names';
 
@@ -56,7 +56,7 @@ export class MyAnimeList extends ExternalService {
 		return new Date(parts[0], Math.max(0, parts[1] - 1), parts[2]);
 	};
 
-	async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
+	async get(key: MediaKey): Promise<Title | RequestStatus> {
 		const response = await Runtime.request<RawResponse>({
 			url: `https://myanimelist.net/ownlist/manga/${key.id}/edit?hideLayout`,
 			method: 'GET',
@@ -125,7 +125,7 @@ export class MyAnimeList extends ExternalService {
 	};
 }
 
-export class MyAnimeListTitle extends ExternalTitle {
+export class MyAnimeListTitle extends Title {
 	static service = new MyAnimeList();
 
 	csrf?: string;

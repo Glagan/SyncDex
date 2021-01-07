@@ -101,7 +101,7 @@ export class MyAnimeListImport extends ImportModule {
 					start: this.dateToTime(title.start_date_string ?? undefined),
 					end: this.dateToTime(title.finish_date_string ?? undefined),
 					name: `${title.manga_title}`,
-					mochi: title.manga_id,
+					mochiKey: title.manga_id,
 				};
 				// Find Max Chapter if the Title is Completed
 				if (title.manga_publishing_status == 2) {

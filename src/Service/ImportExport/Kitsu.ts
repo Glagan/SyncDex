@@ -66,7 +66,7 @@ export class KitsuImport extends ImportModule {
 					start: title.attributes.startedAt ? new Date(title.attributes.startedAt) : undefined,
 					end: title.attributes.finishedAt ? new Date(title.attributes.finishedAt) : undefined,
 					name: manga.attributes.canonicalTitle,
-					mochi: parseInt(title.relationships.manga.data.id),
+					mochiKey: parseInt(title.relationships.manga.data.id),
 				};
 				if (foundTitle.status === Status.COMPLETED) {
 					foundTitle.max = {

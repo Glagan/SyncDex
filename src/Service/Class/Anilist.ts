@@ -1,6 +1,6 @@
 import { ExternalService, LoginMethod } from '../../Core/Service';
 import { Runtime } from '../../Core/Runtime';
-import { ExternalTitle } from '../../Core/Title';
+import { Title } from '../../Core/Title';
 import { Options } from '../../Core/Options';
 import { AppendableElement, DOM } from '../../Core/DOM';
 import { log } from '../../Core/Log';
@@ -163,7 +163,7 @@ export class Anilist extends ExternalService {
 	};
 }
 
-export class AnilistTitle extends ExternalTitle {
+export class AnilistTitle extends Title {
 	static service = new Anilist();
 
 	static readonly getQuery = `
