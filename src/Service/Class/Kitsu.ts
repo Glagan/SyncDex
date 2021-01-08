@@ -1,7 +1,7 @@
 import { log } from '../../Core/Log';
 import { Options } from '../../Core/Options';
 import { Runtime } from '../../Core/Runtime';
-import { LoginMethod, ExternalService } from '../../Core/Service';
+import { LoginMethod, Service } from '../../Core/Service';
 import { Title } from '../../Core/Title';
 import { ActivableKey } from '../Keys';
 import { ServiceName } from '../Names';
@@ -107,7 +107,7 @@ export const KitsuHeaders = (): KitsuHeaders => {
 	};
 };
 
-export class Kitsu extends ExternalService {
+export class Kitsu extends Service {
 	name = ServiceName.Kitsu;
 	key = ActivableKey.Kitsu;
 	activable = true;

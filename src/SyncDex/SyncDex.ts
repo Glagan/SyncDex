@@ -1,7 +1,7 @@
 import { Router } from './Router';
 import { Options } from '../Core/Options';
 import { DOM } from '../Core/DOM';
-import { TitleCollection, StatusMap, iconToService, LocalTitle } from '../Core/Title';
+import { StatusMap, iconToService } from '../Core/Title';
 import { TitleOverview, ReadingOverview } from './Overview';
 import { Mochi } from '../Core/Mochi';
 import { injectScript, progressFromString } from '../Core/Utility';
@@ -16,6 +16,8 @@ import { Service } from '../Core/Service';
 import { Services } from '../Service/Class/Map';
 import { log } from '../Core/Log';
 import { ActivableKey } from '../Service/Keys';
+import { LocalTitle, TitleCollection } from '../Core/Title';
+import { MangaDex } from '../Core/MangaDex';
 
 interface ReadingState {
 	syncModule?: SyncModule;
@@ -232,7 +234,7 @@ export class SyncDex {
 					};
 				}>({
 					method: 'GET',
-					url: `https://mangadex.org/api/v2/user/me/manga/${id}`,
+					url: MangaDex.api('title', id),
 					credentials: 'include',
 				});
 				if (response.ok) {
@@ -372,7 +374,7 @@ export class SyncDex {
 		if (missingUpdateValidations.length > 0) {
 			SimpleNotification.info({
 				title: 'Not Updated',
-				image: `https://mangadex.org/images/manga/${id}.thumb.jpg`,
+				image: MangaDex.thumbnail(state.title.key),
 				text: missingUpdateValidations.join(`\n`),
 				buttons: confirmButtons(),
 			});
@@ -739,7 +741,7 @@ export class SyncDex {
 				}[];
 			};
 		}>({
-			url: `https://mangadex.org/api/v2/user/me/followed-updates?type=1&p=${page}`,
+			url: MangaDex.api('updates', page),
 			method: 'GET',
 			cache: 'no-cache',
 			credentials: 'include',

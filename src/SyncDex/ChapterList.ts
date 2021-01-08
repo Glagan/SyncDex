@@ -1,7 +1,7 @@
 import { Options } from '../Core/Options';
-import { LocalTitle } from '../Core/Title';
 import { ChapterRow } from './ChapterRow';
 import { SyncModule } from '../Core/SyncModule';
+import { LocalTitle } from '../Core/Title';
 
 /**
  * Helper class for the chapter list in a Title Page

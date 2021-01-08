@@ -1,7 +1,6 @@
 import { browser } from 'webextension-polyfill-ts';
 import { Runtime } from './Runtime';
 import { SaveSync } from './SaveSync';
-import { StorageTitle } from './Title';
 
 console.log('SyncDex :: Storage');
 
@@ -19,23 +18,6 @@ export enum SaveSpecialKeys {
 }
 
 export class LocalStorage {
-	/**
-	 * Get all objects identified by `keys`.
-	 * Each keys in the returned object can be undefined if it wasn't saved.
-	 * Pass nothing to retrieve all Local Storage.
-	 */
-	static getAll(): Promise<ExportedSave> {
-		return browser.storage.local.get(null);
-	}
-
-	static getTitleList(keys: Omit<number | string, keyof ExportedSave>[]): Promise<Record<string, StorageTitle>> {
-		const strKeys: string[] = [];
-		for (const index in keys) {
-			if (typeof keys[index] === 'number') strKeys.push(`${keys[index]}`);
-		}
-		return browser.storage.local.get(strKeys);
-	}
-
 	/**
 	 * Get the object identified by `key` from Local Storage, or undefined.
 	 * Pass nothing to retrieve all Local Storage.

@@ -1,9 +1,10 @@
+import { browser } from 'webextension-polyfill-ts';
 import { DOM } from '../../Core/DOM';
 import { log } from '../../Core/Log';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { Options } from '../../Core/Options';
 import { LocalStorage } from '../../Core/Storage';
-import { LocalTitle, StorageTitle, TitleCollection } from '../../Core/Title';
+import { LocalTitle, TitleCollection } from '../../Core/Title';
 import { dateFormat } from '../../Core/Utility';
 import { ServiceKey } from '../../Service/Keys';
 import { History } from '../../SyncDex/History';
@@ -16,9 +17,9 @@ export class SyncDexImport extends SpecialService {
 		const collection = new TitleCollection();
 		for (const key in data) {
 			if (!LocalStorage.isSpecialKey(key)) {
-				// Check if LocalTitle keys are valid and contain a valid LocalTitle
+				// Check if SyncDexTitle keys are valid and contain a valid SyncDexTitle
 				const id = parseInt(key);
-				if (!isNaN(id) && StorageTitle.valid(data[key])) {
+				if (!isNaN(id) && LocalTitle.valid(data[key])) {
 					collection.add(new LocalTitle(id, LocalTitle.fromSave(data[key])));
 				}
 			}
@@ -179,7 +180,7 @@ export class SyncDexImport extends SpecialService {
 
 export class SyncDexExport extends SpecialService {
 	start = async (): Promise<void> => {
-		const data = await LocalStorage.getAll();
+		const data: ExportedSave = await browser.storage.local.get(null);
 		if (data.options) {
 			delete (data.options as any).tokens;
 			delete data.importInProgress;

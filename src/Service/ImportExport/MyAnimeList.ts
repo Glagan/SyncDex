@@ -1,9 +1,10 @@
 import { DOM } from '../../Core/DOM';
 import { ExportModule, ImportModule } from '../../Core/Module';
 import { Runtime } from '../../Core/Runtime';
-import { FoundTitle, LocalTitle } from '../../Core/Title';
+import { FoundTitle } from '../../Core/Title';
 import { MyAnimeList, MyAnimeListTitle, MyAnimeListStatus } from '../Class/MyAnimeList';
 import { dateFormatInput } from '../../Core/Utility';
+import { LocalTitle } from '../../Core/Title';
 
 enum MyAnimeListExportStatus {
 	COMPLETED = 'Completed',

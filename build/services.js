@@ -129,7 +129,7 @@ console.info('Generated Name and Keys.');
 
 const serviceMap = { imports: [], services: [] };
 const importExportMap = { imports: [], import: [], export: [] };
-serviceMap.imports.push(`import { ExternalService } from '../../Core/Service';`);
+serviceMap.imports.push(`import { Service } from '../../Core/Service';`);
 serviceMap.imports.push(`import { ActivableKey } from '../Keys';`);
 importExportMap.imports.push(`import { ActivableKey } from '../Keys';`);
 importExportMap.imports.push(`import { ImportModule, ExportModule } from '../../Core/Module';`);
@@ -153,7 +153,7 @@ const imports = serviceMap.imports.join('\n');
 const serviceMapValues = serviceMap.services.join('\n');
 fs.writeFileSync(
 	serviceMapPath,
-	`/** Generated File */\n${imports}\n\nexport const Services: { [key in ActivableKey]: ExternalService } = {\n${serviceMapValues}\n};\n`
+	`/** Generated File */\n${imports}\n\nexport const Services: { [key in ActivableKey]: Service } = {\n${serviceMapValues}\n};\n`
 );
 console.info('Generated Service Class Map.');
 

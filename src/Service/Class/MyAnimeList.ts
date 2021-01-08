@@ -1,6 +1,6 @@
 import { log } from '../../Core/Log';
 import { Runtime } from '../../Core/Runtime';
-import { LoginMethod, ExternalService } from '../../Core/Service';
+import { LoginMethod, Service } from '../../Core/Service';
 import { Title } from '../../Core/Title';
 import { ActivableKey } from '../Keys';
 import { ServiceName } from '../Names';
@@ -18,7 +18,7 @@ const GetField = <T extends HTMLElement>(parent: Document, field: string): T => 
 	return parent.getElementById(field) as T;
 };
 
-export class MyAnimeList extends ExternalService {
+export class MyAnimeList extends Service {
 	name = ServiceName.MyAnimeList;
 	key = ActivableKey.MyAnimeList;
 	activable = true;

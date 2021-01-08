@@ -1,13 +1,14 @@
-import { LocalTitle, StatusMap, Title } from './Title';
+import { StatusMap, Title } from './Title';
 import { DOM, AppendableElement } from './DOM';
 import { Modal } from './Modal';
 import { dateFormatInput } from './Utility';
 import { Runtime } from './Runtime';
 import { Options } from './Options';
 import { SyncModule } from './SyncModule';
-import { ExternalService } from './Service';
+import { Service } from './Service';
 import { Services } from '../Service/Class/Map';
 import { ActivableKey } from '../Service/Keys';
+import { LocalTitle } from '../Core/Title';
 
 interface HistoryChapter {
 	node: HTMLElement;
@@ -59,7 +60,7 @@ export class TitleEditor {
 		return chapterNode;
 	};
 
-	static createServiceInput = (service: ExternalService, value?: MediaKey): HTMLElement[] => {
+	static createServiceInput = (service: Service, value?: MediaKey): HTMLElement[] => {
 		const inputs: HTMLElement[] = [
 			DOM.create('input', {
 				type: 'number',

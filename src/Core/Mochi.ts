@@ -1,8 +1,8 @@
+import { SaveServiceList, LocalTitle } from './Title';
 import { ServiceKey } from '../Service/Keys';
 import { ServiceName } from '../Service/Names';
 import { log } from './Log';
 import { Runtime } from './Runtime';
-import { LocalTitle, SaveServiceList } from './Title';
 
 export interface MochiExtra {
 	names?: boolean;

@@ -1,10 +1,11 @@
 import { DOM } from '../../Core/DOM';
 import { duration, ExportModule, ImportModule } from '../../Core/Module';
 import { Runtime } from '../../Core/Runtime';
-import { FoundTitle, LocalTitle } from '../../Core/Title';
+import { FoundTitle } from '../../Core/Title';
 import { MangaUpdatesTitle } from '../Class/MangaUpdates';
 import { ActivableKey } from '../Keys';
 import { Services } from '../Class/Map';
+import { LocalTitle } from '../../Core/Title';
 
 export class MangaUpdatesImport extends ImportModule {
 	static lists: string[] = ['read', 'wish', 'complete', 'unfinished', 'hold'];

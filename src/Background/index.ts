@@ -25,7 +25,7 @@ function setIcon(title: string = '', bgColor: string = '', text: string = '') {
 Runtime.messageSender = (message: Message) => handleMessage(message);
 
 async function getCleanSave() {
-	const save = await LocalStorage.getAll();
+	const save: ExportedSave = await browser.storage.local.get(null);
 	if (save.options?.tokens) save.options.tokens = {};
 	delete save.dropboxState;
 	delete save.googleDriveState;

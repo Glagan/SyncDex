@@ -8,28 +8,11 @@ export const enum LoginMethod {
 	FORM,
 }
 
-export abstract class Service<K extends ServiceKey> {
+export abstract class Service {
 	abstract name: ServiceName;
-	abstract key: K;
+	abstract key: ActivableKey;
 
-	abstract link(key: MediaKey): string;
-	createTitle = (): AppendableElement => {
-		return DOM.text(this.name);
-	};
-
-	compareId = (id1: MediaKey, id2: MediaKey): boolean => {
-		return Service.compareId(id1, id2);
-	};
-
-	static compareId(id1: MediaKey, id2: MediaKey): boolean {
-		return id1.id === id2.id && id1.slug === id2.slug;
-	}
-}
-
-export abstract class StaticService extends Service<StaticKey> {}
-
-export abstract class ExternalService extends Service<ActivableKey> {
-	// Enable if an ExternalTitle.key need to be updated after initial request
+	// Enable if an Title.key need to be updated after initial request
 	updateKeyOnFirstFetch: boolean = false;
 	usesSlug: boolean = false;
 	missingFields: MissableField[] = [];
@@ -37,6 +20,11 @@ export abstract class ExternalService extends Service<ActivableKey> {
 	abstract loginMethod: LoginMethod;
 	loginUrl?: string;
 	identifierField?: [string, string];
+
+	abstract link(key: MediaKey): string;
+	createTitle = (): AppendableElement => {
+		return DOM.text(this.name);
+	};
 
 	abstract loggedIn(): Promise<RequestStatus>;
 	abstract get(key: MediaKey): Promise<Title | RequestStatus>;
@@ -47,4 +35,12 @@ export abstract class ExternalService extends Service<ActivableKey> {
 	idFromString = (str: string): MediaKey => {
 		return { id: parseInt(str) };
 	};
+
+	compareId = (id1: MediaKey, id2: MediaKey): boolean => {
+		return Service.compareId(id1, id2);
+	};
+
+	static compareId(id1: MediaKey, id2: MediaKey): boolean {
+		return id1.id === id2.id && id1.slug === id2.slug;
+	}
 }

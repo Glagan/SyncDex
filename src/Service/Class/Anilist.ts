@@ -1,4 +1,4 @@
-import { ExternalService, LoginMethod } from '../../Core/Service';
+import { Service, LoginMethod } from '../../Core/Service';
 import { Runtime } from '../../Core/Runtime';
 import { Title } from '../../Core/Title';
 import { Options } from '../../Core/Options';
@@ -79,7 +79,7 @@ export const AnilistHeaders = (): AnilistHeaders => {
 	};
 };
 
-export class Anilist extends ExternalService {
+export class Anilist extends Service {
 	name = ServiceName.Anilist;
 	key = ActivableKey.Anilist;
 	activable = true;
@@ -164,8 +164,6 @@ export class Anilist extends ExternalService {
 }
 
 export class AnilistTitle extends Title {
-	static service = new Anilist();
-
 	static readonly getQuery = `
 		query ($mediaId: Int) {
 			Media(id: $mediaId) {

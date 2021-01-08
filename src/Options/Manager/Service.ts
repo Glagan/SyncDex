@@ -2,7 +2,7 @@ import { DOM, MessageType } from '../../Core/DOM';
 import { Services } from '../../Service/Class/Map';
 import { Modal } from '../../Core/Modal';
 import { Options } from '../../Core/Options';
-import { ExternalService, LoginMethod } from '../../Core/Service';
+import { Service, LoginMethod } from '../../Core/Service';
 import { SaveOptions } from '../Utility';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { OptionsManager } from '../OptionsManager';
@@ -14,7 +14,7 @@ import { createModule } from '../../Service/ImportExport/Utility';
 
 class ServiceCard {
 	manager: ServiceManager;
-	service: ExternalService;
+	service: Service;
 
 	activeCard: HTMLElement;
 	activeCardContent: HTMLElement;
@@ -56,7 +56,7 @@ class ServiceCard {
 		});
 	}
 
-	constructor(manager: ServiceManager, service: ExternalService) {
+	constructor(manager: ServiceManager, service: Service) {
 		this.manager = manager;
 		this.service = service;
 		// Create
@@ -237,7 +237,7 @@ class ServiceCard {
 			}
 		});
 		this.loginButton.addEventListener('click', (event) => {
-			if (this.service.loginMethod == LoginMethod.FORM) {
+			if (this.service.loginMethod == LoginMethod.FORM && this.service.identifierField) {
 				event.preventDefault();
 				if (!this) return;
 				// Create modal
@@ -317,7 +317,9 @@ class ServiceCard {
 							modal.remove();
 							return;
 						} else if (identifier == '' || password == '') {
-							SimpleNotification.error({ text: `Empty ${this.service.identifierField[0]} or password.` });
+							SimpleNotification.error({
+								text: `Empty ${this.service.identifierField![0]} or password.`,
+							});
 						} else SimpleNotification.error({ text: 'Invalid credentials.' });
 						busy = false;
 					}

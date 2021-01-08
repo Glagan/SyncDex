@@ -1,7 +1,7 @@
 import { DOM } from './DOM';
 import { ModuleInterface } from './ModuleInterface';
-import { ExternalService } from './Service';
-import { FoundTitle, LocalTitle, TitleCollection } from './Title';
+import { Service } from './Service';
+import { FoundTitle } from './Title';
 import { Mochi } from './Mochi';
 import { LocalStorage, SaveSpecialKeys } from './Storage';
 import { Options } from './Options';
@@ -9,6 +9,8 @@ import { Runtime } from './Runtime';
 import { log } from './Log';
 import { browser } from 'webextension-polyfill-ts';
 import { ServiceKey } from '../Service/Keys';
+import { LocalTitle, TitleCollection } from './Title';
+import { MangaDex } from './MangaDex';
 
 export const enum ModuleStatus {
 	SUCCESS,
@@ -74,7 +76,7 @@ export type ModuleOptions = { [key: string]: ModuleOption };
  * An optionnal ModuleInterface can be provided and need to be checked before calling it in `execute`.
  */
 export abstract class Module {
-	service: ExternalService;
+	service: Service;
 	interface?: ModuleInterface;
 	summary: Summary;
 	perConvert: number = 250;
@@ -82,7 +84,7 @@ export abstract class Module {
 
 	extendOptions?(): void;
 
-	constructor(service: ExternalService, moduleInterface?: ModuleInterface) {
+	constructor(service: Service, moduleInterface?: ModuleInterface) {
 		this.service = service;
 		this.interface ??= moduleInterface;
 		this.summary = new Summary();
@@ -182,7 +184,7 @@ export abstract class ImportModule extends Module {
 		},
 	};
 
-	constructor(service: ExternalService, moduleInterface?: ModuleInterface) {
+	constructor(service: Service, moduleInterface?: ModuleInterface) {
 		super(service, moduleInterface);
 		if (this.extendOptions) this.extendOptions();
 		this.bindInterface();
@@ -328,12 +330,12 @@ export abstract class ImportModule extends Module {
 					await browser.storage.local.set(keep);
 				}
 			} else if (titles.length > 0) {
-				titles.merge(await TitleCollection.get(titles.ids));
+				(await TitleCollection.get(titles.ids)).mergeInto(titles);
 			}
 
 			// Add chapters
 			if (Options.saveOpenedChapters) {
-				for (const title of titles.collection) {
+				for (const title of titles) {
 					if (title.progress.chapter > 0) {
 						title.chapters = [];
 						let index = Math.max(title.progress.chapter - Options.chaptersSaved, 1);
@@ -367,7 +369,7 @@ export abstract class ExportModule extends Module {
 		},
 	};
 
-	constructor(service: ExternalService, moduleInterface?: ModuleInterface) {
+	constructor(service: Service, moduleInterface?: ModuleInterface) {
 		super(service, moduleInterface);
 		if (this.extendOptions) this.extendOptions();
 		this.bindInterface();
@@ -391,7 +393,7 @@ export abstract class ExportModule extends Module {
 						childs: [
 							DOM.create('a', {
 								target: '_blank',
-								href: LocalTitle.link(title.key),
+								href: MangaDex.link(title.key),
 								childs: [
 									DOM.create('img', { src: Runtime.icon(ServiceKey.MangaDex), title: 'MangaDex' }),
 									DOM.space(),
@@ -432,7 +434,7 @@ export abstract class ExportModule extends Module {
 
 	selectTitles = (titles: TitleCollection): LocalTitle[] => {
 		const filtered: LocalTitle[] = [];
-		for (const title of titles.collection) {
+		for (const title of titles) {
 			if (title.status !== Status.NONE && title.services[this.service.key] !== undefined) {
 				filtered.push(title);
 			}

@@ -1,7 +1,7 @@
 import { LocalStorage } from '../Core/Storage';
-import { LocalTitle } from '../Core/Title';
 import { DOM } from '../Core/DOM';
 import { progressToString, dateFormat } from '../Core/Utility';
+import { LocalTitle } from '../Core/Title';
 
 export class History {
 	static last?: number;

@@ -1,10 +1,12 @@
-import { LocalTitle, Title, StatusMap } from './Title';
+import { Title, StatusMap } from './Title';
 import { Options } from './Options';
 import { Runtime } from './Runtime';
 import { Overview } from '../SyncDex/Overview';
 import { Services } from '../Service/Class/Map';
 import { log } from './Log';
 import { ActivableKey, StaticKey } from '../Service/Keys';
+import { LocalTitle } from './Title';
+import { MangaDex } from './MangaDex';
 
 export type SyncReport = {
 	[key in ActivableKey]?: RequestStatus | false;
@@ -210,28 +212,14 @@ export class SyncModule {
 	};
 
 	mangaDexFunction = (fct: 'unfollow' | 'status' | 'score'): string => {
-		const baseAPI = 'https://mangadex.org/ajax/actions.ajax.php';
-		let action;
-		let field;
-		let value;
 		switch (fct) {
 			case 'unfollow':
-				action = 'manga_unfollow';
-				field = 'type';
-				value = this.title.key.id;
-				break;
+				return MangaDex.api('unfollow', this.title.key.id!);
 			case 'status':
-				action = 'manga_follow';
-				field = 'type';
-				value = this.mdState.status!;
-				break;
+				return MangaDex.api('update', this.title.key.id!, this.mdState.status);
 			case 'score':
-				action = 'manga_rating';
-				field = 'rating';
-				value = Math.round(this.mdState.score! / 10);
-				break;
+				return MangaDex.api('rating', this.title.key.id!, Math.round(this.mdState.score! / 10));
 		}
-		return `${baseAPI}?function=${action}&id=${this.title.key.id}&${field}=${value}&_=${Date.now()}`;
 	};
 
 	/**
@@ -370,7 +358,7 @@ export class SyncModule {
 			}
 			SimpleNotification.success({
 				title: 'Progress Updated',
-				image: `https://mangadex.org/images/manga/${this.title.key.id}.thumb.jpg`,
+				image: MangaDex.thumbnail(this.title.key),
 				text: `Chapter ${this.title.progress.chapter}\n${
 					informations.created ? '**Start Date** set to Today !\n' : ''
 				}${informations.completed ? '**End Date** set to Today !\n' : ''}${ending}`,
@@ -387,7 +375,7 @@ export class SyncModule {
 							if (onCancel) onCancel();
 							SimpleNotification.success({
 								title: 'Cancelled',
-								image: `https://mangadex.org/images/manga/${this.title.key.id}.thumb.jpg`,
+								image: MangaDex.thumbnail(this.title.key),
 								text: `**${this.title.name}** update cancelled.\n${
 									this.title.status == Status.NONE
 										? 'Removed from list'
@@ -404,7 +392,7 @@ export class SyncModule {
 			SimpleNotification.error(
 				{
 					title: 'Error',
-					image: `https://mangadex.org/images/manga/${this.title.key.id}.thumb.jpg`,
+					image: MangaDex.thumbnail(this.title.key),
 					text: errorRows.join('\n'),
 				},
 				{ sticky: true }

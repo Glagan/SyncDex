@@ -1,4 +1,4 @@
-import { TitleCollection, StatusMap, LocalTitle } from '../Core/Title';
+import { StatusMap } from '../Core/Title';
 import { DOM, AppendableElement } from '../Core/DOM';
 import { LocalStorage } from '../Core/Storage';
 import { dateFormat, progressToString } from '../Core/Utility';
@@ -7,6 +7,8 @@ import { SyncModule } from '../Core/SyncModule';
 import { Services } from '../Service/Class/Map';
 import { Runtime } from '../Core/Runtime';
 import { ActivableKey } from '../Service/Keys';
+import { LocalTitle, TitleCollection } from '../Core/Title';
+import { MangaDex } from '../Core/MangaDex';
 
 interface SaveRow {
 	title: LocalTitle;
@@ -231,7 +233,7 @@ export class SaveViewer {
 						DOM.create('a', {
 							textContent: title.key.id!.toString(),
 							target: '_blank',
-							href: LocalTitle.link(title.key),
+							href: MangaDex.link(title.key),
 							childs: [DOM.space(), DOM.icon('external-link-alt')],
 						}),
 					],
@@ -346,7 +348,7 @@ export class SaveViewer {
 		DOM.clear(this.body);
 		if (reload) {
 			const response = await Runtime.jsonRequest({
-				url: 'https://mangadex.org/api/v2/user/me',
+				url: MangaDex.api('me'),
 				credentials: 'include',
 			});
 			SaveViewer.loggedIn = response.ok;

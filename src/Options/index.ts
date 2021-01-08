@@ -15,7 +15,7 @@ const quickDebug = document.getElementById('quickOptionsDebug');
 if (quickDebug) {
 	quickDebug.addEventListener('click', async (event) => {
 		event.preventDefault();
-		const save = await LocalStorage.getAll();
+		const save: ExportedSave = await browser.storage.local.get(null);
 		delete save.history;
 		// Remove all titles
 		for (const key in save) {

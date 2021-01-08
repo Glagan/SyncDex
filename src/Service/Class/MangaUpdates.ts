@@ -1,6 +1,6 @@
 import { log } from '../../Core/Log';
 import { Runtime } from '../../Core/Runtime';
-import { LoginMethod, ExternalService } from '../../Core/Service';
+import { LoginMethod, Service } from '../../Core/Service';
 import { MissableField, Title } from '../../Core/Title';
 import { ActivableKey } from '../Keys';
 import { ServiceName } from '../Names';
@@ -14,7 +14,7 @@ export const enum MangaUpdatesStatus {
 	PAUSED = 4,
 }
 
-export class MangaUpdates extends ExternalService {
+export class MangaUpdates extends Service {
 	name = ServiceName.MangaUpdates;
 	key = ActivableKey.MangaUpdates;
 	activable = true;

@@ -1,5 +1,5 @@
 import { DOM, AppendableElement } from '../Core/DOM';
-import { LocalTitle, StatusMap, MissableField, Title } from '../Core/Title';
+import { StatusMap, MissableField, Title } from '../Core/Title';
 import { Runtime } from '../Core/Runtime';
 import { Options } from '../Core/Options';
 import { SyncModule } from '../Core/SyncModule';
@@ -9,6 +9,7 @@ import { ChapterRow } from './ChapterRow';
 import { dateCompare, dateFormat, isDate } from '../Core/Utility';
 import { Services } from '../Service/Class/Map';
 import { ActivableKey, ServiceKey, StaticKey } from '../Service/Keys';
+import { LocalTitle } from '../Core/Title';
 
 export abstract class Overview {
 	bind?(syncModule: SyncModule): void;
@@ -169,12 +170,7 @@ class ServiceOverview {
 				);
 			}
 			for (const missingField of missingFields) {
-				rows.push(
-					this.overviewRow(
-						'ban',
-						`No ${ServiceOverview.missingFieldsMap[missingField]} available on ${title.service.name}`
-					)
-				);
+				rows.push(this.overviewRow('ban', `No ${ServiceOverview.missingFieldsMap[missingField]} available.`));
 			}
 			DOM.append(parent, ...rows);
 		} else DOM.append(parent, DOM.text('Not in List.'));

@@ -1,4 +1,5 @@
 import { DOM } from '../../Core/DOM';
+import { MangaDex } from '../../Core/MangaDex';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { Options } from '../../Core/Options';
 import { Runtime } from '../../Core/Runtime';
@@ -34,23 +35,6 @@ export class MangaDexHelper {
 			],
 		});
 	};
-
-	static getUser = async (): Promise<number> => {
-		const response = await Runtime.jsonRequest<{
-			data: { id: number };
-		}>({
-			url: `https://mangadex.org/api/v2/user/me`,
-			credentials: 'include',
-		});
-		if (!response.ok) return 0;
-		return response.body.data.id;
-	};
-
-	static getAllTitles = (user: number): Promise<JSONResponse<MangaDexAPIResponse>> => {
-		return Runtime.jsonRequest<MangaDexAPIResponse>({
-			url: `https://mangadex.org/api/v2/user/${user}/followed-manga`,
-		});
-	};
 }
 
 export class MangaDexImport extends SpecialService {
@@ -65,26 +49,15 @@ export class MangaDexImport extends SpecialService {
 			moduleInterface.setOptionsValues(this.options);
 
 			// Check login and get an Username
-			let message = moduleInterface.message('loading', 'Checking login status...');
-			const user = await MangaDexHelper.getUser();
-			const loggedIn = user !== 0;
-			message.classList.remove('loading');
-			if (!loggedIn) {
-				moduleInterface.message(
-					'warning',
-					`You need to be logged in on MangaDex to Import your following list !`
-				);
-				return moduleInterface.complete();
-			}
-
-			// Use v2 API to retrieve all follows in one request
-			message = moduleInterface.message('loading', 'Fetching all Titles...');
-			const response = await MangaDexHelper.getAllTitles(user);
+			let message = moduleInterface.message('loading', 'Fetching all Titles...');
+			const response = await Runtime.jsonRequest<MangaDexAPIResponse>({
+				url: MangaDex.api('followed'),
+			});
 			message.classList.remove('loading');
 			if (!response.ok) {
 				moduleInterface.message(
 					'warning',
-					'The request failed, maybe MangaDex is having problems, retry later.'
+					`The request failed, maybe MangaDex is having problems or you aren't logged in retry later.`
 				);
 				return moduleInterface.complete();
 			}
@@ -140,9 +113,7 @@ export class MangaDexExport extends SpecialService {
 	persistTitle = async (title: LocalTitle): Promise<RequestStatus> => {
 		// Status
 		const response = await Runtime.request<RawResponse>({
-			url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_follow&id=${title.key.id}&type=${
-				title.status
-			}&_=${Date.now()}`,
+			url: MangaDex.api('update', title.key.id!, title.status),
 			credentials: 'include',
 			headers: {
 				'X-Requested-With': 'XMLHttpRequest',
@@ -151,9 +122,7 @@ export class MangaDexExport extends SpecialService {
 		// Score
 		if (title.score > 0) {
 			await Runtime.request<RawResponse>({
-				url: `https://mangadex.org/ajax/actions.ajax.php?function=manga_rating&id=${title.key.id}&rating=${
-					title.score / 10
-				}&_=${Date.now()}`,
+				url: MangaDex.api('rating', title.key.id!, title.score / 10),
 				credentials: 'include',
 				headers: {
 					'X-Requested-With': 'XMLHttpRequest',
@@ -171,22 +140,10 @@ export class MangaDexExport extends SpecialService {
 		// Show the Modal
 		moduleInterface.bindFormSubmit(async () => {
 			// Check login and get an Username
-			let message = moduleInterface.message('loading', 'Checking login status...');
-			const user = await MangaDexHelper.getUser();
-			const loggedIn = user !== 0;
-			message.classList.remove('loading');
-			if (!loggedIn) {
-				moduleInterface.message('warning', `You need to be logged in on MangaDex to Export your Save !`);
-				return moduleInterface.complete();
-			}
-
-			// Select Titles
-			const allTitles = await TitleCollection.get();
-			let titles = allTitles.collection.filter((title) => title.status != Status.NONE);
-
-			// Fetch all Titles already in list to avoid sending extra requests
-			message = moduleInterface.message('loading', 'Filtering Titles already on MangaDex List...');
-			const response = await MangaDexHelper.getAllTitles(user);
+			let message = moduleInterface.message('loading', 'Fetching all Titles...');
+			const response = await Runtime.jsonRequest<MangaDexAPIResponse>({
+				url: MangaDex.api('followed'),
+			});
 			if (!response.ok) {
 				moduleInterface.message(
 					'warning',
@@ -194,6 +151,12 @@ export class MangaDexExport extends SpecialService {
 				);
 				return moduleInterface.complete();
 			}
+			// Select Titles
+			const allTitles = await TitleCollection.get();
+			let titles = allTitles.collection.filter((title) => title.status != Status.NONE);
+
+			// Fetch all Titles already in list to avoid sending extra requests
+			message = moduleInterface.message('loading', 'Filtering Titles already on MangaDex List...');
 			const onlineList: { [key: string]: { status: Status; rating: number } } = {};
 			for (const title of response.body.data) {
 				onlineList[title.mangaId] = { status: title.followType, rating: title.rating ?? 0 };

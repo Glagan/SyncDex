@@ -1,5 +1,5 @@
 import { Runtime } from '../../Core/Runtime';
-import { ExternalService, LoginMethod } from '../../Core/Service';
+import { Service, LoginMethod } from '../../Core/Service';
 import { Title, MissableField } from '../../Core/Title';
 import { log } from '../../Core/Log';
 import { ActivableKey } from '../Keys';
@@ -22,7 +22,7 @@ export const enum AnimePlanetStatus {
 	[key: string]: any;
 }*/
 
-export class AnimePlanet extends ExternalService {
+export class AnimePlanet extends Service {
 	name = ServiceName.AnimePlanet;
 	key = ActivableKey.AnimePlanet;
 	activable = true;
@@ -131,9 +131,6 @@ export class AnimePlanet extends ExternalService {
 
 export const AnimePlanetAPI = 'https://www.anime-planet.com/api/list';
 export class AnimePlanetTitle extends Title {
-	static service = new AnimePlanet();
-	static readonly requireIdQuery: boolean = true;
-
 	token?: string;
 	current: {
 		progress: Progress;

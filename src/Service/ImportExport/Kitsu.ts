@@ -2,9 +2,10 @@ import { DOM } from '../../Core/DOM';
 import { duration, ExportModule, ImportModule } from '../../Core/Module';
 import { Options } from '../../Core/Options';
 import { Runtime } from '../../Core/Runtime';
-import { FoundTitle, LocalTitle } from '../../Core/Title';
+import { FoundTitle } from '../../Core/Title';
 import { KitsuAPI, KitsuHeaders, KitsuManga, KitsuResponse, KitsuTitle } from '../Class/Kitsu';
 import { ActivableKey } from '../Keys';
+import { LocalTitle } from '../../Core/Title';
 
 export class KitsuImport extends ImportModule {
 	findManga = (included: KitsuManga[], id: string): KitsuManga => {
