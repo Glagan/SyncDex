@@ -1,6 +1,9 @@
-import { Options } from '../Core/Options';
-import { progressFromString } from '../Core/Utility';
-import { Title } from '../Core/Title';
+import { Options } from '../../Core/Options';
+import { TitleCollection } from '../../Core/Title';
+import { Page } from '../Page';
+import { progressFromString } from '../../Core/Utility';
+import { Title } from '../../Core/Title';
+import { DOM } from '../../Core/DOM';
 
 interface ChapterRow {
 	node: HTMLElement;
@@ -121,5 +124,58 @@ export class UpdateGroup {
 			}
 		}
 		return groups;
+	};
+}
+
+export class UpdatesPage extends Page {
+	run = async () => {
+		console.log('SyncDex :: Updates');
+
+		if (!Options.hideHigher && !Options.hideLast && !Options.hideLower && !Options.highlight) return;
+
+		const groups = UpdateGroup.getGroups();
+		const ids = groups.map((group) => group.id);
+		const titles = await TitleCollection.get(ids);
+
+		// Hide or Highlight groups -- no need for Thumbnails
+		for (const group of groups) {
+			const title = titles.find(group.id);
+			if (!title || !title.inList) continue;
+			if (Options.hideHigher || Options.hideLast || Options.hideLower) group.hide(title);
+			if (Options.highlight) group.highlight(title);
+		}
+
+		// Button to toggle hidden chapters
+		const rows = document.querySelectorAll('.hidden');
+		const hiddenCount = rows.length;
+		const topBar = document.querySelector<HTMLElement>('h6.card-header')!;
+		if (topBar && hiddenCount > 0) {
+			const icon = DOM.icon('eye');
+			const linkContent = DOM.create('span', { textContent: `Show Hidden ${hiddenCount}` });
+			const button = DOM.create('button', {
+				class: 'btn btn-secondary',
+				childs: [icon, DOM.space(), linkContent],
+			});
+			let active = false;
+			let shortenedTitles = document.querySelectorAll<HTMLTableDataCellElement>('td[data-original-span]');
+			button.addEventListener('click', (event) => {
+				event.preventDefault();
+				rows.forEach((row) => {
+					row.classList.toggle('visible');
+				});
+				shortenedTitles.forEach((row) => {
+					const span = row.rowSpan;
+					row.rowSpan = parseInt(row.dataset.originalSpan!);
+					row.dataset.originalSpan = `${span}`;
+				});
+				icon.classList.toggle('fa-eye');
+				icon.classList.toggle('fa-eye-slash');
+				if (active) linkContent.textContent = `Show Hidden (${hiddenCount})`;
+				else linkContent.textContent = `Hide Hidden (${hiddenCount})`;
+				active = !active;
+			});
+			topBar.classList.add('top-bar-updates');
+			topBar.appendChild(button);
+		}
 	};
 }

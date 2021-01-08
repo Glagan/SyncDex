@@ -7,7 +7,7 @@ import { LocalStorage } from '../../Core/Storage';
 import { LocalTitle, TitleCollection } from '../../Core/Title';
 import { dateFormat } from '../../Core/Utility';
 import { ServiceKey } from '../../Service/Keys';
-import { History } from '../../SyncDex/History';
+import { History } from '../../Core/History';
 import { SpecialService } from '../SpecialService';
 
 export class SyncDexImport extends SpecialService {

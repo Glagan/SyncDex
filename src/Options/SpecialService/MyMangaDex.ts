@@ -6,7 +6,7 @@ import { LocalStorage } from '../../Core/Storage';
 import { LocalTitle, TitleCollection } from '../../Core/Title';
 import { ServiceKey } from '../../Service/Keys';
 import { ServiceName } from '../../Service/Names';
-import { History } from '../../SyncDex/History';
+import { History } from '../../Core/History';
 import { SpecialService } from '../SpecialService';
 
 interface MyMangaDexTitle {
