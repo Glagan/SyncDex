@@ -7,7 +7,7 @@ import { Runtime } from '../Core/Runtime';
 import { SaveSync } from '../Core/SaveSync';
 import { SaveSyncServices } from '../SaveSync/Map';
 import { Services } from '../Service/Class/Map';
-import { LocalStorage } from '../Core/Storage';
+import { Storage } from '../Core/Storage';
 import { createModule } from '../Service/ImportExport/Utility';
 
 console.log('SyncDex :: Background');
@@ -25,7 +25,7 @@ function setIcon(title: string = '', bgColor: string = '', text: string = '') {
 Runtime.messageSender = (message: Message) => handleMessage(message);
 
 async function getCleanSave() {
-	const save: ExportedSave = await browser.storage.local.get(null);
+	const save = await Storage.get();
 	if (save.options?.tokens) save.options.tokens = {};
 	delete save.dropboxState;
 	delete save.googleDriveState;
@@ -308,13 +308,13 @@ browser.alarms.onAlarm.addListener(async (alarm: Alarms.Alarm) => {
 
 async function syncSave(force: boolean = false) {
 	setIcon('Save Sync in progress', '#45A1FF', '...');
-	const syncState = await LocalStorage.get('saveSync');
+	const syncState = await Storage.get('saveSync');
 	if (syncState !== undefined) {
-		if (!(await LocalStorage.get('saveSyncInProgress', false))) {
+		if (!(await Storage.get('saveSyncInProgress', false))) {
 			const saveSyncServiceClass = SaveSyncServices[syncState.service];
 			if (saveSyncServiceClass !== undefined) {
 				await loadLogs(true);
-				await LocalStorage.set('saveSyncInProgress', true);
+				await Storage.set('saveSyncInProgress', true);
 				let result = SaveSyncResult.ERROR;
 				try {
 					await browser.runtime.sendMessage({ action: MessageAction.saveSyncStart }).catch((_e) => _e);
@@ -332,7 +332,7 @@ async function syncSave(force: boolean = false) {
 				} catch (error) {
 					log(error);
 				}
-				await LocalStorage.remove('saveSyncInProgress');
+				await Storage.remove('saveSyncInProgress');
 				await browser.runtime
 					.sendMessage({ action: MessageAction.saveSyncComplete, status: result })
 					.catch((_e) => _e);
@@ -342,7 +342,7 @@ async function syncSave(force: boolean = false) {
 				delete (syncState as any).token;
 				delete (syncState as any).refresh;
 				await log(`Invalid Save Sync Service [${syncState}]`);
-				await LocalStorage.remove('saveSync');
+				await Storage.remove('saveSync');
 				setIcon();
 			}
 		} else setIcon();
@@ -352,9 +352,9 @@ async function silentImport(manual: boolean = false) {
 	await Options.load();
 	if (manual || (Options.checkOnStartup && Options.services.length > 0)) {
 		const checkCooldown = Options.checkOnStartupCooldown * 60 * 1000;
-		const lastCheck: number | string[] = await LocalStorage.get('import', 0);
+		const lastCheck: number | string[] = await Storage.get('import', 0);
 		if (manual || typeof lastCheck !== 'number' || Date.now() - lastCheck > checkCooldown) {
-			await LocalStorage.set('importInProgress', true);
+			await Storage.set('importInProgress', true);
 			await browser.runtime.sendMessage({ action: MessageAction.importStart }).catch((_e) => _e);
 			await log('Importing lists');
 			const services =
@@ -375,11 +375,11 @@ async function silentImport(manual: boolean = false) {
 						await log(`Error while importing ${Services[key].name} ${error.stack}`);
 					}
 					done.push(key);
-					if (!manual) await LocalStorage.set('import', { done: done });
+					if (!manual) await Storage.set('import', done);
 				} else await log(`Skipping ${Services[key].name} already imported`);
 			}
-			if (!manual) await LocalStorage.set('import', Date.now());
-			await LocalStorage.remove('importInProgress');
+			if (!manual) await Storage.set('import', Date.now());
+			await Storage.remove('importInProgress');
 			await browser.runtime.sendMessage({ action: MessageAction.importComplete }).catch((_e) => _e);
 			await log(`Done Importing lists`);
 		} else await log(`Startup script executed less than ${Options.checkOnStartupCooldown}minutes ago, skipping`);
@@ -387,7 +387,7 @@ async function silentImport(manual: boolean = false) {
 }
 async function onStartup() {
 	if (!isChrome) browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
-	await LocalStorage.remove(['dropboxState', 'googleDriveState', 'saveSyncInProgress', 'importInProgress']);
+	await Storage.remove(['dropboxState', 'googleDriveState', 'saveSyncInProgress', 'importInProgress']);
 
 	await syncSave();
 	await silentImport();

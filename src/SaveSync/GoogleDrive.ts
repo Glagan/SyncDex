@@ -1,6 +1,6 @@
 import { DOM } from '../Core/DOM';
 import { Runtime } from '../Core/Runtime';
-import { LocalStorage } from '../Core/Storage';
+import { Storage } from '../Core/Storage';
 import { generateRandomString } from '../Options/PKCEHelper';
 import { Declare, SaveSync } from '../Core/SaveSync';
 import { log } from '../Core/Log';
@@ -43,7 +43,7 @@ export class GoogleDrive extends SaveSync {
 
 	onCardClick = async () => {
 		const state = generateRandomString();
-		await LocalStorage.set('googleDriveState', state);
+		await Storage.set('googleDriveState', state);
 		const url = `https://accounts.google.com/o/oauth2/v2/auth?${Runtime.buildQuery({
 			access_type: 'offline',
 			prompt: 'consent',
@@ -76,7 +76,7 @@ export class GoogleDrive extends SaveSync {
 					if (response.body.files.length == 1) {
 						if (!SaveSync.state?.id) {
 							SaveSync.state!.id = response.body.files[0].id;
-							await LocalStorage.set('saveSync', SaveSync.state);
+							await Storage.set('saveSync', SaveSync.state);
 						}
 						return new Date(response.body.files[0].modifiedTime).getTime();
 					}
@@ -116,7 +116,7 @@ export class GoogleDrive extends SaveSync {
 					await log(`Uploaded Local Save to Google Drive`);
 					if (SaveSync.state!.id !== response.body.id) {
 						SaveSync.state!.id = response.body.id;
-						await LocalStorage.set('saveSync', SaveSync.state);
+						await Storage.set('saveSync', SaveSync.state);
 					}
 					return new Date(response.body.modifiedTime).getTime();
 				}
@@ -130,7 +130,7 @@ export class GoogleDrive extends SaveSync {
 				if (response.ok && !response.body.error) {
 					await log(`Uploaded Local Save to Google Drive`);
 					SaveSync.state!.id = response.body.id;
-					await LocalStorage.set('saveSync', SaveSync.state);
+					await Storage.set('saveSync', SaveSync.state);
 					return new Date(response.body.modifiedTime).getTime();
 				}
 			}
@@ -157,8 +157,8 @@ export class GoogleDrive extends SaveSync {
 	};
 
 	login = async (query: { [key: string]: string }): Promise<SaveSyncLoginResult> => {
-		const googleDriveState = await LocalStorage.get('googleDriveState');
-		await LocalStorage.remove('googleDriveState');
+		const googleDriveState = await Storage.get('googleDriveState');
+		await Storage.remove('googleDriveState');
 		if (googleDriveState == undefined || googleDriveState !== query.state) {
 			return SaveSyncLoginResult.STATE_ERROR;
 		}
@@ -203,7 +203,7 @@ export class GoogleDrive extends SaveSync {
 					expires: Date.now() + body.expires_in * 1000,
 					refresh: refreshToken,
 				};
-				await LocalStorage.set('saveSync', SaveSync.state);
+				await Storage.set('saveSync', SaveSync.state);
 				await log('Obtained Google Drive token');
 				return SaveSyncLoginResult.SUCCESS;
 			}

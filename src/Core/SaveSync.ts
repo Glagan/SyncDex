@@ -1,6 +1,5 @@
-import { browser } from 'webextension-polyfill-ts';
 import { log } from './Log';
-import { LocalStorage } from './Storage';
+import { Storage } from './Storage';
 
 export function Declare(serviceName: string, iconFct: () => HTMLElement) {
 	return function (constructor: typeof SaveSync) {
@@ -40,7 +39,7 @@ export abstract class SaveSync {
 	};
 	abstract delete(): Promise<boolean>;
 	clean = async (): Promise<void> => {
-		return browser.storage.local.remove('saveSync');
+		return Storage.remove('saveSync');
 	};
 
 	abstract refreshTokenIfNeeded(): Promise<boolean>;
@@ -54,7 +53,7 @@ export abstract class SaveSync {
 			const file = await this.downloadExternalSave();
 			if (typeof file === 'string') {
 				try {
-					await browser.storage.local.set({ ...JSON.parse(file), lastSync: lastSync });
+					await Storage.set({ ...JSON.parse(file), lastSync: lastSync } as ExportedSave);
 					return SaveSyncResult.DOWNLOADED;
 				} catch (error) {
 					await log(error);
@@ -68,7 +67,7 @@ export abstract class SaveSync {
 		if (await this.refreshTokenIfNeeded()) {
 			const result = await this.uploadLocalSave();
 			if (result > 0) {
-				await browser.storage.local.set({ lastSync: result });
+				await Storage.set({ lastSync: result });
 				return SaveSyncResult.UPLOADED;
 			}
 		}
@@ -84,7 +83,7 @@ export abstract class SaveSync {
 			await log(`No external lastSync or ${force ? 'forced' : 'not forced'}, uploading save.`);
 			return this.export();
 		} else if (lastSync > 0) {
-			const localSync = await LocalStorage.get('lastSync');
+			const localSync = await Storage.get('lastSync');
 			if (localSync === undefined || localSync < lastSync) {
 				await log(`No local lastSync or ${localSync} < ${lastSync}, downloading save.`);
 				return this.import(lastSync);

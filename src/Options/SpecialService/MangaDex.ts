@@ -3,7 +3,7 @@ import { MangaDex } from '../../Core/MangaDex';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { Options } from '../../Core/Options';
 import { Runtime } from '../../Core/Runtime';
-import { LocalStorage } from '../../Core/Storage';
+import { Storage } from '../../Core/Storage';
 import { LocalTitle, TitleCollection } from '../../Core/Title';
 import { ServiceKey } from '../../Service/Keys';
 import { SpecialService } from '../SpecialService';
@@ -91,7 +91,7 @@ export class MangaDexImport extends SpecialService {
 			// Save
 			message = moduleInterface.message('loading', 'Saving...');
 			if (!this.options.merge.active) {
-				await LocalStorage.clear();
+				await Storage.clear();
 				await Options.save();
 			} else if (titles.length > 0) {
 				titles.merge(await TitleCollection.get(titles.ids));

@@ -3,11 +3,10 @@ import { ModuleInterface } from './ModuleInterface';
 import { Service } from './Service';
 import { FoundTitle } from './Title';
 import { Mochi } from './Mochi';
-import { LocalStorage, SaveSpecialKeys } from './Storage';
+import { Storage } from './Storage';
 import { Options } from './Options';
 import { Runtime } from './Runtime';
 import { log } from './Log';
-import { browser } from 'webextension-polyfill-ts';
 import { ServiceKey } from '../Service/Keys';
 import { LocalTitle, TitleCollection } from './Title';
 import { MangaDex } from './MangaDex';
@@ -318,16 +317,15 @@ export abstract class ImportModule extends Module {
 			if (!this.options.merge.active) {
 				if (this.options.save.active) {
 					// Keep options, logs, saveSync, import and lastSync
-					const keepKeys: (keyof ExportedSave)[] = [
-						SaveSpecialKeys.Options,
-						SaveSpecialKeys.Logs,
-						SaveSpecialKeys.LastSync,
-						SaveSpecialKeys.Import,
-						SaveSpecialKeys.SaveSync,
-					];
-					const keep = await browser.storage.local.get(keepKeys);
-					await LocalStorage.clear();
-					await browser.storage.local.set(keep);
+					const keep = await Storage.get([
+						StorageUniqueKey.Options,
+						StorageUniqueKey.Logs,
+						StorageUniqueKey.LastSync,
+						StorageUniqueKey.Import,
+						StorageUniqueKey.SaveSync,
+					]);
+					await Storage.clear();
+					await Storage.set(keep);
 				}
 			} else if (titles.length > 0) {
 				(await TitleCollection.get(titles.ids)).mergeInto(titles);

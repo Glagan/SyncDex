@@ -1,4 +1,4 @@
-import { LocalStorage } from './Storage';
+import { Storage } from './Storage';
 
 export class History {
 	static last?: number;
@@ -16,9 +16,9 @@ export class History {
 	}
 
 	static async load(): Promise<void> {
-		const history = await LocalStorage.get('history');
+		const history = await Storage.get('history');
 		if (history == undefined) {
-			await LocalStorage.set('history', { ids: [] });
+			await Storage.set('history', { ids: [] });
 		} else {
 			History.last = history.last;
 			History.page = history.page;
@@ -27,7 +27,7 @@ export class History {
 	}
 
 	static async save(): Promise<void> {
-		await LocalStorage.set('history', {
+		await Storage.set('history', {
 			last: History.last,
 			page: History.page,
 			ids: History.ids,

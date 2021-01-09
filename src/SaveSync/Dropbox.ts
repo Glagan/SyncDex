@@ -1,6 +1,6 @@
 import { DOM } from '../Core/DOM';
 import { Runtime } from '../Core/Runtime';
-import { LocalStorage } from '../Core/Storage';
+import { Storage } from '../Core/Storage';
 import { generateRandomString, pkceChallengeFromVerifier } from '../Options/PKCEHelper';
 import { Declare, SaveSync } from '../Core/SaveSync';
 import { log } from '../Core/Log';
@@ -97,7 +97,7 @@ export class Dropbox extends SaveSync {
 		const state = generateRandomString();
 		const codeVerifier = generateRandomString();
 		const codeChallenge = await pkceChallengeFromVerifier(codeVerifier);
-		await LocalStorage.set('dropboxState', { state: state, verifier: codeVerifier });
+		await Storage.set('dropboxState', { state: state, verifier: codeVerifier });
 		const url = `https://www.dropbox.com/oauth2/authorize?${Runtime.buildQuery({
 			response_type: 'code',
 			client_id: Dropbox.CLIENT_ID,
@@ -201,8 +201,8 @@ export class Dropbox extends SaveSync {
 	};
 
 	login = async (query: { [key: string]: string }): Promise<SaveSyncLoginResult> => {
-		const dropboxState = await LocalStorage.get('dropboxState');
-		await LocalStorage.remove('dropboxState');
+		const dropboxState = await Storage.get('dropboxState');
+		await Storage.remove('dropboxState');
 		if (dropboxState == undefined || dropboxState.state !== query.state) {
 			return SaveSyncLoginResult.STATE_ERROR;
 		}
@@ -249,7 +249,7 @@ export class Dropbox extends SaveSync {
 					expires: Date.now() + body.expires_in * 1000,
 					refresh: refreshToken,
 				};
-				await LocalStorage.set('saveSync', SaveSync.state);
+				await Storage.set('saveSync', SaveSync.state);
 				await log('Obtained Dropbox token');
 				return SaveSyncLoginResult.SUCCESS;
 			}

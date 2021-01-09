@@ -1,6 +1,6 @@
 import { Options } from '../Core/Options';
 import { SaveSync } from '../Core/SaveSync';
-import { LocalStorage } from '../Core/Storage';
+import { Storage } from '../Core/Storage';
 import { Page } from './Page';
 import { ChapterListPage } from './Page/ChapterList';
 import { TitleListPage } from './Page/TitleList';
@@ -31,7 +31,7 @@ console.log('SyncDex :: Index');
 
 	// Load
 	await Options.load();
-	SaveSync.state = await LocalStorage.get('saveSync');
+	SaveSync.state = await Storage.get('saveSync');
 	// Define routes
 	const routes: { location: string[]; page: typeof Page }[] = [
 		{

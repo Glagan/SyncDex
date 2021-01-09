@@ -1,4 +1,4 @@
-import { LocalStorage } from './Storage';
+import { Storage } from './Storage';
 import { browser } from 'webextension-polyfill-ts';
 
 console.log('SyncDex :: Options');
@@ -74,14 +74,14 @@ export const Options: AvailableOptions & ManageOptions = Object.assign(
 	JSON.parse(JSON.stringify(DefaultOptions)), // Avoid references
 	{
 		load: async (): Promise<void> => {
-			const options = await LocalStorage.get('options');
+			const options = await Storage.get('options');
 			if (options !== undefined) {
 				Object.assign(Options, options);
 			} else return Options.save();
 		},
 
 		reloadTokens: async (): Promise<void> => {
-			const options = await LocalStorage.get('options');
+			const options = await Storage.get(StorageUniqueKey.Options);
 			if (options !== undefined && options.tokens !== undefined) {
 				Options.tokens = {};
 				Object.assign(Options.tokens, options.tokens);
@@ -94,7 +94,7 @@ export const Options: AvailableOptions & ManageOptions = Object.assign(
 			delete values.reloadTokens;
 			delete values.save;
 			delete values.reset;
-			return LocalStorage.set('options', values);
+			return Storage.set('options', values);
 		},
 
 		reset: (): void => {

@@ -4,7 +4,7 @@ import { HighlightsManager } from './Manager/Highlights';
 import { MenuHighlight } from './MenuHighlight';
 import { InputManager } from './Manager/Input';
 import { ServiceManager } from './Manager/Service';
-import { LocalStorage } from '../Core/Storage';
+import { Storage } from '../Core/Storage';
 import { SaveViewer } from './SaveViewer';
 import { SaveOptions } from './Utility';
 import { Options } from '../Core/Options';
@@ -76,7 +76,7 @@ export class OptionsManager {
 					deleteSave.classList.add('loading');
 					if (notification) notification.remove();
 					Log.logs = [];
-					await LocalStorage.clear();
+					await Storage.clear();
 					Options.reset();
 					await SaveOptions();
 					this.saveSync.toggleButtons(false);

@@ -1,6 +1,6 @@
 import { StatusMap } from '../Core/Title';
 import { DOM, AppendableElement } from '../Core/DOM';
-import { LocalStorage } from '../Core/Storage';
+import { Storage } from '../Core/Storage';
 import { dateFormat, progressToString } from '../Core/Utility';
 import { TitleEditor } from '../Core/TitleEditor';
 import { SyncModule } from '../Core/SyncModule';
@@ -90,7 +90,7 @@ export class SaveViewer {
 					this.titles.remove(row.title.key.id!);
 				}
 			}
-			await LocalStorage.remove(ids);
+			await Storage.remove(ids);
 			this.updateDisplayedPage();
 		});
 
@@ -285,7 +285,7 @@ export class SaveViewer {
 				clearTimeout(deletePrevention[0]);
 				deletePrevention[1].close();
 				deleteButton.classList.add('loading');
-				await LocalStorage.remove(title.key.id!);
+				await Storage.remove(title.key.id!);
 				this.titles.remove(title.key.id!);
 				row.remove();
 				this.updateDisplayedPage();

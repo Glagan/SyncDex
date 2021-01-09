@@ -1,6 +1,6 @@
 import { DOM } from '../Core/DOM';
 import { Log, loadLogs } from '../Core/Log';
-import { LocalStorage } from '../Core/Storage';
+import { Storage } from '../Core/Storage';
 
 export class Logs {
 	container: HTMLElement;
@@ -16,7 +16,7 @@ export class Logs {
 			DOM.clear(this.container);
 			this.displayEmptyMessage();
 			Log.logs = [];
-			await LocalStorage.set('logs', []);
+			await Storage.set('logs', []);
 			this.clearButton.disabled = false;
 		});
 		this.reloadButton = document.getElementById('reload-logs') as HTMLButtonElement;

@@ -1,12 +1,12 @@
 import { browser } from 'webextension-polyfill-ts';
-import { LocalStorage } from './Storage';
+import { Storage } from './Storage';
 
 export namespace Log {
 	export let logs: LogLine[] | undefined = undefined;
 }
 export async function loadLogs(reload: boolean = false): Promise<LogLine[]> {
 	if (Log.logs === undefined || reload) {
-		Log.logs = await LocalStorage.get('logs', []);
+		Log.logs = await Storage.get('logs', []);
 	}
 	return Log.logs!;
 }
@@ -20,6 +20,6 @@ export async function log(message: string | Error): Promise<LogLine> {
 		} else line.msg = `Object: ${JSON.stringify(message)}`;
 	} else line.msg = message;
 	logs.push(line as LogLine);
-	await browser.storage.local.set({ logs: logs });
+	await Storage.set({ logs: logs });
 	return line;
 }

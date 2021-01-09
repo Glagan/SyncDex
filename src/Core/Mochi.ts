@@ -1,8 +1,27 @@
-import { SaveServiceList, LocalTitle } from './Title';
+import { LocalTitle } from './Title';
 import { ServiceKey } from '../Service/Keys';
 import { ServiceName } from '../Service/Names';
 import { log } from './Log';
 import { Runtime } from './Runtime';
+
+interface ComplexType {
+	bar: boolean;
+	baz: string;
+}
+
+type Foo = {
+	[key: string]: ComplexType;
+} & Partial<{
+	foo: ComplexType;
+	bar: boolean;
+	baz: number;
+}>;
+
+function get<T extends Foo, K extends keyof T>(keys: K[]): Partial<{ [key in K]: T[key] }> {
+	return {};
+}
+
+const t = get(['bar', 'baz', 'foo']);
 
 export interface MochiExtra {
 	names?: boolean;

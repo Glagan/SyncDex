@@ -3,7 +3,7 @@ import { ActivableKey } from '../Service/Keys';
 import { browser } from 'webextension-polyfill-ts';
 import { Options } from './Options';
 import { History } from './History';
-import { LocalStorage } from './Storage';
+import { Storage } from './Storage';
 
 export const StatusMap: { [key in Status]: string } = {
 	[Status.NONE]: 'No Status',
@@ -34,6 +34,7 @@ export function iconToService(src: string): ActivableKey | undefined {
 // Fields that can be missing on a Service
 export type MissableField = 'volume' | 'score' | 'start' | 'end';
 
+// TODO: Remove
 export interface FoundTitle {
 	key: MediaKey;
 	name?: string;
@@ -121,7 +122,7 @@ export abstract class Title {
 		return this.synced;
 	};
 
-	setProgress = (progress: Progress): boolean => {
+	setProgress(progress: Progress): boolean {
 		let completed = false;
 		const created = this.status == Status.NONE || this.status == Status.PLAN_TO_READ;
 		if (progress.oneshot || (this.max?.chapter && this.max.chapter <= progress.chapter)) {
@@ -130,7 +131,7 @@ export abstract class Title {
 			if (!this.end) this.end = new Date();
 		} else this.status = Status.READING;
 		this.progress.chapter = progress.chapter;
-		if (progress.volume && (!this.progress.volume || this.progress.volume < this.progress.volume)) {
+		if (progress.volume && (!this.progress.volume || this.progress.volume < progress.volume)) {
 			this.progress.volume = progress.volume;
 		}
 		this.progress.oneshot = progress.oneshot;
@@ -138,7 +139,7 @@ export abstract class Title {
 			this.start = new Date();
 		}
 		return completed;
-	};
+	}
 
 	/**
 	 * Assign all values from the Title to *this*.
@@ -165,7 +166,7 @@ export abstract class Title {
 	 * Select all higher (or lower for dates) values from both Titles and assign them to *this*.
 	 * Score is always exported to the Title if it exists.
 	 */
-	merge = (title: Title): void => {
+	merge(title: Title): void {
 		const missingFields = title.missingFields;
 		this.synced = true;
 		if (title.status !== Status.NONE) {
@@ -191,7 +192,7 @@ export abstract class Title {
 			this.end = new Date(title.end);
 		}
 		if (this.name && this.name != '') title.name = title.name;
-	};
+	}
 
 	/**
 	 * Call merge on the given Title.
@@ -210,35 +211,6 @@ export abstract class Title {
 	get uniqueKey(): number | string {
 		return this.key.id!;
 	}
-}
-
-interface SaveProgress {
-	c: number;
-	v?: number;
-	o?: 1;
-}
-
-type SaveMediaKey = { s?: string; i?: number } | number;
-export type SaveServiceList = {
-	[key in ActivableKey]?: SaveMediaKey;
-};
-
-export interface StorageTitle {
-	s: SaveServiceList; // services
-	st: Status; // status
-	sc?: number; // score
-	p: SaveProgress; // progress
-	m?: Partial<SaveProgress>; // max progress
-	c?: number[]; // chapters
-	sd?: number; // start
-	ed?: number; // end
-	lt?: number; // lastTitle
-	n?: string; // name
-	// History
-	id?: number; // lastChapter
-	h?: SaveProgress; // history
-	hi?: number; // highest
-	lr?: number; // lastRead
 }
 
 export class LocalTitle extends Title {
@@ -338,9 +310,9 @@ export class LocalTitle extends Title {
 	}
 
 	static get = async (id: number): Promise<LocalTitle> => {
-		const data: { [key: string]: StorageTitle | undefined } = await browser.storage.local.get(`${id}`);
-		if (data[id] === undefined) return new LocalTitle(id);
-		return new LocalTitle(id, LocalTitle.fromSave(data[id]!));
+		const data = await Storage.get(id);
+		if (data === undefined) return new LocalTitle(id);
+		return new LocalTitle(id, LocalTitle.fromSave(data));
 	};
 
 	/**
@@ -393,7 +365,7 @@ export class LocalTitle extends Title {
 
 	persist = async (): Promise<RequestStatus> => {
 		this.inList = true;
-		await browser.storage.local.set({ [`${this.key.id}`]: this.toSave() });
+		await Storage.set({ [`${this.key.id}`]: this.toSave() });
 		return RequestStatus.SUCCESS;
 	};
 
@@ -413,11 +385,11 @@ export class LocalTitle extends Title {
 		this.end = undefined;
 		this.name = undefined;
 		this.chapters = [];
-		await browser.storage.local.remove(`${this.key.id}`);
+		await Storage.remove(`${this.key.id}`);
 		return RequestStatus.SUCCESS;
 	};
 
-	merge = (other: Title): void => {
+	merge(other: Title): void {
 		if (other instanceof LocalTitle) {
 			// Update all 'number' properties to select the highest ones
 			for (let k in this) {
@@ -445,15 +417,15 @@ export class LocalTitle extends Title {
 		} else {
 			super.merge(other);
 		}
-	};
+	}
 
-	setProgress = (progress: Progress): boolean => {
+	setProgress(progress: Progress): boolean {
 		const res = super.setProgress(progress);
 		if (Options.saveOpenedChapters) {
 			this.addChapter(progress.chapter);
 		}
 		return res;
-	};
+	}
 
 	addChapter = (chapter: number): boolean => {
 		let max = this.chapters.length;
@@ -591,9 +563,9 @@ export class TitleCollection {
 	static get = async (list?: (string | number)[]): Promise<TitleCollection> => {
 		let collection = new TitleCollection();
 		if (list === undefined) {
-			const localSave: ExportedSave = await browser.storage.local.get();
+			const localSave = await Storage.get();
 			for (const key in localSave) {
-				if (!LocalStorage.isSpecialKey(key)) {
+				if (!Storage.isSpecialKey(key)) {
 					collection.add(new LocalTitle(parseInt(key), LocalTitle.fromSave(localSave[key])));
 				}
 			}
@@ -605,14 +577,14 @@ export class TitleCollection {
 					keys.push(`${key}`);
 				} else keys.push(key);
 			}
-			const localTitles: { [key: string]: StorageTitle } = await browser.storage.local.get(keys);
+			const localTitles = await Storage.get(keys);
 			if (localTitles) {
 				for (const id of list) {
 					const titleId = typeof id === 'number' ? id : parseInt(id);
 					if (localTitles[titleId] === undefined) {
 						collection.add(new LocalTitle(titleId));
 					} else {
-						collection.add(new LocalTitle(titleId, LocalTitle.fromSave(localTitles[titleId])));
+						collection.add(new LocalTitle(titleId, LocalTitle.fromSave(localTitles[titleId]!)));
 					}
 				}
 			}
@@ -625,7 +597,7 @@ export class TitleCollection {
 		for (const title of this) {
 			mapped[title.uniqueKey] = title.toSave();
 		}
-		return await browser.storage.local.set(mapped);
+		return Storage.set(mapped);
 	};
 
 	[Symbol.iterator]() {

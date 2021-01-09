@@ -1,5 +1,5 @@
 import { DOM } from '../../Core/DOM';
-import { LocalStorage } from '../../Core/Storage';
+import { Storage } from '../../Core/Storage';
 import { SaveSync } from '../../Core/SaveSync';
 import { Runtime } from '../../Core/Runtime';
 import { SaveSyncServices } from '../../SaveSync/Map';
@@ -185,7 +185,7 @@ export class SaveSyncManager {
 
 	refresh = async (): Promise<void> => {
 		DOM.clear(this.container);
-		SaveSync.state = await LocalStorage.get('saveSync');
+		SaveSync.state = await Storage.get('saveSync');
 		if (SaveSync.state !== undefined) {
 			this.syncService = this.saveSyncServices[SaveSync.state.service];
 

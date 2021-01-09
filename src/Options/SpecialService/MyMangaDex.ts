@@ -2,7 +2,7 @@ import { DOM } from '../../Core/DOM';
 import { log } from '../../Core/Log';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { Options } from '../../Core/Options';
-import { LocalStorage } from '../../Core/Storage';
+import { Storage } from '../../Core/Storage';
 import { LocalTitle, TitleCollection } from '../../Core/Title';
 import { ServiceKey } from '../../Service/Keys';
 import { ServiceName } from '../../Service/Names';
@@ -186,8 +186,8 @@ export class MyMangaDex extends SpecialService {
 		// Save
 		message = moduleInterface.message('loading', 'Saving...');
 		if (!this.options.merge.active) {
-			await LocalStorage.clear();
-			if (history) await LocalStorage.set('history', { ids: history });
+			await Storage.clear();
+			if (history) await Storage.set('history', { ids: history });
 		} else if (collection.length > 0) {
 			collection.merge(await TitleCollection.get(collection.ids));
 		}

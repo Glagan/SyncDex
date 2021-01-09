@@ -217,19 +217,62 @@ interface LogLine {
 	msg: string;
 }
 
-interface ExportedSave {
-	options?: AvailableOptions;
-	import?: number | string[];
-	importInProgress?: boolean;
-	logs?: LogLine[];
-	history?: HistoryObject;
-	googleDriveState?: string;
-	dropboxState?: PKCEWaitingState;
-	saveSync?: SaveSyncState;
-	saveSyncInProgress?: boolean;
-	lastSync?: number;
-	[key: string]: import('./Core/Title').StorageTitle;
+type SaveMediaKey = { s?: string; i?: number } | number;
+type SaveServiceList = {
+	[key in import('./Service/Keys').ActivableKey]?: SaveMediaKey;
+};
+
+interface SaveProgress {
+	c: number;
+	v?: number;
+	o?: 1;
 }
+
+interface StorageTitle {
+	s: SaveServiceList; // services
+	st: Status; // status
+	sc?: number; // score
+	p: SaveProgress; // progress
+	m?: Partial<SaveProgress>; // max progress
+	c?: number[]; // chapters
+	sd?: number; // start
+	ed?: number; // end
+	lt?: number; // lastTitle
+	n?: string; // name
+	// History
+	id?: number; // lastChapter
+	h?: SaveProgress; // history
+	hi?: number; // highest
+	lr?: number; // lastRead
+}
+
+declare const enum StorageUniqueKey {
+	Options = 'options',
+	Import = 'import',
+	ImportInProgress = 'importInProgress',
+	Logs = 'logs',
+	History = 'history',
+	GoogleDriveState = 'googleDriveState',
+	DropboxState = 'dropboxState',
+	SaveSync = 'saveSync',
+	SaveSyncInProgress = 'saveSyncInProgress',
+	LastSync = 'lastSync',
+}
+
+type ExportedSave = {
+	[key: string]: StorageTitle;
+} & Partial<{
+	[StorageUniqueKey.Options]: AvailableOptions;
+	[StorageUniqueKey.Import]: number | string[];
+	[StorageUniqueKey.ImportInProgress]: boolean;
+	[StorageUniqueKey.Logs]: LogLine[];
+	[StorageUniqueKey.History]: HistoryObject;
+	[StorageUniqueKey.GoogleDriveState]: string;
+	[StorageUniqueKey.DropboxState]: PKCEWaitingState;
+	[StorageUniqueKey.SaveSync]: SaveSyncState;
+	[StorageUniqueKey.SaveSyncInProgress]: boolean;
+	[StorageUniqueKey.LastSync]: number;
+}>;
 
 declare const enum ListType {
 	Detailed,

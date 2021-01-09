@@ -3,7 +3,7 @@ import { DOM } from '../../Core/DOM';
 import { log } from '../../Core/Log';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { Options } from '../../Core/Options';
-import { LocalStorage } from '../../Core/Storage';
+import { Storage } from '../../Core/Storage';
 import { LocalTitle, TitleCollection } from '../../Core/Title';
 import { dateFormat } from '../../Core/Utility';
 import { ServiceKey } from '../../Service/Keys';
@@ -16,7 +16,7 @@ export class SyncDexImport extends SpecialService {
 		let message = moduleInterface.message('loading', 'Loading SyncDex Titles...');
 		const collection = new TitleCollection();
 		for (const key in data) {
-			if (!LocalStorage.isSpecialKey(key)) {
+			if (!Storage.isSpecialKey(key)) {
 				// Check if SyncDexTitle keys are valid and contain a valid SyncDexTitle
 				const id = parseInt(key);
 				if (!isNaN(id) && LocalTitle.valid(data[key])) {
@@ -73,8 +73,8 @@ export class SyncDexImport extends SpecialService {
 		// Save
 		message = moduleInterface.message('loading', 'Saving...');
 		if (!this.options.merge.active) {
-			await LocalStorage.clear();
-			if (history) await LocalStorage.set('history', history);
+			await Storage.clear();
+			if (history) await Storage.set('history', history);
 		} else if (collection.length > 0) {
 			collection.merge(await TitleCollection.get(collection.ids));
 		}
@@ -89,7 +89,7 @@ export class SyncDexImport extends SpecialService {
 		if (data.lastSync) otherValues.lastSync = data.lastSync;
 		if (data.import && typeof data.import === 'number') otherValues.import = data.import;
 		if (Object.keys(otherValues).length > 0) {
-			await LocalStorage.raw('set', otherValues);
+			await Storage.set(otherValues);
 		}
 		await Options.save();
 
@@ -180,7 +180,7 @@ export class SyncDexImport extends SpecialService {
 
 export class SyncDexExport extends SpecialService {
 	start = async (): Promise<void> => {
-		const data: ExportedSave = await browser.storage.local.get(null);
+		const data = await Storage.get();
 		if (data.options) {
 			delete (data.options as any).tokens;
 			delete data.importInProgress;
