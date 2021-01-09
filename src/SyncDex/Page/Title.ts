@@ -124,8 +124,12 @@ class ServiceOverview {
 				DOM.create('div', { class: `status st${title.status}`, textContent: StatusMap[title.status] }),
 			];
 			rows.push(this.overviewRow('bookmark', 'Chapter', title.progress.chapter, title?.progress.chapter));
-			if (missingFields.indexOf('volume') < 0 && title.progress.volume) {
-				rows.push(this.overviewRow('book', 'Volume', title.progress.volume, title?.progress.volume));
+			if (missingFields.indexOf('volume') < 0) {
+				if (title.progress.volume) {
+					rows.push(this.overviewRow('book', 'Volume', title.progress.volume, title?.progress.volume));
+				} else {
+					rows.push(this.overviewRow('book', 'No Volume', undefined, title?.progress.volume));
+				}
 			}
 			if (title.start) {
 				rows.push(this.overviewRow('calendar-plus', 'Started', title.start, title?.start));
@@ -977,6 +981,7 @@ export class TitlePage extends Page {
 			const syncModule = new SyncModule(title, overview);
 			// Find MangaDex login status
 			syncModule.loggedIn = !document.querySelector('button[title="You need to log in to use this function."]');
+			syncModule.overview!.syncedLocal(syncModule.title);
 			syncModule.initialize();
 			// Get MangaDex Status
 			const statusButton = document.querySelector('.manga_follow_button.disabled');

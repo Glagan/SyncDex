@@ -32,7 +32,6 @@ export class AnimePlanet extends Service {
 
 	updateKeyOnFirstFetch = true;
 	usesSlug = true;
-	missingFields: MissableField[] = ['volume', 'start', 'end'];
 
 	static username: string = '';
 	static token: string = '';
@@ -131,6 +130,8 @@ export class AnimePlanet extends Service {
 
 export const AnimePlanetAPI = 'https://www.anime-planet.com/api/list';
 export class AnimePlanetTitle extends Title {
+	static missingFields: MissableField[] = ['volume', 'start', 'end'];
+
 	token?: string;
 	current: {
 		progress: Progress;

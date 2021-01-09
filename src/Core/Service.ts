@@ -15,7 +15,6 @@ export abstract class Service {
 	// Enable if an Title.key need to be updated after initial request
 	updateKeyOnFirstFetch: boolean = false;
 	usesSlug: boolean = false;
-	missingFields: MissableField[] = [];
 
 	abstract loginMethod: LoginMethod;
 	loginUrl?: string;

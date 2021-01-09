@@ -22,8 +22,6 @@ export class MangaUpdates extends Service {
 	loginMethod = LoginMethod.EXTERNAL;
 	loginUrl = 'https://www.mangaupdates.com/login.html';
 
-	missingFields: MissableField[] = ['start', 'end'];
-
 	loggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: 'https://www.mangaupdates.com/aboutus.html',
@@ -90,6 +88,8 @@ export class MangaUpdates extends Service {
 
 export class MangaUpdatesTitle extends Title {
 	static service = new MangaUpdates();
+
+	static missingFields: MissableField[] = ['start', 'end'];
 
 	current?: {
 		progress: Progress;
