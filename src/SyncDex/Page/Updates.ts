@@ -4,6 +4,7 @@ import { Page } from '../Page';
 import { progressFromString } from '../../Core/Utility';
 import { Title } from '../../Core/Title';
 import { DOM } from '../../Core/DOM';
+import { TryCatch } from '../../Core/Log';
 
 interface ChapterRow {
 	node: HTMLElement;
@@ -128,7 +129,8 @@ export class UpdateGroup {
 }
 
 export class UpdatesPage extends Page {
-	run = async () => {
+	@TryCatch(Page.errorNotification)
+	async run() {
 		console.log('SyncDex :: Updates');
 
 		if (!Options.hideHigher && !Options.hideLast && !Options.hideLower && !Options.highlight) return;
@@ -177,5 +179,5 @@ export class UpdatesPage extends Page {
 			topBar.classList.add('top-bar-updates');
 			topBar.appendChild(button);
 		}
-	};
+	}
 }

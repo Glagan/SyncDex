@@ -1,5 +1,5 @@
 import { AppendableElement, DOM } from '../../Core/DOM';
-import { log } from '../../Core/Log';
+import { log, TryCatch } from '../../Core/Log';
 import { Mochi } from '../../Core/Mochi';
 import { Options } from '../../Core/Options';
 import { Runtime } from '../../Core/Runtime';
@@ -861,170 +861,161 @@ export class TitleOverview extends Overview {
 }
 
 export class TitlePage extends Page {
-	run = async () => {
+	@TryCatch(Page.errorNotification)
+	async run() {
 		console.log('SyncDex :: Title');
 		const overview = new TitleOverview();
 
-		try {
-			// Get Title
-			const id = parseInt(
-				document.querySelector<HTMLElement>('.row .fas.fa-hashtag')!.parentElement!.textContent!
-			);
-			const title = await LocalTitle.get(id);
-			title.lastTitle = Date.now();
-			if (!title.inList || title.name === undefined || title.name == '') {
-				const headerTitle = document.querySelector('h6.card-header');
-				if (headerTitle) title.name = headerTitle.textContent!.trim();
+		// Get Title
+		const id = parseInt(document.querySelector<HTMLElement>('.row .fas.fa-hashtag')!.parentElement!.textContent!);
+		const title = await LocalTitle.get(id);
+		title.lastTitle = Date.now();
+		if (!title.inList || title.name === undefined || title.name == '') {
+			const headerTitle = document.querySelector('h6.card-header');
+			if (headerTitle) title.name = headerTitle.textContent!.trim();
+		}
+		// Max progress if it's available
+		const maxChapter = document.getElementById('current_chapter');
+		if (maxChapter && maxChapter.nextSibling && maxChapter.nextSibling.textContent) {
+			const chapter = /\/(\d+)/.exec(maxChapter.nextSibling.textContent);
+			if (chapter) {
+				title.max = { chapter: parseInt(chapter[1]) };
 			}
-			// Max progress if it's available
-			const maxChapter = document.getElementById('current_chapter');
-			if (maxChapter && maxChapter.nextSibling && maxChapter.nextSibling.textContent) {
-				const chapter = /\/(\d+)/.exec(maxChapter.nextSibling.textContent);
-				if (chapter) {
-					title.max = { chapter: parseInt(chapter[1]) };
+		}
+		const maxVolume = document.getElementById('current_volume');
+		if (maxVolume && maxVolume.nextSibling && maxVolume.nextSibling.textContent) {
+			const volume = /\/(\d+)/.exec(maxVolume.nextSibling.textContent);
+			if (volume) {
+				if (!title.max) title.max = { volume: parseInt(volume[1]) };
+				else title.max.volume = parseInt(volume[1]);
+			}
+		}
+		// Always Find Services
+		let fallback = false;
+		if (Options.useMochi) {
+			const connections = await Mochi.find(id);
+			if (connections !== undefined) {
+				Mochi.assign(title, connections);
+			} else fallback = true;
+		}
+		// If Mochi failed or if it's disabled use displayed Services
+		const pickLocalServices = !Options.useMochi || fallback;
+		const localServices: { [key in ActivableKey]?: [HTMLElement, MediaKey] } = {};
+		const informationTable = document.querySelector('.col-xl-9.col-lg-8.col-md-7')!;
+		// Look for the "Information:" column
+		let informationRow = Array.from(informationTable.children).find(
+			(row) => row.firstElementChild?.textContent == 'Information:'
+		);
+		// Nothing to do if there is no row
+		if ((pickLocalServices || Options.linkToServices) && informationRow) {
+			const services = informationRow.querySelectorAll<HTMLImageElement>('img');
+			for (const serviceIcon of services) {
+				const serviceLink = serviceIcon.nextElementSibling as HTMLAnchorElement;
+				// Convert icon name to ServiceKey, only since kt is ku
+				const serviceKey = iconToService(serviceIcon.src);
+				if (serviceKey !== undefined) {
+					const id = Services[serviceKey].idFromLink(serviceLink.href);
+					localServices[serviceKey] = [serviceLink.parentElement!, id];
+					if (pickLocalServices) title.services[serviceKey] = id;
 				}
 			}
-			const maxVolume = document.getElementById('current_volume');
-			if (maxVolume && maxVolume.nextSibling && maxVolume.nextSibling.textContent) {
-				const volume = /\/(\d+)/.exec(maxVolume.nextSibling.textContent);
-				if (volume) {
-					if (!title.max) title.max = { volume: parseInt(volume[1]) };
-					else title.max.volume = parseInt(volume[1]);
-				}
-			}
-			// Always Find Services
-			let fallback = false;
-			if (Options.useMochi) {
-				const connections = await Mochi.find(id);
-				if (connections !== undefined) {
-					Mochi.assign(title, connections);
-				} else fallback = true;
-			}
-			// If Mochi failed or if it's disabled use displayed Services
-			const pickLocalServices = !Options.useMochi || fallback;
-			const localServices: { [key in ActivableKey]?: [HTMLElement, MediaKey] } = {};
-			const informationTable = document.querySelector('.col-xl-9.col-lg-8.col-md-7')!;
-			// Look for the "Information:" column
-			let informationRow = Array.from(informationTable.children).find(
-				(row) => row.firstElementChild?.textContent == 'Information:'
-			);
-			// Nothing to do if there is no row
-			if ((pickLocalServices || Options.linkToServices) && informationRow) {
-				const services = informationRow.querySelectorAll<HTMLImageElement>('img');
-				for (const serviceIcon of services) {
-					const serviceLink = serviceIcon.nextElementSibling as HTMLAnchorElement;
-					// Convert icon name to ServiceKey, only since kt is ku
-					const serviceKey = iconToService(serviceIcon.src);
-					if (serviceKey !== undefined) {
-						const id = Services[serviceKey].idFromLink(serviceLink.href);
-						localServices[serviceKey] = [serviceLink.parentElement!, id];
-						if (pickLocalServices) title.services[serviceKey] = id;
-					}
-				}
-			}
-			await title.persist(); // Always save
+		}
+		await title.persist(); // Always save
 
-			// Add link to Services if they are missing
-			if (Options.linkToServices && !pickLocalServices) {
-				// Create a row for the links if there isn't one
-				if (!informationRow) {
-					informationRow = DOM.create('div', {
-						class: 'row m-0 py-1 px-0 border-top',
+		// Add link to Services if they are missing
+		if (Options.linkToServices && !pickLocalServices) {
+			// Create a row for the links if there isn't one
+			if (!informationRow) {
+				informationRow = DOM.create('div', {
+					class: 'row m-0 py-1 px-0 border-top',
+					childs: [
+						DOM.create('div', { class: 'col-lg-3 col-xl-2 strong', textContent: 'Information:' }),
+						DOM.create('div', {
+							class: 'col-lg-9 col-xl-10',
+							childs: [DOM.create('ul', { class: 'list-inline mb-0' })],
+						}),
+					],
+				});
+				// Insert before the *Reading Progres* -- and before Overview
+				const progressRow = document.querySelector('.reading_progress')!.parentElement!;
+				progressRow.parentElement!.insertBefore(informationRow, progressRow);
+			}
+			const serviceList = informationRow.querySelector('ul')!;
+			// Add Links
+			for (const key of Object.values(ActivableKey)) {
+				const localService = localServices[key];
+				if (title.services[key] == undefined) continue;
+				const serviceName = Services[key].name;
+				// If there is no localService add a link
+				if (localService == undefined) {
+					const link = DOM.create('li', {
+						class: 'list-inline-item',
 						childs: [
-							DOM.create('div', { class: 'col-lg-3 col-xl-2 strong', textContent: 'Information:' }),
-							DOM.create('div', {
-								class: 'col-lg-9 col-xl-10',
-								childs: [DOM.create('ul', { class: 'list-inline mb-0' })],
-							}),
-						],
-					});
-					// Insert before the *Reading Progres* -- and before Overview
-					const progressRow = document.querySelector('.reading_progress')!.parentElement!;
-					progressRow.parentElement!.insertBefore(informationRow, progressRow);
-				}
-				const serviceList = informationRow.querySelector('ul')!;
-				// Add Links
-				for (const key of Object.values(ActivableKey)) {
-					const localService = localServices[key];
-					if (title.services[key] == undefined) continue;
-					const serviceName = Services[key].name;
-					// If there is no localService add a link
-					if (localService == undefined) {
-						const link = DOM.create('li', {
-							class: 'list-inline-item',
-							childs: [
-								DOM.create('img', { src: Runtime.icon(key), title: serviceName }),
-								DOM.space(),
-								DOM.create('a', {
-									href: Services[key].link(title.services[key]!),
-									target: '_blank',
-									textContent: `${serviceName} (SyncDex)`,
-								}),
-							],
-						});
-						serviceList.appendChild(link);
-					} else if (!Service.compareId(title.services[key]!, localService[1])) {
-						DOM.append(
-							localService[0],
+							DOM.create('img', { src: Runtime.icon(key), title: serviceName }),
 							DOM.space(),
 							DOM.create('a', {
 								href: Services[key].link(title.services[key]!),
 								target: '_blank',
-								textContent: '(SyncDex)',
-							})
-						);
-					}
+								textContent: `${serviceName} (SyncDex)`,
+							}),
+						],
+					});
+					serviceList.appendChild(link);
+				} else if (!Service.compareId(title.services[key]!, localService[1])) {
+					DOM.append(
+						localService[0],
+						DOM.space(),
+						DOM.create('a', {
+							href: Services[key].link(title.services[key]!),
+							target: '_blank',
+							textContent: '(SyncDex)',
+						})
+					);
 				}
 			}
-
-			// Load each Services to Sync
-			const syncModule = new SyncModule(title, overview);
-			// Find MangaDex login status
-			syncModule.loggedIn = !document.querySelector('button[title="You need to log in to use this function."]');
-			syncModule.overview!.syncedLocal(syncModule.title);
-			syncModule.initialize();
-			// Get MangaDex Status
-			const statusButton = document.querySelector('.manga_follow_button.disabled');
-			if (statusButton) syncModule.mdState.status = parseInt(statusButton.id.trim());
-			// Get MangaDex Score
-			const scoreButton = document.querySelector('.manga_rating_button.disabled');
-			if (scoreButton) syncModule.mdState.score = parseInt(scoreButton.id.trim()) * 10;
-			const imported = await syncModule.syncLocal();
-
-			// Add all chapters from the ChapterList if it's a new Title
-			// Update lastChapter for the History if title was synced
-			if (imported && (Options.saveOpenedChapters || Options.biggerHistory)) {
-				if (Options.saveOpenedChapters) {
-					title.updateChapterList(title.progress.chapter);
-				}
-				for (const row of overview.chapterList.rows) {
-					if (Options.biggerHistory && row.progress.chapter == title.progress.chapter) {
-						title.lastChapter = row.chapterId;
-						if (!Options.saveOpenedChapters) break;
-					}
-					if (Options.saveOpenedChapters && row.progress.chapter < title.progress.chapter) {
-						title.addChapter(row.progress.chapter);
-					}
-				}
-				// Highlight again if the chapter list needs update
-				overview.chapterList.highlight(title);
-			}
-
-			// Save added previous opened chapters and highest chapter
-			const highest = overview.chapterList.highest;
-			if (Options.biggerHistory && (!title.highest || title.highest < highest)) {
-				title.highest = highest;
-			}
-			if (imported || Options.biggerHistory) await title.persist();
-
-			// When the Title is synced, all remaining ServiceTitle are synced with it
-			if (title.status != Status.NONE) await syncModule.syncExternal(true);
-		} catch (error) {
-			SimpleNotification.error({
-				title: error.message,
-				text: 'Unexpected error, check logs and open an issue with them.',
-			});
-			await log(error);
 		}
-	};
+
+		// Load each Services to Sync
+		const syncModule = new SyncModule(title, overview);
+		// Find MangaDex login status
+		syncModule.loggedIn = !document.querySelector('button[title="You need to log in to use this function."]');
+		syncModule.overview!.syncedLocal(syncModule.title);
+		syncModule.initialize();
+		// Get MangaDex Status
+		const statusButton = document.querySelector('.manga_follow_button.disabled');
+		if (statusButton) syncModule.mdState.status = parseInt(statusButton.id.trim());
+		// Get MangaDex Score
+		const scoreButton = document.querySelector('.manga_rating_button.disabled');
+		if (scoreButton) syncModule.mdState.score = parseInt(scoreButton.id.trim()) * 10;
+		const imported = await syncModule.syncLocal();
+
+		// Add all chapters from the ChapterList if it's a new Title
+		// Update lastChapter for the History if title was synced
+		if (imported && (Options.saveOpenedChapters || Options.biggerHistory)) {
+			if (Options.saveOpenedChapters) {
+				title.updateChapterList(title.progress.chapter);
+			}
+			for (const row of overview.chapterList.rows) {
+				if (Options.biggerHistory && row.progress.chapter == title.progress.chapter) {
+					title.lastChapter = row.chapterId;
+					if (!Options.saveOpenedChapters) break;
+				}
+				if (Options.saveOpenedChapters && row.progress.chapter < title.progress.chapter) {
+					title.addChapter(row.progress.chapter);
+				}
+			}
+			// Highlight again if the chapter list needs update
+			overview.chapterList.highlight(title);
+		}
+
+		// Save added previous opened chapters and highest chapter
+		const highest = overview.chapterList.highest;
+		if (Options.biggerHistory && (!title.highest || title.highest < highest)) {
+			title.highest = highest;
+		}
+		if (imported || Options.biggerHistory) await title.persist();
+
+		// When the Title is synced, all remaining ServiceTitle are synced with it
+		if (title.status != Status.NONE) await syncModule.syncExternal(true);
+	}
 }

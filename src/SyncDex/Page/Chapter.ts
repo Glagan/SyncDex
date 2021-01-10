@@ -11,6 +11,7 @@ import { injectScript, progressFromString } from '../../Core/Utility';
 import { ActivableKey } from '../../Service/Keys';
 import { DOM } from '../../Core/DOM';
 import { TitleEditor } from '../../Core/TitleEditor';
+import { TryCatch } from '../../Core/Log';
 
 interface ReadingState {
 	syncModule?: SyncModule;
@@ -357,7 +358,8 @@ export class ChapterPage extends Page {
 		}
 	};
 
-	run = async () => {
+	@TryCatch(Page.errorNotification)
+	async run() {
 		console.log('SyncDex :: Chapter');
 
 		// Check if there is no Services enabled -- Progress is still saved locally
@@ -420,5 +422,5 @@ export class ChapterPage extends Page {
 				this.processingReadingQueue = false;
 			}
 		});
-	};
+	}
 }

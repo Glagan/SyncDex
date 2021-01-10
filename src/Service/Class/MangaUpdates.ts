@@ -1,4 +1,4 @@
-import { log } from '../../Core/Log';
+import { log, LogExecTime } from '../../Core/Log';
 import { Runtime } from '../../Core/Runtime';
 import { LoginMethod, Service } from '../../Core/Service';
 import { MissableField, Title } from '../../Core/Title';
@@ -32,6 +32,7 @@ export class MangaUpdates extends Service {
 		return RequestStatus.FAIL;
 	};
 
+	@LogExecTime
 	async get(key: MediaKey): Promise<Title | RequestStatus> {
 		const response = await Runtime.request<RawResponse>({
 			url: this.link(key),

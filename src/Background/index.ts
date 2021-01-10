@@ -310,11 +310,11 @@ async function syncSave(force: boolean = false) {
 	setIcon('Save Sync in progress', '#45A1FF', '...');
 	const syncState = await Storage.get('saveSync');
 	if (syncState !== undefined) {
-		if (!(await Storage.get('saveSyncInProgress', false))) {
+		if (!(await Storage.get(StorageUniqueKey.SaveSyncInProgress, false))) {
 			const saveSyncServiceClass = SaveSyncServices[syncState.service];
 			if (saveSyncServiceClass !== undefined) {
 				await loadLogs(true);
-				await Storage.set('saveSyncInProgress', true);
+				await Storage.set(StorageUniqueKey.SaveSyncInProgress, true);
 				let result = SaveSyncResult.ERROR;
 				try {
 					await browser.runtime.sendMessage({ action: MessageAction.saveSyncStart }).catch((_e) => _e);
@@ -332,7 +332,7 @@ async function syncSave(force: boolean = false) {
 				} catch (error) {
 					log(error);
 				}
-				await Storage.remove('saveSyncInProgress');
+				await Storage.remove(StorageUniqueKey.SaveSyncInProgress);
 				await browser.runtime
 					.sendMessage({ action: MessageAction.saveSyncComplete, status: result })
 					.catch((_e) => _e);
@@ -354,7 +354,7 @@ async function silentImport(manual: boolean = false) {
 		const checkCooldown = Options.checkOnStartupCooldown * 60 * 1000;
 		const lastCheck: number | string[] = await Storage.get('import', 0);
 		if (manual || typeof lastCheck !== 'number' || Date.now() - lastCheck > checkCooldown) {
-			await Storage.set('importInProgress', true);
+			await Storage.set(StorageUniqueKey.ImportInProgress, true);
 			await browser.runtime.sendMessage({ action: MessageAction.importStart }).catch((_e) => _e);
 			await log('Importing lists');
 			const services =
@@ -375,11 +375,11 @@ async function silentImport(manual: boolean = false) {
 						await log(`Error while importing ${Services[key].name} ${error.stack}`);
 					}
 					done.push(key);
-					if (!manual) await Storage.set('import', done);
+					if (!manual) await Storage.set(StorageUniqueKey.Import, done);
 				} else await log(`Skipping ${Services[key].name} already imported`);
 			}
-			if (!manual) await Storage.set('import', Date.now());
-			await Storage.remove('importInProgress');
+			if (!manual) await Storage.set(StorageUniqueKey.Import, Date.now());
+			await Storage.remove(StorageUniqueKey.ImportInProgress);
 			await browser.runtime.sendMessage({ action: MessageAction.importComplete }).catch((_e) => _e);
 			await log(`Done Importing lists`);
 		} else await log(`Startup script executed less than ${Options.checkOnStartupCooldown}minutes ago, skipping`);

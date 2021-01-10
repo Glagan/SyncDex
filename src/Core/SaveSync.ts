@@ -67,7 +67,7 @@ export abstract class SaveSync {
 		if (await this.refreshTokenIfNeeded()) {
 			const result = await this.uploadLocalSave();
 			if (result > 0) {
-				await Storage.set({ lastSync: result });
+				await Storage.set(StorageUniqueKey.LastSync, result);
 				return SaveSyncResult.UPLOADED;
 			}
 		}

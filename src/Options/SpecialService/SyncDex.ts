@@ -74,7 +74,7 @@ export class SyncDexImport extends SpecialService {
 		message = moduleInterface.message('loading', 'Saving...');
 		if (!this.options.merge.active) {
 			await Storage.clear();
-			if (history) await Storage.set('history', history);
+			if (history) await Storage.set(StorageUniqueKey.History, history);
 		} else if (collection.length > 0) {
 			collection.merge(await TitleCollection.get(collection.ids));
 		}

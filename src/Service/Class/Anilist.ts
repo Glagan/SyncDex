@@ -3,7 +3,7 @@ import { Runtime } from '../../Core/Runtime';
 import { Title } from '../../Core/Title';
 import { Options } from '../../Core/Options';
 import { AppendableElement, DOM } from '../../Core/DOM';
-import { log } from '../../Core/Log';
+import { log, LogExecTime } from '../../Core/Log';
 import { ActivableKey } from '../Keys';
 import { ServiceName } from '../Names';
 
@@ -98,6 +98,7 @@ export class Anilist extends Service {
 		return Runtime.responseStatus(response);
 	}
 
+	@LogExecTime
 	async get(key: MediaKey): Promise<AnilistTitle | RequestStatus> {
 		const id = key.id!;
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;

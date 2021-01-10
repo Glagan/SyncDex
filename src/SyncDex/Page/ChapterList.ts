@@ -5,6 +5,7 @@ import { Thumbnail } from '../Thumbnail';
 import { Title, TitleCollection } from '../../Core/Title';
 import { ChapterRow } from '../ChapterRow';
 import { SyncModule } from '../../Core/SyncModule';
+import { TryCatch } from '../../Core/Log';
 
 class TitleChapterGroup {
 	id: number = 0;
@@ -397,7 +398,8 @@ class TitleChapterGroup {
 }
 
 export class ChapterListPage extends Page {
-	run = async () => {
+	@TryCatch(Page.errorNotification)
+	async run() {
 		console.log('SyncDex :: Chapter List');
 
 		if (!Options.hideHigher && !Options.hideLast && !Options.hideLower && !Options.thumbnail && !Options.highlight)
@@ -479,5 +481,5 @@ export class ChapterListPage extends Page {
 				}
 			);
 		}
-	};
+	}
 }

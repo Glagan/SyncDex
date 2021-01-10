@@ -1,4 +1,4 @@
-import { log } from '../../Core/Log';
+import { log, LogExecTime } from '../../Core/Log';
 import { Runtime } from '../../Core/Runtime';
 import { LoginMethod, Service } from '../../Core/Service';
 import { Title } from '../../Core/Title';
@@ -56,6 +56,7 @@ export class MyAnimeList extends Service {
 		return new Date(parts[0], Math.max(0, parts[1] - 1), parts[2]);
 	};
 
+	@LogExecTime
 	async get(key: MediaKey): Promise<Title | RequestStatus> {
 		const response = await Runtime.request<RawResponse>({
 			url: `https://myanimelist.net/ownlist/manga/${key.id}/edit?hideLayout`,

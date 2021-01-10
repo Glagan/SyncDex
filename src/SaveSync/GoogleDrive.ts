@@ -3,7 +3,7 @@ import { Runtime } from '../Core/Runtime';
 import { Storage } from '../Core/Storage';
 import { generateRandomString } from '../Options/PKCEHelper';
 import { Declare, SaveSync } from '../Core/SaveSync';
-import { log } from '../Core/Log';
+import { log, LogExecTime } from '../Core/Log';
 
 interface GoogleDriveTokenResponse {
 	access_token: string;
@@ -43,7 +43,7 @@ export class GoogleDrive extends SaveSync {
 
 	onCardClick = async () => {
 		const state = generateRandomString();
-		await Storage.set('googleDriveState', state);
+		await Storage.set(StorageUniqueKey.GoogleDriveState, state);
 		const url = `https://accounts.google.com/o/oauth2/v2/auth?${Runtime.buildQuery({
 			access_type: 'offline',
 			prompt: 'consent',
@@ -76,7 +76,7 @@ export class GoogleDrive extends SaveSync {
 					if (response.body.files.length == 1) {
 						if (!SaveSync.state?.id) {
 							SaveSync.state!.id = response.body.files[0].id;
-							await Storage.set('saveSync', SaveSync.state);
+							await Storage.set(StorageUniqueKey.SaveSync, SaveSync.state);
 						}
 						return new Date(response.body.files[0].modifiedTime).getTime();
 					}
@@ -87,7 +87,8 @@ export class GoogleDrive extends SaveSync {
 		return -1;
 	};
 
-	downloadExternalSave = async (): Promise<string | boolean> => {
+	@LogExecTime
+	async downloadExternalSave(): Promise<string | boolean> {
 		if (await this.refreshTokenIfNeeded()) {
 			if (!SaveSync.state?.id) return '{}';
 			const response = await Runtime.request({
@@ -101,9 +102,10 @@ export class GoogleDrive extends SaveSync {
 			}
 		}
 		return false;
-	};
+	}
 
-	uploadLocalSave = async (): Promise<number> => {
+	@LogExecTime
+	async uploadLocalSave(): Promise<number> {
 		if (await this.refreshTokenIfNeeded()) {
 			if (SaveSync.state?.id) {
 				const response = await Runtime.jsonRequest<GoogleDriveMetadata>({
@@ -116,7 +118,7 @@ export class GoogleDrive extends SaveSync {
 					await log(`Uploaded Local Save to Google Drive`);
 					if (SaveSync.state!.id !== response.body.id) {
 						SaveSync.state!.id = response.body.id;
-						await Storage.set('saveSync', SaveSync.state);
+						await Storage.set(StorageUniqueKey.SaveSync, SaveSync.state);
 					}
 					return new Date(response.body.modifiedTime).getTime();
 				}
@@ -130,13 +132,13 @@ export class GoogleDrive extends SaveSync {
 				if (response.ok && !response.body.error) {
 					await log(`Uploaded Local Save to Google Drive`);
 					SaveSync.state!.id = response.body.id;
-					await Storage.set('saveSync', SaveSync.state);
+					await Storage.set(StorageUniqueKey.SaveSync, SaveSync.state);
 					return new Date(response.body.modifiedTime).getTime();
 				}
 			}
 		}
 		return -1;
-	};
+	}
 
 	refreshTokenIfNeeded = async (): Promise<boolean> => {
 		if (!SaveSync.state) return false;
@@ -157,8 +159,8 @@ export class GoogleDrive extends SaveSync {
 	};
 
 	login = async (query: { [key: string]: string }): Promise<SaveSyncLoginResult> => {
-		const googleDriveState = await Storage.get('googleDriveState');
-		await Storage.remove('googleDriveState');
+		const googleDriveState = await Storage.get(StorageUniqueKey.GoogleDriveState);
+		await Storage.remove(StorageUniqueKey.GoogleDriveState);
 		if (googleDriveState == undefined || googleDriveState !== query.state) {
 			return SaveSyncLoginResult.STATE_ERROR;
 		}
@@ -203,7 +205,7 @@ export class GoogleDrive extends SaveSync {
 					expires: Date.now() + body.expires_in * 1000,
 					refresh: refreshToken,
 				};
-				await Storage.set('saveSync', SaveSync.state);
+				await Storage.set(StorageUniqueKey.SaveSync, SaveSync.state);
 				await log('Obtained Google Drive token');
 				return SaveSyncLoginResult.SUCCESS;
 			}

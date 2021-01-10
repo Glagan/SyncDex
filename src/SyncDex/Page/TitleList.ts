@@ -1,11 +1,13 @@
 import { DOM } from '../../Core/DOM';
+import { TryCatch } from '../../Core/Log';
 import { Options } from '../../Core/Options';
 import { StatusMap, TitleCollection } from '../../Core/Title';
 import { Page } from '../Page';
 import { Thumbnail } from '../Thumbnail';
 
 export class TitleListPage extends Page {
-	run = async (): Promise<void> => {
+	@TryCatch(Page.errorNotification)
+	async run() {
 		console.log('SyncDex :: Title List');
 
 		const listTypeSelector = document.querySelector('.dropdown-item.title_mode.active');
@@ -41,5 +43,5 @@ export class TitleListPage extends Page {
 				new Thumbnail(id, row, title);
 			}
 		}
-	};
+	}
 }

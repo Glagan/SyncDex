@@ -1,4 +1,4 @@
-import { log } from '../../Core/Log';
+import { log, LogExecTime } from '../../Core/Log';
 import { Options } from '../../Core/Options';
 import { Runtime } from '../../Core/Runtime';
 import { LoginMethod, Service } from '../../Core/Service';
@@ -158,6 +158,7 @@ export class Kitsu extends Service {
 		return RequestStatus.SUCCESS;
 	};
 
+	@LogExecTime
 	async get(key: MediaKey): Promise<Title | RequestStatus> {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest<KitsuResponse>({

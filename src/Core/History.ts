@@ -16,9 +16,9 @@ export class History {
 	}
 
 	static async load(): Promise<void> {
-		const history = await Storage.get('history');
+		const history = await Storage.get(StorageUniqueKey.History);
 		if (history == undefined) {
-			await Storage.set('history', { ids: [] });
+			await Storage.set(StorageUniqueKey.History, { ids: [] });
 		} else {
 			History.last = history.last;
 			History.page = history.page;
@@ -27,7 +27,7 @@ export class History {
 	}
 
 	static async save(): Promise<void> {
-		await Storage.set('history', {
+		await Storage.set(StorageUniqueKey.History, {
 			last: History.last,
 			page: History.page,
 			ids: History.ids,

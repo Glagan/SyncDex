@@ -16,7 +16,7 @@ export class Logs {
 			DOM.clear(this.container);
 			this.displayEmptyMessage();
 			Log.logs = [];
-			await Storage.set('logs', []);
+			await Storage.set(StorageUniqueKey.Logs, []);
 			this.clearButton.disabled = false;
 		});
 		this.reloadButton = document.getElementById('reload-logs') as HTMLButtonElement;

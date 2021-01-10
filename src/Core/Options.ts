@@ -94,7 +94,7 @@ export const Options: AvailableOptions & ManageOptions = Object.assign(
 			delete values.reloadTokens;
 			delete values.save;
 			delete values.reset;
-			return Storage.set('options', values);
+			return Storage.set(StorageUniqueKey.Options, values);
 		},
 
 		reset: (): void => {

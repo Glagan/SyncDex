@@ -187,7 +187,7 @@ export class MyMangaDex extends SpecialService {
 		message = moduleInterface.message('loading', 'Saving...');
 		if (!this.options.merge.active) {
 			await Storage.clear();
-			if (history) await Storage.set('history', { ids: history });
+			if (history) await Storage.set(StorageUniqueKey.History, { ids: history });
 		} else if (collection.length > 0) {
 			collection.merge(await TitleCollection.get(collection.ids));
 		}
