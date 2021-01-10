@@ -249,7 +249,7 @@ class ServiceOverview {
 		if (typeof res === 'object') {
 			this.overview(res, this.content);
 			// Display *Sync* button only if the title is out of sync, with auto sync disabled and if the title is in a list
-			if (!Options.autoSync && !res.isSynced(title) && title.status !== Status.NONE && res.loggedIn) {
+			if (!Options.autoSync && !res.isSyncedWith(title) && title.status !== Status.NONE && res.loggedIn) {
 				this.setTabIcon('sync has-error');
 				this.manage.appendChild(this.syncButton);
 			}

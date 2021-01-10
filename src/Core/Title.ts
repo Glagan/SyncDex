@@ -51,15 +51,15 @@ export interface FoundTitle {
 export abstract class Title {
 	key: MediaKey = { id: 0 };
 	inList: boolean = false;
-	synced: boolean = false;
+	loggedIn: boolean = false;
+	name?: string;
+	max?: Partial<Progress>;
+	// Synced keys
 	status: Status = Status.NONE;
 	progress: Progress = { chapter: 0 };
-	max?: Partial<Progress>;
 	score: number = 0;
 	start?: Date;
 	end?: Date;
-	name?: string;
-	loggedIn: boolean = false;
 
 	static readonly missingFields: MissableField[] = [];
 
@@ -106,9 +106,9 @@ export abstract class Title {
 	 * Compare the Media on the Service to a Title to check if it has the same progress.
 	 * Avoid checking fields that cannot exist on the Service.
 	 */
-	isSynced = (title: Title): boolean => {
+	isSyncedWith = (title: Title): boolean => {
 		const missingFields = this.missingFields;
-		this.synced =
+		const synced =
 			title.status === this.status &&
 			Math.floor(title.progress.chapter) === Math.floor(this.progress.chapter) &&
 			(missingFields.indexOf('volume') >= 0 || title.progress.volume === this.progress.volume) &&
@@ -119,7 +119,7 @@ export abstract class Title {
 			(missingFields.indexOf('end') >= 0 ||
 				(title.end === undefined && this.end === undefined) ||
 				(title.end !== undefined && this.end !== undefined && dateCompare(title.end, this.end)));
-		return this.synced;
+		return synced;
 	};
 
 	setProgress(progress: Progress): boolean {
@@ -147,7 +147,6 @@ export abstract class Title {
 	 */
 	import = (title: Title): void => {
 		const missingFields = this.missingFields;
-		this.synced = true;
 		this.status = title.status;
 		this.progress.chapter = title.progress.chapter;
 		if (missingFields.indexOf('volume') < 0 && title.progress.volume) {
@@ -168,7 +167,6 @@ export abstract class Title {
 	 */
 	merge(title: Title): void {
 		const missingFields = title.missingFields;
-		this.synced = true;
 		if (title.status !== Status.NONE) {
 			this.status = title.status;
 		}
@@ -233,7 +231,6 @@ export class LocalTitle extends Title {
 		super(title);
 		this.key = { id: id };
 		this.inList = title !== undefined;
-		this.synced = true;
 		this.loggedIn = true;
 		if (!this.chapters) this.chapters = [];
 		if (!title?.services || !this.services) this.services = {};
@@ -265,7 +262,6 @@ export class LocalTitle extends Title {
 	static fromSave(title: StorageTitle): Partial<LocalTitle> {
 		const mapped: Partial<LocalTitle> = {
 			inList: true,
-			synced: true,
 			services: {},
 			progress: {
 				chapter: title.p.c,
@@ -377,7 +373,6 @@ export class LocalTitle extends Title {
 
 	delete = async (): Promise<RequestStatus> => {
 		this.inList = false;
-		this.synced = false;
 		this.status = Status.NONE;
 		this.progress = { chapter: 0 };
 		this.score = 0;

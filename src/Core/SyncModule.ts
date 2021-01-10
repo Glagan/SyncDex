@@ -149,9 +149,9 @@ export class SyncModule {
 				report[key] = false;
 				continue;
 			}
-			service.isSynced(this.title);
+			const synced = service.isSyncedWith(this.title);
 			// If Auto Sync is on, import from now up to date Title and persist
-			if ((!checkAutoSyncOption || Options.autoSync) && !service.synced) {
+			if ((!checkAutoSyncOption || Options.autoSync) && !synced) {
 				service.import(this.title);
 				this.overview?.syncingService(key);
 				const promise = this.title.status == Status.NONE ? service.delete() : service.persist();
@@ -257,7 +257,6 @@ export class SyncModule {
 			this.mdState.score = this.previousMdState.score;
 		}
 		this.title.inList = title.inList;
-		this.title.synced = title.synced;
 		this.title.progress = title.progress;
 		this.title.chapters = title.chapters;
 		this.title.status = title.status;
