@@ -853,8 +853,8 @@ export class TitleOverview extends Overview {
 				this.mdStatus.followButton.remove();
 			}
 		} else {
-			const newScore = Math.round(syncModule.mdState.score / 10);
-			this.mdScore.ratings[Math.max(0, newScore - 1)].classList.add('disabled');
+			const newScore = syncModule.mdState.score < 10 ? 1 : Math.round(syncModule.mdState.score / 10);
+			this.mdScore.ratings[newScore].classList.add('disabled');
 			this.mdScore.button.childNodes[1].textContent = ` ${newScore} `;
 		}
 	};

@@ -27,7 +27,7 @@ export interface SaveMediaListEntry {
 	id: number;
 	mediaId: number;
 	status: AnilistStatus;
-	score?: number;
+	scoreRaw?: number;
 	progress?: number;
 	progressVolumes?: number;
 	startedAt?: AnilistDate;
@@ -87,6 +87,34 @@ export class Anilist extends Service {
 	loginMethod = LoginMethod.EXTERNAL;
 	loginUrl = 'https://anilist.co/api/v2/oauth/authorize?client_id=3374&response_type=token';
 
+	static readonly getQuery = `
+		query ($mediaId:Int) {
+			Media(id:$mediaId) {
+				title {
+					userPreferred
+				}
+				chapters
+				volumes
+				mediaListEntry {
+					id
+					status
+					score(format: POINT_100)
+					progress
+					progressVolumes
+					startedAt {
+						year
+						month
+						day
+					}
+					completedAt {
+						year
+						month
+						day
+					}
+				}
+			}
+		}`.replace(/\n\t+/g, ' ');
+
 	async loggedIn(): Promise<RequestStatus> {
 		if (Options.tokens.anilistToken === undefined) return RequestStatus.MISSING_TOKEN;
 		const response = await Runtime.jsonRequest({
@@ -107,7 +135,7 @@ export class Anilist extends Service {
 			method: 'POST',
 			headers: AnilistHeaders(),
 			body: JSON.stringify({
-				query: AnilistTitle.getQuery,
+				query: Anilist.getQuery,
 				variables: {
 					mediaId: id,
 				},
@@ -165,37 +193,9 @@ export class Anilist extends Service {
 }
 
 export class AnilistTitle extends Title {
-	static readonly getQuery = `
-		query ($mediaId: Int) {
-			Media(id: $mediaId) {
-				title {
-					userPreferred
-				}
-				chapters
-				volumes
-				mediaListEntry {
-					id
-					status
-					score(format: POINT_100)
-					progress
-					progressVolumes
-					startedAt {
-						year
-						month
-						day
-					}
-					completedAt {
-						year
-						month
-						day
-					}
-				}
-			}
-		}`.replace(/\n\t+/g, ' ');
-
 	static readonly persistQuery = `
-		mutation ($mediaId: Int, $status: MediaListStatus, $score: Float, $progress: Int, $progressVolumes: Int, $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput) {
-			SaveMediaListEntry (mediaId: $mediaId, status: $status, score: $score, progress: $progress, progressVolumes: $progressVolumes, startedAt: $startedAt, completedAt: $completedAt) {
+		mutation ($mediaId:Int $status:MediaListStatus $score:Float $scoreRaw:Int $progress:Int $progressVolumes:Int $startedAt:FuzzyDateInput $completedAt:FuzzyDateInput) {
+			SaveMediaListEntry (mediaId:$mediaId status:$status score:$score scoreRaw:$scoreRaw progress:$progress progressVolumes:$progressVolumes startedAt:$startedAt completedAt:$completedAt) {
 				id
 				mediaId
 				status
@@ -216,8 +216,8 @@ export class AnilistTitle extends Title {
 		}`.replace(/\n\t+/g, ' ');
 
 	static readonly deleteQuery = `
-		mutation ($id: Int) {
-			DeleteMediaListEntry (id: $id) {
+		mutation ($id:Int) {
+			DeleteMediaListEntry (id:$id) {
 				deleted
 			}
 		}`.replace(/\n\t+/g, ' ');
@@ -253,7 +253,7 @@ export class AnilistTitle extends Title {
 				variables: <SaveMediaListEntry>{
 					mediaId: this.key.id,
 					status: AnilistTitle.fromStatus(this.status),
-					score: this.score !== undefined && this.score > 0 ? this.score : undefined,
+					scoreRaw: this.score !== undefined && this.score > 0 ? this.score : undefined,
 					progress: Math.floor(this.progress.chapter),
 					progressVolumes: this.progress.volume,
 					startedAt: AnilistTitle.dateToAnilist(this.start),
