@@ -7,7 +7,7 @@
 		"storage",
 		"alarms",
 
-		"https://mangadex.org/api/v2/*",
+		"https://api.mangadex.org/*",
 		"https://mangadex.org/ajax/*",
 
 		"https://mochi.nikurasu.org/*",

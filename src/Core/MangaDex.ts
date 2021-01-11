@@ -9,6 +9,8 @@ export namespace MangaDex {
 		return `https://mangadex.org/images/manga/${key.id}.${large ? 'large' : 'thumb'}.${extension}`;
 	}
 
+	const MangaDexAPI = 'https://api.mangadex.org/v2';
+
 	export function api(type: 'me'): string;
 	export function api(type: 'title', id: number): string;
 	export function api(type: 'followed'): string;
@@ -19,11 +21,11 @@ export namespace MangaDex {
 	export function api(type: MangaDexAPIEndpoint, ...args: any[]): string {
 		switch (type) {
 			case 'me':
-				return `https://mangadex.org/api/v2/user/me`;
+				return `${MangaDexAPI}/user/me`;
 			case 'title':
-				return `https://mangadex.org/api/v2/user/me/manga/${args[0]}`;
+				return `${MangaDexAPI}/user/me/manga/${args[0]}`;
 			case 'followed':
-				return `https://mangadex.org/api/v2/user/me/followed-manga`;
+				return `${MangaDexAPI}/user/me/followed-manga`;
 			case 'update':
 				return `https://mangadex.org/ajax/actions.ajax.php?function=manga_follow&id=${args[0]}&type=${
 					args[1]
@@ -37,7 +39,7 @@ export namespace MangaDex {
 					args[1]
 				}&_=${Date.now()}`;
 			case 'updates':
-				return `https://mangadex.org/api/v2/user/me/followed-updates?type=1&p=${args[0]}`;
+				return `${MangaDexAPI}/user/me/followed-updates?type=1&p=${args[0]}`;
 		}
 	}
 }
