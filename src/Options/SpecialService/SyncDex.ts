@@ -1,12 +1,13 @@
+import { browser } from 'webextension-polyfill-ts';
 import { DOM } from '../../Core/DOM';
 import { log } from '../../Core/Log';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { Options } from '../../Core/Options';
-import { StaticKey } from '../../Core/Service';
-import { LocalStorage } from '../../Core/Storage';
-import { LocalTitle, StorageTitle, TitleCollection } from '../../Core/Title';
+import { Storage } from '../../Core/Storage';
+import { LocalTitle, TitleCollection } from '../../Core/Title';
 import { dateFormat } from '../../Core/Utility';
-import { History } from '../../SyncDex/History';
+import { ServiceKey } from '../../Service/Keys';
+import { History } from '../../Core/History';
 import { SpecialService } from '../SpecialService';
 
 export class SyncDexImport extends SpecialService {
@@ -15,10 +16,10 @@ export class SyncDexImport extends SpecialService {
 		let message = moduleInterface.message('loading', 'Loading SyncDex Titles...');
 		const collection = new TitleCollection();
 		for (const key in data) {
-			if (!LocalStorage.isSpecialKey(key)) {
-				// Check if LocalTitle keys are valid and contain a valid LocalTitle
+			if (!Storage.isSpecialKey(key)) {
+				// Check if SyncDexTitle keys are valid and contain a valid SyncDexTitle
 				const id = parseInt(key);
-				if (!isNaN(id) && StorageTitle.valid(data[key])) {
+				if (!isNaN(id) && LocalTitle.valid(data[key])) {
 					collection.add(new LocalTitle(id, LocalTitle.fromSave(data[key])));
 				}
 			}
@@ -72,8 +73,8 @@ export class SyncDexImport extends SpecialService {
 		// Save
 		message = moduleInterface.message('loading', 'Saving...');
 		if (!this.options.merge.active) {
-			await LocalStorage.clear();
-			if (history) await LocalStorage.set('history', history);
+			await Storage.clear();
+			if (history) await Storage.set(StorageUniqueKey.History, history);
 		} else if (collection.length > 0) {
 			collection.merge(await TitleCollection.get(collection.ids));
 		}
@@ -88,7 +89,7 @@ export class SyncDexImport extends SpecialService {
 		if (data.lastSync) otherValues.lastSync = data.lastSync;
 		if (data.import && typeof data.import === 'number') otherValues.import = data.import;
 		if (Object.keys(otherValues).length > 0) {
-			await LocalStorage.raw('set', otherValues);
+			await Storage.set(otherValues);
 		}
 		await Options.save();
 
@@ -116,11 +117,11 @@ export class SyncDexImport extends SpecialService {
 					}),
 				],
 			}),
-			StaticKey.SyncDex
+			ServiceKey.SyncDex
 		);
 
 		// Add File input
-		const inputId = `file_${StaticKey.SyncDex}`;
+		const inputId = `file_${ServiceKey.SyncDex}`;
 		DOM.append(
 			moduleInterface.form,
 			DOM.create('h2', {
@@ -179,7 +180,7 @@ export class SyncDexImport extends SpecialService {
 
 export class SyncDexExport extends SpecialService {
 	start = async (): Promise<void> => {
-		const data = await LocalStorage.getAll();
+		const data = await Storage.get();
 		if (data.options) {
 			delete (data.options as any).tokens;
 			delete data.importInProgress;

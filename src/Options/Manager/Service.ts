@@ -1,16 +1,20 @@
 import { DOM, MessageType } from '../../Core/DOM';
-import { Services } from '../../Core/Services';
+import { Services } from '../../Service/Class/Map';
 import { Modal } from '../../Core/Modal';
 import { Options } from '../../Core/Options';
-import { ActivableKey, LoginMethod, Service } from '../../Core/Service';
+import { Service, LoginMethod } from '../../Core/Service';
 import { SaveOptions } from '../Utility';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { OptionsManager } from '../OptionsManager';
 import { Runtime } from '../../Core/Runtime';
+import { ActivableKey, ServiceKey } from '../../Service/Keys';
+import { ServicesExport, ServicesImport } from '../../Service/ImportExport/Map';
+import { ExportModule, ImportModule } from '../../Core/Module';
+import { createModule } from '../../Service/ImportExport/Utility';
 
 class ServiceCard {
 	manager: ServiceManager;
-	service: typeof Service;
+	service: Service;
 
 	activeCard: HTMLElement;
 	activeCardContent: HTMLElement;
@@ -52,7 +56,7 @@ class ServiceCard {
 		});
 	}
 
-	constructor(manager: ServiceManager, service: typeof Service) {
+	constructor(manager: ServiceManager, service: Service) {
 		this.manager = manager;
 		this.service = service;
 		// Create
@@ -91,15 +95,17 @@ class ServiceCard {
 		this.importButton = DOM.create('button', {
 			childs: [DOM.icon('download'), DOM.text('Import')],
 		});
+		if (!ServicesImport[this.service.key]) this.importButton.style.display = 'none';
 		this.exportButton = DOM.create('button', {
 			childs: [DOM.icon('upload'), DOM.text('Export')],
 		});
+		if (!ServicesExport[this.service.key]) this.exportButton.style.display = 'none';
 		this.bind();
 	}
 
 	loading = (): void => {
 		DOM.clear(this.activeCardContent);
-		if (Options.mainService == this.service.key) {
+		if (Options.services[0] == this.service.key) {
 			DOM.append(this.activeCardContent, this.mainMessage);
 		}
 		DOM.append(
@@ -115,7 +121,7 @@ class ServiceCard {
 	activate = (): void => {
 		this.activeCard.classList.add('active');
 		DOM.clear(this.activeCardContent);
-		if (Options.mainService == this.service.key) {
+		if (Options.services[0] == this.service.key) {
 			DOM.append(this.activeCardContent, this.mainMessage);
 		} else {
 			DOM.append(this.activeCardContent, this.mainButton);
@@ -153,7 +159,6 @@ class ServiceCard {
 		this.activateButton.addEventListener('click', async () => {
 			Options.services.push(this.service.key);
 			if (Options.services.length == 1) {
-				Options.mainService = this.service.key;
 				const containerFirstChild = this.manager.activeContainer.firstElementChild;
 				if (this.activeCard != containerFirstChild) {
 					this.manager.activeContainer.insertBefore(this.activeCard, containerFirstChild);
@@ -172,7 +177,6 @@ class ServiceCard {
 			// Make service the first in the list
 			const index = Options.services.indexOf(this.service.key);
 			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
-			Options.mainService = this.service.key;
 			await SaveOptions();
 			// Update old card
 			if (this.manager.mainCard) {
@@ -206,9 +210,6 @@ class ServiceCard {
 			const index = Options.services.indexOf(this.service.key);
 			if (index > -1) {
 				Options.services.splice(index, 1);
-				if (Options.mainService == this.service.key) {
-					Options.mainService = Options.services.length > 0 ? Options.services[0] : null;
-				}
 			}
 			// Execute logout actions
 			if (this.service.logout !== undefined) {
@@ -229,14 +230,14 @@ class ServiceCard {
 				);
 			}
 			// Set the new main
-			if (Options.mainService) {
-				this.manager.cards[Options.mainService].makeMain();
+			if (Options.services.length > 0) {
+				this.manager.cards[Options.services[0]].makeMain();
 			} else {
 				this.manager.mainCard = undefined;
 			}
 		});
 		this.loginButton.addEventListener('click', (event) => {
-			if (this.service.loginMethod == LoginMethod.FORM) {
+			if (this.service.loginMethod == LoginMethod.FORM && this.service.identifierField) {
 				event.preventDefault();
 				if (!this) return;
 				// Create modal
@@ -310,13 +311,15 @@ class ServiceCard {
 						modal.wrapper.classList.remove('loading');
 						if (res == RequestStatus.SUCCESS) {
 							await SaveOptions();
-							SimpleNotification.success({ text: `Logged in on **${this.service.serviceName}** !` });
+							SimpleNotification.success({ text: `Logged in on **${this.service.name}** !` });
 							this.loginButton.remove();
 							this.updateStatus(res);
 							modal.remove();
 							return;
 						} else if (identifier == '' || password == '') {
-							SimpleNotification.error({ text: `Empty ${this.service.identifierField[0]} or password.` });
+							SimpleNotification.error({
+								text: `Empty ${this.service.identifierField![0]} or password.`,
+							});
 						} else SimpleNotification.error({ text: 'Invalid credentials.' });
 						busy = false;
 					}
@@ -334,17 +337,23 @@ class ServiceCard {
 		});
 		this.importButton.addEventListener('click', async (event) => {
 			event.preventDefault();
+			if (!ServicesImport[this.service.key]) return;
 			const moduleInterface = new ModuleInterface();
-			const importModule = this.service.importModule(moduleInterface);
-			importModule.postExecute = () => OptionsManager.instance.saveViewer.updateAll(true);
-			moduleInterface.modal.show();
+			const importModule = createModule(this.service.key, 'import', moduleInterface);
+			if (importModule) {
+				importModule.postExecute = () => OptionsManager.instance.saveViewer.updateAll(true);
+				moduleInterface.modal.show();
+			}
 		});
 		this.exportButton.addEventListener('click', (event) => {
 			event.preventDefault();
+			if (!ServicesExport[this.service.key]) return;
 			const moduleInterface = new ModuleInterface();
-			const exportModule = this.service.exportModule(moduleInterface);
-			exportModule.postExecute = () => OptionsManager.instance.saveViewer.updateAll(true);
-			moduleInterface.modal.show();
+			const exportModule = createModule(this.service.key, 'export', moduleInterface);
+			if (exportModule) {
+				exportModule.postExecute = () => OptionsManager.instance.saveViewer.updateAll(true);
+				moduleInterface.modal.show();
+			}
 		});
 	};
 
@@ -374,7 +383,7 @@ export class ServiceManager {
 	inactiveServices: ActivableKey[] = [];
 	inactiveWarning: HTMLElement;
 	mainCard?: ServiceCard;
-	cards = {} as { [key in ActivableKey]: ServiceCard };
+	cards = {} as { [key in ServiceKey]: ServiceCard };
 	importAllButton: HTMLButtonElement;
 
 	constructor() {
@@ -462,7 +471,7 @@ export class ServiceManager {
 		// Reload all Service cards
 		for (const key of Object.values(ActivableKey)) {
 			this.reloadCard(key);
-			if (Options.mainService == key) {
+			if (Options.services[0] == key) {
 				this.mainCard = this.cards[key];
 			}
 		}
@@ -482,7 +491,7 @@ export class ServiceManager {
 	reloadCard = async (key: ActivableKey): Promise<void> => {
 		const card = this.cards[key];
 		const index = Options.services.indexOf(key);
-		if (Options.mainService == key) {
+		if (index === 0) {
 			this.mainCard = card;
 			this.activeContainer.insertBefore(this.mainCard.activeCard, this.activeContainer.firstElementChild);
 			this.mainCard.activeCard.classList.add('active');

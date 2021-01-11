@@ -2,10 +2,11 @@ import { DOM } from '../../Core/DOM';
 import { log } from '../../Core/Log';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { Options } from '../../Core/Options';
-import { ActivableKey, StaticKey, StaticName } from '../../Core/Service';
-import { LocalStorage } from '../../Core/Storage';
+import { Storage } from '../../Core/Storage';
 import { LocalTitle, TitleCollection } from '../../Core/Title';
-import { History } from '../../SyncDex/History';
+import { ServiceKey } from '../../Service/Keys';
+import { ServiceName } from '../../Service/Names';
+import { History } from '../../Core/History';
 import { SpecialService } from '../SpecialService';
 
 interface MyMangaDexTitle {
@@ -94,9 +95,8 @@ export class MyMangaDex extends SpecialService {
 			};
 		}
 		// Add MyAnimeList and save options
-		if (Options.services.indexOf(ActivableKey.MyAnimeList) < 0) {
-			Options.services.unshift(ActivableKey.MyAnimeList);
-			Options.mainService = ActivableKey.MyAnimeList;
+		if (Options.services.indexOf(ServiceKey.MyAnimeList) < 0) {
+			Options.services.unshift(ServiceKey.MyAnimeList);
 		}
 	};
 
@@ -117,7 +117,7 @@ export class MyMangaDex extends SpecialService {
 		const titles: MyMangaDexTitle[] = [];
 		for (const key in data) {
 			if (key !== 'options' && key !== 'history') {
-				// Check if LocalTitle keys are valid and contain a valid LocalTitle
+				// Check if SyncDexTitle keys are valid and contain a valid SyncDexTitle
 				const id = parseInt(key);
 				if (!isNaN(id) && this.isValidMyMangaDexTitle(data[key])) {
 					titles.push({ ...data[key], id: id });
@@ -186,8 +186,8 @@ export class MyMangaDex extends SpecialService {
 		// Save
 		message = moduleInterface.message('loading', 'Saving...');
 		if (!this.options.merge.active) {
-			await LocalStorage.clear();
-			if (history) await LocalStorage.set('history', { ids: history });
+			await Storage.clear();
+			if (history) await Storage.set(StorageUniqueKey.History, { ids: history });
 		} else if (collection.length > 0) {
 			collection.merge(await TitleCollection.get(collection.ids));
 		}
@@ -211,10 +211,10 @@ export class MyMangaDex extends SpecialService {
 		// Create a ModuleInterface from scratch
 		const moduleInterface = new ModuleInterface();
 		moduleInterface.createOptions(this.options);
-		moduleInterface.setStyle(DOM.text(StaticName.MyMangaDex), StaticKey.MyMangaDex);
+		moduleInterface.setStyle(DOM.text(ServiceName.MyMangaDex), ServiceName.MyMangaDex);
 
 		// Add File input
-		const inputId = `file_${StaticKey.MyMangaDex}`;
+		const inputId = `file_${ServiceKey.MyMangaDex}`;
 		DOM.append(
 			moduleInterface.form,
 			DOM.message(

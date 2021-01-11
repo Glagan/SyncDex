@@ -1,4 +1,5 @@
 import { DOM } from '../Core/DOM';
+import { MangaDex } from '../Core/MangaDex';
 import { Options } from '../Core/Options';
 import { Title } from '../Core/Title';
 
@@ -63,7 +64,7 @@ export class Thumbnail {
 			if (Options.originalThumbnail) {
 				const tryNumber = tooltipThumb.dataset.ext ? Math.floor(parseInt(tooltipThumb.dataset.ext)) : 1;
 				if (tryNumber < extensions.length) {
-					tooltipThumb.src = `https://mangadex.org/images/manga/${id}.${extensions[tryNumber]}`;
+					tooltipThumb.src = MangaDex.thumbnail({ id }, false, extensions[tryNumber]);
 					tooltipThumb.dataset.ext = (tryNumber + 1).toString();
 				} else {
 					tooltipThumb.src = '';
@@ -83,10 +84,10 @@ export class Thumbnail {
 				this.row.dataset.loading = 'true';
 				// Will trigger 'load' event
 				if (Options.originalThumbnail) {
-					tooltipThumb.src = `https://mangadex.org/images/manga/${id}.jpg`;
+					tooltipThumb.src = MangaDex.thumbnail({ id });
 					tooltipThumb.dataset.ext = '1';
 				} else {
-					tooltipThumb.src = `https://mangadex.org/images/manga/${id}.large.jpg`;
+					tooltipThumb.src = MangaDex.thumbnail({ id }, true);
 				}
 			}
 			this.updatePosition();

@@ -1,13 +1,15 @@
 import { DOM } from './DOM';
 import { ModuleInterface } from './ModuleInterface';
-import { Service, ServiceList, StaticKey } from './Service';
-import { FoundTitle, LocalTitle, TitleCollection } from './Title';
+import { Service } from './Service';
+import { FoundTitle } from './Title';
 import { Mochi } from './Mochi';
-import { LocalStorage, SaveSpecialKeys } from './Storage';
+import { Storage } from './Storage';
 import { Options } from './Options';
 import { Runtime } from './Runtime';
 import { log } from './Log';
-import { browser } from 'webextension-polyfill-ts';
+import { ServiceKey } from '../Service/Keys';
+import { LocalTitle, TitleCollection } from './Title';
+import { MangaDex } from './MangaDex';
 
 export const enum ModuleStatus {
 	SUCCESS,
@@ -73,7 +75,7 @@ export type ModuleOptions = { [key: string]: ModuleOption };
  * An optionnal ModuleInterface can be provided and need to be checked before calling it in `execute`.
  */
 export abstract class Module {
-	service: typeof Service;
+	service: Service;
 	interface?: ModuleInterface;
 	summary: Summary;
 	perConvert: number = 250;
@@ -81,7 +83,7 @@ export abstract class Module {
 
 	extendOptions?(): void;
 
-	constructor(service: typeof Service, moduleInterface?: ModuleInterface) {
+	constructor(service: Service, moduleInterface?: ModuleInterface) {
 		this.service = service;
 		this.interface ??= moduleInterface;
 		this.summary = new Summary();
@@ -181,7 +183,7 @@ export abstract class ImportModule extends Module {
 		},
 	};
 
-	constructor(service: typeof Service, moduleInterface?: ModuleInterface) {
+	constructor(service: Service, moduleInterface?: ModuleInterface) {
 		super(service, moduleInterface);
 		if (this.extendOptions) this.extendOptions();
 		this.bindInterface();
@@ -210,7 +212,7 @@ export abstract class ImportModule extends Module {
 										childs: [
 											DOM.create('img', {
 												src: Runtime.icon(this.service.key),
-												title: this.service.serviceName,
+												title: this.service.name,
 											}),
 											DOM.space(),
 											DOM.text(title.name ?? '[No Name]'),
@@ -245,7 +247,7 @@ export abstract class ImportModule extends Module {
 			const loginMessage = this.interface?.message('loading', 'Checking login status...');
 			if ((await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
 				loginMessage?.classList.remove('loading');
-				this.interface?.message('error', `Importing need you to be logged in on ${this.service.serviceName} !`);
+				this.interface?.message('error', `Importing need you to be logged in on ${this.service.name} !`);
 				this.interface?.complete();
 				return ModuleStatus.LOGIN_FAIL;
 			}
@@ -265,7 +267,7 @@ export abstract class ImportModule extends Module {
 				}
 				return ModuleStatus.EXECUTE_FAIL;
 			}
-			this.interface?.message('default', `Found ${this.found.length} Titles on ${this.service.serviceName}.`);
+			this.interface?.message('default', `Found ${this.found.length} Titles on ${this.service.name}.`);
 			this.summary.total = this.found.length;
 
 			// Find MangaDex ID for all FoundTitle
@@ -282,28 +284,27 @@ export abstract class ImportModule extends Module {
 					current + this.perConvert
 				)} out of ${this.summary.total}.`;
 				const allConnections = await Mochi.findMany(
-					titleList.map((t) => t.mochi),
-					this.service.serviceName
+					titleList.map((t) => t.mochiKey),
+					this.service.name
 				);
 				const found: (number | string)[] = [];
 				if (allConnections !== undefined) {
 					for (const key in allConnections) {
 						const connections = allConnections[key];
 						if (connections['md'] !== undefined) {
-							const title = titleList.find((t) => t.mochi == key);
+							const title = titleList.find((t) => t.mochiKey == key);
 							if (title) {
 								const localTitle = new LocalTitle(connections['md'], title);
 								Mochi.assign(localTitle, connections);
-								localTitle.services[this.service.key] = title.key;
 								titles.add(localTitle);
 								this.summary.valid++;
-								found.push(title.mochi);
+								found.push(title.mochiKey);
 							}
 						}
 					}
 				}
 				// Add missing titles to the failed Summary
-				this.summary.failed.push(...titleList.filter((t) => found.indexOf(t.mochi) < 0));
+				this.summary.failed.push(...titleList.filter((t) => found.indexOf(t.mochiKey) < 0));
 			}
 			notification?.classList.remove('loading');
 			if (this.interface?.doStop) {
@@ -316,24 +317,23 @@ export abstract class ImportModule extends Module {
 			if (!this.options.merge.active) {
 				if (this.options.save.active) {
 					// Keep options, logs, saveSync, import and lastSync
-					const keepKeys: (keyof ExportedSave)[] = [
-						SaveSpecialKeys.Options,
-						SaveSpecialKeys.Logs,
-						SaveSpecialKeys.LastSync,
-						SaveSpecialKeys.Import,
-						SaveSpecialKeys.SaveSync,
-					];
-					const keep = await browser.storage.local.get(keepKeys);
-					await LocalStorage.clear();
-					await browser.storage.local.set(keep);
+					const keep = await Storage.get([
+						StorageUniqueKey.Options,
+						StorageUniqueKey.Logs,
+						StorageUniqueKey.LastSync,
+						StorageUniqueKey.Import,
+						StorageUniqueKey.SaveSync,
+					]);
+					await Storage.clear();
+					await Storage.set(keep);
 				}
 			} else if (titles.length > 0) {
-				titles.merge(await TitleCollection.get(titles.ids));
+				(await TitleCollection.get(titles.ids)).mergeInto(titles);
 			}
 
 			// Add chapters
 			if (Options.saveOpenedChapters) {
-				for (const title of titles.collection) {
+				for (const title of titles) {
 					if (title.progress.chapter > 0) {
 						title.chapters = [];
 						let index = Math.max(title.progress.chapter - Options.chaptersSaved, 1);
@@ -367,7 +367,7 @@ export abstract class ExportModule extends Module {
 		},
 	};
 
-	constructor(service: typeof Service, moduleInterface?: ModuleInterface) {
+	constructor(service: Service, moduleInterface?: ModuleInterface) {
 		super(service, moduleInterface);
 		if (this.extendOptions) this.extendOptions();
 		this.bindInterface();
@@ -391,9 +391,9 @@ export abstract class ExportModule extends Module {
 						childs: [
 							DOM.create('a', {
 								target: '_blank',
-								href: LocalTitle.link(title.key),
+								href: MangaDex.link(title.key),
 								childs: [
-									DOM.create('img', { src: Runtime.icon(StaticKey.MangaDex), title: 'MangaDex' }),
+									DOM.create('img', { src: Runtime.icon(ServiceKey.MangaDex), title: 'MangaDex' }),
 									DOM.space(),
 									DOM.text(name),
 									DOM.space(),
@@ -432,7 +432,7 @@ export abstract class ExportModule extends Module {
 
 	selectTitles = (titles: TitleCollection): LocalTitle[] => {
 		const filtered: LocalTitle[] = [];
-		for (const title of titles.collection) {
+		for (const title of titles) {
 			if (title.status !== Status.NONE && title.services[this.service.key] !== undefined) {
 				filtered.push(title);
 			}
@@ -449,7 +449,7 @@ export abstract class ExportModule extends Module {
 			const loginMessage = this.interface?.message('loading', 'Checking login status...');
 			if ((await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
 				loginMessage?.classList.remove('loading');
-				this.interface?.message('error', `Exporting need you to be logged in on ${this.service.serviceName} !`);
+				this.interface?.message('error', `Exporting need you to be logged in on ${this.service.name} !`);
 				this.interface?.complete();
 				return ModuleStatus.LOGIN_FAIL;
 			}

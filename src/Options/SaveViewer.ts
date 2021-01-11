@@ -1,12 +1,14 @@
-import { TitleCollection, StatusMap, LocalTitle } from '../Core/Title';
+import { StatusMap } from '../Core/Title';
 import { DOM, AppendableElement } from '../Core/DOM';
-import { LocalStorage } from '../Core/Storage';
+import { Storage } from '../Core/Storage';
 import { dateFormat, progressToString } from '../Core/Utility';
 import { TitleEditor } from '../Core/TitleEditor';
 import { SyncModule } from '../Core/SyncModule';
-import { ActivableKey } from '../Core/Service';
-import { Services } from '../Core/Services';
+import { Services } from '../Service/Class/Map';
 import { Runtime } from '../Core/Runtime';
+import { ActivableKey } from '../Service/Keys';
+import { LocalTitle, TitleCollection } from '../Core/Title';
+import { MangaDex } from '../Core/MangaDex';
 
 interface SaveRow {
 	title: LocalTitle;
@@ -88,7 +90,7 @@ export class SaveViewer {
 					this.titles.remove(row.title.key.id!);
 				}
 			}
-			await LocalStorage.remove(ids);
+			await Storage.remove(ids);
 			this.updateDisplayedPage();
 		});
 
@@ -231,7 +233,7 @@ export class SaveViewer {
 						DOM.create('a', {
 							textContent: title.key.id!.toString(),
 							target: '_blank',
-							href: LocalTitle.link(title.key),
+							href: MangaDex.link(title.key),
 							childs: [DOM.space(), DOM.icon('external-link-alt')],
 						}),
 					],
@@ -283,7 +285,7 @@ export class SaveViewer {
 				clearTimeout(deletePrevention[0]);
 				deletePrevention[1].close();
 				deleteButton.classList.add('loading');
-				await LocalStorage.remove(title.key.id!);
+				await Storage.remove(title.key.id!);
 				this.titles.remove(title.key.id!);
 				row.remove();
 				this.updateDisplayedPage();
@@ -346,7 +348,7 @@ export class SaveViewer {
 		DOM.clear(this.body);
 		if (reload) {
 			const response = await Runtime.jsonRequest({
-				url: 'https://mangadex.org/api/v2/user/me',
+				url: MangaDex.api('me'),
 				credentials: 'include',
 			});
 			SaveViewer.loggedIn = response.ok;

@@ -5,9 +5,10 @@ import { ModuleStatus } from '../Core/Module';
 import { DefaultOptions, Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
 import { SaveSync } from '../Core/SaveSync';
-import { SaveSyncServices } from '../Core/SaveSyncServices';
-import { Services } from '../Core/Services';
-import { LocalStorage } from '../Core/Storage';
+import { SaveSyncServices } from '../SaveSync/Map';
+import { Services } from '../Service/Class/Map';
+import { Storage } from '../Core/Storage';
+import { createModule } from '../Service/ImportExport/Utility';
 
 console.log('SyncDex :: Background');
 
@@ -24,7 +25,7 @@ function setIcon(title: string = '', bgColor: string = '', text: string = '') {
 Runtime.messageSender = (message: Message) => handleMessage(message);
 
 async function getCleanSave() {
-	const save = await LocalStorage.getAll();
+	const save = await Storage.get();
 	if (save.options?.tokens) save.options.tokens = {};
 	delete save.dropboxState;
 	delete save.googleDriveState;
@@ -307,13 +308,13 @@ browser.alarms.onAlarm.addListener(async (alarm: Alarms.Alarm) => {
 
 async function syncSave(force: boolean = false) {
 	setIcon('Save Sync in progress', '#45A1FF', '...');
-	const syncState = await LocalStorage.get('saveSync');
+	const syncState = await Storage.get('saveSync');
 	if (syncState !== undefined) {
-		if (!(await LocalStorage.get('saveSyncInProgress', false))) {
+		if (!(await Storage.get(StorageUniqueKey.SaveSyncInProgress, false))) {
 			const saveSyncServiceClass = SaveSyncServices[syncState.service];
 			if (saveSyncServiceClass !== undefined) {
 				await loadLogs(true);
-				await LocalStorage.set('saveSyncInProgress', true);
+				await Storage.set(StorageUniqueKey.SaveSyncInProgress, true);
 				let result = SaveSyncResult.ERROR;
 				try {
 					await browser.runtime.sendMessage({ action: MessageAction.saveSyncStart }).catch((_e) => _e);
@@ -331,7 +332,7 @@ async function syncSave(force: boolean = false) {
 				} catch (error) {
 					log(error);
 				}
-				await LocalStorage.remove('saveSyncInProgress');
+				await Storage.remove(StorageUniqueKey.SaveSyncInProgress);
 				await browser.runtime
 					.sendMessage({ action: MessageAction.saveSyncComplete, status: result })
 					.catch((_e) => _e);
@@ -341,7 +342,7 @@ async function syncSave(force: boolean = false) {
 				delete (syncState as any).token;
 				delete (syncState as any).refresh;
 				await log(`Invalid Save Sync Service [${syncState}]`);
-				await LocalStorage.remove('saveSync');
+				await Storage.remove('saveSync');
 				setIcon();
 			}
 		} else setIcon();
@@ -351,33 +352,34 @@ async function silentImport(manual: boolean = false) {
 	await Options.load();
 	if (manual || (Options.checkOnStartup && Options.services.length > 0)) {
 		const checkCooldown = Options.checkOnStartupCooldown * 60 * 1000;
-		const lastCheck: number | string[] = await LocalStorage.get('import', 0);
+		const lastCheck: number | string[] = await Storage.get('import', 0);
 		if (manual || typeof lastCheck !== 'number' || Date.now() - lastCheck > checkCooldown) {
-			await LocalStorage.set('importInProgress', true);
+			await Storage.set(StorageUniqueKey.ImportInProgress, true);
 			await browser.runtime.sendMessage({ action: MessageAction.importStart }).catch((_e) => _e);
 			await log('Importing lists');
 			const services =
-				!manual && Options.checkOnStartupMainOnly ? [Options.mainService!] : [...Options.services].reverse();
+				!manual && Options.checkOnStartupMainOnly ? [Options.services[0]] : [...Options.services].reverse();
 			const done: string[] = typeof lastCheck === 'object' ? lastCheck : [];
 			for (const key of services) {
 				if (done.indexOf(key) < 0) {
 					try {
 						const start = Date.now();
-						await log(`Importing ${Services[key].serviceName}`);
-						const module = Services[key].importModule();
+						await log(`Importing ${Services[key].name}`);
+						const module = createModule(key, 'import');
+						if (!module) continue;
 						const moduleResult = await module.run();
 						if (moduleResult == ModuleStatus.SUCCESS) {
-							await log(`Imported ${Services[key].serviceName} in ${Date.now() - start}ms`);
-						} else await log(`Could not import ${Services[key].serviceName} | Status: ${moduleResult}`);
+							await log(`Imported ${Services[key].name} in ${Date.now() - start}ms`);
+						} else await log(`Could not import ${Services[key].name} | Status: ${moduleResult}`);
 					} catch (error) {
-						await log(`Error while importing ${Services[key].serviceName} ${error.stack}`);
+						await log(`Error while importing ${Services[key].name} ${error.stack}`);
 					}
 					done.push(key);
-					if (!manual) await LocalStorage.set('import', { done: done });
-				} else await log(`Skipping ${Services[key].serviceName} already imported`);
+					if (!manual) await Storage.set(StorageUniqueKey.Import, done);
+				} else await log(`Skipping ${Services[key].name} already imported`);
 			}
-			if (!manual) await LocalStorage.set('import', Date.now());
-			await LocalStorage.remove('importInProgress');
+			if (!manual) await Storage.set(StorageUniqueKey.Import, Date.now());
+			await Storage.remove(StorageUniqueKey.ImportInProgress);
 			await browser.runtime.sendMessage({ action: MessageAction.importComplete }).catch((_e) => _e);
 			await log(`Done Importing lists`);
 		} else await log(`Startup script executed less than ${Options.checkOnStartupCooldown}minutes ago, skipping`);
@@ -385,7 +387,7 @@ async function silentImport(manual: boolean = false) {
 }
 async function onStartup() {
 	if (!isChrome) browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
-	await LocalStorage.remove(['dropboxState', 'googleDriveState', 'saveSyncInProgress', 'importInProgress']);
+	await Storage.remove(['dropboxState', 'googleDriveState', 'saveSyncInProgress', 'importInProgress']);
 
 	await syncSave();
 	await silentImport();

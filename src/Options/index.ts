@@ -3,7 +3,7 @@ import { DOM } from '../Core/DOM';
 import { Modal } from '../Core/Modal';
 import { Options } from '../Core/Options';
 import { SaveSync } from '../Core/SaveSync';
-import { LocalStorage } from '../Core/Storage';
+import { Storage } from '../Core/Storage';
 import { Changelog } from './Changelog';
 import { OptionsManager } from './OptionsManager';
 import { ThemeHandler } from './ThemeHandler';
@@ -15,7 +15,7 @@ const quickDebug = document.getElementById('quickOptionsDebug');
 if (quickDebug) {
 	quickDebug.addEventListener('click', async (event) => {
 		event.preventDefault();
-		const save = await LocalStorage.getAll();
+		const save = await Storage.get();
 		delete save.history;
 		// Remove all titles
 		for (const key in save) {
@@ -70,11 +70,11 @@ if (quickDebug) {
 	await Options.load();
 	const versionSpan = document.getElementById('version');
 	if (versionSpan) versionSpan.textContent = `${Options.version}.${Options.subVersion}`;
-	SaveSync.state = await LocalStorage.get('saveSync');
+	SaveSync.state = await Storage.get('saveSync');
 	OptionsManager.instance = new OptionsManager();
 	// Check current import progress
-	const progress = await LocalStorage.raw('get', ['importInProgress', 'saveSyncInProgress']);
-	OptionsManager.instance.toggleImportProgressState(progress.importInProgress || progress.saveSyncInProgress);
+	const progress = await Storage.get([StorageUniqueKey.ImportInProgress, StorageUniqueKey.SaveSyncInProgress]);
+	OptionsManager.instance.toggleImportProgressState(!!progress.importInProgress || !!progress.saveSyncInProgress);
 
 	// Check if SyncDex was updated or installed
 	const reason = window.location.hash.substr(1);

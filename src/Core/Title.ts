@@ -1,8 +1,9 @@
-import { LocalStorage } from './Storage';
-import { Options } from './Options';
 import { dateCompare } from './Utility';
-import { ActivableKey, Service, ServiceList } from './Service';
-import { History } from '../SyncDex/History';
+import { ActivableKey } from '../Service/Keys';
+import { browser } from 'webextension-polyfill-ts';
+import { Options } from './Options';
+import { History } from './History';
+import { Storage } from './Storage';
 
 export const StatusMap: { [key in Status]: string } = {
 	[Status.NONE]: 'No Status',
@@ -30,60 +31,10 @@ export function iconToService(src: string): ActivableKey | undefined {
 	return undefined;
 }
 
-interface SaveProgress {
-	c: number;
-	v?: number;
-	o?: 1;
-}
-
-export type SaveMediaKey = { s?: string; i?: number } | number;
-export type SaveServiceList = {
-	[key in ActivableKey]?: SaveMediaKey;
-};
-
-export interface StorageTitle {
-	s: SaveServiceList; // services
-	st: Status; // status
-	sc?: number; // score
-	p: SaveProgress; // progress
-	m?: Partial<SaveProgress>; // max progress
-	c?: number[]; // chapters
-	sd?: number; // start
-	ed?: number; // end
-	lt?: number; // lastTitle
-	n?: string; // name
-	// History
-	id?: number; // lastChapter
-	h?: SaveProgress; // history
-	hi?: number; // highest
-	lr?: number; // lastRead
-}
-
-export class StorageTitle {
-	static valid(title: StorageTitle): boolean {
-		return (
-			typeof title.s === 'object' &&
-			typeof title.st === 'number' &&
-			typeof title.p === 'object' &&
-			title.p.c !== undefined &&
-			(title.sc === undefined || typeof title.sc === 'number') &&
-			(title.m === undefined || typeof title.m === 'object') &&
-			(title.c === undefined || Array.isArray(title.c)) &&
-			(title.sd === undefined || typeof title.sd === 'number') &&
-			(title.ed === undefined || typeof title.ed === 'number') &&
-			(title.lt === undefined || typeof title.lt === 'number') &&
-			(title.id === undefined || typeof title.id === 'number') &&
-			(title.h === undefined || (typeof title.h === 'object' && title.h.c !== undefined)) &&
-			(title.hi === undefined || typeof title.hi === 'number') &&
-			(title.lr === undefined || typeof title.lr === 'number') &&
-			(title.n === undefined || typeof title.n === 'string')
-		);
-	}
-}
-
 // Fields that can be missing on a Service
 export type MissableField = 'volume' | 'score' | 'start' | 'end';
 
+// TODO: Remove
 export interface FoundTitle {
 	key: MediaKey;
 	name?: string;
@@ -94,22 +45,21 @@ export interface FoundTitle {
 	score?: number;
 	start?: Date;
 	end?: Date;
-	mochi: number | string;
+	mochiKey: number | string;
 }
 
 export abstract class Title {
 	key: MediaKey = { id: 0 };
 	inList: boolean = false;
-	synced: boolean = false;
+	loggedIn: boolean = false;
+	name?: string;
+	max?: Partial<Progress>;
+	// Synced keys
 	status: Status = Status.NONE;
 	progress: Progress = { chapter: 0 };
-	max?: Partial<Progress>;
 	score: number = 0;
 	start?: Date;
 	end?: Date;
-	name?: string;
-	loggedIn: boolean = false;
-	mangaDex?: number;
 
 	static readonly missingFields: MissableField[] = [];
 
@@ -117,14 +67,9 @@ export abstract class Title {
 		if (title != undefined) Object.assign(this, title);
 	}
 
-	/**
-	 * Pull the current status of the Media identified by ID.
-	 * Return a `RequestStatus` on error.
-	 */
-	static get = async (id: MediaKey): Promise<Title | RequestStatus> => {
-		throw 'Title.get is an abstract function';
-		return RequestStatus.FAIL;
-	};
+	get missingFields() {
+		return (<typeof Title>this.constructor).missingFields;
+	}
 
 	/**
 	 * Send any necessary requests to save the Media on the Service.
@@ -141,7 +86,7 @@ export abstract class Title {
 	 * A different score always trigger a true, since higher Services are tested last.
 	 */
 	isMoreRecent = (other: Title): boolean => {
-		const missingFields = (<typeof Title>this.constructor).missingFields;
+		const missingFields = this.missingFields;
 		return (
 			this.progress.chapter > other.progress.chapter ||
 			(missingFields.indexOf('volume') < 0 &&
@@ -161,9 +106,9 @@ export abstract class Title {
 	 * Compare the Media on the Service to a Title to check if it has the same progress.
 	 * Avoid checking fields that cannot exist on the Service.
 	 */
-	isSynced = (title: Title): boolean => {
-		const missingFields = (<typeof Title>this.constructor).missingFields;
-		this.synced =
+	isSyncedWith = (title: Title): boolean => {
+		const missingFields = this.missingFields;
+		const synced =
 			title.status === this.status &&
 			Math.floor(title.progress.chapter) === Math.floor(this.progress.chapter) &&
 			(missingFields.indexOf('volume') >= 0 || title.progress.volume === this.progress.volume) &&
@@ -174,15 +119,34 @@ export abstract class Title {
 			(missingFields.indexOf('end') >= 0 ||
 				(title.end === undefined && this.end === undefined) ||
 				(title.end !== undefined && this.end !== undefined && dateCompare(title.end, this.end)));
-		return this.synced;
+		return synced;
 	};
+
+	setProgress(progress: Progress): boolean {
+		let completed = false;
+		const created = this.status == Status.NONE || this.status == Status.PLAN_TO_READ;
+		if (progress.oneshot || (this.max?.chapter && this.max.chapter <= progress.chapter)) {
+			completed = this.status !== Status.COMPLETED || !this.end;
+			this.status = Status.COMPLETED;
+			if (!this.end) this.end = new Date();
+		} else this.status = Status.READING;
+		this.progress.chapter = progress.chapter;
+		if (progress.volume && (!this.progress.volume || this.progress.volume < progress.volume)) {
+			this.progress.volume = progress.volume;
+		}
+		this.progress.oneshot = progress.oneshot;
+		if (created && !this.start) {
+			this.start = new Date();
+		}
+		return completed;
+	}
 
 	/**
 	 * Assign all values from the Title to *this*.
+	 * If a field is missing in *this* it's ignored and deleted.
 	 */
 	import = (title: Title): void => {
-		const missingFields = (<typeof Title>this.constructor).missingFields;
-		this.synced = true;
+		const missingFields = this.missingFields;
 		this.status = title.status;
 		this.progress.chapter = title.progress.chapter;
 		if (missingFields.indexOf('volume') < 0 && title.progress.volume) {
@@ -199,11 +163,10 @@ export abstract class Title {
 
 	/**
 	 * Select all higher (or lower for dates) values from both Titles and assign them to *this*.
-	 * Score is always export to the Title if it exists.
+	 * Score is always exported to the Title if it exists.
 	 */
-	merge = (title: Title): void => {
-		const missingFields = (<typeof Title>title.constructor).missingFields;
-		this.synced = true;
+	merge(title: Title): void {
+		const missingFields = title.missingFields;
 		if (title.status !== Status.NONE) {
 			this.status = title.status;
 		}
@@ -227,63 +190,70 @@ export abstract class Title {
 			this.end = new Date(title.end);
 		}
 		if (this.name && this.name != '') title.name = title.name;
+	}
+
+	/**
+	 * Call merge on the given Title.
+	 */
+	mergeTo = (title: Title): void => {
+		title.merge(this);
 	};
 
 	isNextChapter = (progress: Progress): boolean => {
 		return progress.chapter > this.progress.chapter && progress.chapter < Math.floor(this.progress.chapter) + 2;
 	};
+
+	/**
+	 * Get the ID used by Mochi that can only be a number or a string.
+	 */
+	get uniqueKey(): number | string {
+		return this.key.id!;
+	}
 }
 
 export class LocalTitle extends Title {
-	/**
-	 * External MangaDex List Status
-	 */
-	mdStatus: Status = Status.NONE;
-	/**
-	 * External MangaDex List Score
-	 */
-	mdScore: number = 0;
-	/**
-	 * `ServiceKey` list of mapped Service for the Title.
-	 */
-	services!: ServiceList;
-	/**
-	 * List of all read Chapters.
-	 */
-	chapters!: number[];
-	/**
-	 * Last time the Title page of the Title was visited.
-	 */
+	// `ServiceKey` list of mapped Service for the Title.
+	services: ServiceList = {};
+	// List of all read Chapters.
+	chapters: number[] = [];
+	// Last time the Title page of the Title was visited.
 	lastTitle?: number;
-
-	// History
-
-	/**
-	 * MangaDex Chapter ID of the last read chapter.
-	 */
+	// MangaDex Chapter ID of the last read chapter.
 	lastChapter?: number;
-	/**
-	 * Displayed Chapter/Volume in the History page.
-	 * This Progress is the last read chapter without looking at any options.
-	 */
+	// Displayed Chapter/Volume in the History page.
 	history?: Progress;
-	/**
-	 * Highest available chapter on MangaDex
-	 */
+	// Highest available chapter on MangaDex
 	highest?: number;
-	/**
-	 * Last time a Chapter was read for the Title
-	 */
+	// Last time a Chapter was read for the Title
 	lastRead?: number;
 
 	constructor(id: number, title?: Partial<LocalTitle>) {
 		super(title);
 		this.key = { id: id };
 		this.inList = title !== undefined;
-		this.synced = true;
 		this.loggedIn = true;
 		if (!this.chapters) this.chapters = [];
 		if (!title?.services || !this.services) this.services = {};
+	}
+
+	static valid(title: StorageTitle): boolean {
+		return (
+			typeof title.s === 'object' &&
+			typeof title.st === 'number' &&
+			typeof title.p === 'object' &&
+			title.p.c !== undefined &&
+			(title.sc === undefined || typeof title.sc === 'number') &&
+			(title.m === undefined || typeof title.m === 'object') &&
+			(title.c === undefined || Array.isArray(title.c)) &&
+			(title.sd === undefined || typeof title.sd === 'number') &&
+			(title.ed === undefined || typeof title.ed === 'number') &&
+			(title.lt === undefined || typeof title.lt === 'number') &&
+			(title.id === undefined || typeof title.id === 'number') &&
+			(title.h === undefined || (typeof title.h === 'object' && title.h.c !== undefined)) &&
+			(title.hi === undefined || typeof title.hi === 'number') &&
+			(title.lr === undefined || typeof title.lr === 'number') &&
+			(title.n === undefined || typeof title.n === 'string')
+		);
 	}
 
 	/**
@@ -292,7 +262,6 @@ export class LocalTitle extends Title {
 	static fromSave(title: StorageTitle): Partial<LocalTitle> {
 		const mapped: Partial<LocalTitle> = {
 			inList: true,
-			synced: true,
 			services: {},
 			progress: {
 				chapter: title.p.c,
@@ -336,18 +305,11 @@ export class LocalTitle extends Title {
 		return mapped;
 	}
 
-	/**
-	 * Retrieve a Title by it's MangaDex ID from Local Storage.
-	 */
-	static async get(id: number | string | object): Promise<LocalTitle> {
-		if (typeof id !== 'number' && typeof id !== 'string') throw 'LocalTitle.id need to be a number or a string.';
-		const title = await LocalStorage.get(id);
-		const rid = typeof id === 'number' ? id : parseInt(id);
-		if (title === undefined) {
-			return new LocalTitle(rid);
-		}
-		return new LocalTitle(rid, LocalTitle.fromSave(title));
-	}
+	static get = async (id: number): Promise<LocalTitle> => {
+		const data = await Storage.get(id);
+		if (data === undefined) return new LocalTitle(id);
+		return new LocalTitle(id, LocalTitle.fromSave(data));
+	};
 
 	/**
 	 * Convert a Title to a `SaveTitle` with reduced key length.
@@ -397,21 +359,20 @@ export class LocalTitle extends Title {
 		return mapped;
 	};
 
-	/**
-	 * Convert a Title to a SaveTitle to follow the save schema and save it in LocalStorage
-	 */
 	persist = async (): Promise<RequestStatus> => {
 		this.inList = true;
-		await LocalStorage.set(this.key.id!, this.toSave());
+		await Storage.set({ [`${this.key.id}`]: this.toSave() });
 		return RequestStatus.SUCCESS;
 	};
 
-	/**
-	 * Reset fields related to progress and save the Title.
-	 */
+	refresh = async (): Promise<RequestStatus> => {
+		const data = await LocalTitle.get(this.key.id!);
+		Object.assign(this, data);
+		return RequestStatus.SUCCESS;
+	};
+
 	delete = async (): Promise<RequestStatus> => {
 		this.inList = false;
-		this.synced = false;
 		this.status = Status.NONE;
 		this.progress = { chapter: 0 };
 		this.score = 0;
@@ -419,38 +380,47 @@ export class LocalTitle extends Title {
 		this.end = undefined;
 		this.name = undefined;
 		this.chapters = [];
-		await LocalStorage.remove(this.key.id!);
+		await Storage.remove(`${this.key.id}`);
 		return RequestStatus.SUCCESS;
 	};
 
-	/**
-	 * Select highest values of both Titles and assign them to the receiving Title.
-	 */
-	localMerge = (other: LocalTitle): void => {
-		// Update all 'number' properties to select the highest ones
-		for (let k in this) {
-			const key = k as keyof Title;
-			if (this[key] && other[key] && typeof this[key] === 'number' && typeof other[key] === 'number') {
-				Object.assign(this, { [key]: Math.max(this[key] as number, other[key] as number) });
+	merge(other: Title): void {
+		if (other instanceof LocalTitle) {
+			// Update all 'number' properties to select the highest ones
+			for (let k in this) {
+				const key = k as keyof Title;
+				if (this[key] && other[key] && typeof this[key] === 'number' && typeof other[key] === 'number') {
+					Object.assign(this, { [key]: Math.max(this[key] as number, other[key] as number) });
+				}
 			}
+			super.merge(other);
+			Object.assign(this.services, other.services); // Merge Services -- other erase *this*
+			// Merge chapters array
+			this.chapters = this.chapters.concat(other.chapters);
+			// Sort and only keep the first (desc) *Options.chaptersSaved* chapters
+			this.chapters.sort((a, b) => b - a);
+			if (this.chapters.length > Options.chaptersSaved) {
+				const diff = Options.chaptersSaved - this.chapters.length;
+				this.chapters.splice(-diff, diff);
+			}
+			// Add missing History fields
+			if (!this.history) this.history = other.history;
+			if (!this.lastRead) this.lastRead = other.lastRead;
+			if (!this.lastChapter) this.lastChapter = other.lastChapter;
+			if (!this.lastTitle) this.lastTitle = other.lastTitle;
+			if (!this.highest) this.highest = other.highest;
+		} else {
+			super.merge(other);
 		}
-		this.merge(other);
-		Object.assign(this.services, other.services); // Merge Services -- other erase *this*
-		// Merge chapters array
-		this.chapters = this.chapters.concat(other.chapters);
-		// Sort and only keep the first (desc) *Options.chaptersSaved* chapters
-		this.chapters.sort((a, b) => b - a);
-		if (this.chapters.length > Options.chaptersSaved) {
-			const diff = Options.chaptersSaved - this.chapters.length;
-			this.chapters.splice(-diff, diff);
+	}
+
+	setProgress(progress: Progress): boolean {
+		const res = super.setProgress(progress);
+		if (Options.saveOpenedChapters) {
+			this.addChapter(progress.chapter);
 		}
-		// Add missing History fields
-		if (!this.history) this.history = other.history;
-		if (!this.lastRead) this.lastRead = other.lastRead;
-		if (!this.lastChapter) this.lastChapter = other.lastChapter;
-		if (!this.lastTitle) this.lastTitle = other.lastTitle;
-		if (!this.highest) this.highest = other.highest;
-	};
+		return res;
+	}
 
 	addChapter = (chapter: number): boolean => {
 		let max = this.chapters.length;
@@ -498,37 +468,6 @@ export class LocalTitle extends Title {
 		}
 	};
 
-	refresh = async (): Promise<boolean> => {
-		const reloaded = await LocalStorage.get(this.key.id!);
-		if (reloaded) {
-			Object.assign(this, LocalTitle.fromSave(reloaded));
-			return true;
-		}
-		return false;
-	};
-
-	setProgress = (progress: Progress): boolean => {
-		let completed = false;
-		const created = this.status == Status.NONE || this.status == Status.PLAN_TO_READ;
-		if (progress.oneshot || (this.max?.chapter && this.max.chapter <= progress.chapter)) {
-			completed = this.status !== Status.COMPLETED || !this.end;
-			this.status = Status.COMPLETED;
-			if (!this.end) this.end = new Date();
-		} else this.status = Status.READING;
-		this.progress.chapter = progress.chapter;
-		if (progress.volume && (!this.progress.volume || this.progress.volume < this.progress.volume)) {
-			this.progress.volume = progress.volume;
-		}
-		this.progress.oneshot = progress.oneshot;
-		if (created && !this.start) {
-			this.start = new Date();
-		}
-		if (Options.saveOpenedChapters) {
-			this.addChapter(progress.chapter);
-		}
-		return completed;
-	};
-
 	setHistory = async (chapterId: number, progress?: Progress): Promise<void> => {
 		this.lastChapter = chapterId;
 		this.lastRead = Date.now();
@@ -536,29 +475,6 @@ export class LocalTitle extends Title {
 		History.add(this.key.id!);
 		await History.save();
 	};
-
-	static link = (key: MediaKey): string => {
-		return `https://mangadex.org/title/${key.id}`;
-	};
-}
-
-export abstract class ExternalTitle extends Title {
-	static readonly service: typeof Service;
-	static readonly updateKeyOnFirstFetch: boolean = false;
-
-	static idFromLink = (href: string): MediaKey => {
-		throw 'ExternalTitle.idFromLink is an abstract function';
-		return { id: 0 };
-	};
-	static idFromString = (str: string): MediaKey => {
-		throw 'ExternalTitle.idFromString is an abstract function';
-		return { id: 0 };
-	};
-
-	/**
-	 * Get the ID used by Mochi that can only be a number or a string.
-	 */
-	abstract get mochi(): number | string;
 }
 
 export class TitleCollection {
@@ -585,9 +501,9 @@ export class TitleCollection {
 	/**
 	 * List of all MangaDex IDs in the Collection.
 	 */
-	get ids(): number[] {
+	get ids(): (number | string)[] {
 		return this.collection.map((title) => {
-			return title.key.id!;
+			return title.uniqueKey;
 		});
 	}
 
@@ -599,40 +515,10 @@ export class TitleCollection {
 	}
 
 	/**
-	 * Retrieve all Titles with the IDs inside `list` inside a Collection.
-	 * If `list` is undefined, return all Titles in Local Storage.
-	 */
-	static async get(list?: number[] | string[]): Promise<TitleCollection> {
-		let collection = new TitleCollection();
-		if (list === undefined) {
-			const localTitles = await LocalStorage.getAll();
-			for (const key in localTitles) {
-				if (!LocalStorage.isSpecialKey(key)) {
-					collection.add(new LocalTitle(parseInt(key), LocalTitle.fromSave(localTitles[key])));
-				}
-			}
-		} else {
-			if (list.length == 0) return collection;
-			const localTitles = await LocalStorage.getTitleList(list);
-			if (localTitles !== undefined) {
-				for (const id of list) {
-					const titleId = typeof id === 'number' ? id : parseInt(id);
-					if (localTitles[titleId] === undefined) {
-						collection.add(new LocalTitle(titleId));
-					} else {
-						collection.add(new LocalTitle(titleId, LocalTitle.fromSave(localTitles[titleId])));
-					}
-				}
-			}
-		}
-		return collection;
-	}
-
-	/**
 	 * Find the title with the MangaDex ID `id` inside the Collection.
 	 */
 	find = (id: number): LocalTitle | undefined => {
-		for (const title of this.collection) {
+		for (const title of this) {
 			if (title.key.id === id) return title;
 		}
 		return undefined;
@@ -651,10 +537,10 @@ export class TitleCollection {
 	 * Add missing Titles to the receiving Collection.
 	 */
 	merge = (other: TitleCollection): void => {
-		for (const title of other.collection) {
+		for (const title of other) {
 			let found = this.find(title.key.id!);
 			if (found !== undefined) {
-				found.localMerge(title);
+				found.merge(title);
 			} else {
 				this.add(title);
 			}
@@ -662,13 +548,71 @@ export class TitleCollection {
 	};
 
 	/**
-	 * Persist the Collection to Local Storage.
+	 * @see merge
+	 * Call merge function on other instead of *this*.
 	 */
-	persist = async (): Promise<void> => {
-		const mapped: { [key: number]: StorageTitle } = {};
-		for (const title of this.collection) {
-			mapped[title.key.id!] = title.toSave();
-		}
-		return LocalStorage.raw('set', mapped);
+	mergeInto = (other: TitleCollection): void => {
+		other.merge(this);
 	};
+
+	static get = async (list?: (string | number)[]): Promise<TitleCollection> => {
+		let collection = new TitleCollection();
+		if (list === undefined) {
+			const localSave = await Storage.get();
+			for (const key in localSave) {
+				if (!Storage.isSpecialKey(key)) {
+					collection.add(new LocalTitle(parseInt(key), LocalTitle.fromSave(localSave[key])));
+				}
+			}
+		} else {
+			if (list.length == 0) return collection;
+			const keys = [];
+			for (const key of list) {
+				if (typeof key === 'number') {
+					keys.push(`${key}`);
+				} else keys.push(key);
+			}
+			const localTitles = await Storage.get(keys);
+			if (localTitles) {
+				for (const id of list) {
+					const titleId = typeof id === 'number' ? id : parseInt(id);
+					if (localTitles[titleId] === undefined) {
+						collection.add(new LocalTitle(titleId));
+					} else {
+						collection.add(new LocalTitle(titleId, LocalTitle.fromSave(localTitles[titleId]!)));
+					}
+				}
+			}
+		}
+		return collection;
+	};
+
+	persist = async (): Promise<void> => {
+		const mapped: { [key: string]: StorageTitle } = {};
+		for (const title of this) {
+			mapped[title.uniqueKey] = title.toSave();
+		}
+		return Storage.set(mapped);
+	};
+
+	[Symbol.iterator]() {
+		let i = 0;
+		const collection = this.collection;
+
+		return {
+			next(): IteratorResult<LocalTitle> {
+				if (i < collection.length) {
+					return {
+						done: false,
+						value: collection[i++],
+					};
+				} else {
+					return {
+						done: true,
+						value: null,
+					};
+				}
+			},
+		};
+	}
 }

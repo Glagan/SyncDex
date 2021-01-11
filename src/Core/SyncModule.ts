@@ -1,11 +1,12 @@
-import { Title, LocalTitle, ExternalTitle, StatusMap } from './Title';
+import { Title, StatusMap } from './Title';
 import { Options } from './Options';
 import { Runtime } from './Runtime';
 import { Overview } from '../SyncDex/Overview';
-import { StaticKey, ActivableKey } from './Service';
-import { ExternalTitles } from './ExternalTitles';
-import { Services } from './Services';
+import { Services } from '../Service/Class/Map';
 import { log } from './Log';
+import { ActivableKey, StaticKey } from '../Service/Keys';
+import { LocalTitle } from './Title';
+import { MangaDex } from './MangaDex';
 
 export type SyncReport = {
 	[key in ActivableKey]?: RequestStatus | false;
@@ -18,12 +19,24 @@ export interface ReportInformations {
 	localUpdated?: boolean;
 }
 
+interface MangaDexState {
+	status: Status;
+	score: number;
+}
+
 export class SyncModule {
 	title: LocalTitle;
 	overview?: Overview;
 	loadingServices: Promise<Title | RequestStatus>[] = [];
 	services: { [key in ActivableKey]?: Title | RequestStatus } = {};
-	loggedIn: boolean = true; // Logged in on MangaDex
+	// Logged in on MangaDex
+	loggedIn: boolean = true;
+	// MangaDex Status and Score
+	previousMdState?: MangaDexState;
+	mdState: MangaDexState = {
+		status: Status.NONE,
+		score: 0,
+	};
 
 	constructor(title: LocalTitle, overview?: Overview) {
 		this.title = title;
@@ -48,7 +61,7 @@ export class SyncModule {
 			const hasId = activeServices.indexOf(key) >= 0;
 			this.overview?.initializeService(key, hasId);
 			if (hasId) {
-				const initialRequest = ExternalTitles[key].get(this.title.services[key]!);
+				const initialRequest = Services[key].get(this.title.services[key]!);
 				this.loadingServices.push(initialRequest);
 				initialRequest.then((res) => {
 					this.overview?.receivedInitialRequest(key, res, this);
@@ -66,7 +79,7 @@ export class SyncModule {
 			// Find pepper
 			for (const key in this.services) {
 				const response = this.services[key as ActivableKey];
-				if (response instanceof ExternalTitle && response.max) {
+				if (response instanceof Title && response.max) {
 					if (!this.title.max) {
 						this.title.max = { chapter: undefined, volume: undefined };
 					}
@@ -97,7 +110,7 @@ export class SyncModule {
 		for (const key of [...Options.services].reverse()) {
 			if (this.services[key] === undefined) continue;
 			const response = this.services[key];
-			if (response instanceof ExternalTitle && response.loggedIn) {
+			if (response instanceof Title && response.loggedIn) {
 				// Check if any of the ServiceTitle is more recent than the local Title
 				if (response.inList && (this.title.inList || response.isMoreRecent(this.title))) {
 					// If there is one, sync with it and save
@@ -106,7 +119,7 @@ export class SyncModule {
 					doSave = true;
 				}
 				// Finish retrieving the ID if required -- AnimePlanet has 2 fields
-				if ((<typeof ExternalTitle>response.constructor).updateKeyOnFirstFetch) {
+				if (Services[key].updateKeyOnFirstFetch) {
 					this.title.services[key] = response.key;
 					doSave = true;
 				}
@@ -128,7 +141,7 @@ export class SyncModule {
 		for (const key of Options.services) {
 			const service = this.services[key];
 			if (service === undefined) continue;
-			if (!(service instanceof ExternalTitle)) {
+			if (!(service instanceof Title)) {
 				report[key] = service as RequestStatus;
 				continue;
 			}
@@ -136,9 +149,9 @@ export class SyncModule {
 				report[key] = false;
 				continue;
 			}
-			service.isSynced(this.title);
+			const synced = service.isSyncedWith(this.title);
 			// If Auto Sync is on, import from now up to date Title and persist
-			if ((!checkAutoSyncOption || Options.autoSync) && !service.synced) {
+			if ((!checkAutoSyncOption || Options.autoSync) && !synced) {
 				service.import(this.title);
 				this.overview?.syncingService(key);
 				const promise = this.title.status == Status.NONE ? service.delete() : service.persist();
@@ -162,23 +175,30 @@ export class SyncModule {
 		// Can't check loggedIn status since it can be called without MangaDex check first
 		if (Options.updateMD && this.loggedIn) {
 			const strings: { success: string[]; error: string[] } = { success: [], error: [] };
-			if (this.title.mdStatus != this.title.status) {
-				this.title.mdStatus = this.title.status;
-				const response = await this.syncMangaDex(this.title.mdStatus == Status.NONE ? 'unfollow' : 'status');
-				if (response.ok) {
-					strings.success.push('**MangaDex Status** updated.');
-				} else strings.error.push(`Error while updating **MangaDex Status**.\ncode: ${response.code}`);
+			if (this.mdState.status != this.title.status) {
+				const oldStatus = this.mdState.status;
+				this.mdState.status = this.title.status;
+				const response = await this.syncMangaDex(this.mdState.status == Status.NONE ? 'unfollow' : 'status');
+				if (response.ok) strings.success.push('**MangaDex Status** updated.');
+				else {
+					this.mdState.status = oldStatus;
+					strings.error.push(`Error while updating **MangaDex Status**.\ncode: ${response.code}`);
+				}
 			}
 			if (
 				this.loggedIn &&
 				this.title.score > 0 &&
-				Math.round(this.title.mdScore / 10) != Math.round(this.title.score / 10)
+				Math.round(this.mdState.score / 10) != Math.round(this.title.score / 10)
 			) {
 				// Convert 0-100 SyncDex Score to 0-10
-				this.title.mdScore = this.title.score;
+				const oldScore = this.mdState.score;
+				this.mdState.score = this.title.score;
 				const response = await this.syncMangaDex('score');
 				if (response.ok) strings.success.push('**MangaDex Score** updated.');
-				else strings.error.push(`Error while updating **MangaDex Score**.\ncode: ${response.code}`);
+				else {
+					this.mdState.score = oldScore;
+					strings.error.push(`Error while updating **MangaDex Score**.\ncode: ${response.code}`);
+				}
 			}
 			if (strings.success.length > 0) {
 				SimpleNotification.success({ text: strings.success.join('\n') });
@@ -192,28 +212,14 @@ export class SyncModule {
 	};
 
 	mangaDexFunction = (fct: 'unfollow' | 'status' | 'score'): string => {
-		const baseAPI = 'https://mangadex.org/ajax/actions.ajax.php';
-		let action;
-		let field;
-		let value;
 		switch (fct) {
 			case 'unfollow':
-				action = 'manga_unfollow';
-				field = 'type';
-				value = this.title.key.id;
-				break;
+				return MangaDex.api('unfollow', this.title.key.id!);
 			case 'status':
-				action = 'manga_follow';
-				field = 'type';
-				value = this.title.mdStatus!;
-				break;
+				return MangaDex.api('update', this.title.key.id!, this.mdState.status);
 			case 'score':
-				action = 'manga_rating';
-				field = 'rating';
-				value = Math.round(this.title.mdScore! / 10);
-				break;
+				return MangaDex.api('rating', this.title.key.id!, Math.round(this.mdState.score! / 10));
 		}
-		return `${baseAPI}?function=${action}&id=${this.title.key.id}&${field}=${value}&_=${Date.now()}`;
 	};
 
 	/**
@@ -227,7 +233,7 @@ export class SyncModule {
 			headers: { 'X-Requested-With': 'XMLHttpRequest' },
 		});
 		if (this.overview?.syncedMangaDex) {
-			this.overview?.syncedMangaDex(fct, this.title);
+			this.overview?.syncedMangaDex(fct, this);
 		}
 		return response;
 	};
@@ -237,6 +243,7 @@ export class SyncModule {
 	 * 	in the this.displayReportNotifications function.
 	 */
 	saveState = (): LocalTitle => {
+		this.previousMdState = { status: this.mdState.status, score: this.mdState.score };
 		return JSON.parse(JSON.stringify(this.title)); // Deep copy
 	};
 
@@ -245,12 +252,13 @@ export class SyncModule {
 	 * 	inList, status, progress, score, start, end from previousState.
 	 */
 	restoreState = (title: LocalTitle): void => {
+		if (this.previousMdState) {
+			this.mdState.status = this.previousMdState.status;
+			this.mdState.score = this.previousMdState.score;
+		}
 		this.title.inList = title.inList;
-		this.title.synced = title.synced;
 		this.title.progress = title.progress;
 		this.title.chapters = title.chapters;
-		this.title.mdStatus = title.mdStatus;
-		this.title.mdScore = title.mdScore;
 		this.title.status = title.status;
 		this.title.score = title.score;
 		this.title.name = title.name;
@@ -264,7 +272,7 @@ export class SyncModule {
 
 	refreshService = async (key: ActivableKey): Promise<void> => {
 		if (!this.title.services[key]) return;
-		const res = await ExternalTitles[key].get(this.title.services[key]!);
+		const res = await Services[key].get(this.title.services[key]!);
 		this.services[key] = res;
 		await this.syncLocal();
 		await this.syncExternal(true);
@@ -282,7 +290,7 @@ export class SyncModule {
 	};
 
 	reportNotificationRow = (key: ActivableKey | StaticKey.SyncDex, status: string) => {
-		const name = key === StaticKey.SyncDex ? 'SyncDex' : Services[key].serviceName;
+		const name = key === StaticKey.SyncDex ? 'SyncDex' : Services[key].name;
 		return `![${name}|${Runtime.icon(key)}] **${name}**>*>[${status}]<`;
 	};
 
@@ -349,7 +357,7 @@ export class SyncModule {
 			}
 			SimpleNotification.success({
 				title: 'Progress Updated',
-				image: `https://mangadex.org/images/manga/${this.title.key.id}.thumb.jpg`,
+				image: MangaDex.thumbnail(this.title.key),
 				text: `Chapter ${this.title.progress.chapter}\n${
 					informations.created ? '**Start Date** set to Today !\n' : ''
 				}${informations.completed ? '**End Date** set to Today !\n' : ''}${ending}`,
@@ -366,7 +374,7 @@ export class SyncModule {
 							if (onCancel) onCancel();
 							SimpleNotification.success({
 								title: 'Cancelled',
-								image: `https://mangadex.org/images/manga/${this.title.key.id}.thumb.jpg`,
+								image: MangaDex.thumbnail(this.title.key),
 								text: `**${this.title.name}** update cancelled.\n${
 									this.title.status == Status.NONE
 										? 'Removed from list'
@@ -383,7 +391,7 @@ export class SyncModule {
 			SimpleNotification.error(
 				{
 					title: 'Error',
-					image: `https://mangadex.org/images/manga/${this.title.key.id}.thumb.jpg`,
+					image: MangaDex.thumbnail(this.title.key),
 					text: errorRows.join('\n'),
 				},
 				{ sticky: true }

@@ -1,9 +1,9 @@
-import { DOM } from '../Core/DOM';
-import { log } from '../Core/Log';
-import { duration, ExportModule, ImportModule } from '../Core/Module';
-import { Runtime } from '../Core/Runtime';
-import { ActivableKey, ActivableName, Declare, ExternalLogin, Modules, Service } from '../Core/Service';
-import { MissableField, ExternalTitle, FoundTitle, LocalTitle } from '../Core/Title';
+import { log, LogExecTime } from '../../Core/Log';
+import { Runtime } from '../../Core/Runtime';
+import { LoginMethod, Service } from '../../Core/Service';
+import { MissableField, Title } from '../../Core/Title';
+import { ActivableKey } from '../Keys';
+import { ServiceName } from '../Names';
 
 export const enum MangaUpdatesStatus {
 	NONE = -1,
@@ -14,123 +14,15 @@ export const enum MangaUpdatesStatus {
 	PAUSED = 4,
 }
 
-export class MangaUpdatesImport extends ImportModule {
-	static lists: string[] = ['read', 'wish', 'complete', 'unfinished', 'hold'];
-
-	progressFromNode = (node: HTMLElement | null): number => {
-		if (node !== null) {
-			return parseInt((node.textContent as string).slice(2));
-		}
-		return 0;
-	};
-
-	execute = async (): Promise<boolean> => {
-		const progress = DOM.create('p', { textContent: 'Fetching all titles...' });
-		const message = this.interface?.message('loading', [progress]);
-		const parser = new DOMParser();
-
-		// Get each pages
-		let max = MangaUpdatesImport.lists.length;
-		for (let current = 0; !this.interface?.doStop && current < max; current++) {
-			const page = MangaUpdatesImport.lists[current];
-			progress.textContent = `Fetching all titles... Page ${current + 1} out of ${max}.`;
-			const response = await Runtime.request<RawResponse>({
-				url: `https://www.mangaupdates.com/mylist.html?list=${page}`,
-				credentials: 'include',
-			});
-			if (response.ok && response.body.indexOf('You must be a user to access this page.') < 0) {
-				const body = parser.parseFromString(response.body, 'text/html');
-				const rows = body.querySelectorAll(`div[id^='r']`);
-				const status = MangaUpdatesTitle.listToStatus(page);
-				for (const row of rows) {
-					const scoreLink = row.querySelector(`a[title='Update Rating']`);
-					let score: number | undefined;
-					if (scoreLink !== null) {
-						score = parseInt(scoreLink.textContent as string) * 10;
-						if (isNaN(score)) score = undefined;
-					}
-					const name = row.querySelector(`a[title='Series Info']`) as HTMLElement;
-					// No Max Chapter in lists
-					this.found.push({
-						key: { id: parseInt(row.id.slice(1)) },
-						progress: {
-							chapter: this.progressFromNode(row.querySelector(`a[title='Increment Chapter']`)),
-							volume: this.progressFromNode(row.querySelector(`a[title='Increment Volume']`)),
-						},
-						status: MangaUpdatesTitle.toStatus(status),
-						score: score,
-						name: name.textContent as string,
-						mochi: parseInt(row.id.slice(1)),
-					});
-				}
-			}
-		}
-		message?.classList.remove('loading');
-
-		return this.interface ? !this.interface.doStop : true;
-	};
-}
-
-export class MangaUpdatesExport extends ExportModule {
-	onlineList: { [key: string]: FoundTitle | undefined } = {};
-
-	// We need the status of each titles before to move them from lists to lists
-	// Use ImportModule and get a list of FoundTitle
-	preExecute = async (titles: LocalTitle[]): Promise<boolean> => {
-		const importModule = new MangaUpdatesImport(MangaUpdates);
-		importModule.options.save.default = false;
-		await importModule.run();
-		this.onlineList = {};
-		for (const title of importModule.found) {
-			this.onlineList[title.key.id!] = title;
-		}
-		return true;
-	};
-
-	execute = async (titles: LocalTitle[]): Promise<boolean> => {
-		const max = titles.length;
-		this.interface?.message('default', `Exporting ${max} Titles...`);
-		const progress = DOM.create('p');
-		const message = this.interface?.message('loading', [progress]);
-		let average = 0;
-		for (let current = 0; !this.interface?.doStop && current < max; current++) {
-			const localTitle = titles[current];
-			let currentProgress = `Exporting Title ${current + 1} out of ${max} (${
-				localTitle.name || `#${localTitle.services[MangaUpdates.key]!.id}`
-			})...`;
-			if (average > 0) currentProgress += `\nEstimated time remaining: ${duration((max - current) * average)}.`;
-			progress.textContent = currentProgress;
-			const before = Date.now();
-			let failed = false;
-			const title = new MangaUpdatesTitle({ ...localTitle, key: localTitle.services[MangaUpdates.key] });
-			if (title.status !== Status.NONE) {
-				// Set current progress for the Title if there is one
-				const onlineTitle = this.onlineList[title.key.id!];
-				if (onlineTitle && onlineTitle.progress && onlineTitle.status) {
-					title.current = {
-						progress: onlineTitle.progress,
-						status: onlineTitle.status,
-						score: onlineTitle.score,
-					};
-				}
-				const response = await title.persist();
-				if (average == 0) average = Date.now() - before;
-				else average = (average + (Date.now() - before)) / 2;
-				if (response <= RequestStatus.CREATED) this.summary.valid++;
-				else failed = true;
-			} else failed = true;
-			if (failed) this.summary.failed.push(localTitle);
-		}
-		message?.classList.remove('loading');
-		return this.interface ? !this.interface.doStop : true;
-	};
-}
-
-@Declare(ActivableName.MangaUpdates, ActivableKey.MangaUpdates)
-@ExternalLogin('https://www.mangaupdates.com/login.html')
-@Modules(MangaUpdatesImport, MangaUpdatesExport)
 export class MangaUpdates extends Service {
-	static loggedIn = async (): Promise<RequestStatus> => {
+	name = ServiceName.MangaUpdates;
+	key = ActivableKey.MangaUpdates;
+	activable = true;
+
+	loginMethod = LoginMethod.EXTERNAL;
+	loginUrl = 'https://www.mangaupdates.com/login.html';
+
+	loggedIn = async (): Promise<RequestStatus> => {
 		const response = await Runtime.request<RawResponse>({
 			url: 'https://www.mangaupdates.com/aboutus.html',
 			credentials: 'include',
@@ -140,41 +32,10 @@ export class MangaUpdates extends Service {
 		return RequestStatus.FAIL;
 	};
 
-	static link(key: MediaKey): string {
-		return `https://www.mangaupdates.com/series.html?id=${key.id}`;
-	}
-}
-
-export class MangaUpdatesTitle extends ExternalTitle {
-	static service = MangaUpdates;
-	static readonly missingFields: MissableField[] = ['start', 'end'];
-
-	current?: {
-		progress: Progress;
-		status: Status;
-		score?: number;
-	};
-
-	static listToStatus = (list?: string): MangaUpdatesStatus => {
-		if (!list) return MangaUpdatesStatus.READING;
-		switch (list) {
-			case 'read':
-				return MangaUpdatesStatus.READING;
-			case 'wish':
-				return MangaUpdatesStatus.PLAN_TO_READ;
-			case 'complete':
-				return MangaUpdatesStatus.COMPLETED;
-			case 'unfinished':
-				return MangaUpdatesStatus.DROPPED;
-			case 'hold':
-				return MangaUpdatesStatus.PAUSED;
-		}
-		return MangaUpdatesStatus.NONE;
-	};
-
-	static async get(key: MediaKey): Promise<ExternalTitle | RequestStatus> {
+	@LogExecTime
+	async get(key: MediaKey): Promise<Title | RequestStatus> {
 		const response = await Runtime.request<RawResponse>({
-			url: MangaUpdates.link(key),
+			url: this.link(key),
 			method: 'GET',
 			credentials: 'include',
 		});
@@ -214,6 +75,45 @@ export class MangaUpdatesTitle extends ExternalTitle {
 		values.name = title ? title.textContent! : undefined;
 		return new MangaUpdatesTitle(values);
 	}
+
+	link(key: MediaKey): string {
+		return `https://www.mangaupdates.com/series.html?id=${key.id}`;
+	}
+
+	idFromLink = (href: string): MediaKey => {
+		const regexp = /https:\/\/(?:www\.)?mangaupdates\.com\/series.html\?id=(\d+)/.exec(href);
+		if (regexp !== null) return { id: parseInt(regexp[1]) };
+		return { id: 0 };
+	};
+}
+
+export class MangaUpdatesTitle extends Title {
+	static service = new MangaUpdates();
+
+	static missingFields: MissableField[] = ['start', 'end'];
+
+	current?: {
+		progress: Progress;
+		status: Status;
+		score?: number;
+	};
+
+	static listToStatus = (list?: string): MangaUpdatesStatus => {
+		if (!list) return MangaUpdatesStatus.READING;
+		switch (list) {
+			case 'read':
+				return MangaUpdatesStatus.READING;
+			case 'wish':
+				return MangaUpdatesStatus.PLAN_TO_READ;
+			case 'complete':
+				return MangaUpdatesStatus.COMPLETED;
+			case 'unfinished':
+				return MangaUpdatesStatus.DROPPED;
+			case 'hold':
+				return MangaUpdatesStatus.PAUSED;
+		}
+		return MangaUpdatesStatus.NONE;
+	};
 
 	// Get a list of status to go through to be able to update to the wanted status
 	pathToStatus = (): MangaUpdatesStatus[] => {
@@ -371,18 +271,4 @@ export class MangaUpdatesTitle extends ExternalTitle {
 		}
 		return MangaUpdatesStatus.NONE;
 	};
-
-	static idFromLink = (href: string): MediaKey => {
-		const regexp = /https:\/\/(?:www\.)?mangaupdates\.com\/series.html\?id=(\d+)/.exec(href);
-		if (regexp !== null) return { id: parseInt(regexp[1]) };
-		return { id: 0 };
-	};
-
-	static idFromString = (str: string): MediaKey => {
-		return { id: parseInt(str) };
-	};
-
-	get mochi(): number {
-		return this.key.id!;
-	}
 }

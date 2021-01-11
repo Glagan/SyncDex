@@ -1,11 +1,13 @@
-import { DOM } from '../Core/DOM';
-import { Options } from '../Core/Options';
-import { Thumbnail } from './Thumbnail';
-import { Title } from '../Core/Title';
-import { ChapterRow } from './ChapterRow';
-import { SyncModule } from '../Core/SyncModule';
+import { Options } from '../../Core/Options';
+import { Page } from '../Page';
+import { DOM } from '../../Core/DOM';
+import { Thumbnail } from '../Thumbnail';
+import { Title, TitleCollection } from '../../Core/Title';
+import { ChapterRow } from '../ChapterRow';
+import { SyncModule } from '../../Core/SyncModule';
+import { TryCatch } from '../../Core/Log';
 
-export class TitleChapterGroup {
+class TitleChapterGroup {
 	id: number = 0;
 	name: string = '';
 	hiddenRows: number = 0;
@@ -393,4 +395,91 @@ export class TitleChapterGroup {
 		}
 		return groups;
 	};
+}
+
+export class ChapterListPage extends Page {
+	@TryCatch(Page.errorNotification)
+	async run() {
+		console.log('SyncDex :: Chapter List');
+
+		if (!Options.hideHigher && !Options.hideLast && !Options.hideLower && !Options.thumbnail && !Options.highlight)
+			return;
+
+		const groups = TitleChapterGroup.getGroups();
+		const titles = await TitleCollection.get([...new Set(groups.map((group) => group.id))]);
+
+		// Check MangaDex login status
+		const loggedIn = document.querySelector(`a.nav-link[href^='/user']`) !== null;
+		// Hide, Highlight and add Thumbnails to each row
+		for (const group of groups) {
+			const title = titles.find(group.id);
+			if (title !== undefined && title.inList) {
+				const syncModule = new SyncModule(title);
+				syncModule.loggedIn = loggedIn;
+				group.initialize(syncModule);
+				group.updateDisplayedRows(title);
+			} else if (group.rows.length > 0) {
+				// Still add thumbnails and the Group title if it's no in list
+				if (Options.thumbnail) {
+					for (const row of group.rows) {
+						new Thumbnail(group.id, row.node, title);
+					}
+				}
+				group.rows[0].node.firstElementChild!.appendChild(group.titleLink());
+			}
+		}
+
+		// Button to toggle hidden chapters
+		const navBar = document.querySelector<HTMLElement>('#content ul.nav.nav-tabs');
+		if (navBar) {
+			if (!navBar.classList.contains('hide-loaded')) {
+				navBar.classList.add('hide-loaded');
+				const toggleButton = TitleChapterGroup.toggleButton;
+				toggleButton.button.addEventListener('click', (event) => {
+					event.preventDefault();
+					let hidden = !toggleButton.button.classList.toggle('show-hidden');
+					for (const group of groups) {
+						group.toggleHidden(hidden);
+					}
+					toggleButton.icon.classList.toggle('fa-eye');
+					toggleButton.icon.classList.toggle('fa-eye-slash');
+					if (hidden) toggleButton.description.textContent = 'Show Hidden';
+					else toggleButton.description.textContent = 'Hide Hidden';
+				});
+				if (navBar.lastElementChild!.classList.contains('ml-auto')) {
+					navBar.insertBefore(toggleButton.button, navBar.lastElementChild);
+				} else {
+					navBar.appendChild(toggleButton.button);
+				}
+			}
+
+			// Add Language buttons
+			ChapterRow.generateLanguageButtons(
+				navBar,
+				(parent, tab) => {
+					parent.insertBefore(tab, parent.lastElementChild);
+				},
+				() => {
+					// Add the Title name in the first column after toggling languages
+					let rawVisible = TitleChapterGroup.toggleButton.button.classList.contains('show-hidden');
+					for (const titleGroup of groups) {
+						for (const group of titleGroup.groups) {
+							let addedTitle = false;
+							for (const row of group) {
+								row.node.firstElementChild!.textContent = '';
+								if (
+									!addedTitle &&
+									(rawVisible || !row.hidden) &&
+									row.node.classList.contains('visible-lang')
+								) {
+									row.node.firstElementChild!.appendChild(titleGroup.titleLink());
+									addedTitle = true;
+								}
+							}
+						}
+					}
+				}
+			);
+		}
+	}
 }
