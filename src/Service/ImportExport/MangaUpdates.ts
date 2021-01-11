@@ -38,11 +38,12 @@ export class MangaUpdatesImport extends ImportModule {
 				for (const row of rows) {
 					const scoreLink = row.querySelector(`a[title='Update Rating']`);
 					let score: number | undefined;
-					if (scoreLink !== null) {
-						score = parseInt(scoreLink.textContent as string) * 10;
+					if (scoreLink !== null && scoreLink.textContent) {
+						score = parseInt(scoreLink.textContent) * 10;
 						if (isNaN(score)) score = undefined;
 					}
-					const name = row.querySelector(`a[title='Series Info']`) as HTMLElement;
+					const name = row.querySelector<HTMLElement>(`a[title='Series Info']`);
+					if (!name || !name.textContent) continue;
 					// No Max Chapter in lists
 					this.found.push({
 						key: { id: parseInt(row.id.slice(1)) },
@@ -52,7 +53,7 @@ export class MangaUpdatesImport extends ImportModule {
 						},
 						status: MangaUpdatesTitle.toStatus(status),
 						score: score,
-						name: name.textContent as string,
+						name: name.textContent,
 						mochiKey: parseInt(row.id.slice(1)),
 					});
 				}

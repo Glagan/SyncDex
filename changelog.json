@@ -1,6 +1,17 @@
 {
 	"updates": [
 		{
+			"version": "0.2.0",
+			"description": [
+				"Fix for MangaDex new API.",
+				"Fix Anilist bad score if the scoring system was not 100 point.",
+				"Fix MangaUpdates import fail with some titles.",
+				"Load Overview first to avoid huge jumps (still a work in progress).",
+				"Options should have a better display on smaller devices (still a work in progress).",
+				"Refactor of some class and functions."
+			]
+		},
+		{
 			"version": "0.1.9",
 			"description": [
 				"Add an option to avoid opening a tab with changelogs after an update.",
