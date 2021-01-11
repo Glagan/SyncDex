@@ -1,4 +1,12 @@
-export type MangaDexAPIEndpoint = 'me' | 'title' | 'followed' | 'update' | 'unfollow' | 'rating' | 'updates';
+export type MangaDexAPIEndpoint =
+	| 'me'
+	| 'userTitle'
+	| 'title'
+	| 'followed'
+	| 'update'
+	| 'unfollow'
+	| 'rating'
+	| 'updates';
 
 export namespace MangaDex {
 	export function link(key: MediaKey): string {
@@ -13,6 +21,7 @@ export namespace MangaDex {
 
 	export function api(type: 'me'): string;
 	export function api(type: 'title', id: number): string;
+	export function api(type: 'userTitle', id: number): string;
 	export function api(type: 'followed'): string;
 	export function api(type: 'update', id: number, status: Status): string;
 	export function api(type: 'unfollow', id: number): string;
@@ -23,6 +32,8 @@ export namespace MangaDex {
 			case 'me':
 				return `${MangaDexAPI}/user/me`;
 			case 'title':
+				return `${MangaDexAPI}/manga/${args[0]}`;
+			case 'userTitle':
 				return `${MangaDexAPI}/user/me/manga/${args[0]}`;
 			case 'followed':
 				return `${MangaDexAPI}/user/me/followed-manga`;

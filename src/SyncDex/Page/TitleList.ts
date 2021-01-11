@@ -5,6 +5,12 @@ import { StatusMap, TitleCollection } from '../../Core/Title';
 import { Page } from '../Page';
 import { Thumbnail } from '../Thumbnail';
 
+const enum ListType {
+	Detailed,
+	Expanded,
+	Simple,
+	Grid,
+}
 export class TitleListPage extends Page {
 	@TryCatch(Page.errorNotification)
 	async run() {

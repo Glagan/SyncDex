@@ -18,6 +18,141 @@ interface ReadingState {
 	title?: LocalTitle;
 }
 
+type ReaderEvent =
+	| 'loadingchange'
+	| 'renderingmodechange'
+	| 'displayfitchange'
+	| 'directionchange'
+	| 'chapterchange'
+	| 'mangachange'
+	| 'statechange'
+	| 'currentpagechange'
+	| 'readererror'
+	| 'pageload'
+	| 'pageerror'
+	| 'settingchange';
+
+type MangaDexStatus = 'OK' | 'external' | 'delayed'; // Check if there is more
+
+interface MangaDexChapter {
+	chapter: string;
+	comments: number;
+	groupIds: number[];
+	groupWebsite: string | null;
+	hash: string;
+	id: number;
+	language: string;
+	mangaId: number;
+	pages: string[];
+	read: boolean;
+	server: string | undefined;
+	serverFallback: string | undefined;
+	status: MangaDexStatus;
+	threadId: number | undefined;
+	timestamp: number;
+	title: string;
+	volume: string;
+}
+
+interface ChapterChangeEventDetails {
+	_isNetworkServer: boolean;
+	_response: Response;
+	// Chapter values
+	chapter: string;
+	comments: number;
+	groupIds: number[];
+	groupWebsite: string | null;
+	hash: string;
+	id: number;
+	language: string;
+	mangaId: number;
+	pages: string[];
+	read: boolean;
+	server: string | undefined;
+	serverFallback: string | undefined;
+	status: MangaDexStatus;
+	threadId: number | undefined;
+	timestamp: number;
+	title: string;
+	volume: string;
+	// Manga object
+	manga: {
+		_chapters: MangaDexChapter[];
+		_response: Response;
+		_uniqueChapters: MangaDexChapter[];
+		id: number;
+		isHentai: boolean;
+		language: string;
+		lastChapter: string | null;
+		lastVolume: number | null;
+		mainCover: string;
+		tags: number[];
+		title: string;
+	};
+}
+
+type MangaDexExternalKey =
+	| 'al' // Anilist
+	| 'amz' // Amazon
+	| 'ap' // AnimePlanet
+	| 'bw' // BookWalker
+	| 'ebj' // eBookJapan
+	| 'kt' // Kitsu
+	| 'mal' // MyAnimeList
+	| 'mu' // MangaUpdates
+	| 'nu' // NovelUpdates
+	| 'raw' // Raw source
+	| 'engtl'; // Official English release
+
+interface MangaDexTitleResponse {
+	data: {
+		id: number;
+		title: string;
+		altTitles: string;
+		description: string;
+		artist: string[];
+		author: string[];
+		publication: {
+			language: string;
+			status: Status;
+			demographic: number;
+		};
+		tags: string[];
+		lastChapter: number | null;
+		lastVolume: number | null;
+		isHentai: boolean;
+		links: { [key in MangaDexExternalKey]?: string };
+		relations: {
+			id: number;
+			title: string;
+			type: number;
+			isHentai: boolean;
+		}[];
+		ratings: {
+			bayesian: number;
+			mean: number;
+			users: number;
+		};
+		views: number;
+		follows: number;
+		comments: number;
+		lastUploaded: number;
+		mainCover: string;
+	};
+}
+
+interface MangaDexUserTitleResponse {
+	data: {
+		userId: number;
+		mangaId: number;
+		mangaTitle: string;
+		followType: number | null;
+		volume: string | null;
+		chapter: string | null;
+		rating: number | null;
+	};
+}
+
 class ReadingOverview {
 	rowContainer: HTMLElement;
 	serviceRow: HTMLElement;
@@ -146,15 +281,22 @@ export class ChapterPage extends Page {
 				} else fallback = true;
 			}
 			if (!Options.useMochi || fallback) {
-				const services: { [key in MangaDexExternalKey]?: string } = {}; // details.manga.links;
-				for (const key in services) {
-					const serviceKey = iconToService(key);
-					if (serviceKey !== undefined) {
-						state.title.services[serviceKey] = Services[serviceKey].idFromString(
-							services[key as MangaDexExternalKey]!
-						);
+				const response = await Runtime.jsonRequest<MangaDexTitleResponse>({
+					method: 'GET',
+					url: MangaDex.api('title', id),
+					credentials: 'include',
+				});
+				if (response.ok) {
+					const services: { [key in MangaDexExternalKey]?: string } = response.body.data.links;
+					for (const key in services) {
+						const serviceKey = iconToService(key);
+						if (serviceKey !== undefined) {
+							state.title.services[serviceKey] = Services[serviceKey].idFromString(
+								services[key as MangaDexExternalKey]!
+							);
+						}
 					}
-				}
+				} else await log(`Error while fetching ${MangaDex.api('title', id)}: Code ${response.code}`);
 			}
 			// Find max from MangaDex
 			if (details.manga.lastChapter) {
@@ -175,19 +317,9 @@ export class ChapterPage extends Page {
 			state.syncModule.initialize();
 			// Find MangaDex status if needed
 			if (Options.updateOnlyInList || Options.updateMD) {
-				const response = await Runtime.jsonRequest<{
-					data: {
-						userId: number;
-						mangaId: number;
-						mangaTitle: string;
-						followType: number | null;
-						volume: string | null;
-						chapter: string | null;
-						rating: number | null;
-					};
-				}>({
+				const response = await Runtime.jsonRequest<MangaDexUserTitleResponse>({
 					method: 'GET',
-					url: MangaDex.api('title', id),
+					url: MangaDex.api('userTitle', id),
 					credentials: 'include',
 				});
 				if (response.ok) {
