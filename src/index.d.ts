@@ -295,21 +295,29 @@ type ReaderEvent =
 	| 'pageerror'
 	| 'settingchange';
 
+type MangaDexStatus = 'OK' | 'external' | 'delayed'; // Check if there is more
+
 interface MangaDexChapter {
-	chapter: '1';
+	chapter: string;
 	comments: number;
-	group_id: number;
-	group_name: string;
-	// + group_id_x & group_name_x
+	groupIds: number[];
+	groupWebsite: string | null;
+	hash: string;
 	id: number;
-	lang_code: string;
-	lang_name: string;
+	language: string;
+	mangaId: number;
+	pages: string[];
+	read: boolean;
+	server: string | undefined;
+	serverFallback: string | undefined;
+	status: MangaDexStatus;
+	threadId: number | undefined;
 	timestamp: number;
 	title: string;
 	volume: string;
 }
 
-type MangaDexExternalKeys =
+type MangaDexExternalKey =
 	| 'al' // Anilist
 	| 'amz' // Amazon
 	| 'ap' // AnimePlanet
@@ -322,61 +330,41 @@ type MangaDexExternalKeys =
 	| 'raw'; // Raw Link
 
 interface ChapterChangeEventDetails {
-	_data: {
-		chapter: string;
-		comments: number;
-		group_id: number;
-		group_name: string;
-		// + group_id_x & group_name_x
-		hash: string;
-		id: number;
-		lang_code: string;
-		lang_name: string;
-		long_strip: number;
-		manga_id: number;
-		page_array: string[];
-		server: string;
-		server_fallback: string;
-		status: string;
-		timestamp: number;
-		title: string;
-		volume: string;
-	};
 	_isNetworkServer: boolean;
+	_response: Response;
+	// Chapter values
+	chapter: string;
+	comments: number;
+	groupIds: number[];
+	groupWebsite: string | null;
+	hash: string;
+	id: number;
+	language: string;
+	mangaId: number;
+	pages: string[];
+	read: boolean;
+	server: string | undefined;
+	serverFallback: string | undefined;
+	status: MangaDexStatus;
+	threadId: number | undefined;
+	timestamp: number;
+	title: string;
+	volume: string;
+	// Manga object
 	manga: {
-		_data: {
-			alt_names: string[];
-			artist: string;
-			author: string;
-			cover_url: string;
-			description: string;
-			genres: number[];
-			hentai: number;
-			id: number;
-			lang_flag: string;
-			lang_name: string;
-			last_chapter: string;
-			last_volume: number;
-			last_updated: number;
-			links: { [key in MangaDexExternalKeys]: string };
-			rating: {
-				bayesian: string;
-				mean: string;
-				users: string;
-			};
-			status: number;
-			demographic: number;
-			title: string;
-			views: number;
-			follows: number;
-			comments: number;
-			covers: string[];
-		};
-		chapterList: MangaDexChapter[]; // Available for selected languages
-		chapters: MangaDexChapter[]; // Everything available
-		response: Response;
+		_chapters: MangaDexChapter[];
+		_response: Response;
+		_uniqueChapters: MangaDexChapter[];
+		id: number;
+		isHentai: boolean;
+		language: string;
+		lastChapter: string | null;
+		lastVolume: number | null;
+		mainCover: string;
+		tags: number[];
+		title: string;
+		// links: { [key in MangaDexExternalKeys]: string };
 	};
-	response: Response;
 }
 
 interface ChapterChangeEvent extends Event {

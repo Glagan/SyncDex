@@ -11,7 +11,7 @@ import { injectScript, progressFromString } from '../../Core/Utility';
 import { ActivableKey } from '../../Service/Keys';
 import { DOM } from '../../Core/DOM';
 import { TitleEditor } from '../../Core/TitleEditor';
-import { TryCatch } from '../../Core/Log';
+import { log, TryCatch } from '../../Core/Log';
 
 interface ReadingState {
 	syncModule?: SyncModule;
@@ -70,9 +70,7 @@ class ReadingOverview {
 		}
 	};
 
-	hasNoServices = (): void => {
-		this.rowContainer.remove();
-	};
+	hasNoServices = (): void => {};
 
 	initializeService = (key: ActivableKey, hasId: boolean): void => {
 		const icon = DOM.create('img', {
@@ -123,19 +121,20 @@ export class ChapterPage extends Page {
 		syncModule.displayReportNotifications(report, informations, previousState);
 	};
 
-	processReadingQueue = async (state: ReadingState): Promise<void> => {
+	@TryCatch(Page.errorNotification)
+	async processReadingQueue(state: ReadingState): Promise<void> {
 		const details = this.readingQueue.shift();
 		if (!details) return;
 
 		// Get the Title and Services initial state on the first chapter change
-		const id = details.manga._data.id;
+		const id = details.manga.id;
 		let firstRequest = false;
 		if (state.title == undefined) {
 			state.title = await LocalTitle.get(id);
 			if (Options.biggerHistory) await History.load();
 			// Avoid always updating the name from the API since it can contain HTML entities
-			if (details.manga._data.title != '' && !state.title.name) {
-				state.title.name = details.manga._data.title;
+			if (details.manga.title != '' && !state.title.name) {
+				state.title.name = details.manga.title;
 			}
 			firstRequest = true;
 			// Find Services
@@ -147,23 +146,25 @@ export class ChapterPage extends Page {
 				} else fallback = true;
 			}
 			if (!Options.useMochi || fallback) {
-				const services = details.manga._data.links;
+				const services: { [key in MangaDexExternalKey]?: string } = {}; // details.manga.links;
 				for (const key in services) {
 					const serviceKey = iconToService(key);
 					if (serviceKey !== undefined) {
 						state.title.services[serviceKey] = Services[serviceKey].idFromString(
-							services[key as MangaDexExternalKeys]
+							services[key as MangaDexExternalKey]!
 						);
 					}
 				}
 			}
 			// Find max from MangaDex
-			const lastChapter = parseFloat(details.manga._data.last_chapter);
-			if (!isNaN(lastChapter) && lastChapter > 0) {
-				state.title.max = {
-					chapter: lastChapter,
-					volume: details.manga._data.last_volume ? details.manga._data.last_volume : undefined,
-				};
+			if (details.manga.lastChapter) {
+				const lastChapter = parseFloat(details.manga.lastChapter);
+				if (!isNaN(lastChapter) && lastChapter > 0) {
+					state.title.max = {
+						chapter: parseFloat(details.manga.lastChapter),
+						volume: details.manga.lastVolume ? details.manga.lastVolume : undefined,
+					};
+				}
 			}
 		}
 		// Send initial requests -- Another if block to tell Typescript state.syncModule does exist
@@ -213,16 +214,16 @@ export class ChapterPage extends Page {
 		// Find current Chapter Progress
 		const created = state.title.status == Status.NONE || state.title.status == Status.PLAN_TO_READ;
 		let completed = false;
-		const oneshot = details._data.title.toLocaleLowerCase() == 'oneshot';
+		const oneshot = details.title.toLocaleLowerCase() == 'oneshot';
 		let currentProgress: Progress = {
-			chapter: oneshot ? 0 : parseFloat(details._data.chapter),
+			chapter: oneshot ? 0 : parseFloat(details.chapter),
 			oneshot: oneshot,
 		};
-		const volume = parseInt(details._data.volume);
+		const volume = parseInt(details.volume);
 		if (!isNaN(volume) && volume) currentProgress.volume = volume;
 		// Fallback if there is no valid chapter in API response
 		if (isNaN(currentProgress.chapter)) {
-			currentProgress = progressFromString(details._data.title);
+			currentProgress = progressFromString(details.title);
 		}
 		// Exit early if there is no progress
 		if (isNaN(currentProgress.chapter)) {
@@ -278,10 +279,10 @@ export class ChapterPage extends Page {
 		// Collect all warnings and reasons to not update to the current Chapter
 		let missingUpdateValidations: string[] = [];
 		// Update title state if not delayed -- Handle external titles as delayed
-		const delayed = details._data.status == 'delayed' || details._data.status == 'external';
+		const delayed = details.status == 'delayed' || details.status == 'external';
 		if (delayed && Options.confirmChapter) {
 			missingUpdateValidations.push(
-				`**${state.title.name}** Chapter **${details._data.chapter}** is delayed or external and has not been updated.`
+				`**${state.title.name}** Chapter **${details.chapter}** is delayed or external and has not been updated.`
 			);
 		}
 		// Check if the title is in list if required
@@ -316,7 +317,7 @@ export class ChapterPage extends Page {
 			} else if (Options.confirmChapter && (Options.saveOnlyNext || Options.saveOnlyHigher)) {
 				doUpdate = false;
 				missingUpdateValidations.push(
-					`**${state.title.name}** Chapter **${details._data.chapter}** is not ${
+					`**${state.title.name}** Chapter **${details.chapter}** is not ${
 						Options.saveOnlyNext ? 'the next' : 'higher'
 					} and hasn't been updated.`
 				);
@@ -333,7 +334,7 @@ export class ChapterPage extends Page {
 		}
 		// Always Update History values if enabled, do not look at other options
 		if (Options.biggerHistory) {
-			await state.title.setHistory(details._data.id, currentProgress);
+			await state.title.setHistory(details.manga.id, currentProgress);
 		}
 		await state.title.persist(); // Always save
 		// If all conditions are met we can sync to current progress
@@ -356,7 +357,7 @@ export class ChapterPage extends Page {
 		if (this.readingQueue.length > 0) {
 			return this.processReadingQueue(state);
 		}
-	};
+	}
 
 	@TryCatch(Page.errorNotification)
 	async run() {
@@ -394,8 +395,7 @@ export class ChapterPage extends Page {
 			const addEventInterceptor = () =>
 				window.reader!.model.on('chapterchange', (event) => {
 					// Chrome can't send class Objects
-					const detail = { _data: event._data, manga: event.manga };
-					delete detail.manga.response;
+					const detail = JSON.parse(JSON.stringify({ ...event, manga: event.manga }));
 					document.dispatchEvent(new CustomEvent('ReaderChapterChange', { detail }));
 				});
 			// If the MangaDex reader still hasn't been loaded, check every 50ms
@@ -415,11 +415,16 @@ export class ChapterPage extends Page {
 			syncModule: undefined,
 		};
 		document.addEventListener('ReaderChapterChange', async (event) => {
-			this.readingQueue.push((event as CustomEvent).detail);
-			if (!this.processingReadingQueue) {
-				this.processingReadingQueue = true;
-				await this.processReadingQueue(state);
-				this.processingReadingQueue = false;
+			try {
+				this.readingQueue.push((event as CustomEvent).detail);
+				if (!this.processingReadingQueue) {
+					this.processingReadingQueue = true;
+					await this.processReadingQueue(state);
+					this.processingReadingQueue = false;
+				}
+			} catch (error) {
+				Page.errorNotification(error);
+				log(error);
 			}
 		});
 	}
