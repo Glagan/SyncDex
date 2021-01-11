@@ -8,13 +8,15 @@ export type MangaDexAPIEndpoint =
 	| 'rating'
 	| 'updates';
 
+type ThumbnailSize = 'thumb' | 'large' | 'original';
+
 export namespace MangaDex {
 	export function link(key: MediaKey): string {
 		return `https://mangadex.org/title/${key.id}`;
 	}
 
-	export function thumbnail(key: MediaKey, large: boolean = false, extension: string = 'jpg'): string {
-		return `https://mangadex.org/images/manga/${key.id}.${large ? 'large' : 'thumb'}.${extension}`;
+	export function thumbnail(key: MediaKey, size: ThumbnailSize = 'original', extension: string = 'jpg'): string {
+		return `https://mangadex.org/images/manga/${key.id}${size != 'original' ? `.${size}` : ''}.${extension}`;
 	}
 
 	const MangaDexAPI = 'https://api.mangadex.org/v2';

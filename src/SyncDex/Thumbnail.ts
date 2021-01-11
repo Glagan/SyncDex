@@ -62,10 +62,10 @@ export class Thumbnail {
 		const extensions = ['jpg', 'png', 'jpeg', 'gif'];
 		tooltipThumb.addEventListener('error', () => {
 			if (Options.originalThumbnail) {
-				const tryNumber = tooltipThumb.dataset.ext ? Math.floor(parseInt(tooltipThumb.dataset.ext)) : 1;
+				const tryNumber = tooltipThumb.dataset.ext ? parseInt(tooltipThumb.dataset.ext) : 1;
 				if (tryNumber < extensions.length) {
-					tooltipThumb.src = MangaDex.thumbnail({ id }, false, extensions[tryNumber]);
-					tooltipThumb.dataset.ext = (tryNumber + 1).toString();
+					tooltipThumb.src = MangaDex.thumbnail({ id }, 'original', extensions[tryNumber]);
+					tooltipThumb.dataset.ext = `${tryNumber + 1}`;
 				} else {
 					tooltipThumb.src = '';
 				}
@@ -84,10 +84,10 @@ export class Thumbnail {
 				this.row.dataset.loading = 'true';
 				// Will trigger 'load' event
 				if (Options.originalThumbnail) {
-					tooltipThumb.src = MangaDex.thumbnail({ id });
+					tooltipThumb.src = MangaDex.thumbnail({ id }, 'original');
 					tooltipThumb.dataset.ext = '1';
 				} else {
-					tooltipThumb.src = MangaDex.thumbnail({ id }, true);
+					tooltipThumb.src = MangaDex.thumbnail({ id }, 'large');
 				}
 			}
 			this.updatePosition();
