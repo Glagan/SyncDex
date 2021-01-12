@@ -238,7 +238,8 @@ export class AnilistTitle extends Title {
 		return null;
 	};
 
-	persist = async (): Promise<RequestStatus> => {
+	@LogExecTime
+	async persist(): Promise<RequestStatus> {
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
 		if (this.status === Status.NONE) {
 			await log(`Could not sync Anilist: status ${this.status}`);
@@ -268,7 +269,7 @@ export class AnilistTitle extends Title {
 			return RequestStatus.CREATED;
 		}
 		return RequestStatus.SUCCESS;
-	};
+	}
 
 	delete = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;

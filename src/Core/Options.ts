@@ -3,6 +3,12 @@ import { browser } from 'webextension-polyfill-ts';
 
 console.log('SyncDex :: Options');
 
+export enum LogLevel {
+	Default = 0,
+	ExecutionTime = 1,
+	Debug = 2,
+}
+
 export const DefaultOptions: AvailableOptions = {
 	// Chapter and Title List / Updates
 	hideHigher: false,
@@ -24,6 +30,7 @@ export const DefaultOptions: AvailableOptions = {
 	confirmChapter: true,
 	updateOnlyInList: false,
 	iconsSilentAfterSync: false,
+	saveOnLastPage: false,
 	// Title
 	linkToServices: true,
 	overviewMainOnly: true,
@@ -43,6 +50,7 @@ export const DefaultOptions: AvailableOptions = {
 	checkOnStartupMainOnly: true,
 	checkOnStartupCooldown: 30,
 	silentUpdate: false,
+	logLevel: LogLevel.Default,
 	// Services
 	services: [],
 	noReloadStatus: true,

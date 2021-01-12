@@ -140,7 +140,8 @@ export class AnimePlanetTitle extends Title {
 		score?: number;
 	} = { progress: { chapter: 0 }, status: Status.NONE };
 
-	persist = async (): Promise<RequestStatus> => {
+	@LogExecTime
+	async persist(): Promise<RequestStatus> {
 		if (this.status === Status.NONE || !this.token) {
 			await log(`Could not sync AnimePlanet: status ${this.status} token ${!!this.token}`);
 			return RequestStatus.BAD_REQUEST;
@@ -182,7 +183,7 @@ export class AnimePlanetTitle extends Title {
 			return RequestStatus.CREATED;
 		}
 		return RequestStatus.SUCCESS;
-	};
+	}
 
 	delete = async (): Promise<RequestStatus> => {
 		if (!this.inList || !this.token) {

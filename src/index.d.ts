@@ -155,6 +155,7 @@ interface AvailableOptions {
 	confirmChapter: boolean;
 	updateOnlyInList: boolean;
 	iconsSilentAfterSync: boolean;
+	saveOnLastPage: boolean;
 	// Title
 	linkToServices: boolean;
 	overviewMainOnly: boolean;
@@ -174,6 +175,7 @@ interface AvailableOptions {
 	checkOnStartupMainOnly: boolean;
 	checkOnStartupCooldown: number;
 	silentUpdate: boolean;
+	logLevel: import('./Core/Options').LogLevel;
 	// Services
 	services: import('./Service/Keys').ActivableKey[];
 	noReloadStatus: boolean;

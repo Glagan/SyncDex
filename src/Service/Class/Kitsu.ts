@@ -212,7 +212,8 @@ export class KitsuTitle extends Title {
 	static service = new Kitsu();
 	libraryEntryId?: number;
 
-	persist = async (): Promise<RequestStatus> => {
+	@LogExecTime
+	async persist(): Promise<RequestStatus> {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) {
 			await log(`Could not sync Kitsu: token ${!!Options.tokens.kitsuToken} user ${Options.tokens.kitsuUser}`);
 			return RequestStatus.MISSING_TOKEN;
@@ -276,7 +277,7 @@ export class KitsuTitle extends Title {
 			return RequestStatus.CREATED;
 		}
 		return RequestStatus.SUCCESS;
-	};
+	}
 
 	delete = async (): Promise<RequestStatus> => {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;

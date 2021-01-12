@@ -8,7 +8,6 @@ You can also **Import**/**Export** your list between all of these services, to e
 | [myanimelist.net](https://myanimelist.net/) | [anilist.co](https://anilist.co/) | [kitsu.io](https://kitsu.io/) | [mangaupdates.com](https://www.mangaupdates.com/) | [anime-planet.com](https://www.anime-planet.com/) |
 
 > **SyncDex** is still in beta, expect bugs if you try using it.  
-> **Chrome** is always late, use **Firefox** or build your own version.
 
 [![Chrome Web Store](https://img.shields.io/chrome-web-store/v/hdlogejanokfcmlbgfdcgnbnpmgdolaa?label=Chrome&logo=google%20chrome&style=for-the-badge)](https://chrome.google.com/webstore/detail/syncdex/hdlogejanokfcmlbgfdcgnbnpmgdolaa)
 [![Mozilla Add-on](https://img.shields.io/amo/v/syncdex?label=Firefox&logo=firefox&style=for-the-badge)](https://addons.mozilla.org/en-US/firefox/addon/syncdex/)

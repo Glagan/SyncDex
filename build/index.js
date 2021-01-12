@@ -218,8 +218,6 @@ const waitLine = async () => {
 			if (event.error.frame) process.stdout.write(`${event.error.frame}\n`);
 			else process.stdout.write(`\n`);
 			duration = 0;
-			if (!options.watch) watcher.close();
-			return false;
 		} else if (event.code == 'END') {
 			console.log(`${color(GREEN)}Compiled all modules in${reset()} ${color(BLUE)}${duration}ms${reset()}`);
 			const extStart = Date.now();

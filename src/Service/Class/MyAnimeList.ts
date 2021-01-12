@@ -152,7 +152,8 @@ export class MyAnimeListTitle extends Title {
 		postToSns: '0',
 	};
 
-	persist = async (): Promise<RequestStatus> => {
+	@LogExecTime
+	async persist(): Promise<RequestStatus> {
 		if (this.status === Status.NONE || !this.csrf) {
 			await log(`Could not sync MyAnimeList: status ${this.status} csrf ${!!this.csrf}`);
 			return RequestStatus.BAD_REQUEST;
@@ -223,7 +224,7 @@ export class MyAnimeListTitle extends Title {
 			return RequestStatus.CREATED;
 		}
 		return RequestStatus.SUCCESS;
-	};
+	}
 
 	delete = async (): Promise<RequestStatus> => {
 		if (!this.inList || !this.csrf) {

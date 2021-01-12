@@ -127,6 +127,11 @@
 					<input type="checkbox" id="ck_saveOpenedChapters" data-name="saveOpenedChapters" />
 					<label for="ck_saveOpenedChapters">Keep a list of all opened chapters when read.</label>
 				</div>
+				<h2>Save on last page</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_saveOnLastPage" data-name="saveOnLastPage" />
+					<label for="ck_saveOnLastPage">Save on the last page of the chapter instead of when the chapter is changing while reading.</label>
+				</div>
 				<h2>Save only next chapter</h2>
 				<div class="parameter">
 					<input type="checkbox" id="ck_saveOnlyNext" data-name="saveOnlyNext" />
@@ -311,6 +316,11 @@
 				<div class="parameter">
 					<input type="checkbox" id="ck_silentUpdate" data-name="silentUpdate" />
 					<label for="ck_silentUpdate">Avoid opening a tab with changelog after an update.</label>
+				</div>
+				<h2>Log Level</h2>
+				<div class="parameter">
+					<input type="number" id="ck_logLevel" data-input="logLevel" min="0" max="2" default="0" />
+					<label for="ck_logLevel">0: Default, log errors. 1: Execution Time, log execution time of some requests. 2: Debug, log everything.</label>
 				</div>
 			</div>
 		</div>

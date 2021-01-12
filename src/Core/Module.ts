@@ -351,7 +351,7 @@ export abstract class ImportModule extends Module {
 			return ModuleStatus.SUCCESS;
 		} catch (error) {
 			const line = await log(error);
-			this.interface?.message('error', line.msg);
+			if (line) this.interface?.message('error', line.msg);
 			this.interface?.complete();
 			return ModuleStatus.GENERAL_FAIL;
 		}
@@ -506,7 +506,7 @@ export abstract class ExportModule extends Module {
 			return result ? ModuleStatus.SUCCESS : ModuleStatus.EXECUTE_FAIL;
 		} catch (error) {
 			const line = await log(error);
-			this.interface?.message('error', line.msg);
+			if (line) this.interface?.message('error', line.msg);
 			this.interface?.complete();
 			return ModuleStatus.GENERAL_FAIL;
 		}

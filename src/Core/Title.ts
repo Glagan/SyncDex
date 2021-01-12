@@ -1,6 +1,5 @@
 import { dateCompare } from './Utility';
 import { ActivableKey } from '../Service/Keys';
-import { browser } from 'webextension-polyfill-ts';
 import { Options } from './Options';
 import { History } from './History';
 import { Storage } from './Storage';

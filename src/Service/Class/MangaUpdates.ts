@@ -160,7 +160,8 @@ export class MangaUpdatesTitle extends Title {
 		});
 	};
 
-	persist = async (): Promise<RequestStatus> => {
+	@LogExecTime
+	async persist(): Promise<RequestStatus> {
 		if (this.status === Status.NONE) {
 			await log(`Could not sync MangaUpdates: status ${this.status}`);
 			return RequestStatus.BAD_REQUEST;
@@ -223,7 +224,7 @@ export class MangaUpdatesTitle extends Title {
 			return RequestStatus.CREATED;
 		}
 		return RequestStatus.SUCCESS;
-	};
+	}
 
 	delete = async (): Promise<RequestStatus> => {
 		if (!this.inList) {

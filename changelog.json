@@ -1,6 +1,17 @@
 {
 	"updates": [
 		{
+			"version": "0.2.1",
+			"description": [
+				"Fix Original Cover option.",
+				"Fix thumbnail in notifications.",
+				"Add \"Save on last page\" option to save on the last page of a chapter instead of when it's opened.",
+				"Revert MangaDex API v2 URL until it's fixed.",
+				"Avoid logging execution time of some functions for debug.",
+				"Load SyncDex earlier."
+			]
+		},
+		{
 			"version": "0.2.0",
 			"description": [
 				"Fix for MangaDex new API.",

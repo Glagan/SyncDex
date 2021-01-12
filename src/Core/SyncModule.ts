@@ -3,7 +3,7 @@ import { Options } from './Options';
 import { Runtime } from './Runtime';
 import { Overview } from '../SyncDex/Overview';
 import { Services } from '../Service/Class/Map';
-import { log } from './Log';
+import { log, LogExecTime } from './Log';
 import { ActivableKey, StaticKey } from '../Service/Keys';
 import { LocalTitle } from './Title';
 import { MangaDex } from './MangaDex';
@@ -101,7 +101,8 @@ export class SyncModule {
 	 * Check if any Service in services is available, in the list and more recent that the local Title.
 	 * If an external Service is more recent, sync with it and sync all other Services with the then synced Title.
 	 */
-	syncLocal = async (): Promise<boolean> => {
+	@LogExecTime
+	async syncLocal(): Promise<boolean> {
 		await this.waitInitialize();
 		// Sync Title with the most recent ServiceTitle ordered by User choice
 		// Services are reversed to select the first choice last
@@ -128,13 +129,14 @@ export class SyncModule {
 		if (doSave) await this.title.persist();
 		this.overview?.syncedLocal(this.title);
 		return doSave;
-	};
+	}
 
 	/**
 	 * Sync all Services with the local SyncDex Title, or delete them if needed.
 	 * Also sync MangaDex if Options.updateMD is enabled, also deleting the follow if needed.
 	 */
-	syncExternal = async (checkAutoSyncOption: boolean = false): Promise<SyncReport> => {
+	@LogExecTime
+	async syncExternal(checkAutoSyncOption: boolean = false): Promise<SyncReport> {
 		await this.waitInitialize();
 		const promises: Promise<RequestStatus>[] = [];
 		const report: SyncReport = {};
@@ -209,7 +211,7 @@ export class SyncModule {
 		}
 		await Promise.all(promises);
 		return report;
-	};
+	}
 
 	mangaDexFunction = (fct: 'unfollow' | 'status' | 'score'): string => {
 		switch (fct) {
@@ -225,7 +227,8 @@ export class SyncModule {
 	/**
 	 * Sync MangaDex Status or Rating.
 	 */
-	syncMangaDex = async (fct: 'unfollow' | 'status' | 'score'): Promise<RequestResponse> => {
+	@LogExecTime
+	async syncMangaDex(fct: 'unfollow' | 'status' | 'score'): Promise<RequestResponse> {
 		const response = await Runtime.request({
 			method: 'GET',
 			url: this.mangaDexFunction(fct),
@@ -236,7 +239,7 @@ export class SyncModule {
 			this.overview?.syncedMangaDex(fct, this);
 		}
 		return response;
-	};
+	}
 
 	/**
 	 * Save a copy of the current Title to be able to restore some of it's value if the *Cancel* button is clicked
@@ -357,7 +360,7 @@ export class SyncModule {
 			}
 			SimpleNotification.success({
 				title: 'Progress Updated',
-				image: MangaDex.thumbnail(this.title.key),
+				image: MangaDex.thumbnail(this.title.key, 'thumb'),
 				text: `Chapter ${this.title.progress.chapter}\n${
 					informations.created ? '**Start Date** set to Today !\n' : ''
 				}${informations.completed ? '**End Date** set to Today !\n' : ''}${ending}`,
@@ -374,7 +377,7 @@ export class SyncModule {
 							if (onCancel) onCancel();
 							SimpleNotification.success({
 								title: 'Cancelled',
-								image: MangaDex.thumbnail(this.title.key),
+								image: MangaDex.thumbnail(this.title.key, 'thumb'),
 								text: `**${this.title.name}** update cancelled.\n${
 									this.title.status == Status.NONE
 										? 'Removed from list'
@@ -391,7 +394,7 @@ export class SyncModule {
 			SimpleNotification.error(
 				{
 					title: 'Error',
-					image: MangaDex.thumbnail(this.title.key),
+					image: MangaDex.thumbnail(this.title.key, 'thumb'),
 					text: errorRows.join('\n'),
 				},
 				{ sticky: true }

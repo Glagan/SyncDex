@@ -9,6 +9,7 @@
 
 		"https://api.mangadex.org/*",
 		"https://mangadex.org/ajax/*",
+		"https://mangadex.org/api/*",
 
 		"https://mochi.nikurasu.org/*",
 		"https://syncdex.nikurasu.org/*",
@@ -63,7 +64,8 @@
 				"https://*.mangadex.org/history*"
 			],
 			"js": ["dist/SimpleNotification.js", "SyncDex.js"],
-			"css": ["dist/SimpleNotification.min.css", "css/SyncDex.css"]
+			"css": ["dist/SimpleNotification.min.css", "css/SyncDex.css"],
+			"run_at": "document_end"
 		},
 		{
 			"matches": ["https://anilist.co/api/v2/oauth/pin?syncdex*"],

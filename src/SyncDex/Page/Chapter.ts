@@ -11,7 +11,7 @@ import { injectScript, progressFromString } from '../../Core/Utility';
 import { ActivableKey } from '../../Service/Keys';
 import { DOM } from '../../Core/DOM';
 import { TitleEditor } from '../../Core/TitleEditor';
-import { log, TryCatch } from '../../Core/Log';
+import { log, LogExecTime, TryCatch } from '../../Core/Log';
 
 interface ReadingState {
 	syncModule?: SyncModule;
@@ -48,7 +48,7 @@ interface MangaDexChapter {
 	server: string | undefined;
 	serverFallback: string | undefined;
 	status: MangaDexStatus;
-	threadId: number | undefined;
+	threadId: number | null;
 	timestamp: number;
 	title: string;
 	volume: string;
@@ -71,7 +71,7 @@ interface ChapterChangeEventDetails {
 	server: string | undefined;
 	serverFallback: string | undefined;
 	status: MangaDexStatus;
-	threadId: number | undefined;
+	threadId: number | null;
 	timestamp: number;
 	title: string;
 	volume: string;
@@ -243,9 +243,41 @@ class ReadingOverview {
 	syncedLocal = (title: Title): void => {};
 }
 
+// @see https://stackoverflow.com/a/63212531/7794671
+function initPromise() {
+	let _resolve: any = undefined;
+	const _promise: any = new Promise((r) => (_resolve = r));
+	function resolve() {
+		_resolve();
+	}
+	function promise() {
+		return _promise;
+	}
+	return { resolve, promise };
+}
+
 export class ChapterPage extends Page {
+	state: ReadingState = {
+		title: undefined,
+		syncModule: undefined,
+	};
+	firstRequest: boolean = true;
+	loading: {
+		inProgress: boolean;
+		done: boolean;
+		promise: () => Promise<any>;
+		resolve: () => void;
+	} = { ...initPromise(), done: false, inProgress: false };
+	currentDetails: ChapterChangeEventDetails | undefined;
+	lastCheck: { id: number; page: number } = { id: 0, page: 0 };
+	content: HTMLElement;
 	readingQueue: ChapterChangeEventDetails[] = [];
 	processingReadingQueue: boolean = false;
+
+	constructor() {
+		super();
+		this.content = document.getElementById('content') as HTMLElement;
+	}
 
 	syncShowResult = async (
 		syncModule: SyncModule,
@@ -256,42 +288,53 @@ export class ChapterPage extends Page {
 		syncModule.displayReportNotifications(report, informations, previousState);
 	};
 
-	@TryCatch(Page.errorNotification)
-	async processReadingQueue(state: ReadingState): Promise<void> {
-		const details = this.readingQueue.shift();
-		if (!details) return;
+	@LogExecTime
+	getMdTitle(id: number): Promise<JSONResponse<MangaDexTitleResponse>> {
+		return Runtime.jsonRequest<MangaDexTitleResponse>({
+			method: 'GET',
+			url: MangaDex.api('title', id),
+			credentials: 'include',
+		});
+	}
 
+	@LogExecTime
+	getMdUserTitle(id: number): Promise<JSONResponse<MangaDexUserTitleResponse>> {
+		return Runtime.jsonRequest<MangaDexUserTitleResponse>({
+			method: 'GET',
+			url: MangaDex.api('userTitle', id),
+			credentials: 'include',
+		});
+	}
+
+	@TryCatch(Page.errorNotification)
+	@LogExecTime
+	async initialize(details: ChapterChangeEventDetails): Promise<void> {
+		this.loading.inProgress = true;
 		// Get the Title and Services initial state on the first chapter change
 		const id = details.manga.id;
-		let firstRequest = false;
-		if (state.title == undefined) {
-			state.title = await LocalTitle.get(id);
+		if (this.state.title == undefined) {
+			this.state.title = await LocalTitle.get(id);
 			if (Options.biggerHistory) await History.load();
 			// Avoid always updating the name from the API since it can contain HTML entities
-			if (details.manga.title != '' && !state.title.name) {
-				state.title.name = details.manga.title;
+			if (details.manga.title != '' && !this.state.title.name) {
+				this.state.title.name = details.manga.title;
 			}
-			firstRequest = true;
 			// Find Services
 			let fallback = false;
 			if (Options.useMochi) {
 				const connections = await Mochi.find(id);
 				if (connections !== undefined) {
-					Mochi.assign(state.title, connections);
+					Mochi.assign(this.state.title, connections);
 				} else fallback = true;
 			}
 			if (!Options.useMochi || fallback) {
-				const response = await Runtime.jsonRequest<MangaDexTitleResponse>({
-					method: 'GET',
-					url: MangaDex.api('title', id),
-					credentials: 'include',
-				});
+				const response = await this.getMdTitle(id);
 				if (response.ok) {
 					const services: { [key in MangaDexExternalKey]?: string } = response.body.data.links;
 					for (const key in services) {
 						const serviceKey = iconToService(key);
 						if (serviceKey !== undefined) {
-							state.title.services[serviceKey] = Services[serviceKey].idFromString(
+							this.state.title.services[serviceKey] = Services[serviceKey].idFromString(
 								services[key as MangaDexExternalKey]!
 							);
 						}
@@ -302,7 +345,7 @@ export class ChapterPage extends Page {
 			if (details.manga.lastChapter) {
 				const lastChapter = parseFloat(details.manga.lastChapter);
 				if (!isNaN(lastChapter) && lastChapter > 0) {
-					state.title.max = {
+					this.state.title.max = {
 						chapter: parseFloat(details.manga.lastChapter),
 						volume: details.manga.lastVolume ? details.manga.lastVolume : undefined,
 					};
@@ -310,24 +353,20 @@ export class ChapterPage extends Page {
 			}
 		}
 		// Send initial requests -- Another if block to tell Typescript state.syncModule does exist
-		if (state.syncModule == undefined) {
-			state.syncModule = new SyncModule(state.title, new ReadingOverview());
+		if (this.state.syncModule == undefined) {
+			this.state.syncModule = new SyncModule(this.state.title, new ReadingOverview());
 			// Check if we're logged in on MangaDex
-			state.syncModule.loggedIn = document.querySelector(`a.nav-link[href^='/user']`) !== null;
-			state.syncModule.initialize();
+			this.state.syncModule.loggedIn = document.querySelector(`a.nav-link[href^='/user']`) !== null;
+			this.state.syncModule.initialize();
 			// Find MangaDex status if needed
 			if (Options.updateOnlyInList || Options.updateMD) {
-				const response = await Runtime.jsonRequest<MangaDexUserTitleResponse>({
-					method: 'GET',
-					url: MangaDex.api('userTitle', id),
-					credentials: 'include',
-				});
+				const response = await this.getMdUserTitle(id);
 				if (response.ok) {
 					if (typeof response.body.data.followType === 'number') {
-						state.syncModule.mdState.status = response.body.data.followType;
+						this.state.syncModule.mdState.status = response.body.data.followType;
 					}
 					if (typeof response.body.data.rating === 'number') {
-						state.syncModule.mdState.score = response.body.data.rating * 10;
+						this.state.syncModule.mdState.score = response.body.data.rating * 10;
 					}
 				} // 403 Error is expected if not logged in
 				else if (response.code >= 500) {
@@ -338,13 +377,23 @@ export class ChapterPage extends Page {
 			}
 		}
 		// Check initial Status if it's the first time
-		if (firstRequest && Options.services.length > 0) {
-			await state.syncModule.syncLocal();
+		if (Options.services.length > 0) {
+			await this.state.syncModule.syncLocal();
 		}
+		this.loading.inProgress = false;
+		this.loading.done = true;
+		this.loading.resolve();
+	}
+
+	@TryCatch(Page.errorNotification)
+	@LogExecTime
+	async update(details: ChapterChangeEventDetails): Promise<void> {
+		await this.loading.promise();
+		if (!this.state.syncModule || !this.state.title) return;
 		// Save State for *Cancel* button
-		const previousState = state.syncModule.saveState();
+		const previousState = this.state.syncModule.saveState();
 		// Find current Chapter Progress
-		const created = state.title.status == Status.NONE || state.title.status == Status.PLAN_TO_READ;
+		const created = this.state.title.status == Status.NONE || this.state.title.status == Status.PLAN_TO_READ;
 		let completed = false;
 		const oneshot = details.title.toLocaleLowerCase() == 'oneshot';
 		let currentProgress: Progress = {
@@ -367,15 +416,15 @@ export class ChapterPage extends Page {
 			}
 			// Execute basic first request sync if needed before leaving
 			// Only sync if Title has a Status to be synced to
-			await state.title.persist();
-			if (firstRequest && Options.services.length > 0 && state.title.status !== Status.NONE) {
-				const report = await state.syncModule.syncExternal();
-				state.syncModule.displayReportNotifications(
+			await this.state.title.persist();
+			if (this.firstRequest && Options.services.length > 0 && this.state.title.status !== Status.NONE) {
+				const report = await this.state.syncModule.syncExternal();
+				this.state.syncModule.displayReportNotifications(
 					report,
 					{
 						created: created,
 						completed: false,
-						firstRequest: firstRequest,
+						firstRequest: this.firstRequest,
 					},
 					previousState
 				);
@@ -389,10 +438,10 @@ export class ChapterPage extends Page {
 				value: 'Update',
 				onClick: async (notification: SimpleNotification) => {
 					notification.closeAnimated();
-					const completed = state.title!.setProgress(currentProgress);
-					await state.title!.persist();
+					const completed = this.state.title!.setProgress(currentProgress);
+					await this.state.title!.persist();
 					await this.syncShowResult(
-						state.syncModule!,
+						this.state.syncModule!,
 						{
 							created: created,
 							completed: completed,
@@ -414,42 +463,43 @@ export class ChapterPage extends Page {
 		const delayed = details.status == 'delayed' || details.status == 'external';
 		if (delayed && Options.confirmChapter) {
 			missingUpdateValidations.push(
-				`**${state.title.name}** Chapter **${details.chapter}** is delayed or external and has not been updated.`
+				`**${this.state.title.name}** Chapter **${details.chapter}** is delayed or external and has not been updated.`
 			);
 		}
 		// Check if the title is in list if required
 		let mdListOptionValid = true;
 		if (Options.updateOnlyInList) {
-			if (!state.syncModule.loggedIn) {
+			if (!this.state.syncModule.loggedIn) {
 				SimpleNotification.error({
 					title: 'Not Logged In',
 					text: `You are not logged in on **MangaDex** but you have the *Update Only in List** option enabled.\nDisable it or login on **MangaDex** !`,
 				});
 			}
 			mdListOptionValid =
-				state.syncModule.mdState.status !== undefined && state.syncModule.mdState.status !== Status.NONE;
+				this.state.syncModule.mdState.status !== undefined &&
+				this.state.syncModule.mdState.status !== Status.NONE;
 			if (!mdListOptionValid && Options.confirmChapter) {
 				missingUpdateValidations.push(
-					`**${state.title.name}** is not your **MangaDex** List and wasn't updated.`
+					`**${this.state.title.name}** is not your **MangaDex** List and wasn't updated.`
 				);
 			}
 		}
 		// Check if currentProgress should be updated and use setStateProgress if needed
 		let doUpdate = mdListOptionValid && !delayed;
 		if (doUpdate) {
-			const isFirstChapter = state.title.progress.chapter == 0 && currentProgress.chapter == 0;
+			const isFirstChapter = this.state.title.progress.chapter == 0 && currentProgress.chapter == 0;
 			if (
 				(!Options.saveOnlyNext && !Options.saveOnlyHigher) ||
-				(Options.saveOnlyNext && (isFirstChapter || state.title.isNextChapter(currentProgress))) ||
+				(Options.saveOnlyNext && (isFirstChapter || this.state.title.isNextChapter(currentProgress))) ||
 				(Options.saveOnlyHigher &&
 					!Options.saveOnlyNext &&
-					(isFirstChapter || state.title.progress.chapter < currentProgress.chapter))
+					(isFirstChapter || this.state.title.progress.chapter < currentProgress.chapter))
 			) {
-				completed = state.title.setProgress(currentProgress);
+				completed = this.state.title.setProgress(currentProgress);
 			} else if (Options.confirmChapter && (Options.saveOnlyNext || Options.saveOnlyHigher)) {
 				doUpdate = false;
 				missingUpdateValidations.push(
-					`**${state.title.name}** Chapter **${details.chapter}** is not ${
+					`**${this.state.title.name}** Chapter **${details.chapter}** is not ${
 						Options.saveOnlyNext ? 'the next' : 'higher'
 					} and hasn't been updated.`
 				);
@@ -459,35 +509,68 @@ export class ChapterPage extends Page {
 		if (missingUpdateValidations.length > 0) {
 			SimpleNotification.info({
 				title: 'Not Updated',
-				image: MangaDex.thumbnail(state.title.key),
+				image: MangaDex.thumbnail(this.state.title.key, 'thumb'),
 				text: missingUpdateValidations.join(`\n`),
 				buttons: confirmButtons(),
 			});
 		}
 		// Always Update History values if enabled, do not look at other options
 		if (Options.biggerHistory) {
-			await state.title.setHistory(details.manga.id, currentProgress);
+			await this.state.title.setHistory(details.manga.id, currentProgress);
 		}
-		await state.title.persist(); // Always save
+		await this.state.title.persist(); // Always save
 		// If all conditions are met we can sync to current progress
 		if (doUpdate) {
 			await this.syncShowResult(
-				state.syncModule,
+				this.state.syncModule,
 				{
 					created: created,
 					completed: completed,
-					firstRequest: firstRequest,
+					firstRequest: this.firstRequest,
 					localUpdated: doUpdate,
 				},
 				previousState
 			);
 		}
 		// If we do not need to update, we still sync to the current non updated progress but no output
-		else if (firstRequest && Options.services.length > 0) await state.syncModule.syncExternal();
+		else if (this.firstRequest && Options.services.length > 0) await this.state.syncModule.syncExternal();
+		if (this.firstRequest) this.firstRequest = false;
+	}
 
+	setLastCheck(current: { id: number; page: number }): boolean {
+		if (this.lastCheck.id == current.id && this.lastCheck.page == current.page) return false;
+		this.lastCheck.id = current.id;
+		this.lastCheck.page = current.page;
+		return true;
+	}
+
+	@TryCatch(Page.errorNotification)
+	pageChangeEvent(page: number): void {
+		if (!this.currentDetails || this.currentDetails.pages.length == 1) return;
+		if (this.setLastCheck({ id: this.currentDetails.id, page })) {
+			if (page + parseInt(this.content.dataset.renderedPages!) - 1 >= this.currentDetails.pages.length) {
+				// Update only if it's the last page of the chapter
+				this.update(this.currentDetails);
+			}
+		}
+	}
+
+	@TryCatch(Page.errorNotification)
+	async processReadingQueue(): Promise<void> {
+		const details = this.readingQueue.shift();
+		if (!details) return;
+		if (this.lastCheck.id == details.id) return;
+		if (!this.loading.done && !this.loading.inProgress) this.initialize(details);
+
+		if (this.setLastCheck({ id: details.id, page: 1 })) {
+			// Update if saveOnLastPage is disabled
+			if (!Options.saveOnLastPage || details.pages.length == 1) {
+				await this.update(details);
+			}
+		}
 		// Next
 		if (this.readingQueue.length > 0) {
-			return this.processReadingQueue(state);
+			return this.processReadingQueue();
 		}
 	}
 
@@ -521,15 +604,20 @@ export class ChapterPage extends Page {
 		// No support for Legacy Reader
 		if (!document.querySelector('.reader-controls-container')) return;
 
-		// Inject script to listen to Reader *chapterchange* event
+		// Inject script to listen to Reader events
 		injectScript(function () {
 			// *window* is in the MangaDex page context
-			const addEventInterceptor = () =>
-				window.reader!.model.on('chapterchange', (event) => {
-					// Chrome can't send class Objects
+			const addEventInterceptor = () => {
+				window.reader!.model.on('chapterchange', async (event) => {
+					// Deep copy and remove Class Objects for Chrome
 					const detail = JSON.parse(JSON.stringify({ ...event, manga: event.manga }));
 					document.dispatchEvent(new CustomEvent('ReaderChapterChange', { detail }));
 				});
+				// Page change even only has a number as the event value
+				window.reader!.model.on('currentpagechange', (event) => {
+					document.dispatchEvent(new CustomEvent('ReaderPageChange', { detail: event }));
+				});
+			};
 			// If the MangaDex reader still hasn't been loaded, check every 50ms
 			if (window.reader === undefined) {
 				const i = setInterval(() => {
@@ -541,17 +629,14 @@ export class ChapterPage extends Page {
 			} else addEventInterceptor();
 		});
 
-		// Listen to injected Reader event
-		const state: ReadingState = {
-			title: undefined,
-			syncModule: undefined,
-		};
+		// Listen to injected Reader events
 		document.addEventListener('ReaderChapterChange', async (event) => {
 			try {
+				this.currentDetails = (event as CustomEvent).detail;
 				this.readingQueue.push((event as CustomEvent).detail);
 				if (!this.processingReadingQueue) {
 					this.processingReadingQueue = true;
-					await this.processReadingQueue(state);
+					await this.processReadingQueue();
 					this.processingReadingQueue = false;
 				}
 			} catch (error) {
@@ -559,5 +644,15 @@ export class ChapterPage extends Page {
 				log(error);
 			}
 		});
+		if (Options.saveOnLastPage) {
+			document.addEventListener('ReaderPageChange', (event) => {
+				try {
+					this.pageChangeEvent((event as CustomEvent).detail);
+				} catch (error) {
+					Page.errorNotification(error);
+					log(error);
+				}
+			});
+		}
 	}
 }

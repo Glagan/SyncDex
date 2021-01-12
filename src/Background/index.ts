@@ -2,7 +2,7 @@ import { Alarms, browser, Runtime as BrowserRuntime, WebRequest } from 'webexten
 import { isChrome } from '../Core/IsChrome';
 import { loadLogs, log } from '../Core/Log';
 import { ModuleStatus } from '../Core/Module';
-import { DefaultOptions, Options } from '../Core/Options';
+import { DefaultOptions, LogLevel, Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
 import { SaveSync } from '../Core/SaveSync';
 import { SaveSyncServices } from '../SaveSync/Map';
@@ -263,7 +263,13 @@ interface Update {
 	subVersion: number;
 	fnct: () => void;
 }
-const updates: Update[] = [];
+const updates: Update[] = [
+	{
+		version: 0.2,
+		subVersion: 0.1,
+		fnct: () => (Options.logLevel = LogLevel.Default),
+	},
+];
 
 browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstalledDetailsType) => {
 	if (!isChrome) browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
