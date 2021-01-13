@@ -54,6 +54,19 @@ interface MangaDexChapter {
 	volume: string;
 }
 
+type MangaDexExternalKey =
+	| 'al' // Anilist
+	| 'amz' // Amazon
+	| 'ap' // AnimePlanet
+	| 'bw' // BookWalker
+	| 'ebj' // eBookJapan
+	| 'kt' // Kitsu
+	| 'mal' // MyAnimeList
+	| 'mu' // MangaUpdates
+	| 'nu' // NovelUpdates
+	| 'raw' // Raw source
+	| 'engtl'; // Official English release
+
 interface ChapterChangeEventDetails {
 	_isNetworkServer: boolean;
 	_response: Response;
@@ -88,21 +101,9 @@ interface ChapterChangeEventDetails {
 		mainCover: string;
 		tags: number[];
 		title: string;
+		links: { [key in MangaDexExternalKey]?: string };
 	};
 }
-
-type MangaDexExternalKey =
-	| 'al' // Anilist
-	| 'amz' // Amazon
-	| 'ap' // AnimePlanet
-	| 'bw' // BookWalker
-	| 'ebj' // eBookJapan
-	| 'kt' // Kitsu
-	| 'mal' // MyAnimeList
-	| 'mu' // MangaUpdates
-	| 'nu' // NovelUpdates
-	| 'raw' // Raw source
-	| 'engtl'; // Official English release
 
 interface MangaDexTitleResponse {
 	data: {
@@ -289,15 +290,6 @@ export class ChapterPage extends Page {
 	};
 
 	@LogExecTime
-	getMdTitle(id: number): Promise<JSONResponse<MangaDexTitleResponse>> {
-		return Runtime.jsonRequest<MangaDexTitleResponse>({
-			method: 'GET',
-			url: MangaDex.api('title', id),
-			credentials: 'include',
-		});
-	}
-
-	@LogExecTime
 	getMdUserTitle(id: number): Promise<JSONResponse<MangaDexUserTitleResponse>> {
 		return Runtime.jsonRequest<MangaDexUserTitleResponse>({
 			method: 'GET',
@@ -328,18 +320,15 @@ export class ChapterPage extends Page {
 				} else fallback = true;
 			}
 			if (!Options.useMochi || fallback) {
-				const response = await this.getMdTitle(id);
-				if (response.ok) {
-					const services: { [key in MangaDexExternalKey]?: string } = response.body.data.links;
-					for (const key in services) {
-						const serviceKey = iconToService(key);
-						if (serviceKey !== undefined) {
-							this.state.title.services[serviceKey] = Services[serviceKey].idFromString(
-								services[key as MangaDexExternalKey]!
-							);
-						}
+				const services: { [key in MangaDexExternalKey]?: string } = details.manga.links;
+				for (const key in services) {
+					const serviceKey = iconToService(key);
+					if (serviceKey !== undefined) {
+						this.state.title.services[serviceKey] = Services[serviceKey].idFromString(
+							services[key as MangaDexExternalKey]!
+						);
 					}
-				} else await log(`Error while fetching ${MangaDex.api('title', id)}: Code ${response.code}`);
+				}
 			}
 			// Find max from MangaDex
 			if (details.manga.lastChapter) {
