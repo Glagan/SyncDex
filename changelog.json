@@ -3,22 +3,22 @@
 		{
 			"version": "0.2.1",
 			"description": [
-				"Fix Original Cover option.",
-				"Fix large thumbnail in notifications.",
-				"Add \"Save on last page\" option to save on the last page of a chapter instead of when it's opened.",
-				"Handle MangaDex recommendations after reading.",
-				"Revert MangaDex API v2 URL until it's fixed.",
+				"Fix \"Original Cover\" option.##29",
+				"Fix large thumbnail in notifications. Related to##29",
+				"Add \"Save on last page\" option to save on the last page of a chapter instead of when it's opened.##Glagan/MyMangaDex#70",
+				"Handle MangaDex recommendations after reading.##31",
+				"Revert MangaDex API v2 URL until it's fixed.##25",
 				"Avoid logging execution time of some functions for debug.",
-				"Load SyncDex earlier."
+				"Load SyncDex earlier. Related to##22"
 			]
 		},
 		{
 			"version": "0.2.0",
 			"description": [
-				"Fix for MangaDex new API.",
-				"Fix Anilist bad score if the scoring system was not 100 point.",
-				"Fix MangaUpdates import fail with some titles.",
-				"Load Overview first to avoid huge jumps (still a work in progress).",
+				"Fix for MangaDex new API.##25",
+				"Fix Anilist bad score if the scoring system was not 100 point.##24",
+				"Fix MangaUpdates import fail with some titles.##26",
+				"Load Overview first to avoid huge jumps (still a work in progress).##22",
 				"Options should have a better display on smaller devices (still a work in progress).",
 				"Refactor of some class and functions."
 			]
@@ -26,42 +26,42 @@
 		{
 			"version": "0.1.9",
 			"description": [
-				"Add an option to avoid opening a tab with changelogs after an update.",
-				"Fix Save Viewer search."
+				"Add an option to avoid opening a tab with changelogs after an update.##17",
+				"Fix Save Viewer search.##18"
 			]
 		},
 		{
 			"version": "0.1.8",
 			"description": [
-				"Fix History, last read and last title being deleted after Import.",
-				"Fix duplicate progress update when changing chapter too quickly.",
-				"Add notification when SyncDex is already loaded on the page."
+				"Fix History, last read and last title being deleted after Import.##14",
+				"Fix duplicate progress update when changing chapter too quickly.##15",
+				"Add notification when SyncDex is already loaded on the page.##15"
 			]
 		},
 		{
 			"version": "0.1.7",
 			"description": [
-				"Fix Dropbox.",
+				"Fix Dropbox.##13",
 				"Avoid force upload save when logging in on a Save Sync Service.",
-				"Fix MyAnimeList invalid day and month in dates.",
+				"Fix MyAnimeList invalid day and month in dates.##14",
 				"Fix MyAnimeList importing invalid Title names and breaking Save Viewer."
 			]
 		},
 		{
 			"version": "0.1.6",
 			"description": [
-				"Fix AnimePlanet.",
-				"Dark mode for the Overview, Title Editor and all Modals.",
+				"Fix AnimePlanet.##4",
+				"Dark mode for the Overview, Title Editor and all Modals.##10",
 				"Fix Overview showing wrong informations."
 			]
 		},
 		{
 			"version": "0.1.5",
 			"description": [
-				"Fix reading on Chrome.",
-				"Add iconsSilentAfterSync options to remove colors after sync while reading.",
-				"Fix logs being saved and erased on import with Save Sync.",
-				"Save Sync backend also has been fixed and tokens should refresh now.",
+				"Fix reading on Chrome.##7",
+				"Add iconsSilentAfterSync options to remove colors after sync while reading.##9",
+				"Fix logs being saved and erased on import with Save Sync.##6",
+				"Save Sync backend also has been fixed and tokens should refresh now.##5",
 				"Avoid sending MangaDex status update while logged out.",
 				"Fix \"Check Lists on Startup\"."
 			]
@@ -78,7 +78,7 @@
 		{
 			"version": "0.1.3",
 			"description": [
-				"Fix SyncDex mainService option and History while Importing.",
+				"Fix SyncDex mainService option and History while Importing.##3",
 				"Increase cooldown between requests to avoid 429 Too Many Requests for Anilist.",
 				"Update Progress before persist to avoid errors if there is a maximum value for Kitsu and AnimePlanet.",
 				"Fix AnimePlanet Export.",
@@ -87,7 +87,7 @@
 		},
 		{
 			"version": "0.1.2",
-			"description": ["Fix all services delete function.", "Fix Kitsu export.", "Fix Export messages."]
+			"description": ["Fix all services delete function.", "Fix Kitsu export.##2", "Fix Export messages."]
 		},
 		{
 			"version": "0.1.1",

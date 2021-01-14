@@ -40,7 +40,26 @@ export class Changelog {
 			}
 			const description = DOM.create('ul');
 			for (const line of update.description) {
-				description.appendChild(DOM.create('li', { textContent: line }));
+				const parts = line.split('##');
+				const lineNode = DOM.create('li', { textContent: parts[0] });
+				if (parts.length > 1) {
+					console.log(/(?:(\w+\/\w+\/)#)?(\d+)/.exec(parts[1]));
+					const [, repo = 'Glagan/SyncDex', id] = /(?:(\w+\/\w+)#)?(\d+)/.exec(parts[1])!;
+					DOM.append(
+						lineNode,
+						DOM.space(),
+						DOM.create('a', {
+							href: `http://github.com/${repo}/issues/${id}`,
+							target: '_blank',
+							childs: [
+								DOM.text(`${repo != 'Glagan/SyncDex' ? repo : ''}#${id}`),
+								DOM.space(),
+								DOM.icon('external-link-alt'),
+							],
+						})
+					);
+				}
+				description.appendChild(lineNode);
 			}
 			DOM.append(main, DOM.append(version, description));
 		}
