@@ -335,7 +335,7 @@ export class ChapterPage extends Page {
 			const services: { [key in MangaDexExternalKey]?: string } = details.links;
 			for (const key in services) {
 				const serviceKey = iconToService(key);
-				if (serviceKey !== undefined) {
+				if (serviceKey !== undefined && !this.state.title.doForceService(serviceKey)) {
 					this.state.title.services[serviceKey] = Services[serviceKey].idFromString(
 						services[key as MangaDexExternalKey]!
 					);

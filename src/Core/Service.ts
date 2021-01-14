@@ -40,6 +40,6 @@ export abstract class Service {
 	};
 
 	static compareId(id1: MediaKey, id2: MediaKey): boolean {
-		return id1.id === id2.id && id1.slug === id2.slug;
+		return id1.id == id2.id && id1.slug == id2.slug;
 	}
 }

@@ -120,7 +120,7 @@ export class SyncModule {
 					doSave = true;
 				}
 				// Finish retrieving the ID if required -- AnimePlanet has 2 fields
-				if (Services[key].updateKeyOnFirstFetch) {
+				if (Services[key].updateKeyOnFirstFetch && !this.title.doForceService(key)) {
 					this.title.services[key] = response.key;
 					doSave = true;
 				}

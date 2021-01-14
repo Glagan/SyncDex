@@ -913,7 +913,9 @@ export class TitlePage extends Page {
 				if (serviceKey !== undefined) {
 					const id = Services[serviceKey].idFromLink(serviceLink.href);
 					localServices[serviceKey] = [serviceLink.parentElement!, id];
-					if (pickLocalServices) title.services[serviceKey] = id;
+					if (pickLocalServices && !title.doForceService(serviceKey)) {
+						title.services[serviceKey] = id;
+					}
 				}
 			}
 		}

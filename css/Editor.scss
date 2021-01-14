@@ -31,8 +31,16 @@
 		width: 50%;
 		margin-bottom: 4px;
 
-		& > a {
+		& a {
 			display: inherit;
+		}
+
+		input[type='checkbox'] + label {
+			margin: 0;
+
+			&::before {
+				margin: 0;
+			}
 		}
 
 		input {
@@ -45,6 +53,9 @@
 	}
 
 	.group.history {
+		.icon {
+			padding: 0;
+		}
 		.hidden {
 			overflow: hidden;
 			max-height: 0;

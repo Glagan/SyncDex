@@ -127,7 +127,7 @@ export class Mochi {
 				if (typeof mediaKey === 'number') title.key.id = mediaKey as number;
 			} else if (serviceKey == 'name') {
 				title.name = mediaKey as string;
-			} else {
+			} else if (!title.doForceService(serviceKey)) {
 				if (typeof mediaKey === 'number') {
 					title.services[serviceKey] = { id: mediaKey };
 				} else if (typeof mediaKey !== 'string') {

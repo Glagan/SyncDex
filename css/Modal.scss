@@ -12,6 +12,13 @@
 	align-content: center;
 	cursor: pointer;
 	animation: fade-in 200ms $animation 1 forwards;
+	box-sizing: content-box;
+
+	& *,
+	& ::before,
+	& ::after {
+		box-sizing: content-box;
+	}
 
 	&.closed {
 		user-select: none;

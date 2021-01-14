@@ -1,6 +1,16 @@
 {
 	"updates": [
 		{
+			"version": "0.2.2",
+			"description": [
+				"Avoid erasing manually updated Service IDs.##27",
+				"Fix Anilist Import with a Private list.##32",
+				"Fix Title Service list and chapters being erased on load.",
+				"Fix Title Editor missing icons.",
+				"Add links to issues in changelog."
+			]
+		},
+		{
 			"version": "0.2.1",
 			"description": [
 				"Fix \"Original Cover\" option.##29",

@@ -232,9 +232,10 @@ export abstract class Title {
 
 export class LocalTitle extends Title {
 	// `ServiceKey` list of mapped Service for the Title.
-	services: ServiceList = {};
+	services!: ServiceList;
+	forceServices!: ActivableKey[];
 	// List of all read Chapters.
-	chapters: number[] = [];
+	chapters!: number[];
 	// Last time the Title page of the Title was visited.
 	lastTitle?: number;
 	// MangaDex Chapter ID of the last read chapter.
@@ -251,6 +252,7 @@ export class LocalTitle extends Title {
 		this.key = { id: id };
 		this.inList = title !== undefined;
 		this.loggedIn = true;
+		if (!this.forceServices) this.forceServices = [];
 		if (!this.chapters) this.chapters = [];
 		if (!title?.services || !this.services) this.services = {};
 	}
@@ -258,6 +260,7 @@ export class LocalTitle extends Title {
 	static valid(title: StorageTitle): boolean {
 		return (
 			typeof title.s === 'object' &&
+			(title.fs === undefined || Array.isArray(title.fs)) &&
 			typeof title.st === 'number' &&
 			typeof title.p === 'object' &&
 			title.p.c !== undefined &&
@@ -309,6 +312,7 @@ export class LocalTitle extends Title {
 				} as MediaKey;
 			}
 		}
+		if (title.fs) mapped.forceServices = title.fs;
 		if (title.m) {
 			mapped.max = {
 				chapter: title.m.c,
@@ -358,6 +362,7 @@ export class LocalTitle extends Title {
 				mapped.s[key as ActivableKey] = { i: id.id, s: id.slug };
 			}
 		}
+		if (this.forceServices) mapped.fs = this.forceServices;
 		if (this.start) mapped.sd = this.start.getTime();
 		if (this.end) mapped.ed = this.end.getTime();
 		if (this.chapters.length > 0) {
@@ -493,6 +498,27 @@ export class LocalTitle extends Title {
 		this.history = progress ? progress : this.progress;
 		History.add(this.key.id!);
 		await History.save();
+	};
+
+	doForceService = (key: ActivableKey): boolean => {
+		return this.forceServices.indexOf(key) >= 0;
+	};
+
+	addForceService = (key: ActivableKey): boolean => {
+		if (this.forceServices.indexOf(key) < 0) {
+			this.forceServices.push(key);
+			return true;
+		}
+		return false;
+	};
+
+	removeForceService = (key: ActivableKey): boolean => {
+		const index = this.forceServices.indexOf(key);
+		if (index >= 0) {
+			this.forceServices.splice(index, 1);
+			return true;
+		}
+		return false;
 	};
 }
 

@@ -60,35 +60,46 @@ export class TitleEditor {
 		return chapterNode;
 	};
 
-	static createServiceInput = (service: Service, value?: MediaKey): HTMLElement[] => {
-		const inputs: HTMLElement[] = [
-			DOM.create('input', {
-				type: 'number',
-				name: `${service.key}_id`,
-				placeholder: `${service.name} ID`,
-				value: `${value?.id ?? ''}`,
-			}),
+	static createServiceInput = (service: Service, force: boolean, value?: MediaKey): AppendableElement[] => {
+		const forceCheckbox = DOM.create('input', { type: 'checkbox', id: `${service.key}_force`, checked: force });
+		const idInput = DOM.create('input', {
+			type: 'number',
+			name: `${service.key}_id`,
+			placeholder: `${service.name} ID`,
+			value: `${value?.id ?? ''}`,
+		});
+		const inputs: AppendableElement[] = [
+			forceCheckbox,
+			DOM.create('label', { htmlFor: `${service.key}_force`, title: 'Avoid overwriting ID on update.' }),
+			DOM.space(),
+			idInput,
 		];
+		let slugInput: HTMLInputElement | undefined;
 		if (service.usesSlug) {
-			inputs.push(
-				DOM.create('input', {
-					type: 'string',
-					name: `${service.key}_slug`,
-					placeholder: `${service.name} Slug`,
-					value: `${value?.slug ?? ''}`,
-				})
-			);
+			slugInput = DOM.create('input', {
+				type: 'string',
+				name: `${service.key}_slug`,
+				placeholder: `${service.name} Slug`,
+				value: `${value?.slug ?? ''}`,
+			});
+			inputs.push(slugInput);
 		}
+		const updateForce = () => {
+			if (force || parseInt(idInput.value) != value?.id || slugInput?.value != value?.slug) {
+				forceCheckbox.checked = true;
+			} else forceCheckbox.checked = false;
+		};
+		idInput.addEventListener('input', updateForce);
+		slugInput?.addEventListener('input', updateForce);
 		if (Options.services.indexOf(service.key) >= 0) {
-			for (const input of inputs) {
-				input.style.borderColor = '#00c8d7';
-			}
+			idInput.style.borderColor = '#00c8d7';
+			if (slugInput) slugInput.style.borderColor = '#00c8d7';
 		}
 		return inputs;
 	};
 
 	static saveServiceInput = (key: ActivableKey, title: LocalTitle, form: HTMLFormElement): void => {
-		let found: boolean = false;
+		let found = false;
 		if (form[`${key}_id`] !== undefined) {
 			const id = parseInt(form[`${key}_id`].value);
 			if (!isNaN(id)) {
@@ -102,6 +113,8 @@ export class TitleEditor {
 			if (title.services[key] === undefined) title.services[key] = { slug: slug };
 			else title.services[key]!.slug = slug;
 		}
+		if (form[`${key}_force`]?.checked) title.addForceService(key);
+		else title.removeForceService(key);
 		if (!found) delete title.services[key];
 	};
 
@@ -153,7 +166,11 @@ export class TitleEditor {
 					childs: [
 						link,
 						DOM.space(),
-						...this.createServiceInput(Services[serviceKey], title.services[serviceKey]!),
+						...this.createServiceInput(
+							Services[serviceKey],
+							title.doForceService(serviceKey),
+							title.services[serviceKey]!
+						),
 					],
 				})
 			);
