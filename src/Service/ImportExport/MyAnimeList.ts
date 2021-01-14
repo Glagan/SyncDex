@@ -154,12 +154,12 @@ export class MyAnimeListExport extends ExportModule {
 			node,
 			this.node(document, 'manga_mangadb_id', title.services.mal?.id),
 			this.node(document, 'my_status', this.fromStatus(title.status)),
-			this.node(document, 'my_read_chapters', title.progress.chapter),
+			this.node(document, 'my_read_chapters', title.chapter),
 			this.node(document, 'update_on_import', 1)
 		);
 		// Conver back to the 0-10 range
 		if (title.score > 0) node.appendChild(this.node(document, 'my_score', Math.round(title.score / 10)));
-		if (title.progress.volume) node.appendChild(this.node(document, 'my_read_volumes', title.progress.volume));
+		if (title.volume) node.appendChild(this.node(document, 'my_read_volumes', title.volume));
 		if (title.start) node.appendChild(this.node(document, 'my_start_date', dateFormatInput(title.start)));
 		if (title.end) node.appendChild(this.node(document, 'my_finish_date', dateFormatInput(title.end)));
 		return node;

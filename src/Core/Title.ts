@@ -70,6 +70,30 @@ export abstract class Title {
 		return (<typeof Title>this.constructor).missingFields;
 	}
 
+	set chapter(chapter: number) {
+		this.progress.chapter = chapter;
+	}
+
+	get chapter() {
+		return this.progress.chapter;
+	}
+
+	set volume(volume: number | undefined) {
+		this.progress.volume = volume;
+	}
+
+	get volume() {
+		return this.progress.volume;
+	}
+
+	get isOneshot() {
+		return this.progress.oneshot ? true : false;
+	}
+
+	set isOneshot(value: boolean | undefined) {
+		this.progress.oneshot = value;
+	}
+
 	/**
 	 * Send any necessary requests to save the Media on the Service.
 	 */
@@ -87,10 +111,10 @@ export abstract class Title {
 	isMoreRecent = (other: Title): boolean => {
 		const missingFields = this.missingFields;
 		return (
-			this.progress.chapter > other.progress.chapter ||
+			this.chapter > other.chapter ||
 			(missingFields.indexOf('volume') < 0 &&
-				((this.progress.volume !== undefined && other.progress.volume === undefined) ||
-					(this.progress.volume && other.progress.volume && this.progress.volume > other.progress.volume))) ||
+				((this.volume !== undefined && other.volume === undefined) ||
+					(this.volume && other.volume && this.volume > other.volume))) ||
 			(missingFields.indexOf('score') < 0 && this.score > 0 && other.score > 0 && this.score != other.score) ||
 			(missingFields.indexOf('start') < 0 &&
 				this.start !== undefined &&
@@ -109,8 +133,8 @@ export abstract class Title {
 		const missingFields = this.missingFields;
 		const synced =
 			title.status === this.status &&
-			Math.floor(title.progress.chapter) === Math.floor(this.progress.chapter) &&
-			(missingFields.indexOf('volume') >= 0 || title.progress.volume === this.progress.volume) &&
+			Math.floor(title.chapter) === Math.floor(this.chapter) &&
+			(missingFields.indexOf('volume') >= 0 || title.volume === this.volume) &&
 			(missingFields.indexOf('score') >= 0 || title.score === this.score) &&
 			(missingFields.indexOf('start') >= 0 ||
 				(title.start === undefined && this.start === undefined) ||
@@ -130,8 +154,8 @@ export abstract class Title {
 			if (!this.end) this.end = new Date();
 		} else this.status = Status.READING;
 		this.progress.chapter = progress.chapter;
-		if (progress.volume && (!this.progress.volume || this.progress.volume < progress.volume)) {
-			this.progress.volume = progress.volume;
+		if (progress.volume && (!this.volume || this.volume < progress.volume)) {
+			this.volume = progress.volume;
 		}
 		this.progress.oneshot = progress.oneshot;
 		if (created && !this.start) {
@@ -147,9 +171,9 @@ export abstract class Title {
 	import = (title: Title): void => {
 		const missingFields = this.missingFields;
 		this.status = title.status;
-		this.progress.chapter = title.progress.chapter;
-		if (missingFields.indexOf('volume') < 0 && title.progress.volume) {
-			this.progress.volume = title.progress.volume;
+		this.chapter = title.chapter;
+		if (missingFields.indexOf('volume') < 0 && title.volume) {
+			this.volume = title.volume;
 		} else delete this.progress.volume;
 		if (missingFields.indexOf('score') < 0) this.score = title.score;
 		if (missingFields.indexOf('start') < 0 && title.start) {
@@ -169,15 +193,11 @@ export abstract class Title {
 		if (title.status !== Status.NONE) {
 			this.status = title.status;
 		}
-		if (title.progress.chapter > this.progress.chapter) {
-			this.progress.chapter = title.progress.chapter;
+		if (title.chapter > this.chapter) {
+			this.chapter = title.chapter;
 		}
-		if (
-			missingFields.indexOf('volume') < 0 &&
-			title.progress.volume &&
-			(!this.progress.volume || title.progress.volume > this.progress.volume)
-		) {
-			this.progress.volume = title.progress.volume;
+		if (missingFields.indexOf('volume') < 0 && title.volume && (!this.volume || title.volume > this.volume)) {
+			this.volume = title.volume;
 		}
 		if (missingFields.indexOf('score') < 0 && title.score > 0) {
 			this.score = title.score;
@@ -199,7 +219,7 @@ export abstract class Title {
 	};
 
 	isNextChapter = (progress: Progress): boolean => {
-		return progress.chapter > this.progress.chapter && progress.chapter < Math.floor(this.progress.chapter) + 2;
+		return progress.chapter > this.chapter && progress.chapter < Math.floor(this.chapter) + 2;
 	};
 
 	/**
@@ -320,9 +340,9 @@ export class LocalTitle extends Title {
 			st: this.status,
 			sc: this.score > 0 ? this.score : undefined,
 			p: {
-				c: this.progress.chapter,
-				v: this.progress.volume && this.progress.volume > 0 ? this.progress.volume : undefined,
-				o: this.progress.oneshot ? 1 : undefined,
+				c: this.chapter,
+				v: this.volume && this.volume > 0 ? this.volume : undefined,
+				o: this.isOneshot ? 1 : undefined,
 			},
 			lt: this.lastTitle,
 			id: this.lastChapter,

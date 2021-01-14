@@ -89,7 +89,7 @@ class TitleChapterGroup {
 				for (const row of group) {
 					row.addManageButtons();
 					if (Options.thumbnail) this.thumbnail = new Thumbnail(this.id, row.node, title);
-					if (row.progress.chapter == title.progress.chapter) {
+					if (row.progress.chapter == title.chapter) {
 						row.parent.classList.add('current');
 					}
 					row.node.classList.add('has-fast-in-transition');
@@ -134,7 +134,7 @@ class TitleChapterGroup {
 							await syncModule.syncLocal();
 							this.initializedSync = true;
 						}
-						if (row.progress.chapter == title.progress.chapter) return;
+						if (row.progress.chapter == title.chapter) return;
 						row.parent.classList.add('current');
 						const previousState = syncModule.saveState();
 						const completed = title.setProgress(row.progress);
@@ -157,7 +157,7 @@ class TitleChapterGroup {
 							}
 						}
 						// Update Title
-						title.progress.chapter = row.progress.chapter;
+						title.chapter = row.progress.chapter;
 						if (title.status == Status.NONE) {
 							title.status = Status.READING;
 							if (!title.start) title.start = new Date();
@@ -175,10 +175,10 @@ class TitleChapterGroup {
 							// Update toggle buttons
 							for (const row of this.rows) {
 								row.parent.classList.remove('current');
-								if (title.chapters.indexOf(title.progress.chapter) < 0) {
+								if (title.chapters.indexOf(title.chapter) < 0) {
 									row.disableToggleButton();
 								} else row.enableToggleButton();
-								if (row.progress.chapter == title.progress.chapter) {
+								if (row.progress.chapter == title.chapter) {
 									row.parent.classList.add('current');
 								}
 							}

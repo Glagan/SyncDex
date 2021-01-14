@@ -230,10 +230,10 @@ export class KitsuTitle extends Title {
 		// Fix progress to avoid 422 Cannot exceed media length
 		const progress: Progress = JSON.parse(JSON.stringify(this.progress));
 		if (this.max) {
-			if (this.max.chapter && this.max.chapter < this.progress.chapter) {
+			if (this.max.chapter && this.max.chapter < this.chapter) {
 				progress.chapter = this.max.chapter;
 			}
-			if (this.progress.volume && this.max.volume && this.max.volume < this.progress.volume) {
+			if (this.volume && this.max.volume && this.max.volume < this.volume) {
 				progress.volume = this.max.volume;
 			}
 		}

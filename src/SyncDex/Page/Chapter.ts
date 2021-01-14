@@ -495,16 +495,16 @@ export class ChapterPage extends Page {
 				);
 			}
 		}
-		// Check if currentProgress should be updated and use setStateProgress if needed
+		// Check if currentProgress should be updated and use setProgress if needed
 		let doUpdate = mdListOptionValid && !delayed;
 		if (doUpdate) {
-			const isFirstChapter = this.state.title.progress.chapter == 0 && currentProgress.chapter == 0;
+			const isFirstChapter = this.state.title.chapter == 0 && currentProgress.chapter == 0;
 			if (
 				(!Options.saveOnlyNext && !Options.saveOnlyHigher) ||
 				(Options.saveOnlyNext && (isFirstChapter || this.state.title.isNextChapter(currentProgress))) ||
 				(Options.saveOnlyHigher &&
 					!Options.saveOnlyNext &&
-					(isFirstChapter || this.state.title.progress.chapter < currentProgress.chapter))
+					(isFirstChapter || this.state.title.chapter < currentProgress.chapter))
 			) {
 				completed = this.state.title.setProgress(currentProgress);
 			} else if (Options.confirmChapter && (Options.saveOnlyNext || Options.saveOnlyHigher)) {

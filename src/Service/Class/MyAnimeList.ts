@@ -165,10 +165,10 @@ export class MyAnimeListTitle extends Title {
 			manga_id: this.key.id!,
 			'add_manga[status]': MyAnimeListTitle.fromStatus(this.status),
 		};
-		if (this.progress.volume) body['add_manga[num_read_volumes]'] = this.progress.volume;
+		if (this.volume) body['add_manga[num_read_volumes]'] = this.volume;
 		else body['add_manga[num_read_volumes]'] = '';
 		body['last_completed_vol'] = '';
-		body['add_manga[num_read_chapters]'] = Math.floor(this.progress.chapter);
+		body['add_manga[num_read_chapters]'] = Math.floor(this.chapter);
 		// Score
 		if (this.score) body['add_manga[score]'] = Math.round(this.score / 10);
 		else body['add_manga[score]'] = '';

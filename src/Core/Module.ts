@@ -334,10 +334,10 @@ export abstract class ImportModule extends Module {
 			// Add chapters
 			if (Options.saveOpenedChapters) {
 				for (const title of titles) {
-					if (title.progress.chapter > 0) {
+					if (title.chapter > 0) {
 						title.chapters = [];
-						let index = Math.max(title.progress.chapter - Options.chaptersSaved, 1);
-						for (; index <= title.progress.chapter; index++) {
+						let index = Math.max(title.chapter - Options.chaptersSaved, 1);
+						for (; index <= title.chapter; index++) {
 							title.chapters.push(index);
 						}
 					}

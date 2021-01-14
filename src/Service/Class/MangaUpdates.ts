@@ -186,23 +186,20 @@ export class MangaUpdatesTitle extends Title {
 		}
 		// Update progress -- only if chapter or volume is different
 		if (
-			(this.progress.chapter > 1 && this.progress.chapter != this.current.progress.chapter) ||
-			(this.progress.volume !== undefined &&
-				this.progress.volume > 0 &&
-				this.progress.volume != this.current.progress.volume)
+			(this.chapter > 1 && this.chapter != this.current.progress.chapter) ||
+			(this.volume !== undefined && this.volume > 0 && this.volume != this.current.progress.volume)
 		) {
-			const volume =
-				this.progress.volume !== undefined && this.progress.volume > 0 ? `&set_v=${this.progress.volume}` : '';
+			const volume = this.volume !== undefined && this.volume > 0 ? `&set_v=${this.volume}` : '';
 			const response = await Runtime.request<RawResponse>({
 				url: `https://www.mangaupdates.com/ajax/chap_update.php?s=${this.key.id}${volume}&set_c=${Math.floor(
-					this.progress.chapter
+					this.chapter
 				)}`,
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);
 			this.current.progress = {
-				chapter: this.progress.chapter,
-				volume: this.progress.volume,
+				chapter: this.chapter,
+				volume: this.volume,
 			};
 		}
 		// Update score

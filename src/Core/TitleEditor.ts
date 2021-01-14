@@ -173,7 +173,7 @@ export class TitleEditor {
 			name: 'chapter',
 			type: 'number',
 			placeholder: 'Chapter',
-			value: `${title.progress.chapter}`,
+			value: `${title.chapter}`,
 			min: '0',
 			step: 'any',
 			required: true,
@@ -187,7 +187,7 @@ export class TitleEditor {
 			name: 'volume',
 			type: 'number',
 			placeholder: 'Volume',
-			value: title.progress.volume ? `${title.progress.volume}` : '',
+			value: title.volume ? `${title.volume}` : '',
 			events: { change: () => (previousChapterVolume = undefined) },
 		});
 		const volumeColumn = this.modalGroup('Volume', 'ee_volume', [volumeInput]);
@@ -399,19 +399,19 @@ export class TitleEditor {
 			deleteButton.disabled = true;
 			submitButton.classList.add('loading');
 			// Chapter and Status always required
-			let oldChapter = title.progress.chapter;
+			let oldChapter = title.chapter;
 			let chapter = parseFloat(form.chapter.value);
-			if (!isNaN(chapter) && chapter > -1) title.progress.chapter = chapter;
+			if (!isNaN(chapter) && chapter > -1) title.chapter = chapter;
 			else chapter = 0;
 			title.status = parseInt(form.status.value);
 			// Update Chapter list
-			if (Options.saveOpenedChapters && oldChapter != title.progress.chapter) {
+			if (Options.saveOpenedChapters && oldChapter != title.chapter) {
 				title.updateChapterList(chapter);
 			}
 			// Volume
 			if (form.volume.value != '') {
 				const volume = parseInt(form.volume.value);
-				if (!isNaN(volume) && volume > -1) title.progress.volume = volume;
+				if (!isNaN(volume) && volume > -1) title.volume = volume;
 			} else delete title.progress.volume;
 			// Name
 			if (form.mediaName.value != '') title.name = (form.mediaName.value as string).trim();

@@ -101,10 +101,10 @@ export class HistoryPage extends Page {
 				toSave.add(title);
 			}
 			if (title.status !== Status.NONE && historyCards[id] !== undefined) {
-				if (highestChapter <= title.progress.chapter) {
+				if (highestChapter <= title.chapter) {
 					historyCards[id].classList.remove('history-down');
 					historyCards[id].classList.add('history-up');
-				} else if (highestChapter > title.progress.chapter) {
+				} else if (highestChapter > title.chapter) {
 					historyCards[id].classList.remove('history-up');
 					historyCards[id].classList.add('history-down');
 				}
@@ -432,9 +432,9 @@ export class HistoryPage extends Page {
 
 	highlight(card: HTMLElement, title: LocalTitle) {
 		if (title.highest) {
-			if (title.highest <= title.progress.chapter) {
+			if (title.highest <= title.chapter) {
 				card.classList.add('history-up');
-			} else if (title.highest > title.progress.chapter) {
+			} else if (title.highest > title.chapter) {
 				card.classList.add('history-down');
 			}
 		}

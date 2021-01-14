@@ -133,18 +133,18 @@ export class Thumbnail {
 	updateContent = (title: Title): void => {
 		DOM.clear(this.content);
 		let hasContent = false;
-		if (title.progress.chapter) {
+		if (title.chapter) {
 			DOM.append(
 				this.content,
 				DOM.icon('bookmark'),
 				DOM.space(),
 				DOM.text('Chapter'),
 				DOM.space(),
-				DOM.text(`${title.progress.chapter}`)
+				DOM.text(`${title.chapter}`)
 			);
 			hasContent = true;
 		}
-		if (title.progress.volume) {
+		if (title.volume) {
 			DOM.append(
 				this.content,
 				DOM.create('br'),
@@ -152,7 +152,7 @@ export class Thumbnail {
 				DOM.space(),
 				DOM.text('Volume'),
 				DOM.space(),
-				DOM.text(`${title.progress.volume}`)
+				DOM.text(`${title.volume}`)
 			);
 			hasContent = true;
 		}

@@ -361,9 +361,9 @@ export class SyncModule {
 			SimpleNotification.success({
 				title: 'Progress Updated',
 				image: MangaDex.thumbnail(this.title.key, 'thumb'),
-				text: `Chapter ${this.title.progress.chapter}\n${
-					informations.created ? '**Start Date** set to Today !\n' : ''
-				}${informations.completed ? '**End Date** set to Today !\n' : ''}${ending}`,
+				text: `Chapter ${this.title.chapter}\n${informations.created ? '**Start Date** set to Today !\n' : ''}${
+					informations.completed ? '**End Date** set to Today !\n' : ''
+				}${ending}`,
 				buttons: [
 					{
 						type: 'warning',
@@ -381,7 +381,7 @@ export class SyncModule {
 								text: `**${this.title.name}** update cancelled.\n${
 									this.title.status == Status.NONE
 										? 'Removed from list'
-										: `[${StatusMap[this.title.status]}] Chapter ${this.title.progress.chapter}`
+										: `[${StatusMap[this.title.status]}] Chapter ${this.title.chapter}`
 								}`,
 							});
 						},

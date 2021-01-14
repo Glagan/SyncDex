@@ -108,7 +108,7 @@ class ServiceOverview {
 	/**
 	 * Create a list of all values for the Media.
 	 */
-	overview = (title: Title, parent: HTMLElement): void => {
+	overview = (title: Title, original: LocalTitle | undefined, parent: HTMLElement): void => {
 		if (!title.loggedIn) {
 			parent.appendChild(
 				DOM.create('div', {
@@ -123,23 +123,23 @@ class ServiceOverview {
 			const rows: HTMLElement[] = [
 				DOM.create('div', { class: `status st${title.status}`, textContent: StatusMap[title.status] }),
 			];
-			rows.push(this.overviewRow('bookmark', 'Chapter', title.progress.chapter, title?.progress.chapter));
+			rows.push(this.overviewRow('bookmark', 'Chapter', title.chapter, original?.chapter));
 			if (missingFields.indexOf('volume') < 0) {
-				if (title.progress.volume) {
-					rows.push(this.overviewRow('book', 'Volume', title.progress.volume, title?.progress.volume));
+				if (title.volume) {
+					rows.push(this.overviewRow('book', 'Volume', title.volume, original?.volume));
 				} else {
-					rows.push(this.overviewRow('book', 'No Volume', undefined, title?.progress.volume));
+					rows.push(this.overviewRow('book', 'No Volume', undefined, original?.volume));
 				}
 			}
 			if (title.start) {
-				rows.push(this.overviewRow('calendar-plus', 'Started', title.start, title?.start));
+				rows.push(this.overviewRow('calendar-plus', 'Started', title.start, original?.start));
 			} else if (missingFields.indexOf('start') < 0) {
-				rows.push(this.overviewRow('calendar-plus', 'No Start Date', undefined, title?.start));
+				rows.push(this.overviewRow('calendar-plus', 'No Start Date', undefined, original?.start));
 			}
 			if (title.end) {
-				rows.push(this.overviewRow('calendar-check', 'Completed', title.end, title?.end));
+				rows.push(this.overviewRow('calendar-check', 'Completed', title.end, original?.end));
 			} else if (missingFields.indexOf('end') < 0) {
-				rows.push(this.overviewRow('calendar-check', 'No Completion Date', undefined, title?.end));
+				rows.push(this.overviewRow('calendar-check', 'No Completion Date', undefined, original?.end));
 			}
 			if (title.score) {
 				rows.push(
@@ -147,7 +147,7 @@ class ServiceOverview {
 						'star',
 						'Scored',
 						`${title.score} out of 100`,
-						title && title.score > 0 ? `${title.score} out of 100` : undefined
+						original && original.score > 0 ? `${original.score} out of 100` : undefined
 					)
 				);
 			} else if (missingFields.indexOf('score') < 0) {
@@ -156,7 +156,7 @@ class ServiceOverview {
 						'star',
 						'Not Scored yet',
 						undefined,
-						title && title.score > 0 ? `${title.score} out of 100` : undefined
+						original && original.score > 0 ? `${original.score} out of 100` : undefined
 					)
 				);
 			}
@@ -247,7 +247,7 @@ class ServiceOverview {
 	update = (res: Title | RequestStatus, title: LocalTitle): void => {
 		this.clear();
 		if (typeof res === 'object') {
-			this.overview(res, this.content);
+			this.overview(res, title, this.content);
 			// Display *Sync* button only if the title is out of sync, with auto sync disabled and if the title is in a list
 			if (!Options.autoSync && !res.isSyncedWith(title) && title.status !== Status.NONE && res.loggedIn) {
 				this.setTabIcon('sync has-error');
@@ -385,11 +385,11 @@ class LocalOverview extends ServiceOverview {
 	update = (_res: Title | RequestStatus, title: LocalTitle): void => {
 		this.clear();
 		if (title.status == Status.NONE) {
-			if (title.progress.chapter > 0) {
-				this.overview(title, this.content);
+			if (title.chapter > 0) {
+				this.overview(title, undefined, this.content);
 			}
 			this.content.appendChild(this.quickButtons);
-		} else this.overview(title, this.content);
+		} else this.overview(title, undefined, this.content);
 		this.manage.appendChild(this.editButton);
 		this.manage.appendChild(this.refreshButton);
 	};
@@ -454,7 +454,7 @@ class ChapterList {
 				if (loading) return;
 				row.markButton.classList.add('loading');
 				loading = true;
-				if (row.progress.chapter == title.progress.chapter) return;
+				if (row.progress.chapter == title.chapter) return;
 				const previousState = syncModule.saveState();
 				const completed = title.setProgress(row.progress);
 				// No need to do anything here, only add or remove chapters from the list
@@ -492,11 +492,8 @@ class ChapterList {
 			const isOpened = title.chapters.indexOf(row.progress.chapter) >= 0;
 			if (
 				(!foundNext &&
-					((row.progress.chapter > title.progress.chapter &&
-						row.progress.chapter < Math.floor(title.progress.chapter) + 2) ||
-						(row.progress.chapter == 0 &&
-							title.progress.chapter == 0 &&
-							title.status !== Status.COMPLETED))) ||
+					((row.progress.chapter > title.chapter && row.progress.chapter < Math.floor(title.chapter) + 2) ||
+						(row.progress.chapter == 0 && title.chapter == 0 && title.status !== Status.COMPLETED))) ||
 				(foundNext && nextChapterValue === row.progress.chapter)
 			) {
 				// * Next Chapter
@@ -504,7 +501,7 @@ class ChapterList {
 				row.isNext = true;
 				foundNext = true;
 				nextChapterValue = row.progress.chapter;
-			} else if (title.progress.chapter == row.progress.chapter) {
+			} else if (title.chapter == row.progress.chapter) {
 				// * Current chapter
 				row.node.style.backgroundColor = Options.colors.highlights[0];
 			} else if (isOpened) {
@@ -520,7 +517,7 @@ class ChapterList {
 				}
 			}
 			// Hide Set Latest button
-			if (row.progress.chapter == title.progress.chapter) {
+			if (row.progress.chapter == title.chapter) {
 				row.parent.classList.add('current');
 			}
 		}
@@ -993,14 +990,14 @@ export class TitlePage extends Page {
 		// Update lastChapter for the History if title was synced
 		if (imported && (Options.saveOpenedChapters || Options.biggerHistory)) {
 			if (Options.saveOpenedChapters) {
-				title.updateChapterList(title.progress.chapter);
+				title.updateChapterList(title.chapter);
 			}
 			for (const row of overview.chapterList.rows) {
-				if (Options.biggerHistory && row.progress.chapter == title.progress.chapter) {
+				if (Options.biggerHistory && row.progress.chapter == title.chapter) {
 					title.lastChapter = row.chapterId;
 					if (!Options.saveOpenedChapters) break;
 				}
-				if (Options.saveOpenedChapters && row.progress.chapter < title.progress.chapter) {
+				if (Options.saveOpenedChapters && row.progress.chapter < title.chapter) {
 					title.addChapter(row.progress.chapter);
 				}
 			}

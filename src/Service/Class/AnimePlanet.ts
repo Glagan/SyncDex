@@ -96,13 +96,11 @@ export class AnimePlanet extends Service {
 		values.progress = { chapter: 0 };
 		if (chapterSelector) {
 			values.progress.chapter = parseInt(chapterSelector.value);
-			values.progress.chapter = values.progress.chapter;
 		}
 		// Volume
 		const volumeSelector = mediaEntryForm.querySelector<HTMLOptionElement>('select.volumes [selected]');
 		if (volumeSelector) {
 			values.progress.volume = parseInt(volumeSelector.value);
-			values.progress.volume = values.progress.volume;
 		}
 		// Score
 		const score = mediaEntryForm.querySelector<HTMLElement>('div.starrating > div[name]');
@@ -157,15 +155,14 @@ export class AnimePlanetTitle extends Title {
 			this.current.status = this.status;
 		}
 		// Chapter progress
-		const chapterToUpdate =
-			this.max?.chapter && this.max.chapter < this.progress.chapter ? this.max.chapter : this.progress.chapter;
-		if (this.progress.chapter > 0 && this.current.progress.chapter !== chapterToUpdate) {
+		const chapterToUpdate = this.max?.chapter && this.max.chapter < this.chapter ? this.max.chapter : this.chapter;
+		if (this.chapter > 0 && this.current.progress.chapter !== chapterToUpdate) {
 			const response = await Runtime.jsonRequest({
 				url: `${AnimePlanetAPI}/update/manga/${id}/${Math.floor(chapterToUpdate)}/0/${this.token}`,
 				credentials: 'include',
 			});
 			if (!response.ok) return Runtime.responseStatus(response);
-			this.current.progress.chapter = this.progress.chapter;
+			this.current.progress.chapter = this.chapter;
 		}
 		// Score
 		if (this.score > 0 && this.current.score !== this.score) {
