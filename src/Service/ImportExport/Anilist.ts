@@ -110,10 +110,7 @@ export class AnilistImport extends ImportModule {
 		const response = await Runtime.jsonRequest<AnilistListResponse>({
 			url: AnilistAPI,
 			method: 'POST',
-			headers: {
-				Accept: 'application/json',
-				'Content-Type': 'application/json',
-			},
+			headers: AnilistHeaders(),
 			body: JSON.stringify({
 				query: AnilistImport.listQuery,
 				variables: {
