@@ -7,6 +7,10 @@ assignees: Glagan
 
 ---
 
+>Try to think of a good name that is related to what you thing is your problem.
+>Remove placeholders and this explanation before adding your comments, you can remove sections if they have no uses in your report, if you have no screenshots for example.
+>Always include your logs in your reports, even if they seem unrelated, so I can check your options and your version to try to reproduce under the same conditions.
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 

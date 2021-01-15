@@ -7,6 +7,9 @@ assignees: Glagan
 
 ---
 
+>You can simply name your issue **[REQUEST] ServiceName** so other users can quickly check if there is already a request for it.
+>Remove placeholders and this explanation before adding your comments, you can remove the **API** and **Additional context** sections if they have no uses in your request.
+
 **Service Name**
 What's the Service name.
 
