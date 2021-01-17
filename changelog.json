@@ -1,6 +1,10 @@
 {
 	"updates": [
 		{
+			"version": "0.2.3",
+			"description": ["Handle Titles that reset chapters every volume.##21"]
+		},
+		{
 			"version": "0.2.2",
 			"description": [
 				"Avoid erasing manually updated Service IDs.##27",

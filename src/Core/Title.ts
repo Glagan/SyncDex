@@ -246,6 +246,9 @@ export class LocalTitle extends Title {
 	highest?: number;
 	// Last time a Chapter was read for the Title
 	lastRead?: number;
+	// Number of chapters per volume
+	volumeChapterCount: { [key: number]: number } = {};
+	volumeResetChapter: boolean = false;
 
 	constructor(id: number, title?: Partial<LocalTitle>) {
 		super(title);
@@ -255,6 +258,7 @@ export class LocalTitle extends Title {
 		if (!this.forceServices) this.forceServices = [];
 		if (!this.chapters) this.chapters = [];
 		if (!title?.services || !this.services) this.services = {};
+		if (title?.volumeChapterCount) this.volumeResetChapter = true;
 	}
 
 	static valid(title: StorageTitle): boolean {
@@ -266,6 +270,7 @@ export class LocalTitle extends Title {
 			title.p.c !== undefined &&
 			(title.sc === undefined || typeof title.sc === 'number') &&
 			(title.m === undefined || typeof title.m === 'object') &&
+			(title.v === undefined || typeof title.v === 'object') &&
 			(title.c === undefined || Array.isArray(title.c)) &&
 			(title.sd === undefined || typeof title.sd === 'number') &&
 			(title.ed === undefined || typeof title.ed === 'number') &&
@@ -319,6 +324,7 @@ export class LocalTitle extends Title {
 				volume: title.m.v,
 			};
 		}
+		if (title.v) mapped.volumeChapterCount = title.v;
 		if (title.h) {
 			mapped.history = {
 				chapter: title.h.c,
@@ -373,6 +379,9 @@ export class LocalTitle extends Title {
 				c: this.max.chapter,
 				v: this.max.volume,
 			};
+		}
+		if (this.volumeChapterCount && Object.keys(this.volumeChapterCount).length > 0) {
+			mapped.v = this.volumeChapterCount;
 		}
 		if (this.history) {
 			mapped.h = {

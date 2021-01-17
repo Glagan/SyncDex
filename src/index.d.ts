@@ -232,11 +232,12 @@ interface SaveProgress {
 
 interface StorageTitle {
 	s: SaveServiceList; // services
-	fs?: import('./Service/Keys').ActivableKey[];
+	fs?: import('./Service/Keys').ActivableKey[]; // forced services
 	st: Status; // status
 	sc?: number; // score
 	p: SaveProgress; // progress
-	m?: Partial<SaveProgress>; // max progress
+	m?: Partial<SaveProgress>; // maxProgress
+	v?: { [key: number]: number }; // volumeChapterCount
 	c?: number[]; // chapters
 	sd?: number; // start
 	ed?: number; // end
