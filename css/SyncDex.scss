@@ -213,6 +213,10 @@
 			}
 		}
 	}
+	.status > .status {
+		width: auto;
+		display: inline-block;
+	}
 	// Services
 	@each $key in map.keys($services) {
 		&.#{$key} .tabs::after {

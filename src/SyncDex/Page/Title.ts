@@ -7,7 +7,7 @@ import { Service } from '../../Core/Service';
 import { SyncModule } from '../../Core/SyncModule';
 import { iconToService, LocalTitle, MissableField, StatusMap, Title } from '../../Core/Title';
 import { TitleEditor } from '../../Core/TitleEditor';
-import { dateCompare, dateFormat, isDate } from '../../Core/Utility';
+import { dateCompare, dateFormat, isDate, progressToString } from '../../Core/Utility';
 import { Services } from '../../Service/Class/Map';
 import { ActivableKey, ServiceKey, StaticKey } from '../../Service/Keys';
 import { ChapterRow } from '../ChapterRow';
@@ -120,9 +120,25 @@ class ServiceOverview {
 		}
 		if (title.inList) {
 			const missingFields = title.missingFields;
-			const rows: HTMLElement[] = [
-				DOM.create('div', { class: `status st${title.status}`, textContent: StatusMap[title.status] }),
-			];
+			const rows: HTMLElement[] = [];
+			if (original && title.status != original.status) {
+				rows.push(
+					DOM.create('div', {
+						class: `status st${title.status}`,
+						childs: [
+							DOM.create('span', { class: 'not-synced', textContent: StatusMap[title.status] }),
+							DOM.create('div', {
+								class: `status st${original.status}`,
+								textContent: StatusMap[original.status],
+							}),
+						],
+					})
+				);
+			} else {
+				rows.push(
+					DOM.create('div', { class: `status st${title.status}`, textContent: StatusMap[title.status] })
+				);
+			}
 			rows.push(this.overviewRow('bookmark', 'Chapter', title.chapter, original?.chapter));
 			if (missingFields.indexOf('volume') < 0) {
 				if (title.volume) {
@@ -400,19 +416,67 @@ class ChapterList {
 	rows: ChapterRow[] = [];
 	languageMap: { [key: string]: string } = {};
 	rowLanguages: { code: string; node: HTMLElement }[] = [];
+	volumeResetChapter: boolean;
+	volumeChapterCount: { [key: number]: number };
+	// Flag if there is more than one page if Volume reset chapters
+	incomplete: boolean;
 
 	/**
 	 * Find each rows, their previous/next and add CSS for animations
 	 */
 	constructor() {
-		const chapterRows = document.querySelectorAll<HTMLElement>('.chapter-row');
+		const chapterRows = Array.from(document.querySelectorAll<HTMLElement>('.chapter-row')).reverse();
+		let lastVolume: number = 0;
+		this.volumeResetChapter = false;
+		this.volumeChapterCount = {};
 		for (const row of chapterRows) {
 			if (row.dataset.id == undefined) continue;
 			const chapterRow = new ChapterRow(row);
 			if (!isNaN(chapterRow.progress.chapter)) {
-				this.rows.unshift(chapterRow);
+				this.rows.push(chapterRow);
 				// Calculate highest chapter
 				if (chapterRow.progress.chapter > this.highest) this.highest = chapterRow.progress.chapter;
+			}
+			if (lastVolume >= 0) {
+				const currentVolume = chapterRow.progress.volume;
+				// If there is no volume, volumes can't reset chapters
+				if (currentVolume) {
+					if (currentVolume != lastVolume) {
+						lastVolume = currentVolume;
+						// Check if volumes actually reset chapter or abort
+						if (currentVolume > 1 && chapterRow.progress.chapter <= 1) {
+							this.volumeResetChapter = true;
+						} else if (currentVolume > 1) lastVolume = -1;
+					}
+					// Avoid adding sub chapters
+					if (
+						chapterRow.progress.chapter >= 1 &&
+						Math.floor(chapterRow.progress.chapter) == chapterRow.progress.chapter
+					) {
+						if (this.volumeChapterCount[currentVolume]) {
+							this.volumeChapterCount[currentVolume]++;
+						} else this.volumeChapterCount[currentVolume] = 1;
+					}
+				} else lastVolume = -1;
+			}
+		}
+		this.incomplete = document.querySelector('nav ul li.page-item .page-link') != null;
+	}
+
+	update(title: LocalTitle) {
+		if (title.volumeResetChapter) {
+			let previous = 0;
+			for (const row of this.rows) {
+				title.updateProgressFromVolumes(row.progress);
+				// Add 0.1 or 0.5 to new chapters that are still lower than the previous one
+				// Avoid having a lower chapter on a new volume from the previous last chapter that is usually a 0.5
+				if (row.progress.chapter <= previous) {
+					if (previous - Math.floor(previous) >= 0.5) {
+						row.progress.chapter += 0.1;
+					} else row.progress.chapter += 0.5;
+				}
+				row.chapterLink.textContent = `${progressToString(row.progress)}${row.title ? ` - ${row.title}` : ''}`;
+				previous = row.progress.chapter;
 			}
 		}
 	}
@@ -919,7 +983,6 @@ export class TitlePage extends Page {
 				}
 			}
 		}
-		await title.persist(); // Always save
 
 		// Add link to Services if they are missing
 		if (Options.linkToServices && !pickLocalServices) {
@@ -973,6 +1036,14 @@ export class TitlePage extends Page {
 				}
 			}
 		}
+
+		// TODO: Merge complete volumes if lastTitle < latest chapter
+		if (overview.chapterList.volumeResetChapter) {
+			title.volumeChapterCount = overview.chapterList.volumeChapterCount;
+			title.volumeResetChapter = true;
+			overview.chapterList.update(title);
+		}
+		await title.persist(); // Always save
 
 		// Load each Services to Sync
 		const syncModule = new SyncModule(title, overview);

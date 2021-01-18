@@ -51,7 +51,6 @@
 				"https://*.mangadex.org/manga*",
 				"https://*.mangadex.org/titles*",
 				"https://*.mangadex.org/title*",
-				"https://*.mangadex.org/chapter/*",
 				"https://*.mangadex.org/search*",
 				"https://*.mangadex.org/?page=search*",
 				"https://*.mangadex.org/?page=titles*",
@@ -63,6 +62,11 @@
 				"https://*.mangadex.org/updates*",
 				"https://*.mangadex.org/history*"
 			],
+			"js": ["dist/SimpleNotification.js", "SyncDex.js"],
+			"css": ["dist/SimpleNotification.min.css", "css/SyncDex.css"]
+		},
+		{
+			"matches": ["https://*.mangadex.org/chapter/*"],
 			"js": ["dist/SimpleNotification.js", "SyncDex.js"],
 			"css": ["dist/SimpleNotification.min.css", "css/SyncDex.css"],
 			"run_at": "document_end"

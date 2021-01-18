@@ -6,6 +6,8 @@ export class ChapterRow {
 	isNext: boolean;
 	node: HTMLElement;
 	parent: HTMLElement;
+	chapterLink: HTMLAnchorElement;
+	title: string;
 	manage: HTMLElement;
 	toggleButton?: HTMLButtonElement;
 	toggleIcon?: HTMLElement;
@@ -21,10 +23,11 @@ export class ChapterRow {
 
 	constructor(chapterRow: HTMLElement) {
 		const fullRow = chapterRow.parentElement!.parentElement!;
+		this.title = chapterRow.dataset.title ?? '';
 		this.isNext = false;
 		this.node = fullRow;
-		const chapterLink = chapterRow.querySelector<HTMLAnchorElement>(`a[href^='/chapter']`)!;
-		this.parent = chapterLink.parentElement!;
+		this.chapterLink = chapterRow.querySelector<HTMLAnchorElement>(`a[href^='/chapter']`)!;
+		this.parent = this.chapterLink.parentElement!;
 		const oneshot = chapterRow.dataset.title?.toLocaleLowerCase() == 'oneshot';
 		this.progress = {
 			chapter: oneshot ? 0 : parseFloat(chapterRow.dataset.chapter!),
@@ -33,9 +36,9 @@ export class ChapterRow {
 		};
 		// Fallback to progress in chapter name
 		if (isNaN(this.progress.chapter)) {
-			this.progress = progressFromString(chapterLink.textContent!);
+			this.progress = progressFromString(this.chapterLink.textContent!);
 		}
-		this.chapterId = parseInt(/\/chapter\/(\d+)/.exec(chapterLink.href)![1]);
+		this.chapterId = parseInt(/\/chapter\/(\d+)/.exec(this.chapterLink.href)![1]);
 		this.hidden = false;
 
 		// Update CSS

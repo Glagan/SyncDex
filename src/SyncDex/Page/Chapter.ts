@@ -338,6 +338,22 @@ export class ChapterPage extends Page {
 		return progress;
 	}
 
+	updateReverseChapters() {
+		let previous = 0;
+		for (const key in this.reverseChapters) {
+			if (Object.prototype.hasOwnProperty.call(this.reverseChapters, key)) {
+				const chapter = this.reverseChapters[key];
+				this.title!.updateProgressFromVolumes(chapter.progress);
+				if (chapter.progress.chapter <= previous) {
+					if (previous - Math.floor(previous) >= 0.5) {
+						chapter.progress.chapter += 0.1;
+					} else chapter.progress.chapter += 0.5;
+				}
+				previous = chapter.progress.chapter;
+			}
+		}
+	}
+
 	@TryCatch(Page.errorNotification)
 	@LogExecTime
 	async initialize(details: MangaChangeDetails): Promise<void> {
@@ -432,9 +448,9 @@ export class ChapterPage extends Page {
 					if (currentVolume != lastVolume) {
 						lastVolume = currentVolume;
 						// Check if volumes actually reset chapter or abort
-						if (currentVolume == 2 && chapterDetails.progress.chapter <= 1) {
+						if (currentVolume > 1 && chapterDetails.progress.chapter <= 1) {
 							volumeResetChapter = true;
-						} else if (currentVolume == 2) lastVolume = -1;
+						} else if (currentVolume > 1) lastVolume = -1;
 					}
 					// Avoid adding sub chapters
 					if (
@@ -451,6 +467,7 @@ export class ChapterPage extends Page {
 		if (volumeResetChapter) {
 			this.title.volumeChapterCount = volumeChapterCount;
 			this.title.volumeResetChapter = true;
+			this.updateReverseChapters();
 			this.overview.addVolumeResetChapters();
 		}
 		this.loading.inProgress = false;
@@ -468,19 +485,7 @@ export class ChapterPage extends Page {
 		// Find current Chapter Progress
 		const created = this.title.status == Status.NONE || this.title.status == Status.PLAN_TO_READ;
 		let completed = false;
-		const currentProgress = { ...details.progress };
-		// Update progress to add previous volumes -- volume is always available
-		if (this.title.volumeResetChapter && currentProgress.volume) {
-			if (currentProgress.volume > 1 && currentProgress.chapter == 0) {
-				currentProgress.chapter = 0.1;
-			}
-			for (const volumeKey in this.title.volumeChapterCount) {
-				const volume = parseInt(volumeKey);
-				if (volume < currentProgress.volume) {
-					currentProgress.chapter += this.title.volumeChapterCount[volumeKey];
-				}
-			}
-		}
+		const currentProgress = details.progress;
 		// Exit early if there is no progress
 		if (isNaN(currentProgress.chapter)) {
 			if (Options.errorNotifications) {
@@ -496,11 +501,7 @@ export class ChapterPage extends Page {
 				const report = await this.syncModule.syncExternal();
 				this.syncModule.displayReportNotifications(
 					report,
-					{
-						created: created,
-						completed: false,
-						firstRequest: this.firstRequest,
-					},
+					{ created, completed: false, firstRequest: this.firstRequest },
 					previousState
 				);
 			}
@@ -569,7 +570,7 @@ export class ChapterPage extends Page {
 					!Options.saveOnlyNext &&
 					(isFirstChapter || this.title.chapter < currentProgress.chapter))
 			) {
-				completed = this.title.setProgress(currentProgress);
+				completed = this.title.setProgress(currentProgress); // Also update openedChapters
 			} else if (Options.confirmChapter && (Options.saveOnlyNext || Options.saveOnlyHigher)) {
 				doUpdate = false;
 				missingUpdateValidations.push(
@@ -593,6 +594,7 @@ export class ChapterPage extends Page {
 			await this.title.setHistory(details.id, currentProgress);
 		}
 		await this.title.persist(); // Always save
+
 		// If all conditions are met we can sync to current progress
 		if (doUpdate) {
 			await this.syncShowResult(

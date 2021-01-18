@@ -529,6 +529,20 @@ export class LocalTitle extends Title {
 		}
 		return false;
 	};
+
+	updateProgressFromVolumes = (progress: Progress): void => {
+		if (this.volumeResetChapter && progress.volume) {
+			if (progress.volume > 1 && progress.chapter == 0) {
+				progress.chapter = 0.1;
+			}
+			for (const volumeKey in this.volumeChapterCount) {
+				const volume = parseInt(volumeKey);
+				if (volume < progress.volume) {
+					progress.chapter += this.volumeChapterCount[volumeKey];
+				}
+			}
+		}
+	};
 }
 
 export class TitleCollection {

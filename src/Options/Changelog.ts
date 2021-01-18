@@ -43,7 +43,6 @@ export class Changelog {
 				const parts = line.split('##');
 				const lineNode = DOM.create('li', { textContent: parts[0] });
 				if (parts.length > 1) {
-					console.log(/(?:(\w+\/\w+\/)#)?(\d+)/.exec(parts[1]));
 					const [, repo = 'Glagan/SyncDex', id] = /(?:(\w+\/\w+)#)?(\d+)/.exec(parts[1])!;
 					DOM.append(
 						lineNode,
