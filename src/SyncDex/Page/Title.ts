@@ -1,5 +1,5 @@
 import { AppendableElement, DOM } from '../../Core/DOM';
-import { LogExecTime, TryCatch } from '../../Core/Log';
+import { debug, LogExecTime, TryCatch } from '../../Core/Log';
 import { MangaDex } from '../../Core/MangaDex';
 import { Mochi } from '../../Core/Mochi';
 import { Options } from '../../Core/Options';
@@ -976,21 +976,18 @@ export class TitlePage extends Page {
 			if (headerTitle) title.name = headerTitle.textContent!.trim();
 		}
 		// Max progress if it's available
+		const max: Progress = {} as Progress;
 		const maxChapter = document.getElementById('current_chapter');
 		if (maxChapter && maxChapter.nextSibling && maxChapter.nextSibling.textContent) {
 			const chapter = /\/(\d+)/.exec(maxChapter.nextSibling.textContent);
-			if (chapter) {
-				title.max = { chapter: parseInt(chapter[1]) };
-			}
+			if (chapter) max.chapter = parseFloat(chapter[1]);
 		}
 		const maxVolume = document.getElementById('current_volume');
 		if (maxVolume && maxVolume.nextSibling && maxVolume.nextSibling.textContent) {
 			const volume = /\/(\d+)/.exec(maxVolume.nextSibling.textContent);
-			if (volume) {
-				if (!title.max) title.max = { volume: parseInt(volume[1]) };
-				else title.max.volume = parseInt(volume[1]);
-			}
+			if (volume) max.volume = parseInt(volume[1]);
 		}
+		debug(`Found MangaDex max ${progressToString(max)}`);
 		// Always Find Services
 		let fallback = false;
 		if (Options.useMochi) {
@@ -1077,9 +1074,11 @@ export class TitlePage extends Page {
 			}
 		}
 
+		debug(`Volume reset chapters ? ${overview.chapterList.volumeResetChapter || title.volumeResetChapter}`);
 		if (overview.chapterList.volumeResetChapter || title.volumeResetChapter) {
 			// If we have all available chapters, we can update the volumeChapterCount of the title
 			if (!overview.chapterList.incomplete) {
+				debug(`Complete volumes chapters ${JSON.stringify(overview.chapterList.volumeChapterCount)}`);
 				title.volumeChapterCount = overview.chapterList.volumeChapterCount;
 				title.volumeResetChapter = true;
 			}
@@ -1119,6 +1118,9 @@ export class TitlePage extends Page {
 				}
 			}
 			overview.chapterList.update(title);
+		}
+		if (!title.volumeResetChapter && !isNaN(max.chapter)) {
+			title.max = max;
 		}
 		title.lastTitle = Date.now();
 		await title.persist(); // Always save

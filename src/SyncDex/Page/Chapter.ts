@@ -7,11 +7,11 @@ import { Mochi } from '../../Core/Mochi';
 import { Services } from '../../Service/Class/Map';
 import { Runtime } from '../../Core/Runtime';
 import { MangaDex } from '../../Core/MangaDex';
-import { injectScript, progressFromString } from '../../Core/Utility';
+import { injectScript, progressFromString, progressToString } from '../../Core/Utility';
 import { ActivableKey } from '../../Service/Keys';
 import { DOM } from '../../Core/DOM';
 import { TitleEditor } from '../../Core/TitleEditor';
-import { LogExecTime, TryCatch } from '../../Core/Log';
+import { debug, LogExecTime, TryCatch } from '../../Core/Log';
 
 type ReaderEvent =
 	| 'loadingchange'
@@ -291,49 +291,12 @@ export class ChapterPage extends Page {
 				}
 			}
 		}
-		// Find max from MangaDex
-		if (details.lastChapter) {
-			const lastChapter = parseFloat(details.lastChapter);
-			if (!isNaN(lastChapter) && lastChapter > 0) {
-				this.title.max = {
-					chapter: parseFloat(details.lastChapter),
-					volume: details.lastVolume ? parseInt(details.lastVolume) : undefined,
-				};
-			}
-		}
-		// Send initial requests
-		if (this.overview) this.overview.remove();
-		this.overview = new ReadingOverview();
-		this.syncModule = new SyncModule(this.title, this.overview);
-		// Check if we're logged in on MangaDex
-		this.syncModule.loggedIn = document.querySelector(`a.nav-link[href^='/user']`) !== null;
-		this.syncModule.initialize();
-		// Find MangaDex status if needed
-		if (Options.updateOnlyInList || Options.updateMD) {
-			const response = await this.getMdUserTitle(id);
-			if (response.ok) {
-				if (typeof response.body.data.followType === 'number') {
-					this.syncModule.mdState.status = response.body.data.followType;
-				}
-				if (typeof response.body.data.rating === 'number') {
-					this.syncModule.mdState.score = response.body.data.rating * 10;
-				}
-			} // 403 Error is expected if not logged in
-			else if (response.code >= 500) {
-				SimpleNotification.error({
-					text: `Error while getting **MangaDex** Status.\ncode: **${response.code}**`,
-				});
-			}
-		}
-		// Check initial Status if it's the first time
-		if (Options.services.length > 0) {
-			await this.syncModule.syncLocal();
-		}
 		// Generate reverse chapters and check if the Title reset chapter on each volumes
 		let lastVolume: number = 0;
 		let volumeResetChapter: boolean = false;
 		const volumeChapterCount: { [key: number]: number } = {};
 		this.reverseChapters = {};
+		// Avoid counting sub chapters
 		for (const chapter of details._chapters) {
 			const chapterDetails = {
 				id: chapter.id,
@@ -369,10 +332,56 @@ export class ChapterPage extends Page {
 				} else lastVolume = -1;
 			}
 		}
+		debug(`Volume reset chapters ? ${volumeResetChapter}`);
 		if (volumeResetChapter) {
+			debug(`Volume reset chapters ${JSON.stringify(volumeChapterCount)}`);
 			this.title.volumeChapterCount = volumeChapterCount;
 			this.title.volumeResetChapter = true;
 			this.updateReverseChapters();
+		}
+		// Find max from MangaDex
+		if (details.lastChapter) {
+			const lastChapter = parseFloat(details.lastChapter);
+			if (!isNaN(lastChapter) && lastChapter > 0) {
+				const max: Progress = {
+					chapter: parseFloat(details.lastChapter),
+					volume: details.lastVolume ? parseInt(details.lastVolume) : undefined,
+				};
+				debug(`Found MangaDex max ${progressToString(max)}`);
+				if (!this.title.volumeResetChapter) {
+					this.title.max = max;
+				}
+			}
+		}
+		// Send initial requests
+		if (this.overview) this.overview.remove();
+		this.overview = new ReadingOverview();
+		this.syncModule = new SyncModule(this.title, this.overview);
+		// Check if we're logged in on MangaDex
+		this.syncModule.loggedIn = document.querySelector(`a.nav-link[href^='/user']`) !== null;
+		this.syncModule.initialize();
+		// Find MangaDex status if needed
+		if (Options.updateOnlyInList || Options.updateMD) {
+			const response = await this.getMdUserTitle(id);
+			if (response.ok) {
+				if (typeof response.body.data.followType === 'number') {
+					this.syncModule.mdState.status = response.body.data.followType;
+				}
+				if (typeof response.body.data.rating === 'number') {
+					this.syncModule.mdState.score = response.body.data.rating * 10;
+				}
+			} // 403 Error is expected if not logged in
+			else if (response.code >= 500) {
+				SimpleNotification.error({
+					text: `Error while getting **MangaDex** Status.\ncode: **${response.code}**`,
+				});
+			}
+		}
+		// Check initial Status if it's the first time
+		if (Options.services.length > 0) {
+			await this.syncModule.syncLocal();
+		}
+		if (volumeResetChapter) {
 			this.overview.addVolumeResetChapters();
 		}
 		this.loading.inProgress = false;

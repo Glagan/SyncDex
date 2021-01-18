@@ -87,6 +87,8 @@ class TitleChapterGroup {
 				// Bind each row and add current chapter class
 				for (const row of group) {
 					if (title.volumeResetChapter) {
+						// TODO: ? Add warning or update from API if lastTitle || lastRead < chapter release
+						// 		to avoid new volume gap from incorrect previous volume real length
 						title.updateProgressFromVolumes(row.progress);
 						row.updateDisplayedProgress();
 						// ! Can't update progress with previous since a previous might not be available

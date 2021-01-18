@@ -28,11 +28,17 @@ export async function log(...args: any[]): Promise<LogLine | undefined> {
 				console.error(message);
 			} else line.msg = `Object: ${JSON.stringify(message)}`;
 		} else line.msg = message;
-		logs.push(line);
-		await Storage.set(StorageUniqueKey.Logs, logs);
+		console.log(line.msg);
+		if (level <= LogLevel.ExecutionTime) {
+			logs.push(line);
+			await Storage.set(StorageUniqueKey.Logs, logs);
+		}
 		return line;
 	}
 	return undefined;
+}
+export function debug(message: string | Error) {
+	return log(LogLevel.Debug, message);
 }
 export function LogCall(target: Object, propertyKey: string, descriptor: PropertyDescriptor) {
 	const fct = descriptor.value;
@@ -64,9 +70,10 @@ export function LogExecTime(target: Object, propertyKey: string, descriptor: Pro
 		const start = performance.now();
 		const result = await fct.apply(this, args);
 		if (Options.logLevel >= LogLevel.ExecutionTime) {
-			const line = `${target.constructor.name}::${propertyKey} ~ Execution time: ${performance.now() - start}ms`;
-			console.log(line);
-			await log(LogLevel.ExecutionTime, line);
+			await log(
+				LogLevel.ExecutionTime,
+				`${target.constructor.name}::${propertyKey} ~ Execution time: ${performance.now() - start}ms`
+			);
 		}
 		return result;
 	};

@@ -2,7 +2,11 @@
 	"updates": [
 		{
 			"version": "0.2.3",
-			"description": ["Handle Titles that reset chapters every volume.##21"]
+			"description": [
+				"Handle Titles that reset chapters every volume.##21",
+				"Fix MangaDex status buttons not being binded in Title page.",
+				"Display both status in summary when Auto sync is disabled in Title page."
+			]
 		},
 		{
 			"version": "0.2.2",
