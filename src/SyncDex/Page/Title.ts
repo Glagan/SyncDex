@@ -1,5 +1,6 @@
 import { AppendableElement, DOM } from '../../Core/DOM';
-import { log, TryCatch } from '../../Core/Log';
+import { LogExecTime, TryCatch } from '../../Core/Log';
+import { MangaDex } from '../../Core/MangaDex';
 import { Mochi } from '../../Core/Mochi';
 import { Options } from '../../Core/Options';
 import { Runtime } from '../../Core/Runtime';
@@ -13,6 +14,37 @@ import { ActivableKey, ServiceKey, StaticKey } from '../../Service/Keys';
 import { ChapterRow } from '../ChapterRow';
 import { Overview, OverviewKey } from '../Overview';
 import { Page } from '../Page';
+
+interface MangaDexExtendedManga extends MangaDexSimpleManga {
+	altTitles: string;
+	description: string;
+	artist: string[];
+	author: string[];
+	publication: {
+		language: string;
+		status: Status;
+		demographic: number;
+	};
+	relations: {
+		id: number;
+		title: string;
+		type: number;
+		isHentai: boolean;
+	}[];
+	ratings: {
+		bayesian: number;
+		mean: number;
+		users: number;
+	};
+	views: number;
+	follows: number;
+	comments: number;
+	lastUploaded: number;
+}
+
+interface MangaDexTitleWithChaptersResponse {
+	data: { manga: MangaDexExtendedManga; chapters: MangaDexChapter[]; groups: { id: number; name: string }[] };
+}
 
 class ServiceOverview {
 	key: OverviewKey;
@@ -475,7 +507,7 @@ class ChapterList {
 						row.progress.chapter += 0.1;
 					} else row.progress.chapter += 0.5;
 				}
-				row.chapterLink.textContent = `${progressToString(row.progress)}${row.title ? ` - ${row.title}` : ''}`;
+				row.updateDisplayedProgress();
 				previous = row.progress.chapter;
 			}
 		}
@@ -922,6 +954,15 @@ export class TitleOverview extends Overview {
 }
 
 export class TitlePage extends Page {
+	@LogExecTime
+	getMdTitle(id: number): Promise<JSONResponse<MangaDexTitleWithChaptersResponse>> {
+		return Runtime.jsonRequest<MangaDexTitleWithChaptersResponse>({
+			method: 'GET',
+			url: MangaDex.api('title', id, { chapters: true }),
+			credentials: 'include',
+		});
+	}
+
 	@TryCatch(Page.errorNotification)
 	async run() {
 		console.log('SyncDex :: Title');
@@ -930,7 +971,6 @@ export class TitlePage extends Page {
 		// Get Title
 		const id = parseInt(document.querySelector<HTMLElement>('.row .fas.fa-hashtag')!.parentElement!.textContent!);
 		const title = await LocalTitle.get(id);
-		title.lastTitle = Date.now();
 		if (!title.inList || title.name === undefined || title.name == '') {
 			const headerTitle = document.querySelector('h6.card-header');
 			if (headerTitle) title.name = headerTitle.textContent!.trim();
@@ -1037,12 +1077,50 @@ export class TitlePage extends Page {
 			}
 		}
 
-		// TODO: Merge complete volumes if lastTitle < latest chapter
-		if (overview.chapterList.volumeResetChapter) {
-			title.volumeChapterCount = overview.chapterList.volumeChapterCount;
-			title.volumeResetChapter = true;
+		if (overview.chapterList.volumeResetChapter || title.volumeResetChapter) {
+			// If we have all available chapters, we can update the volumeChapterCount of the title
+			if (!overview.chapterList.incomplete) {
+				title.volumeChapterCount = overview.chapterList.volumeChapterCount;
+				title.volumeResetChapter = true;
+			}
+			// If we don't we need to fetch the chapter list from the API sadly
+			// Only fetch if there is a new chapter since last title visit, last read, or if it's the first time
+			else if (!title.volumeResetChapter) {
+				const currentPage = document.querySelector<HTMLElement>('nav > ul.pagination > .page-item.active');
+				const lastChapter = overview.chapterList.rows[overview.chapterList.rows.length - 1];
+				let doUpdate = !title.lastTitle || Date.now() - title.lastTitle > 2 * 24 * 60 * 60 * 1000;
+				// If we are on page 1 and there is a chapter, check if it was published sooner than last time
+				if ((!currentPage || currentPage.textContent == '1') && lastChapter) {
+					const lastChapterOut = parseInt(lastChapter.node.dataset.timestamp!) * 1000;
+					doUpdate = !title.lastTitle || lastChapterOut > title.lastTitle;
+				}
+				if (doUpdate) {
+					SimpleNotification.info({ text: 'Updating volumes from API...' });
+					const response = await this.getMdTitle(id);
+					if (response.ok) {
+						const uniqueChapters: { [key: number]: number[] } = {};
+						const volumeChapterCount: { [key: number]: number } = {};
+						for (const mdChapter of response.body.data.chapters) {
+							if (!mdChapter.volume) continue;
+							const volume = parseInt(mdChapter.volume);
+							const chapter = parseFloat(mdChapter.chapter);
+							if (uniqueChapters[volume] === undefined || uniqueChapters[volume].indexOf(chapter) < 0) {
+								if (Math.floor(chapter) == chapter && chapter > 0) {
+									if (!volumeChapterCount[volume]) volumeChapterCount[volume] = 1;
+									else volumeChapterCount[volume]++;
+								}
+								if (!uniqueChapters[volume]) uniqueChapters[volume] = [chapter];
+								else uniqueChapters[volume].push(chapter);
+							}
+						}
+						title.volumeChapterCount = volumeChapterCount;
+						title.volumeResetChapter = true;
+					} else SimpleNotification.error({ text: 'MangaDex API Error.\nVolume chapters not updated.' });
+				}
+			}
 			overview.chapterList.update(title);
 		}
+		title.lastTitle = Date.now();
 		await title.persist(); // Always save
 
 		// Load each Services to Sync

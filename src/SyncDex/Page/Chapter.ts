@@ -29,111 +29,16 @@ type ReaderEvent =
 
 type MangaDexStatus = 'OK' | 'external' | 'delayed'; // Check if there is more
 
-interface MangaDexChapter {
-	id: number;
-	hash: string;
-	mangaId: number;
-	chapter: string;
-	comments: number;
-	groupIds: number[];
-	groupWebsite: string | null;
-	language: string;
-	pages: string[];
-	read: boolean;
-	server: string | undefined;
-	serverFallback: string | undefined;
-	status: MangaDexStatus;
-	threadId: number | null;
-	timestamp: number;
-	title: string;
-	volume: string;
-}
-
-type MangaDexExternalKey =
-	| 'al' // Anilist
-	| 'amz' // Amazon
-	| 'ap' // AnimePlanet
-	| 'bw' // BookWalker
-	| 'ebj' // eBookJapan
-	| 'kt' // Kitsu
-	| 'mal' // MyAnimeList
-	| 'mu' // MangaUpdates
-	| 'nu' // NovelUpdates
-	| 'raw' // Raw source
-	| 'engtl'; // Official English release
-
-interface MangaDexManga {
-	id: number;
-	isHentai: boolean;
-	language: string;
-	lastChapter: string | null;
-	lastVolume: string | null;
-	links: { [key in MangaDexExternalKey]?: string };
-	mainCover: string;
-	tags: number[];
-	title: string;
-}
-
-interface MangaChangeDetails extends MangaDexManga {
+interface MangaChangeDetails extends MangaDexSimpleManga {
 	_chapters: MangaDexChapter[];
 	_response: Response;
 	_uniqueChapters: MangaDexChapter[];
 }
 
-interface ChapterChangeDetails {
+interface ChapterChangeDetails extends MangaDexChapter {
 	_isNetworkServer: boolean;
 	_response: Response;
-	// Chapter values
-	chapter: string;
-	comments: number;
-	groupIds: number[];
-	groupWebsite: string | null;
-	hash: string;
-	id: number;
-	language: string;
-	mangaId: number;
-	pages: string[];
-	read: boolean;
-	server: string | undefined;
-	serverFallback: string | undefined;
-	status: MangaDexStatus;
-	threadId: number | null;
-	timestamp: number;
-	title: string;
-	volume: string;
-	// Manga object
 	manga: MangaChangeDetails;
-}
-
-interface MangaDexExtendedManga extends MangaDexManga {
-	altTitles: string;
-	description: string;
-	artist: string[];
-	author: string[];
-	publication: {
-		language: string;
-		status: Status;
-		demographic: number;
-	};
-	relations: {
-		id: number;
-		title: string;
-		type: number;
-		isHentai: boolean;
-	}[];
-	ratings: {
-		bayesian: number;
-		mean: number;
-		users: number;
-	};
-	views: number;
-	follows: number;
-	comments: number;
-	lastUploaded: number;
-}
-
-interface MangaDexTitleResponse {
-	data: MangaDexExtendedManga;
 }
 
 interface MangaDexUserTitleResponse {

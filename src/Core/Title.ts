@@ -247,8 +247,8 @@ export class LocalTitle extends Title {
 	// Last time a Chapter was read for the Title
 	lastRead?: number;
 	// Number of chapters per volume
-	volumeChapterCount: { [key: number]: number } = {};
-	volumeResetChapter: boolean = false;
+	volumeChapterCount!: { [key: number]: number };
+	volumeResetChapter: boolean;
 
 	constructor(id: number, title?: Partial<LocalTitle>) {
 		super(title);
@@ -258,7 +258,8 @@ export class LocalTitle extends Title {
 		if (!this.forceServices) this.forceServices = [];
 		if (!this.chapters) this.chapters = [];
 		if (!title?.services || !this.services) this.services = {};
-		if (title?.volumeChapterCount) this.volumeResetChapter = true;
+		if (!title?.volumeChapterCount) this.volumeChapterCount = {};
+		this.volumeResetChapter = !!title?.volumeChapterCount;
 	}
 
 	static valid(title: StorageTitle): boolean {

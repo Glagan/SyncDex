@@ -77,7 +77,6 @@ class TitleChapterGroup {
 	 * Also add required CSS to each rows.
 	 */
 	initialize = (syncModule: SyncModule): void => {
-		this.findNextChapter(syncModule.title);
 		const title = syncModule.title;
 
 		// Add back the name on the first row
@@ -87,6 +86,12 @@ class TitleChapterGroup {
 
 				// Bind each row and add current chapter class
 				for (const row of group) {
+					if (title.volumeResetChapter) {
+						title.updateProgressFromVolumes(row.progress);
+						row.updateDisplayedProgress();
+						// ! Can't update progress with previous since a previous might not be available
+						// This means no Vol. 1 Ch. 14 -> Vol. 2 Ch.0 as Vol. 2 Ch. 14.1
+					}
 					row.addManageButtons();
 					if (Options.thumbnail) this.thumbnail = new Thumbnail(this.id, row.node, title);
 					if (row.progress.chapter == title.chapter) {
@@ -187,6 +192,8 @@ class TitleChapterGroup {
 				}
 			}
 		}
+
+		this.findNextChapter(title);
 	};
 
 	toggleHidden = (hidden: boolean): void => {

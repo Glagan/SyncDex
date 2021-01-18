@@ -1,6 +1,6 @@
 import { DOM } from '../Core/DOM';
 import { Options } from '../Core/Options';
-import { progressFromString } from '../Core/Utility';
+import { progressFromString, progressToString } from '../Core/Utility';
 
 export class ChapterRow {
 	isNext: boolean;
@@ -78,6 +78,10 @@ export class ChapterRow {
 			}
 		}
 	}
+
+	updateDisplayedProgress = () => {
+		this.chapterLink.textContent = `${progressToString(this.progress)}${this.title ? ` - ${this.title}` : ''}`;
+	};
 
 	addManageButtons = (): void => {
 		this.parent.appendChild(this.manage);

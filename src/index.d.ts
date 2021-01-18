@@ -277,3 +277,48 @@ type ExportedSave = {
 	[StorageUniqueKey.SaveSyncInProgress]: boolean;
 	[StorageUniqueKey.LastSync]: number;
 }>;
+
+interface MangaDexChapter {
+	id: number;
+	hash: string;
+	mangaId: number;
+	chapter: string;
+	comments: number;
+	groupIds: number[];
+	groupWebsite: string | null;
+	language: string;
+	pages: string[];
+	read: boolean;
+	server: string | undefined;
+	serverFallback: string | undefined;
+	status: MangaDexStatus;
+	threadId: number | null;
+	timestamp: number;
+	title: string;
+	volume: string;
+}
+
+type MangaDexExternalKey =
+	| 'al' // Anilist
+	| 'amz' // Amazon
+	| 'ap' // AnimePlanet
+	| 'bw' // BookWalker
+	| 'ebj' // eBookJapan
+	| 'kt' // Kitsu
+	| 'mal' // MyAnimeList
+	| 'mu' // MangaUpdates
+	| 'nu' // NovelUpdates
+	| 'raw' // Raw source
+	| 'engtl'; // Official English release
+
+interface MangaDexSimpleManga {
+	id: number;
+	isHentai: boolean;
+	language: string;
+	lastChapter: string | null;
+	lastVolume: string | null;
+	links: { [key in MangaDexExternalKey]?: string };
+	mainCover: string;
+	tags: number[];
+	title: string;
+}

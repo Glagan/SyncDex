@@ -23,7 +23,7 @@ export namespace MangaDex {
 	const MangaDexAPI = 'https://mangadex.org/api/v2';
 
 	export function api(type: 'me'): string;
-	export function api(type: 'title', id: number): string;
+	export function api(type: 'title', id: number, include?: { chapters: boolean }): string;
 	export function api(type: 'userTitle', id: number): string;
 	export function api(type: 'followed'): string;
 	export function api(type: 'update', id: number, status: Status): string;
@@ -35,7 +35,7 @@ export namespace MangaDex {
 			case 'me':
 				return `${MangaDexAPI}/user/me`;
 			case 'title':
-				return `${MangaDexAPI}/manga/${args[0]}`;
+				return `${MangaDexAPI}/manga/${args[0]}${args[1] && args[1].chapters ? '?include=chapters' : ''}`;
 			case 'userTitle':
 				return `${MangaDexAPI}/user/me/manga/${args[0]}`;
 			case 'followed':
