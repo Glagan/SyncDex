@@ -45,7 +45,7 @@ export namespace MangaDex {
 					args[1]
 				}&_=${Date.now()}`;
 			case 'unfollow':
-				return `https://mangadex.org/ajax/actions.ajax.php?function=manga_unfollow&id=${
+				return `https://mangadex.org/ajax/actions.ajax.php?function=manga_unfollow&id=${args[0]}&type=${
 					args[0]
 				}&_=${Date.now()}`;
 			case 'rating':

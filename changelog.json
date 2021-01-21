@@ -1,6 +1,10 @@
 {
 	"updates": [
 		{
+			"version": "0.2.4",
+			"description": ["Fix MangaDex unfollow button."]
+		},
+		{
 			"version": "0.2.3",
 			"description": [
 				"Handle Titles that reset chapters every volume.##21",

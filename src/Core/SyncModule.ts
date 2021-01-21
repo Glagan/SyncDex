@@ -181,8 +181,9 @@ export class SyncModule {
 				const oldStatus = this.mdState.status;
 				this.mdState.status = this.title.status;
 				const response = await this.syncMangaDex(this.mdState.status == Status.NONE ? 'unfollow' : 'status');
-				if (response.ok) strings.success.push('**MangaDex Status** updated.');
-				else {
+				if (response.ok && (!response.body || response.body.length == 0)) {
+					strings.success.push('**MangaDex Status** updated.');
+				} else {
 					this.mdState.status = oldStatus;
 					strings.error.push(`Error while updating **MangaDex Status**.\ncode: ${response.code}`);
 				}
