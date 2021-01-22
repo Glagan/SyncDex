@@ -223,7 +223,7 @@ export class ChapterPage extends Page {
 	getMdUserTitle(id: number): Promise<JSONResponse<MangaDexUserTitleResponse>> {
 		return Runtime.jsonRequest<MangaDexUserTitleResponse>({
 			method: 'GET',
-			url: MangaDex.api('userTitle', id),
+			url: MangaDex.api('get:user:title', id),
 			credentials: 'include',
 		});
 	}

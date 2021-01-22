@@ -1,12 +1,15 @@
 export type MangaDexAPIEndpoint =
-	| 'me'
-	| 'userTitle'
-	| 'title'
-	| 'followed'
-	| 'update'
-	| 'unfollow'
-	| 'rating'
-	| 'updates';
+	| 'get:user:me'
+	| 'get:user:title'
+	| 'get:user:followed:list'
+	| 'get:user:followed:updates'
+	| 'get:title'
+	| 'set:title:status'
+	| 'set:title:unfollow'
+	| 'set:title:rating'
+	| 'update:title:progress'
+	| 'update:title:incrementChapter'
+	| 'update:title:incrementVolume';
 
 type ThumbnailSize = 'thumb' | 'large' | 'original';
 
@@ -22,38 +25,51 @@ export namespace MangaDex {
 	// const MangaDexAPI = 'https://api.mangadex.org/v2';
 	const MangaDexAPI = 'https://mangadex.org/api/v2';
 
-	export function api(type: 'me'): string;
-	export function api(type: 'title', id: number, include?: { chapters: boolean }): string;
-	export function api(type: 'userTitle', id: number): string;
-	export function api(type: 'followed'): string;
-	export function api(type: 'update', id: number, status: Status): string;
-	export function api(type: 'unfollow', id: number): string;
-	export function api(type: 'rating', id: number, rating: number): string;
-	export function api(type: 'updates', page: number): string;
+	export function api(type: 'get:user:me'): string;
+	export function api(type: 'get:user:title', id: number): string;
+	export function api(type: 'get:user:followed:list'): string;
+	export function api(type: 'get:user:followed:updates', page: number): string;
+	export function api(type: 'get:title', id: number, include?: { chapters: boolean }): string;
+	export function api(type: 'set:title:status', id: number, status: Status): string;
+	export function api(type: 'set:title:unfollow', id: number): string;
+	export function api(type: 'set:title:rating', id: number, rating: number): string;
+	export function api(type: 'update:title:progress', id: number): string;
+	export function api(type: 'update:title:incrementChapter', id: number): string;
+	export function api(type: 'update:title:incrementVolume', id: number): string;
 	export function api(type: MangaDexAPIEndpoint, ...args: any[]): string {
 		switch (type) {
-			case 'me':
+			case 'get:user:me':
 				return `${MangaDexAPI}/user/me`;
-			case 'title':
+			case 'get:user:title':
 				return `${MangaDexAPI}/manga/${args[0]}${args[1] && args[1].chapters ? '?include=chapters' : ''}`;
-			case 'userTitle':
+			case 'get:title':
 				return `${MangaDexAPI}/user/me/manga/${args[0]}`;
-			case 'followed':
+			case 'get:user:followed:list':
 				return `${MangaDexAPI}/user/me/followed-manga`;
-			case 'update':
+			case 'get:user:followed:updates':
+				return `${MangaDexAPI}/user/me/followed-updates?type=1&p=${args[0]}`;
+			case 'set:title:status':
 				return `https://mangadex.org/ajax/actions.ajax.php?function=manga_follow&id=${args[0]}&type=${
 					args[1]
 				}&_=${Date.now()}`;
-			case 'unfollow':
+			case 'set:title:unfollow':
 				return `https://mangadex.org/ajax/actions.ajax.php?function=manga_unfollow&id=${args[0]}&type=${
 					args[0]
 				}&_=${Date.now()}`;
-			case 'rating':
+			case 'set:title:rating':
 				return `https://mangadex.org/ajax/actions.ajax.php?function=manga_rating&id=${args[0]}&rating=${
 					args[1]
 				}&_=${Date.now()}`;
-			case 'updates':
-				return `${MangaDexAPI}/user/me/followed-updates?type=1&p=${args[0]}`;
+			case 'update:title:progress':
+				return `https://mangadex.org/ajax/actions.ajax.php?function=edit_progress&id=${args[0]}`;
+			case 'update:title:incrementChapter':
+				return `https://mangadex.org/ajax/actions.ajax.php?function=increment_chapter&id=${
+					args[0]
+				}&_=${Date.now()}`;
+			case 'update:title:incrementVolume':
+				return `https://mangadex.org/ajax/actions.ajax.php?function=increment_volume&id=${
+					args[0]
+				}&_=${Date.now()}`;
 		}
 	}
 }

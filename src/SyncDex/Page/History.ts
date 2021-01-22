@@ -32,7 +32,7 @@ export class HistoryPage extends Page {
 				}[];
 			};
 		}>({
-			url: MangaDex.api('updates', page),
+			url: MangaDex.api('get:user:followed:updates', page),
 			method: 'GET',
 			cache: 'no-cache',
 			credentials: 'include',

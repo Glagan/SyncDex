@@ -51,7 +51,7 @@ export class MangaDexImport extends SpecialService {
 			// Check login and get an Username
 			let message = moduleInterface.message('loading', 'Fetching all Titles...');
 			const response = await Runtime.jsonRequest<MangaDexAPIResponse>({
-				url: MangaDex.api('followed'),
+				url: MangaDex.api('get:user:followed:list'),
 			});
 			message.classList.remove('loading');
 			if (!response.ok) {
@@ -113,7 +113,7 @@ export class MangaDexExport extends SpecialService {
 	persistTitle = async (title: LocalTitle): Promise<RequestStatus> => {
 		// Status
 		const response = await Runtime.request<RawResponse>({
-			url: MangaDex.api('update', title.key.id!, title.status),
+			url: MangaDex.api('set:title:status', title.key.id!, title.status),
 			credentials: 'include',
 			headers: {
 				'X-Requested-With': 'XMLHttpRequest',
@@ -122,7 +122,7 @@ export class MangaDexExport extends SpecialService {
 		// Score
 		if (title.score > 0) {
 			await Runtime.request<RawResponse>({
-				url: MangaDex.api('rating', title.key.id!, title.score / 10),
+				url: MangaDex.api('set:title:rating', title.key.id!, title.score / 10),
 				credentials: 'include',
 				headers: {
 					'X-Requested-With': 'XMLHttpRequest',
@@ -142,7 +142,7 @@ export class MangaDexExport extends SpecialService {
 			// Check login and get an Username
 			let message = moduleInterface.message('loading', 'Fetching all Titles...');
 			const response = await Runtime.jsonRequest<MangaDexAPIResponse>({
-				url: MangaDex.api('followed'),
+				url: MangaDex.api('get:user:followed:list'),
 			});
 			if (!response.ok) {
 				moduleInterface.message(

@@ -963,7 +963,7 @@ export class TitlePage extends Page {
 	getMdTitle(id: number): Promise<JSONResponse<MangaDexTitleWithChaptersResponse>> {
 		return Runtime.jsonRequest<MangaDexTitleWithChaptersResponse>({
 			method: 'GET',
-			url: MangaDex.api('title', id, { chapters: true }),
+			url: MangaDex.api('get:title', id, { chapters: true }),
 			credentials: 'include',
 		});
 	}

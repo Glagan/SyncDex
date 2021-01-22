@@ -156,6 +156,7 @@ export class SyncModule {
 			if ((!checkAutoSyncOption || Options.autoSync) && !synced) {
 				service.import(this.title);
 				this.overview?.syncingService(key);
+				// ! To fix: An update without a status (score update only for example) try to delete, maybe ignore ?
 				const promise = this.title.status == Status.NONE ? service.delete() : service.persist();
 				promises.push(promise);
 				promise
@@ -217,11 +218,11 @@ export class SyncModule {
 	mangaDexFunction = (fct: 'unfollow' | 'status' | 'score'): string => {
 		switch (fct) {
 			case 'unfollow':
-				return MangaDex.api('unfollow', this.title.key.id!);
+				return MangaDex.api('set:title:unfollow', this.title.key.id!);
 			case 'status':
-				return MangaDex.api('update', this.title.key.id!, this.mdState.status);
+				return MangaDex.api('set:title:status', this.title.key.id!, this.mdState.status);
 			case 'score':
-				return MangaDex.api('rating', this.title.key.id!, Math.round(this.mdState.score! / 10));
+				return MangaDex.api('set:title:rating', this.title.key.id!, Math.round(this.mdState.score! / 10));
 		}
 	};
 
