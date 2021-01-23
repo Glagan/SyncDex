@@ -45,6 +45,7 @@
 		& .footer {
 			position: relative;
 			height: auto;
+			box-sizing: border-box;
 		}
 		form .primary,
 		& .footer .primary {
