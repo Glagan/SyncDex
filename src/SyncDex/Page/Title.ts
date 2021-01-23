@@ -641,6 +641,14 @@ export class TitleOverview extends Overview {
 		dropdown: HTMLElement;
 		ratings: HTMLAnchorElement[];
 	};
+	mdProgress: {
+		currentVolume: HTMLElement;
+		incVolume: HTMLButtonElement;
+		inputVolume: HTMLInputElement;
+		currentChapter: HTMLElement;
+		incChapter: HTMLButtonElement;
+		inputChapter: HTMLInputElement;
+	};
 	chapterList: ChapterList;
 
 	static statusDescription: Partial<{ [key in Status]: [string, string] }> = {
@@ -668,10 +676,12 @@ export class TitleOverview extends Overview {
 		this.serviceList = DOM.create('ul', { class: 'tabs' });
 		this.bodies = DOM.create('div', { class: 'bodies' });
 		DOM.append(this.column, this.serviceList, this.bodies);
+
 		// Always create SyncDex Overview
 		this.mainOverview = new LocalOverview();
 		this.bindOverview(this.mainOverview);
 		this.activateOverview(this.mainOverview);
+
 		// Update Status selector if logged in
 		const statusButtons = document.querySelectorAll<HTMLAnchorElement>('a.manga_follow_button');
 		if (statusButtons.length > 0) {
@@ -716,6 +726,7 @@ export class TitleOverview extends Overview {
 				DOM.append(this.mdStatus.unfollow, DOM.icon('bookmark fa-fw'), DOM.text('Unfollow'));
 			}
 		}
+
 		// Update Score selector
 		const ratingButtons = document.querySelectorAll<HTMLAnchorElement>('a.manga_rating_button');
 		this.mdScore = {
@@ -730,10 +741,27 @@ export class TitleOverview extends Overview {
 			this.mdScore.ratings.unshift(rating);
 		}
 
-		this.chapterList = new ChapterList();
+		// Find MangaDex Progress nodes
+		const editProgressForm = document.getElementById('edit_progress_form') as HTMLFormElement;
+		const incVolume = document.getElementById('increment_volume') as HTMLButtonElement;
+		const incChapter = document.getElementById('increment_chapter') as HTMLButtonElement;
+		this.mdProgress = {
+			currentVolume: document.getElementById('current_volume') as HTMLElement,
+			incVolume: incVolume.cloneNode(true) as HTMLButtonElement,
+			inputVolume: editProgressForm.querySelector('#volume') as HTMLInputElement,
+			currentChapter: document.getElementById('current_chapter') as HTMLElement,
+			incChapter: incChapter.cloneNode(true) as HTMLButtonElement,
+			inputChapter: editProgressForm.querySelector('#chapter') as HTMLInputElement,
+		};
+		// Replace increment buttons
+		incVolume.replaceWith(this.mdProgress.incVolume);
+		incChapter.replaceWith(this.mdProgress.incChapter);
+
 		// Add Language buttons
 		const navTabs = document.querySelector<HTMLElement>('ul.edit.nav.nav-tabs');
 		ChapterRow.generateLanguageButtons(navTabs);
+
+		this.chapterList = new ChapterList();
 	}
 
 	reset() {
@@ -767,6 +795,7 @@ export class TitleOverview extends Overview {
 
 	bind = (syncModule: SyncModule): void => {
 		this.mainOverview.bind(syncModule);
+
 		// Replace Status
 		if (this.mdStatus) {
 			this.mdStatus.followButton.addEventListener('click', (event) => {
@@ -785,6 +814,7 @@ export class TitleOverview extends Overview {
 				});
 			}
 		}
+
 		// Replace ratings
 		for (const row of this.mdScore.ratings) {
 			const score = parseInt(row.id) * 10;
@@ -810,6 +840,31 @@ export class TitleOverview extends Overview {
 				}
 			});
 		}
+
+		// Replace Increment buttons
+		this.mdProgress.incVolume.addEventListener('click', async (event) => {
+			event.preventDefault();
+			if (!syncModule.mdState.progress.volume) {
+				syncModule.mdState.progress.volume = 1;
+			} else syncModule.mdState.progress.volume++;
+			const response = await syncModule.syncMangaDex('progress');
+			if (response.ok) {
+				SimpleNotification.success({ text: '**MangaDex Progress** updated.' });
+				this.mdProgress.currentVolume.textContent = `${syncModule.mdState.progress.volume}`;
+				this.mdProgress.inputVolume.value = `${syncModule.mdState.progress.volume}`;
+			}
+		});
+		this.mdProgress.incChapter.addEventListener('click', async (event) => {
+			event.preventDefault();
+			syncModule.mdState.progress.chapter++;
+			const response = await syncModule.syncMangaDex('progress');
+			if (response.ok) {
+				SimpleNotification.success({ text: '**MangaDex Progress** updated.' });
+				this.mdProgress.currentChapter.textContent = `${syncModule.mdState.progress.chapter}`;
+				this.mdProgress.inputChapter.value = `${syncModule.mdState.progress.chapter}`;
+			}
+		});
+
 		this.chapterList.bind(syncModule);
 	};
 
@@ -909,7 +964,7 @@ export class TitleOverview extends Overview {
 		});
 	};
 
-	syncedMangaDex = (type: 'unfollow' | 'status' | 'score', syncModule: SyncModule): void => {
+	syncedMangaDex = (type: 'unfollow' | 'status' | 'score' | 'progress', syncModule: SyncModule): void => {
 		const dropdown = type == 'score' ? this.mdScore.dropdown : this.mdStatus?.dropdown;
 		if (!dropdown) return;
 		// Remove old value
@@ -945,7 +1000,7 @@ export class TitleOverview extends Overview {
 				this.mdStatus.dropdown.insertBefore(this.mdStatus.unfollow, this.mdStatus.dropdown.firstElementChild);
 				this.mdStatus.followButton.remove();
 			}
-		} else {
+		} else if (type == 'score') {
 			if (syncModule.mdState.score == 0) {
 				this.mdScore.ratings[0].classList.add('disabled');
 				this.mdScore.button.childNodes[1].textContent = ` `;
@@ -954,6 +1009,11 @@ export class TitleOverview extends Overview {
 				this.mdScore.ratings[newScore].classList.add('disabled');
 				this.mdScore.button.childNodes[1].textContent = ` ${newScore} `;
 			}
+		} else if (type == 'progress') {
+			this.mdProgress.currentVolume.textContent = `${syncModule.mdState.progress.volume}`;
+			this.mdProgress.inputVolume.value = `${syncModule.mdState.progress.volume}`;
+			this.mdProgress.currentChapter.textContent = `${syncModule.mdState.progress.chapter}`;
+			this.mdProgress.inputChapter.value = `${syncModule.mdState.progress.chapter}`;
 		}
 	};
 }
@@ -1143,6 +1203,9 @@ export class TitlePage extends Page {
 		const scoreButton = document.querySelector('.manga_rating_button.disabled');
 		if (scoreButton) syncModule.mdState.score = parseInt(scoreButton.id.trim()) * 10;
 		const imported = await syncModule.syncLocal();
+		// Get MangaDex Progress -- defaults to 0
+		syncModule.mdState.progress.chapter = parseInt(overview.mdProgress.currentChapter.textContent!);
+		syncModule.mdState.progress.volume = parseInt(overview.mdProgress.currentVolume.textContent!);
 
 		// Add all chapters from the ChapterList if it's a new Title
 		// Update lastChapter for the History if title was synced

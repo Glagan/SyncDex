@@ -171,6 +171,7 @@ interface AvailableOptions {
 	useMochi: boolean;
 	acceptLowScore: boolean;
 	updateMD: boolean;
+	updateMDProgress: boolean;
 	checkOnStartup: boolean;
 	checkOnStartupMainOnly: boolean;
 	checkOnStartupCooldown: number;

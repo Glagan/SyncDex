@@ -20,6 +20,7 @@
 			<li data-link="colors"><i class="fas fa-paint-brush"></i> Colors</li>
 			<li data-link="updates"><i class="fas fa-sync"></i> Updates</li>
 			<li data-link="lists"><i class="fas fa-list"></i> Lists</li>
+			<li data-link="mangadex"><i class="fas fa-atlas"></i> MangaDex</li>
 			<li data-link="title-page"><i class="fas fa-book"></i> Title Page</li>
 			<li data-link="notifications"><i class="fas fa-bell"></i> Notifications</li>
 			<li data-link="history"><i class="fas fa-history"></i> History</li>
@@ -154,19 +155,37 @@
 					<input type="checkbox" id="ck_updateOnlyInList" data-name="updateOnlyInList" />
 					<label for="ck_updateOnlyInList">Update your list(s) only if the title you are reading is <b>already</b> in your <b>MangaDex</b> list.</label>
 				</div>
-				<h2>Update MangaDex list</h2>
+				<h2>Remove icons green shadow</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_iconsSilentAfterSync" data-name="iconsSilentAfterSync" />
+					<label for="ck_iconsSilentAfterSync">Remove icons green shadow after sync is completed.</label>
+				</div>
+			</div>
+		</div>
+		<h1 id="mangadex"><i class="fas fa-atlas"></i> MangaDex</h1>
+		<div class="section">
+			<div class="section-content">
+				<h2>Update MangaDex Status and Score</h2>
 				<div class="parameter">
 					<input type="checkbox" id="ck_updateMD" data-name="updateMD" />
-					<label for="ck_updateMD">Update the <b>status</b> of the titles in your <b>MangaDex</b> list when needed.</label>
+					<label for="ck_updateMD">Update the <b>status</b> and <b>score</b> of the titles in your <b>MangaDex</b> list when needed.</label>
 					<p class="helper">
 						This will update the Status to <b>Reading</b> if it's not in your list, or if it's another list, and set it to <b>Completed</b> when you finish reading.<br />
 						Out of sync <b>MangaDex Status</b> will also be updated when visiting a <b>Title Page</b>.
 					</p>
 				</div>
-				<h2>Remove icons green shadow</h2>
+				<h2>Update MangaDex Progress</h2>
 				<div class="parameter">
-					<input type="checkbox" id="ck_iconsSilentAfterSync" data-name="iconsSilentAfterSync" />
-					<label for="ck_iconsSilentAfterSync">Remove icons green shadow after sync is completed.</label>
+					<input type="checkbox" id="ck_updateMDProgress" data-name="updateMDProgress" />
+					<label for="ck_updateMDProgress">Update the <b>progress</b> of the titles in your <b>MangaDex</b> list when needed.</label>
+					<p class="helper">
+						This will sync the <b>Volume</b> and <b>Chapter</b> displayed in the <b>Title page</b> and in your <b>MangaDex List</b>.
+					</p>
+				</div>
+				<h2>MangaDex Buttons update SyncDex</h2>
+				<div class="parameter">
+					<input type="checkbox" id="ck_mdUpdateSyncDex" data-name="mdUpdateSyncDex" />
+					<label for="ck_mdUpdateSyncDex">Update <b>SyncDex</b> status and all <b>Active Services</b> when using <b>Status</b> and <b>Score</b> buttons.</label>
 				</div>
 			</div>
 		</div>
@@ -243,11 +262,6 @@
 					<input type="checkbox" id="ck_autoSync" data-name="autoSync" />
 					<label for="ck_autoSync">Automatically sync all of your Services from the most recent Service, or you Local Save.</label>
 					<p class="helper">Services will be synced from the last one in your list to your <b>Main Service</b>, syncing <b>Dates</b> and <b>Score</b> with it.</p>
-				</div>
-				<h2>MangaDex Buttons update SyncDex</h2>
-				<div class="parameter">
-					<input type="checkbox" id="ck_mdUpdateSyncDex" data-name="mdUpdateSyncDex" />
-					<label for="ck_mdUpdateSyncDex">Update <b>SyncDex</b> status and all <b>Active Services</b> when using <b>Status</b> and <b>Score</b> buttons.</label>
 				</div>
 			</div>
 		</div>

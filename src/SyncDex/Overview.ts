@@ -14,5 +14,5 @@ export abstract class Overview {
 	abstract syncedService(key: ServiceKey, res: Title | RequestStatus, title: LocalTitle): void;
 	abstract syncingLocal(): void;
 	abstract syncedLocal(title: LocalTitle): void;
-	syncedMangaDex?(type: 'unfollow' | 'status' | 'score', syncModule: SyncModule): void;
+	syncedMangaDex?(type: 'unfollow' | 'status' | 'score' | 'progress', syncModule: SyncModule): void;
 }

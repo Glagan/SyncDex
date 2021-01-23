@@ -22,6 +22,7 @@ export interface ReportInformations {
 interface MangaDexState {
 	status: Status;
 	score: number;
+	progress: Progress;
 }
 
 export class SyncModule {
@@ -36,6 +37,7 @@ export class SyncModule {
 	mdState: MangaDexState = {
 		status: Status.NONE,
 		score: 0,
+		progress: { chapter: 0, volume: 0 },
 	};
 
 	constructor(title: LocalTitle, overview?: Overview) {
@@ -204,6 +206,23 @@ export class SyncModule {
 					strings.error.push(`Error while updating **MangaDex Score**.\ncode: ${response.code}`);
 				}
 			}
+			if (
+				this.loggedIn &&
+				Options.updateMDProgress &&
+				this.title.progress.chapter != this.mdState.progress.chapter &&
+				this.title.progress.volume != undefined &&
+				this.title.progress.volume != this.mdState.progress.volume
+			) {
+				const oldProgress = this.mdState.progress;
+				this.mdState.progress = { ...this.title.progress };
+				if (!this.mdState.progress.volume) this.mdState.progress.volume = 0;
+				const response = await this.syncMangaDex('progress');
+				if (response.ok) strings.success.push('**MangaDex Progress** updated.');
+				else {
+					this.mdState.progress = oldProgress;
+					strings.error.push(`Error while updating **MangaDex Progress**.\ncode: ${response.code}`);
+				}
+			}
 			if (strings.success.length > 0) {
 				SimpleNotification.success({ text: strings.success.join('\n') });
 			}
@@ -215,7 +234,7 @@ export class SyncModule {
 		return report;
 	}
 
-	mangaDexFunction = (fct: 'unfollow' | 'status' | 'score'): string => {
+	mangaDexFunction = (fct: 'unfollow' | 'status' | 'score' | 'progress'): string => {
 		switch (fct) {
 			case 'unfollow':
 				return MangaDex.api('set:title:unfollow', this.title.key.id!);
@@ -223,6 +242,8 @@ export class SyncModule {
 				return MangaDex.api('set:title:status', this.title.key.id!, this.mdState.status);
 			case 'score':
 				return MangaDex.api('set:title:rating', this.title.key.id!, Math.round(this.mdState.score! / 10));
+			case 'progress':
+				return MangaDex.api('update:title:progress', this.title.key.id!);
 		}
 	};
 
@@ -230,13 +251,27 @@ export class SyncModule {
 	 * Sync MangaDex Status or Rating.
 	 */
 	@LogExecTime
-	async syncMangaDex(fct: 'unfollow' | 'status' | 'score'): Promise<RequestResponse> {
-		const response = await Runtime.request({
-			method: 'GET',
-			url: this.mangaDexFunction(fct),
-			credentials: 'include',
-			headers: { 'X-Requested-With': 'XMLHttpRequest' },
-		});
+	async syncMangaDex(fct: 'unfollow' | 'status' | 'score' | 'progress'): Promise<RequestResponse> {
+		let response: RawResponse;
+		if (fct == 'progress') {
+			response = await Runtime.request({
+				method: 'POST',
+				url: this.mangaDexFunction(fct),
+				credentials: 'include',
+				headers: { 'X-Requested-With': 'XMLHttpRequest' },
+				form: {
+					volume: this.mdState.progress.volume ?? 0,
+					chapter: this.mdState.progress.chapter,
+				},
+			});
+		} else {
+			response = await Runtime.request({
+				method: 'GET',
+				url: this.mangaDexFunction(fct),
+				credentials: 'include',
+				headers: { 'X-Requested-With': 'XMLHttpRequest' },
+			});
+		}
 		if (this.overview?.syncedMangaDex) {
 			this.overview?.syncedMangaDex(fct, this);
 		}
@@ -248,7 +283,11 @@ export class SyncModule {
 	 * 	in the this.displayReportNotifications function.
 	 */
 	saveState = (): LocalTitle => {
-		this.previousMdState = { status: this.mdState.status, score: this.mdState.score };
+		this.previousMdState = {
+			status: this.mdState.status,
+			score: this.mdState.score,
+			progress: { ...this.mdState.progress },
+		};
 		return JSON.parse(JSON.stringify(this.title)); // Deep copy
 	};
 
