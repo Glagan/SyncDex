@@ -2,7 +2,12 @@
 	"updates": [
 		{
 			"version": "0.2.4",
-			"description": ["Add MangaDex progress update.##34", "Fix MangaDex unfollow and score removal buttons.##35"]
+			"description": [
+				"Add MangaDex progress update.##34",
+				"Fix MangaDex unfollow and score removal buttons.##35",
+				"Fix logs being too large.##36",
+				"Fix Fira font."
+			]
 		},
 		{
 			"version": "0.2.3",

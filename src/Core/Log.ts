@@ -1,4 +1,3 @@
-import { browser } from 'webextension-polyfill-ts';
 import { LogLevel, Options } from './Options';
 import { Storage } from './Storage';
 
@@ -17,6 +16,7 @@ export async function log(...args: any[]): Promise<LogLine | undefined> {
 	let level = LogLevel.Default,
 		message;
 	if (args.length == 2) {
+		level = args[0];
 		message = args[1];
 	} else message = args[0];
 	if (level <= Options.logLevel) {
@@ -31,6 +31,7 @@ export async function log(...args: any[]): Promise<LogLine | undefined> {
 		console.log(line.msg);
 		if (level <= LogLevel.ExecutionTime) {
 			logs.push(line);
+			if (logs.length >= 300) logs.splice(0, Math.min(logs.length - 300, 1));
 			await Storage.set(StorageUniqueKey.Logs, logs);
 		}
 		return line;
