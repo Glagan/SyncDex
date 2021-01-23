@@ -2,7 +2,7 @@
 	"updates": [
 		{
 			"version": "0.2.4",
-			"description": ["Fix MangaDex unfollow button."]
+			"description": ["Add MangaDex progress update.##34", "Fix MangaDex unfollow and score removal buttons.##35"]
 		},
 		{
 			"version": "0.2.3",
