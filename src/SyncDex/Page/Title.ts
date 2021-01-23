@@ -1191,7 +1191,7 @@ export class TitlePage extends Page {
 		await title.persist(); // Always save
 
 		// Load each Services to Sync
-		const syncModule = new SyncModule(title, overview);
+		const syncModule = new SyncModule('title', title, overview);
 		// Find MangaDex login status
 		syncModule.loggedIn = !document.querySelector('button[title="You need to log in to use this function."]');
 		syncModule.overview!.syncedLocal(syncModule.title);

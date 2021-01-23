@@ -129,6 +129,19 @@ export class MangaDexExport extends SpecialService {
 				},
 			});
 		}
+		// Progress
+		if (Options.updateMDProgress && title.progress.chapter > 0) {
+			await Runtime.request({
+				method: 'POST',
+				url: MangaDex.api('update:title:progress', title.key.id!),
+				credentials: 'include',
+				headers: { 'X-Requested-With': 'XMLHttpRequest' },
+				form: {
+					volume: title.progress.volume ?? 0,
+					chapter: title.progress.chapter,
+				},
+			});
+		}
 		return Runtime.responseStatus(response);
 	};
 

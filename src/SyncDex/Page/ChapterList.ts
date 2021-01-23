@@ -423,7 +423,7 @@ export class ChapterListPage extends Page {
 		for (const group of groups) {
 			const title = titles.find(group.id);
 			if (title !== undefined && title.inList) {
-				const syncModule = new SyncModule(title);
+				const syncModule = new SyncModule('list', title);
 				syncModule.loggedIn = loggedIn;
 				group.initialize(syncModule);
 				group.updateDisplayedRows(title);

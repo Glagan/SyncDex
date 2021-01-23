@@ -257,7 +257,7 @@ export class SaveViewer {
 		});
 		editButton.addEventListener('click', async (event) => {
 			event.preventDefault();
-			const syncModule = new SyncModule(title);
+			const syncModule = new SyncModule('options', title);
 			syncModule.loggedIn = SaveViewer.loggedIn;
 			syncModule.initialize();
 			let removed = false;

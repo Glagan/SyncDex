@@ -3,10 +3,11 @@ import { Options } from './Options';
 import { Runtime } from './Runtime';
 import { Overview } from '../SyncDex/Overview';
 import { Services } from '../Service/Class/Map';
-import { log, LogExecTime } from './Log';
+import { debug, log, LogExecTime } from './Log';
 import { ActivableKey, StaticKey } from '../Service/Keys';
 import { LocalTitle } from './Title';
 import { MangaDex } from './MangaDex';
+import { progressToString } from './Utility';
 
 export type SyncReport = {
 	[key in ActivableKey]?: RequestStatus | false;
@@ -39,8 +40,11 @@ export class SyncModule {
 		score: 0,
 		progress: { chapter: 0, volume: 0 },
 	};
+	origin: 'options' | 'title' | 'list' | 'chapter';
 
-	constructor(title: LocalTitle, overview?: Overview) {
+	constructor(origin: 'options' | 'title' | 'list' | 'chapter', title: LocalTitle, overview?: Overview) {
+		debug(`SyncModule origin: ${origin}`);
+		this.origin = origin;
 		this.title = title;
 		this.overview = overview;
 		if (this.overview?.bind) this.overview.bind(this);
@@ -180,6 +184,7 @@ export class SyncModule {
 		// Can't check loggedIn status since it can be called without MangaDex check first
 		if (Options.updateMD && this.loggedIn) {
 			const strings: { success: string[]; error: string[] } = { success: [], error: [] };
+			// Status
 			if (this.mdState.status != this.title.status) {
 				const oldStatus = this.mdState.status;
 				this.mdState.status = this.title.status;
@@ -191,6 +196,7 @@ export class SyncModule {
 					strings.error.push(`Error while updating **MangaDex Status**.\ncode: ${response.code}`);
 				}
 			}
+			// Score
 			if (
 				this.loggedIn &&
 				this.title.score > 0 &&
@@ -206,13 +212,20 @@ export class SyncModule {
 					strings.error.push(`Error while updating **MangaDex Score**.\ncode: ${response.code}`);
 				}
 			}
+			// Progress -- Avoid updating in Chapter page
 			if (
+				this.origin != 'chapter' &&
 				this.loggedIn &&
 				Options.updateMDProgress &&
-				this.title.progress.chapter != this.mdState.progress.chapter &&
-				this.title.progress.volume != undefined &&
-				this.title.progress.volume != this.mdState.progress.volume
+				(this.title.progress.chapter != this.mdState.progress.chapter ||
+					(this.title.progress.volume != undefined &&
+						this.title.progress.volume != this.mdState.progress.volume))
 			) {
+				debug(
+					`Updating progress for #${this.title.key.id} MD {${progressToString(
+						this.mdState.progress
+					)}} Title {${progressToString(this.title.progress)}}`
+				);
 				const oldProgress = this.mdState.progress;
 				this.mdState.progress = { ...this.title.progress };
 				if (!this.mdState.progress.volume) this.mdState.progress.volume = 0;
