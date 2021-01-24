@@ -3,6 +3,7 @@ import { ActivableKey } from '../Service/Keys';
 import { Options } from './Options';
 import { History } from './History';
 import { Storage } from './Storage';
+import { debug } from './Log';
 
 export const StatusMap: { [key in Status]: string } = {
 	[Status.NONE]: 'No Status',
@@ -134,12 +135,18 @@ export abstract class Title {
 		const synced =
 			title.status === this.status &&
 			Math.floor(title.chapter) === Math.floor(this.chapter) &&
-			(missingFields.indexOf('volume') >= 0 || title.volume === this.volume) &&
-			(missingFields.indexOf('score') >= 0 || title.score === this.score) &&
+			(missingFields.indexOf('volume') >= 0 ||
+				title.missingFields.indexOf('volume') >= 0 ||
+				title.volume === this.volume) &&
+			(missingFields.indexOf('score') >= 0 ||
+				title.missingFields.indexOf('score') >= 0 ||
+				title.score === this.score) &&
 			(missingFields.indexOf('start') >= 0 ||
+				title.missingFields.indexOf('start') >= 0 ||
 				(title.start === undefined && this.start === undefined) ||
 				(title.start !== undefined && this.start !== undefined && dateCompare(title.start, this.start))) &&
 			(missingFields.indexOf('end') >= 0 ||
+				title.missingFields.indexOf('end') >= 0 ||
 				(title.end === undefined && this.end === undefined) ||
 				(title.end !== undefined && this.end !== undefined && dateCompare(title.end, this.end)));
 		return synced;

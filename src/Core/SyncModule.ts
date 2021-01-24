@@ -168,7 +168,6 @@ export class SyncModule {
 			// If Auto Sync is on, import from now up to date Title and persist
 			if ((!checkAutoSyncOption || Options.autoSync) && !synced) {
 				service.import(this.title);
-				debug(`Syncing external service ${key}`);
 				this.overview?.syncingService(key);
 				// ! To fix: An update without a status (score update only for example) try to delete, maybe ignore ?
 				const promise = this.title.status == Status.NONE ? service.delete() : service.persist();
