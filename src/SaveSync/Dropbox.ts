@@ -3,7 +3,7 @@ import { Runtime } from '../Core/Runtime';
 import { Storage } from '../Core/Storage';
 import { generateRandomString, pkceChallengeFromVerifier } from '../Options/PKCEHelper';
 import { Declare, SaveSync } from '../Core/SaveSync';
-import { debug, LogExecTime } from '../Core/Log';
+import { debug, log, LogExecTime } from '../Core/Log';
 
 interface DropboxTokenResponse {
 	uid: string;
@@ -234,7 +234,7 @@ export class Dropbox extends SaveSync {
 				},
 				body: JSON.stringify({ path: SaveSync.FILENAME }),
 			});
-			if (!response.ok) await debug(`Error in Dropbox delete: [${response.body}]`);
+			if (!response.ok) await log(`Error in Dropbox delete: [${response.body}]`);
 			return response.ok;
 		}
 		return false;
@@ -262,7 +262,7 @@ export class Dropbox extends SaveSync {
 			return SaveSyncLoginResult.API_ERROR;
 		} catch (error) {}
 		//SimpleNotification.error({ title: 'API Error', text: 'Could not parse a body from the Dropbox API.' });
-		await debug('Failed to obtain Dropbox token');
+		await log('Failed to obtain Dropbox token');
 		return SaveSyncLoginResult.API_ERROR;
 	};
 }

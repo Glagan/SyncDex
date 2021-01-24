@@ -1,6 +1,10 @@
 {
 	"updates": [
 		{
+			"version": "0.2.5",
+			"description": ["Fix MangaDex User Title API route."]
+		},
+		{
 			"version": "0.2.4",
 			"description": [
 				"Add MangaDex progress update.##34",

@@ -29,11 +29,9 @@ export async function log(...args: any[]): Promise<LogLine | undefined> {
 			} else line.msg = `Object: ${JSON.stringify(message)}`;
 		} else line.msg = message;
 		console.log(line.msg);
-		if (level <= LogLevel.ExecutionTime) {
-			logs.push(line);
-			if (logs.length >= 300) logs.splice(0, Math.min(logs.length - 300, 1));
-			await Storage.set(StorageUniqueKey.Logs, logs);
-		}
+		logs.push(line);
+		if (logs.length >= 200) logs.splice(0, Math.min(logs.length - 200, 1));
+		await Storage.set(StorageUniqueKey.Logs, logs);
 		return line;
 	}
 	return undefined;

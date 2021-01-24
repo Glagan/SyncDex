@@ -3,7 +3,7 @@ import { Runtime } from '../Core/Runtime';
 import { Storage } from '../Core/Storage';
 import { generateRandomString } from '../Options/PKCEHelper';
 import { Declare, SaveSync } from '../Core/SaveSync';
-import { debug, LogExecTime } from '../Core/Log';
+import { debug, log, LogExecTime } from '../Core/Log';
 
 interface GoogleDriveTokenResponse {
 	access_token: string;
@@ -186,7 +186,7 @@ export class GoogleDrive extends SaveSync {
 				url: `https://www.googleapis.com/drive/v3/files/${SaveSync.state.id}`,
 				headers: { Authorization: `Bearer ${SaveSync.state?.token}` },
 			});
-			if (!response.ok) await debug(`Error in Google Drive delete: [${response.body}]`);
+			if (!response.ok) await log(`Error in Google Drive delete: [${response.body}]`);
 			return response.ok;
 		}
 		return false;
@@ -217,7 +217,7 @@ export class GoogleDrive extends SaveSync {
 			});*/
 		} catch (error) {}
 		//SimpleNotification.error({ title: 'API Error', text: 'Could not parse a body from the Dropbox API.' });
-		await debug('Failed to obtain Google Drive token');
+		await log('Failed to obtain Google Drive token');
 		return SaveSyncLoginResult.API_ERROR;
 	};
 }

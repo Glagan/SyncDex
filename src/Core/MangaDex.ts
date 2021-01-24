@@ -41,9 +41,9 @@ export namespace MangaDex {
 			case 'get:user:me':
 				return `${MangaDexAPI}/user/me`;
 			case 'get:user:title':
-				return `${MangaDexAPI}/manga/${args[0]}${args[1] && args[1].chapters ? '?include=chapters' : ''}`;
-			case 'get:title':
 				return `${MangaDexAPI}/user/me/manga/${args[0]}`;
+			case 'get:title':
+				return `${MangaDexAPI}/manga/${args[0]}${args[1] && args[1].chapters ? '?include=chapters' : ''}`;
 			case 'get:user:followed:list':
 				return `${MangaDexAPI}/user/me/followed-manga`;
 			case 'get:user:followed:updates':

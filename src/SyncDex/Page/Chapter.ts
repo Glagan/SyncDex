@@ -332,9 +332,9 @@ export class ChapterPage extends Page {
 				} else lastVolume = -1;
 			}
 		}
-		debug(`Volume reset chapters ? ${volumeResetChapter}`);
+		// debug(`Volume reset chapters ? ${volumeResetChapter}`);
 		if (volumeResetChapter) {
-			debug(`Volume reset chapters ${JSON.stringify(volumeChapterCount)}`);
+			// debug(`Volume reset chapters ${JSON.stringify(volumeChapterCount)}`);
 			this.title.volumeChapterCount = volumeChapterCount;
 			this.title.volumeResetChapter = true;
 			this.updateReverseChapters();
@@ -347,7 +347,7 @@ export class ChapterPage extends Page {
 					chapter: parseFloat(details.lastChapter),
 					volume: details.lastVolume ? parseInt(details.lastVolume) : undefined,
 				};
-				debug(`Found MangaDex max ${progressToString(max)}`);
+				debug(`Found MangaDex max {${progressToString(max)}}`);
 				if (!this.title.volumeResetChapter) {
 					this.title.max = max;
 				}

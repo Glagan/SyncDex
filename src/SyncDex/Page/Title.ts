@@ -1062,7 +1062,7 @@ export class TitlePage extends Page {
 			const volume = /\/(\d+)/.exec(maxVolume.nextSibling.textContent);
 			if (volume) max.volume = parseInt(volume[1]);
 		}
-		debug(`Found MangaDex max ${progressToString(max)}`);
+		debug(`Found MangaDex max {${progressToString(max)}}`);
 		// Always Find Services
 		let fallback = false;
 		if (Options.useMochi) {
@@ -1149,7 +1149,7 @@ export class TitlePage extends Page {
 			}
 		}
 
-		debug(`Volume reset chapters ? ${overview.chapterList.volumeResetChapter || title.volumeResetChapter}`);
+		// debug(`Volume reset chapters ? ${overview.chapterList.volumeResetChapter || title.volumeResetChapter}`);
 		if (overview.chapterList.volumeResetChapter || title.volumeResetChapter) {
 			// If we have all available chapters, we can update the volumeChapterCount of the title
 			if (!overview.chapterList.incomplete) {
