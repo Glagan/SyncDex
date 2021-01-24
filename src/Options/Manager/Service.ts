@@ -157,7 +157,9 @@ class ServiceCard {
 			this.loginButton.href = this.service.loginUrl;
 		}
 		this.activateButton.addEventListener('click', async () => {
-			Options.services.push(this.service.key);
+			if (Options.services.indexOf(this.service.key) < 0) {
+				Options.services.push(this.service.key);
+			}
 			if (Options.services.length == 1) {
 				const containerFirstChild = this.manager.activeContainer.firstElementChild;
 				if (this.activeCard != containerFirstChild) {
