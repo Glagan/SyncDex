@@ -1,4 +1,4 @@
-import { log, LogExecTime } from '../../Core/Log';
+import { debug, log, LogExecTime } from '../../Core/Log';
 import { Runtime } from '../../Core/Runtime';
 import { LoginMethod, Service } from '../../Core/Service';
 import { MissableField, Title } from '../../Core/Title';
@@ -52,6 +52,7 @@ export class MangaUpdates extends Service {
 			if (listType !== null) {
 				values.inList = true;
 				values.status = MangaUpdatesTitle.toStatus(MangaUpdatesTitle.listToStatus(listType[1]));
+				values.current.status = values.status;
 				// The state in list is only displayed if the title is in the READING list
 				if (values.status == Status.READING) {
 					const chapterLink = showList.querySelector<HTMLAnchorElement>(`a[title='Increment Chapter']`)!;
@@ -115,6 +116,25 @@ export class MangaUpdatesTitle extends Title {
 		return MangaUpdatesStatus.NONE;
 	};
 
+	static statusToList = (status: Status): string => {
+		switch (status) {
+			case Status.COMPLETED:
+				return 'complete';
+			case Status.PAUSED:
+				return 'hold';
+			case Status.PLAN_TO_READ:
+				return 'wish';
+			case Status.READING:
+			case Status.REREADING:
+				return 'read';
+			case Status.DROPPED:
+			case Status.WONT_READ:
+				return 'unfinished';
+		}
+		// Status.NONE: '---' magic string for [deletion] (*not* for creation)
+		return '---';
+	};
+
 	// Get a list of status to go through to be able to update to the wanted status
 	pathToStatus = (): MangaUpdatesStatus[] => {
 		let list: MangaUpdatesStatus[] = [];
@@ -169,19 +189,35 @@ export class MangaUpdatesTitle extends Title {
 		if (!this.current) this.current = { progress: { chapter: 0 }, status: Status.NONE };
 		// Avoid updating status since reassigning the same status delete from the list
 		if (this.status !== this.current.status) {
-			// Status requirements
-			let list = this.pathToStatus();
-			for (const status of list) {
-				if (status == MangaUpdatesStatus.NONE) {
-					this.delete();
-				} else {
-					const response = await this.updateStatus(status);
-					if (!response.ok) return Runtime.responseStatus(response);
-				}
+			// If there is no status, we need an initial status to update from
+			//	A title can only be created in one of the four lists below
+			//	If the real status is none of these lists, we set it to reading and then update it
+			let updated = false;
+			if (this.current.status == Status.NONE) {
+				updated =
+					this.status == Status.READING ||
+					this.status == Status.REREADING ||
+					this.status == Status.PLAN_TO_READ ||
+					this.status == Status.COMPLETED;
+				const initialStatus = updated ? this.status : Status.READING;
+				const response = await this.updateStatus(MangaUpdatesTitle.fromStatus(initialStatus));
+				if (!response.ok) return Runtime.responseStatus(response);
+				this.current.status = initialStatus;
 			}
-			// Real status
-			const response = await this.updateStatus(MangaUpdatesTitle.fromStatus(this.status));
-			if (!response.ok) return Runtime.responseStatus(response);
+			if (!updated) {
+				const response = await Runtime.request<RawResponse>({
+					url: 'https://www.mangaupdates.com/mylist.html',
+					method: 'POST',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+					body: Runtime.buildQuery({
+						act: 'update',
+						list: MangaUpdatesTitle.statusToList(this.current.status),
+						moveto: MangaUpdatesTitle.statusToList(this.status),
+						[`DELETE[${this.key.id}]`]: '1',
+					}),
+				});
+				if (!response.ok) return Runtime.responseStatus(response);
+			}
 			this.current.status = this.status;
 		}
 		// Update progress -- only if chapter or volume is different

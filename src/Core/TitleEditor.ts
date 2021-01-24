@@ -120,7 +120,7 @@ export class TitleEditor {
 
 	static create(
 		syncModule: SyncModule,
-		postSubmit?: () => void,
+		postSubmit?: (updatedIDs: boolean) => void,
 		postDelete?: () => void,
 		onCancel?: () => void
 	): Modal {
@@ -457,23 +457,37 @@ export class TitleEditor {
 			title.chapters = historyChapters.map((h) => h.chapter);
 			// Save and close Modal
 			await title.persist();
+
+			// Update initial requests for each new different services
+			let updatedIDs = false;
+			if (updateAllCheckbox.checked || syncModule.origin == 'title' || syncModule.origin == 'chapter') {
+				await syncModule.waitInitialize();
+				for (const key in title.services) {
+					const serviceKey = key as ActivableKey;
+					if (
+						Options.services.indexOf(serviceKey) >= 0 &&
+						(!previousState.services[serviceKey] ||
+							!Services[serviceKey].compareId(
+								previousState.services[serviceKey]!,
+								title.services[serviceKey]!
+							))
+					) {
+						updatedIDs = true;
+						syncModule.initializeService(serviceKey);
+					}
+				}
+			}
 			// Sync Services
+			const created = previousState.status == Status.NONE && title.status != Status.NONE;
 			const completed = previousState.status != Status.COMPLETED && title.status == Status.COMPLETED;
+			// Sync external
 			if (updateAllCheckbox.checked) {
 				const report = await syncModule.syncExternal();
-				syncModule.displayReportNotifications(
-					report,
-					{
-						created: previousState.status == Status.NONE && title.status != Status.NONE,
-						completed: completed,
-					},
-					previousState,
-					onCancel
-				);
-			} else syncModule.displayReportNotifications({}, { completed: completed }, previousState, onCancel);
+				syncModule.displayReportNotifications(report, { created, completed }, previousState, onCancel);
+			} else syncModule.displayReportNotifications({}, { created, completed }, previousState, onCancel);
 			modal.enableExit();
 			modal.remove();
-			if (postSubmit) await postSubmit();
+			if (postSubmit) await postSubmit(updatedIDs);
 		});
 		submitButton.addEventListener('click', (event) => {
 			event.preventDefault();

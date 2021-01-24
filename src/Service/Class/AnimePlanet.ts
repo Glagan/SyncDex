@@ -1,7 +1,7 @@
 import { Runtime } from '../../Core/Runtime';
 import { Service, LoginMethod } from '../../Core/Service';
 import { Title, MissableField } from '../../Core/Title';
-import { log, LogExecTime } from '../../Core/Log';
+import { debug, log, LogExecTime } from '../../Core/Log';
 import { ActivableKey } from '../Keys';
 import { ServiceName } from '../Names';
 
@@ -125,6 +125,10 @@ export class AnimePlanet extends Service {
 	idFromString = (str: string): MediaKey => {
 		return { slug: str };
 	};
+
+	static compareId(id1: MediaKey, id2: MediaKey): boolean {
+		return (id1.id == id2.id || !id1.id || !id2.id) && id1.slug == id2.slug;
+	}
 }
 
 export const AnimePlanetAPI = 'https://www.anime-planet.com/api/list';

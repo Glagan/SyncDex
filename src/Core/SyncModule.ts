@@ -50,6 +50,17 @@ export class SyncModule {
 		if (this.overview?.bind) this.overview.bind(this);
 	}
 
+	initializeService = (key: ActivableKey): void => {
+		const initialRequest = Services[key].get(this.title.services[key]!);
+		this.loadingServices.push(initialRequest);
+		initialRequest.then((res) => {
+			debug(`Received initial request for ${key}`);
+			this.overview?.receivedInitialRequest(key, res, this);
+			this.services[key] = res;
+			return res;
+		});
+	};
+
 	/**
 	 * Send initial Media requests concurrently for each services.
 	 */
@@ -67,13 +78,7 @@ export class SyncModule {
 			const hasId = activeServices.indexOf(key) >= 0;
 			this.overview?.initializeService(key, hasId);
 			if (hasId) {
-				const initialRequest = Services[key].get(this.title.services[key]!);
-				this.loadingServices.push(initialRequest);
-				initialRequest.then((res) => {
-					this.overview?.receivedInitialRequest(key, res, this);
-					this.services[key] = res;
-					return res;
-				});
+				this.initializeService(key);
 			}
 		}
 	};
@@ -99,6 +104,7 @@ export class SyncModule {
 					}
 				}
 			}
+			debug('Received all initial requests');
 			if (this.overview?.receivedAllInitialRequests) this.overview.receivedAllInitialRequests(this);
 		}
 	};
@@ -109,10 +115,10 @@ export class SyncModule {
 	 */
 	@LogExecTime
 	async syncLocal(): Promise<boolean> {
+		this.overview?.syncingLocal();
 		await this.waitInitialize();
 		// Sync Title with the most recent ServiceTitle ordered by User choice
 		// Services are reversed to select the first choice last
-		this.overview?.syncingLocal();
 		let doSave = false;
 		for (const key of [...Options.services].reverse()) {
 			if (this.services[key] === undefined) continue;
@@ -143,6 +149,7 @@ export class SyncModule {
 	 */
 	@LogExecTime
 	async syncExternal(checkAutoSyncOption: boolean = false): Promise<SyncReport> {
+		this.overview?.syncingLocal();
 		await this.waitInitialize();
 		const promises: Promise<RequestStatus>[] = [];
 		const report: SyncReport = {};
@@ -161,6 +168,7 @@ export class SyncModule {
 			// If Auto Sync is on, import from now up to date Title and persist
 			if ((!checkAutoSyncOption || Options.autoSync) && !synced) {
 				service.import(this.title);
+				debug(`Syncing external service ${key}`);
 				this.overview?.syncingService(key);
 				// ! To fix: An update without a status (score update only for example) try to delete, maybe ignore ?
 				const promise = this.title.status == Status.NONE ? service.delete() : service.persist();
@@ -244,6 +252,7 @@ export class SyncModule {
 			}
 		}
 		await Promise.all(promises);
+		this.overview?.syncedLocal(this.title);
 		return report;
 	}
 

@@ -3,7 +3,7 @@ import { Runtime } from '../Core/Runtime';
 import { Storage } from '../Core/Storage';
 import { generateRandomString } from '../Options/PKCEHelper';
 import { Declare, SaveSync } from '../Core/SaveSync';
-import { log, LogExecTime } from '../Core/Log';
+import { debug, LogExecTime } from '../Core/Log';
 
 interface GoogleDriveTokenResponse {
 	access_token: string;
@@ -97,7 +97,7 @@ export class GoogleDrive extends SaveSync {
 				headers: { Authorization: `Bearer ${SaveSync.state!.token}` },
 			});
 			if (response.ok) {
-				await log(`Downloaded Google Drive Save`);
+				await debug(`Downloaded Google Drive Save`);
 				return response.body;
 			}
 		}
@@ -115,7 +115,7 @@ export class GoogleDrive extends SaveSync {
 					fileRequest: 'localSave',
 				});
 				if (response.ok && !response.body.error) {
-					await log(`Uploaded Local Save to Google Drive`);
+					await debug(`Uploaded Local Save to Google Drive`);
 					if (SaveSync.state!.id !== response.body.id) {
 						SaveSync.state!.id = response.body.id;
 						await Storage.set(StorageUniqueKey.SaveSync, SaveSync.state);
@@ -130,7 +130,7 @@ export class GoogleDrive extends SaveSync {
 					fileRequest: 'namedLocalSave',
 				});
 				if (response.ok && !response.body.error) {
-					await log(`Uploaded Local Save to Google Drive`);
+					await debug(`Uploaded Local Save to Google Drive`);
 					SaveSync.state!.id = response.body.id;
 					await Storage.set(StorageUniqueKey.SaveSync, SaveSync.state);
 					return new Date(response.body.modifiedTime).getTime();
@@ -143,7 +143,7 @@ export class GoogleDrive extends SaveSync {
 	refreshTokenIfNeeded = async (): Promise<boolean> => {
 		if (!SaveSync.state) return false;
 		if (SaveSync.state.expires < Date.now()) {
-			await log(`Refreshing Google Drive token (expired ${SaveSync.state.expires})`);
+			await debug(`Refreshing Google Drive token (expired ${SaveSync.state.expires})`);
 			const response = await Runtime.request<RawResponse>({
 				method: 'POST',
 				url: 'https://syncdex.nikurasu.org/',
@@ -186,7 +186,7 @@ export class GoogleDrive extends SaveSync {
 				url: `https://www.googleapis.com/drive/v3/files/${SaveSync.state.id}`,
 				headers: { Authorization: `Bearer ${SaveSync.state?.token}` },
 			});
-			if (!response.ok) await log(`Error in Google Drive delete: [${response.body}]`);
+			if (!response.ok) await debug(`Error in Google Drive delete: [${response.body}]`);
 			return response.ok;
 		}
 		return false;
@@ -206,7 +206,7 @@ export class GoogleDrive extends SaveSync {
 					refresh: refreshToken,
 				};
 				await Storage.set(StorageUniqueKey.SaveSync, SaveSync.state);
-				await log('Obtained Google Drive token');
+				await debug('Obtained Google Drive token');
 				return SaveSyncLoginResult.SUCCESS;
 			}
 			/*SimpleNotification.error({
@@ -217,7 +217,7 @@ export class GoogleDrive extends SaveSync {
 			});*/
 		} catch (error) {}
 		//SimpleNotification.error({ title: 'API Error', text: 'Could not parse a body from the Dropbox API.' });
-		await log('Failed to obtain Google Drive token');
+		await debug('Failed to obtain Google Drive token');
 		return SaveSyncLoginResult.API_ERROR;
 	};
 }

@@ -8,8 +8,59 @@
 @import 'Editor.scss';
 @import 'Buttons.scss';
 @import 'Form.scss';
-@import 'Elements.scss';
 @import 'Messages.scss';
+
+// Links
+*[href] {
+	color: $blue-60;
+	text-decoration: none;
+}
+*[href] img,
+*[href] i {
+	vertical-align: middle;
+}
+*[href]:hover {
+	text-decoration: underline;
+}
+*[href]:active {
+	color: $blue-70;
+	text-decoration: underline;
+}
+*[href]:focus {
+	box-shadow: $focus;
+}
+
+h1 {
+	font-size: $title-40;
+	font-weight: $medium;
+	margin: 16px 0;
+}
+h2 {
+	font-size: $title-20;
+	font-weight: $medium;
+	margin-bottom: 4px;
+}
+.section {
+	margin-bottom: 64px;
+}
+.block {
+	margin-bottom: 32px;
+}
+.paragraph {
+	margin-bottom: 4px;
+}
+.center {
+	text-align: center;
+	align-self: center;
+}
+.right {
+	text-align: right;
+}
+.helper {
+	font-size: $caption-30;
+	font-weight: $regular;
+	color: $grey-50;
+}
 
 // Color Input
 .color {

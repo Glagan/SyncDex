@@ -3,7 +3,7 @@ import { Runtime } from '../Core/Runtime';
 import { Storage } from '../Core/Storage';
 import { generateRandomString, pkceChallengeFromVerifier } from '../Options/PKCEHelper';
 import { Declare, SaveSync } from '../Core/SaveSync';
-import { log, LogExecTime } from '../Core/Log';
+import { debug, LogExecTime } from '../Core/Log';
 
 interface DropboxTokenResponse {
 	uid: string;
@@ -156,7 +156,7 @@ export class Dropbox extends SaveSync {
 				},
 			});
 			if (response.ok) {
-				await log(`Downloaded Dropbox Save`);
+				await debug(`Downloaded Dropbox Save`);
 				return response.body;
 			}
 		}
@@ -176,7 +176,7 @@ export class Dropbox extends SaveSync {
 				fileRequest: 'localSave',
 			});
 			if (response.ok) {
-				await log(`Uploaded Local Save to Dropbox`);
+				await debug(`Uploaded Local Save to Dropbox`);
 				return new Date(response.body.server_modified).getTime();
 			}
 		}
@@ -186,7 +186,7 @@ export class Dropbox extends SaveSync {
 	refreshTokenIfNeeded = async (): Promise<boolean> => {
 		if (!SaveSync.state) return false;
 		if (SaveSync.state.expires < Date.now()) {
-			await log(`Refreshing Dropbox token (expired ${SaveSync.state.expires})`);
+			await debug(`Refreshing Dropbox token (expired ${SaveSync.state.expires})`);
 			const response = await Runtime.request<RawResponse>({
 				method: 'POST',
 				url: 'https://api.dropboxapi.com/oauth2/token',
@@ -234,7 +234,7 @@ export class Dropbox extends SaveSync {
 				},
 				body: JSON.stringify({ path: SaveSync.FILENAME }),
 			});
-			if (!response.ok) await log(`Error in Dropbox delete: [${response.body}]`);
+			if (!response.ok) await debug(`Error in Dropbox delete: [${response.body}]`);
 			return response.ok;
 		}
 		return false;
@@ -252,7 +252,7 @@ export class Dropbox extends SaveSync {
 					refresh: refreshToken,
 				};
 				await Storage.set(StorageUniqueKey.SaveSync, SaveSync.state);
-				await log('Obtained Dropbox token');
+				await debug('Obtained Dropbox token');
 				return SaveSyncLoginResult.SUCCESS;
 			}
 			/*SimpleNotification.error({
@@ -262,7 +262,7 @@ export class Dropbox extends SaveSync {
 			return SaveSyncLoginResult.API_ERROR;
 		} catch (error) {}
 		//SimpleNotification.error({ title: 'API Error', text: 'Could not parse a body from the Dropbox API.' });
-		await log('Failed to obtain Dropbox token');
+		await debug('Failed to obtain Dropbox token');
 		return SaveSyncLoginResult.API_ERROR;
 	};
 }

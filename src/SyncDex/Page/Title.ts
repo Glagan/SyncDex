@@ -395,12 +395,22 @@ class LocalOverview extends ServiceOverview {
 	bind = (syncModule: SyncModule): void => {
 		this.editButton.addEventListener('click', async (event) => {
 			event.preventDefault();
-			TitleEditor.create(syncModule, async () => {
-				syncModule.overview?.reset();
-				// Initialize SyncModule again if there is new Service IDs
-				syncModule.initialize();
-				await syncModule.syncLocal();
-				await syncModule.syncExternal(true);
+			TitleEditor.create(syncModule, async (updatedIDs) => {
+				if (!syncModule.overview) return;
+				// Update all overviews if external services IDs were updated
+				debug(`Updated IDs after Title Editor ? ${updatedIDs}`);
+				if (updatedIDs) {
+					syncModule.overview.reset();
+					for (const serviceKey of Options.services) {
+						const key = syncModule.title.services[serviceKey];
+						syncModule.overview.initializeService(serviceKey, key != undefined);
+						syncModule.overview.receivedInitialRequest(
+							serviceKey,
+							syncModule.services[serviceKey]!,
+							syncModule
+						);
+					}
+				}
 			}).show();
 		});
 		this.refreshButton.addEventListener('click', async (event) => {
@@ -1125,7 +1135,7 @@ export class TitlePage extends Page {
 						],
 					});
 					serviceList.appendChild(link);
-				} else if (!Service.compareId(title.services[key]!, localService[1])) {
+				} else if (!Services[key].compareId(title.services[key]!, localService[1])) {
 					DOM.append(
 						localService[0],
 						DOM.space(),

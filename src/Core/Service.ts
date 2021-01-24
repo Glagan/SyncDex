@@ -36,7 +36,7 @@ export abstract class Service {
 	};
 
 	compareId = (id1: MediaKey, id2: MediaKey): boolean => {
-		return Service.compareId(id1, id2);
+		return (<typeof Service>this.constructor).compareId(id1, id2);
 	};
 
 	static compareId(id1: MediaKey, id2: MediaKey): boolean {
