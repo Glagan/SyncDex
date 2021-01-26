@@ -1,6 +1,14 @@
 {
 	"updates": [
 		{
+			"version": "0.2.6",
+			"description": [
+				"Fix missing \"H\" badge in lists.##37",
+				"Fix \"H\" in names when there is an \"H\" badge.",
+				"Avoid empty space below page when a lot of rows are hidden in lists."
+			]
+		},
+		{
 			"version": "0.2.5",
 			"description": ["Fix MangaDex User Title API route."]
 		},

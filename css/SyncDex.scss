@@ -10,6 +10,25 @@
 @import 'Form.scss';
 @import 'Messages.scss';
 
+@keyframes hide {
+	0% {
+		display: flex;
+		transform: scaleY(1);
+	}
+	100% {
+		display: none;
+	}
+}
+@keyframes display {
+	0% {
+		display: none;
+	}
+	100% {
+		display: flex;
+		transform: scaleY(1);
+	}
+}
+
 // Meta
 .hidden,
 .hidden-lang {
@@ -17,6 +36,7 @@
 	max-height: 0;
 	transform: scaleY(0);
 	transform-origin: top;
+	animation: hide 200ms $animation;
 }
 .hidden.full {
 	display: none;
@@ -26,9 +46,10 @@
 .hidden-lang.visible-lang:not(.hidden) {
 	transform: scaleY(1);
 	max-height: 100px;
+	animation: display 200ms $animation;
 }
 .hidden.full.visible {
-	display: table-row;
+	display: flex;
 }
 
 // Tooltips

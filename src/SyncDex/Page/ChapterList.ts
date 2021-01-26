@@ -23,6 +23,7 @@ class TitleChapterGroup {
 	nextChapterRows: HTMLElement[] = [];
 	initializedSync: boolean = false;
 	thumbnail?: Thumbnail;
+	isH: boolean = false;
 
 	/**
 	 * List of rows for each rows indexed by a MangaDex Title ID
@@ -52,18 +53,27 @@ class TitleChapterGroup {
 		};
 	})();
 
-	constructor(id: number, name: string) {
+	constructor(id: number, titleColumn: Element) {
 		this.id = id;
-		this.name = name;
+		this.name = titleColumn.querySelector('a')!.textContent!.trim();
+		this.isH = titleColumn.querySelector('span.badge.badge-danger') != null;
 	}
 
-	titleLink = (): HTMLElement => {
-		return DOM.create('a', {
-			textContent: this.name,
-			class: 'text-truncate',
-			href: `/title/${this.id}`,
-			title: this.name,
-		});
+	addTitleLinkToRow = (row: ChapterRow): void => {
+		if (!row.node.firstElementChild) return;
+		row.node.firstElementChild.appendChild(
+			DOM.create('a', {
+				textContent: this.name,
+				class: 'text-truncate',
+				href: `/title/${this.id}`,
+				title: this.name,
+			})
+		);
+		if (this.isH) {
+			row.node.firstElementChild.appendChild(
+				DOM.create('span', { class: 'badge badge-danger ml-1', textContent: 'H' })
+			);
+		}
 	};
 
 	updateDisplayedRows = (title: Title) => {
@@ -82,7 +92,7 @@ class TitleChapterGroup {
 		// Add back the name on the first row
 		for (const group of this.groups) {
 			if (group.length > 0) {
-				group[0].node.firstElementChild!.appendChild(this.titleLink());
+				this.addTitleLinkToRow(group[0]);
 
 				// Bind each row and add current chapter class
 				for (const row of group) {
@@ -213,7 +223,7 @@ class TitleChapterGroup {
 					(!hidden || !row.hidden) &&
 					(!Options.separateLanguages || row.node.classList.contains('visible-lang'))
 				) {
-					row.node.firstElementChild!.appendChild(this.titleLink());
+					this.addTitleLinkToRow(row);
 					addedTitle = true;
 				}
 			}
@@ -253,7 +263,7 @@ class TitleChapterGroup {
 					!row.hidden &&
 					(!Options.separateLanguages || row.node.classList.contains('visible-lang'))
 				) {
-					row.node.firstElementChild!.appendChild(this.titleLink());
+					this.addTitleLinkToRow(row);
 					addedTitle = true;
 				}
 			}
@@ -350,7 +360,7 @@ class TitleChapterGroup {
 					// Is this is a new entry push the current group and create a new one
 					if (!currentTitleGroup || isFirstRow) {
 						if (!TitleChapterGroup.titleGroups[id]) {
-							currentTitleGroup = new TitleChapterGroup(id, firstChild.textContent!.trim());
+							currentTitleGroup = new TitleChapterGroup(id, firstChild);
 							TitleChapterGroup.titleGroups[id] = currentTitleGroup;
 							groups.push(currentTitleGroup);
 							currentChapterGroup = [];
@@ -434,7 +444,7 @@ export class ChapterListPage extends Page {
 						new Thumbnail(group.id, row.node, title);
 					}
 				}
-				group.rows[0].node.firstElementChild!.appendChild(group.titleLink());
+				group.addTitleLinkToRow(group.rows[0]);
 			}
 		}
 
@@ -481,7 +491,7 @@ export class ChapterListPage extends Page {
 									(rawVisible || !row.hidden) &&
 									row.node.classList.contains('visible-lang')
 								) {
-									row.node.firstElementChild!.appendChild(titleGroup.titleLink());
+									titleGroup.addTitleLinkToRow(row);
 									addedTitle = true;
 								}
 							}
