@@ -1062,7 +1062,6 @@ export class TitlePage extends Page {
 			const volume = /\/(\d+)/.exec(maxVolume.nextSibling.textContent);
 			if (volume) max.volume = parseInt(volume[1]);
 		}
-		debug(`Found MangaDex max {${progressToString(max)}}`);
 		// Always Find Services
 		let fallback = false;
 		if (Options.useMochi) {

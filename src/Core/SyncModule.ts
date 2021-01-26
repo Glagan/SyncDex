@@ -43,7 +43,6 @@ export class SyncModule {
 	origin: 'options' | 'title' | 'list' | 'chapter';
 
 	constructor(origin: 'options' | 'title' | 'list' | 'chapter', title: LocalTitle, overview?: Overview) {
-		debug(`SyncModule origin: ${origin}`);
 		this.origin = origin;
 		this.title = title;
 		this.overview = overview;
@@ -54,7 +53,6 @@ export class SyncModule {
 		const initialRequest = Services[key].get(this.title.services[key]!);
 		this.loadingServices.push(initialRequest);
 		initialRequest.then((res) => {
-			debug(`Received initial request for ${key}`);
 			this.overview?.receivedInitialRequest(key, res, this);
 			this.services[key] = res;
 			return res;
@@ -104,7 +102,6 @@ export class SyncModule {
 					}
 				}
 			}
-			debug('Received all initial requests');
 			if (this.overview?.receivedAllInitialRequests) this.overview.receivedAllInitialRequests(this);
 		}
 	};
@@ -228,11 +225,6 @@ export class SyncModule {
 					(this.title.progress.volume != undefined &&
 						this.title.progress.volume != this.mdState.progress.volume))
 			) {
-				debug(
-					`Updating progress for #${this.title.key.id} MD {${progressToString(
-						this.mdState.progress
-					)}} Title {${progressToString(this.title.progress)}}`
-				);
 				const oldProgress = this.mdState.progress;
 				this.mdState.progress = { ...this.title.progress };
 				if (!this.mdState.progress.volume) this.mdState.progress.volume = 0;

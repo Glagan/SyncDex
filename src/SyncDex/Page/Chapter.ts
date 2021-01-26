@@ -347,7 +347,6 @@ export class ChapterPage extends Page {
 					chapter: parseFloat(details.lastChapter),
 					volume: details.lastVolume ? parseInt(details.lastVolume) : undefined,
 				};
-				debug(`Found MangaDex max {${progressToString(max)}}`);
 				if (!this.title.volumeResetChapter) {
 					this.title.max = max;
 				}
