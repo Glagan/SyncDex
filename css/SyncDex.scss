@@ -61,12 +61,12 @@
 	overflow: hidden;
 	background-color: $grey-90-a80;
 	opacity: 0;
-	transition: opacity 0.2s ease-in;
 	color: $white-100;
 	z-index: 9999;
 	pointer-events: none;
 	max-height: 80vh;
 	box-shadow: 0 1px 2px 0 $white-100;
+	transition: opacity 200ms ease-in, top 200ms $animation, height 200ms $animation;
 
 	&.loading {
 		font-size: 1rem;

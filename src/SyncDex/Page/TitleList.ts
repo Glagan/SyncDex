@@ -46,7 +46,7 @@ export class TitleListPage extends Page {
 			}
 			// Do not display thumbnails in Grid and Detailed lists
 			if (Options.thumbnail && listType != ListType.Grid && listType != ListType.Detailed) {
-				new Thumbnail(id, row, title);
+				Thumbnail.bind(id, row, title);
 			}
 		}
 	}

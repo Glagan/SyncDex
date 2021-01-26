@@ -105,7 +105,7 @@ class TitleChapterGroup {
 						// This means no Vol. 1 Ch. 14 -> Vol. 2 Ch.0 as Vol. 2 Ch. 14.1
 					}
 					row.addManageButtons();
-					if (Options.thumbnail) this.thumbnail = new Thumbnail(this.id, row.node, title);
+					if (Options.thumbnail) this.thumbnail = Thumbnail.bind(this.id, row.node, title);
 					if (row.progress.chapter == title.chapter) {
 						row.parent.classList.add('current');
 					}
@@ -441,7 +441,7 @@ export class ChapterListPage extends Page {
 				// Still add thumbnails and the Group title if it's no in list
 				if (Options.thumbnail) {
 					for (const row of group.rows) {
-						new Thumbnail(group.id, row.node, title);
+						Thumbnail.bind(group.id, row.node, title);
 					}
 				}
 				group.addTitleLinkToRow(group.rows[0]);

@@ -99,7 +99,7 @@ export class ChapterRow {
 		this.toggleIcon!.classList.add('fa-plus');
 	};
 
-	static hideAllExcept = (flag: string, tab: HTMLElement, afterToggle?: () => void): void => {
+	static hideAllExcept = (flag: string, tabLink: HTMLElement, afterToggle?: () => void): void => {
 		for (const row of ChapterRow.rowLanguages) {
 			if (flag == 'all' || row.code == flag) {
 				row.node.classList.add('visible-lang');
@@ -108,7 +108,7 @@ export class ChapterRow {
 			}
 		}
 		if (ChapterRow.currentTab) ChapterRow.currentTab.classList.remove('active');
-		ChapterRow.currentTab = tab;
+		ChapterRow.currentTab = tabLink;
 		ChapterRow.currentTab.classList.add('active');
 		if (afterToggle) afterToggle();
 	};
@@ -140,12 +140,12 @@ export class ChapterRow {
 		});
 		tabLink.addEventListener('click', (event) => {
 			event.preventDefault();
-			ChapterRow.hideAllExcept(flag, tab, afterToggle);
+			ChapterRow.hideAllExcept(flag, tabLink, afterToggle);
 		});
 		if (appendFunction) {
 			appendFunction(parent, tab);
 		} else parent.appendChild(tab);
-		return tab;
+		return tabLink;
 	};
 
 	static generateLanguageButtons = (
