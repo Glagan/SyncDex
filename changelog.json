@@ -1,6 +1,10 @@
 {
 	"updates": [
 		{
+			"version": "0.2.7",
+			"description": ["Fix delay between all requests."]
+		},
+		{
 			"version": "0.2.6",
 			"description": [
 				"Fix missing \"H\" badge in lists.##37",

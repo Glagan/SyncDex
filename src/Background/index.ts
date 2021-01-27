@@ -38,7 +38,7 @@ async function getCleanSave() {
 
 function findDomain(url: string): string {
 	// Simple domain search - not the best but simple
-	const res = /https?:\/\/(?:.+\.)?[-\w\d]+\.(?:\w{2,5})(?:$|\/)/i.exec(url);
+	const res = /https?:\/\/(?:.+\.)?([-\w\d]+\.(?:\w{2,5}))(?:$|\/)/i.exec(url);
 	if (res !== null) {
 		return res[1];
 	}
@@ -50,7 +50,7 @@ const DEFAULT_COOLDOWN = 1250;
 const cooldowns: Record<string, number> = {
 	'mangadex.org': 1500,
 	'myanimelist.net': 1500,
-	'mochi.nikurasu.org': 500,
+	'nikurasu.org': 500,
 };
 // TODO: Handle containers in checkOnStartup since there is no sender
 // Probably gate which containers to update based on the future containers update with state for each containers
@@ -67,9 +67,7 @@ function handleMessage(message: Message, sender?: BrowserRuntime.MessageSender) 
 				const diff = nextRequest[domain] - now;
 				nextRequest[domain] = now + diff + (cooldowns[domain] ?? DEFAULT_COOLDOWN) + 100;
 				await new Promise((resolve) => setTimeout(resolve, diff));
-			} else {
-				nextRequest[domain] = now + (cooldowns[domain] ?? DEFAULT_COOLDOWN) + 100;
-			}
+			} else nextRequest[domain] = now + (cooldowns[domain] ?? DEFAULT_COOLDOWN) + 100;
 			// Options
 			msg.isJson = msg.isJson !== undefined ? msg.isJson : false;
 			msg.method = msg.method !== undefined ? msg.method : 'GET';
