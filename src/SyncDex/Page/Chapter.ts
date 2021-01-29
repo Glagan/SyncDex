@@ -368,6 +368,14 @@ export class ChapterPage extends Page {
 				if (typeof response.body.data.rating === 'number') {
 					this.syncModule.mdState.score = response.body.data.rating * 10;
 				}
+				if (typeof response.body.data.chapter === 'string') {
+					this.syncModule.mdState.progress.chapter = parseFloat(response.body.data.chapter);
+					if (isNaN(this.syncModule.mdState.progress.chapter)) this.syncModule.mdState.progress.chapter = 0;
+				}
+				if (typeof response.body.data.volume === 'string') {
+					this.syncModule.mdState.progress.volume = parseInt(response.body.data.volume);
+					if (isNaN(this.syncModule.mdState.progress.volume)) this.syncModule.mdState.progress.volume = 0;
+				}
 			} // 403 Error is expected if not logged in
 			else if (response.code >= 500) {
 				SimpleNotification.error({

@@ -1212,7 +1212,7 @@ export class TitlePage extends Page {
 		if (scoreButton) syncModule.mdState.score = parseInt(scoreButton.id.trim()) * 10;
 		const imported = await syncModule.syncLocal();
 		// Get MangaDex Progress -- defaults to 0
-		syncModule.mdState.progress.chapter = parseInt(overview.mdProgress.currentChapter.textContent!);
+		syncModule.mdState.progress.chapter = parseFloat(overview.mdProgress.currentChapter.textContent!);
 		syncModule.mdState.progress.volume = parseInt(overview.mdProgress.currentVolume.textContent!);
 
 		// Add all chapters from the ChapterList if it's a new Title

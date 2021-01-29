@@ -2,7 +2,10 @@
 	"updates": [
 		{
 			"version": "0.2.8",
-			"description": ["Fix History being deleted on pages other than Reading.##14"]
+			"description": [
+				"Fix History being deleted on pages other than Reading.##14",
+				"Fix MangaDex bug updating MangaDex progress to a sub chapter when reading a chapter after a sub chapter.##34"
+			]
 		},
 		{
 			"version": "0.2.7",

@@ -34,6 +34,7 @@ export class SyncModule {
 	// Logged in on MangaDex
 	loggedIn: boolean = true;
 	// MangaDex Status and Score
+	previousIsSubChapter: boolean = false;
 	previousMdState?: MangaDexState;
 	mdState: MangaDexState = {
 		status: Status.NONE,
@@ -148,6 +149,7 @@ export class SyncModule {
 	async syncExternal(checkAutoSyncOption: boolean = false): Promise<SyncReport> {
 		this.overview?.syncingLocal();
 		await this.waitInitialize();
+
 		const promises: Promise<RequestStatus>[] = [];
 		const report: SyncReport = {};
 		for (const key of Options.services) {
@@ -184,6 +186,7 @@ export class SyncModule {
 				// Always update the overview to check against possible imported ServiceTitle
 			} else this.overview?.syncedService(key, service, this.title);
 		}
+
 		// Update MangaDex List Status and Score
 		// Can't check loggedIn status since it can be called without MangaDex check first
 		if (Options.updateMD && this.loggedIn) {
@@ -216,14 +219,19 @@ export class SyncModule {
 					strings.error.push(`Error while updating **MangaDex Score**.\ncode: ${response.code}`);
 				}
 			}
-			// Progress -- Avoid updating in Chapter page
+			// Progress
+			// Update on Chapter Page if it's a sub chapter, since MD don't save them
+			//	OR if the previous read chapter was a subchapter to fix a MD bug with sub chapters in MD Progress
+			const isSubChapter = Math.floor(this.title.chapter) != this.title.chapter;
 			if (
-				this.origin != 'chapter' &&
 				this.loggedIn &&
 				Options.updateMDProgress &&
-				(this.title.progress.chapter != this.mdState.progress.chapter ||
-					(this.title.progress.volume != undefined &&
-						this.title.progress.volume != this.mdState.progress.volume))
+				(this.origin != 'chapter' ||
+					isSubChapter ||
+					this.previousIsSubChapter ||
+					Math.floor(this.mdState.progress.chapter) != this.mdState.progress.chapter) &&
+				(this.title.chapter != this.mdState.progress.chapter ||
+					(this.title.volume != undefined && this.title.volume != this.mdState.progress.volume))
 			) {
 				const oldProgress = this.mdState.progress;
 				this.mdState.progress = { ...this.title.progress };
@@ -235,6 +243,7 @@ export class SyncModule {
 					strings.error.push(`Error while updating **MangaDex Progress**.\ncode: ${response.code}`);
 				}
 			}
+			this.previousIsSubChapter = isSubChapter;
 			if (strings.success.length > 0) {
 				SimpleNotification.success({ text: strings.success.join('\n') });
 			}
@@ -243,6 +252,7 @@ export class SyncModule {
 			}
 		}
 		await Promise.all(promises);
+
 		this.overview?.syncedLocal(this.title);
 		return report;
 	}
