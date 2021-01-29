@@ -8,6 +8,7 @@ import { TitlePage } from './Page/Title';
 import { UpdatesPage } from './Page/Updates';
 import { HistoryPage } from './Page/History';
 import { ChapterPage } from './Page/Chapter';
+import { History } from '../Core/History';
 
 console.log('SyncDex :: Index');
 
@@ -31,7 +32,11 @@ console.log('SyncDex :: Index');
 
 	// Load
 	await Options.load();
+	if (Options.biggerHistory) {
+		await History.load();
+	}
 	SaveSync.state = await Storage.get('saveSync');
+
 	// Define routes
 	const routes: { location: string[]; page: typeof Page }[] = [
 		{
@@ -74,6 +79,7 @@ console.log('SyncDex :: Index');
 			location: ['/history$'],
 		},
 	];
+
 	// Match route
 	const location = `${window.location.pathname}${window.location.search}`;
 	for (const route of routes) {

@@ -267,7 +267,6 @@ export class ChapterPage extends Page {
 		// Get the Title and Services initial state on the first chapter change
 		const id = details.id;
 		this.title = await LocalTitle.get(id);
-		if (Options.biggerHistory) await History.load();
 		// Avoid always updating the name from the API since it can contain HTML entities
 		if (details.title != '' && !this.title.name) {
 			this.title.name = details.title;

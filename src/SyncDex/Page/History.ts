@@ -6,7 +6,7 @@ import { Page } from '../Page';
 import { History } from '../../Core/History';
 import { Runtime } from '../../Core/Runtime';
 import { MangaDex } from '../../Core/MangaDex';
-import { TryCatch } from '../../Core/Log';
+import { debug, TryCatch } from '../../Core/Log';
 
 interface FollowPageResult {
 	titles: { [key: number]: number };
@@ -120,11 +120,9 @@ export class HistoryPage extends Page {
 	@TryCatch(Page.errorNotification)
 	async run() {
 		console.log('SyncDex :: History Page');
-
 		if (!Options.biggerHistory) return;
 
 		// Load Titles
-		await History.load();
 		const titles = await TitleCollection.get(History.ids);
 
 		// Helper function

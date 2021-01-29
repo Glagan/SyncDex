@@ -1,6 +1,6 @@
 {
 	"name": "syncdex",
-	"version": "0.2.7",
+	"version": "0.2.8",
 	"description": "Automatically update your manga lists on multiple services while reading on MangaDex.",
 	"main": "build.js",
 	"scripts": {
@@ -17,7 +17,7 @@
 		"@rollup/plugin-json": "^4.1.0",
 		"minimist": "^1.2.5",
 		"rimraf": "^3.0.2",
-		"rollup": "^2.38.0",
+		"rollup": "^2.38.1",
 		"rollup-plugin-node-resolve": "^5.2.0",
 		"rollup-plugin-terser": "^6.1.0",
 		"rollup-plugin-typescript2": "^0.29.0",

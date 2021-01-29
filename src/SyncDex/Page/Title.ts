@@ -4,7 +4,6 @@ import { MangaDex } from '../../Core/MangaDex';
 import { Mochi } from '../../Core/Mochi';
 import { Options } from '../../Core/Options';
 import { Runtime } from '../../Core/Runtime';
-import { Service } from '../../Core/Service';
 import { SyncModule } from '../../Core/SyncModule';
 import { iconToService, LocalTitle, MissableField, StatusMap, Title } from '../../Core/Title';
 import { TitleEditor } from '../../Core/TitleEditor';

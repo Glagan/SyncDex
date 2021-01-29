@@ -1,6 +1,10 @@
 {
 	"updates": [
 		{
+			"version": "0.2.8",
+			"description": ["Fix History being deleted on pages other than Reading.##14"]
+		},
+		{
 			"version": "0.2.7",
 			"description": ["Fix delay between all requests."]
 		},

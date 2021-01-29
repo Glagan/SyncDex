@@ -158,7 +158,8 @@ function handleMessage(message: Message, sender?: BrowserRuntime.MessageSender) 
 						body: msg.isJson ? await response.json() : await response.text(),
 					};
 				})
-				.catch((error) => {
+				.catch(async (error) => {
+					await loadLogs(true);
 					log(`Error on request [${msg.url}]: ${error}${error.stack ? `>> ${error.stack}` : ''}`);
 					return <RequestResponse>{
 						url: msg.url,
@@ -276,6 +277,8 @@ browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstall
 	let updated = false;
 	if (details.reason === 'update') {
 		await Options.load();
+		await loadLogs(true);
+
 		const version = `${DefaultOptions.version}.${DefaultOptions.subVersion}`;
 		const currentVersion = `${Options.version}.${Options.subVersion}`;
 		if (version != currentVersion) {
@@ -311,6 +314,8 @@ browser.alarms.onAlarm.addListener(async (alarm: Alarms.Alarm) => {
 });
 
 async function syncSave(force: boolean = false) {
+	await loadLogs(true);
+
 	setIcon('Save Sync in progress', '#45A1FF', '...');
 	const syncState = await Storage.get('saveSync');
 	if (syncState !== undefined) {
@@ -354,6 +359,8 @@ async function syncSave(force: boolean = false) {
 }
 async function silentImport(manual: boolean = false) {
 	await Options.load();
+	await loadLogs(true);
+
 	if (manual || (Options.checkOnStartup && Options.services.length > 0)) {
 		const checkCooldown = Options.checkOnStartupCooldown * 60 * 1000;
 		const lastCheck: number | string[] = await Storage.get('import', 0);
