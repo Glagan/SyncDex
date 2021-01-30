@@ -255,6 +255,7 @@ export class LocalTitle extends Title {
 	lastRead?: number;
 	// Number of chapters per volume
 	volumeChapterCount!: { [key: number]: number };
+	volumeChapterOffset!: { [key: number]: number };
 	volumeResetChapter: boolean;
 
 	constructor(id: number, title?: Partial<LocalTitle>) {
@@ -266,6 +267,7 @@ export class LocalTitle extends Title {
 		if (!this.chapters) this.chapters = [];
 		if (!title?.services || !this.services) this.services = {};
 		if (!title?.volumeChapterCount) this.volumeChapterCount = {};
+		if (!title?.volumeChapterOffset) this.volumeChapterOffset = {};
 		this.volumeResetChapter = !!title?.volumeChapterCount;
 	}
 
@@ -332,7 +334,19 @@ export class LocalTitle extends Title {
 				volume: title.m.v,
 			};
 		}
-		if (title.v) mapped.volumeChapterCount = title.v;
+		if (title.v) {
+			mapped.volumeChapterCount = {};
+			mapped.volumeChapterOffset = {};
+			for (const volumeKey in title.v) {
+				if (Object.prototype.hasOwnProperty.call(title.v, volumeKey)) {
+					const count = title.v[volumeKey];
+					if (typeof count === 'object') {
+						mapped.volumeChapterOffset[volumeKey] = count[0];
+						mapped.volumeChapterCount[volumeKey] = count[1];
+					} else mapped.volumeChapterCount[volumeKey] = count;
+				}
+			}
+		}
 		if (title.h) {
 			mapped.history = {
 				chapter: title.h.c,
@@ -389,7 +403,15 @@ export class LocalTitle extends Title {
 			};
 		}
 		if (this.volumeChapterCount && Object.keys(this.volumeChapterCount).length > 0) {
-			mapped.v = this.volumeChapterCount;
+			mapped.v = {};
+			for (const volumeKey in this.volumeChapterCount) {
+				if (Object.prototype.hasOwnProperty.call(this.volumeChapterCount, volumeKey)) {
+					const count = this.volumeChapterCount[volumeKey];
+					if (this.volumeChapterOffset[volumeKey] !== undefined) {
+						mapped.v[volumeKey] = [this.volumeChapterOffset[volumeKey], count];
+					} else mapped.v[volumeKey] = count;
+				}
+			}
 		}
 		if (this.history) {
 			mapped.h = {
@@ -548,6 +570,9 @@ export class LocalTitle extends Title {
 				if (volume < progress.volume) {
 					progress.chapter += this.volumeChapterCount[volumeKey];
 				}
+			}
+			if (this.volumeChapterOffset[progress.volume] !== undefined) {
+				progress.chapter -= this.volumeChapterOffset[progress.volume];
 			}
 		}
 	};

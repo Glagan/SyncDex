@@ -251,7 +251,7 @@ export class ChapterPage extends Page {
 				this.title!.updateProgressFromVolumes(chapter.progress);
 				if (chapter.progress.chapter <= previous) {
 					if (previous - Math.floor(previous) >= 0.5) {
-						chapter.progress.chapter += 0.1;
+						chapter.progress.chapter += 0.5;
 					} else chapter.progress.chapter += 0.5;
 				}
 				previous = chapter.progress.chapter;
@@ -294,6 +294,7 @@ export class ChapterPage extends Page {
 		let lastVolume: number = 0;
 		let volumeResetChapter: boolean = false;
 		const volumeChapterCount: { [key: number]: number } = {};
+		const volumeChapterOffset: { [key: number]: number } = {};
 		this.reverseChapters = {};
 		// Avoid counting sub chapters
 		for (const chapter of details._chapters) {
@@ -307,7 +308,7 @@ export class ChapterPage extends Page {
 			};
 			this.reverseChapters[chapter.id] = chapterDetails;
 			// Always check for volumeChapterCount while reading to update the chapter count
-			//  since chapters are always available unlike the Title page.
+			//  since chapters are always available unlike in the Title page.
 			if (lastVolume >= 0) {
 				const currentVolume = chapterDetails.progress.volume;
 				// If there is no volume, volumes can't reset chapters
@@ -317,6 +318,9 @@ export class ChapterPage extends Page {
 						// Check if volumes actually reset chapter or abort
 						if (currentVolume > 1 && chapterDetails.progress.chapter <= 1) {
 							volumeResetChapter = true;
+							if (chapterDetails.progress.chapter == 1) {
+								volumeChapterOffset[currentVolume] = 1;
+							}
 						} else if (currentVolume > 1) lastVolume = -1;
 					}
 					// Avoid adding sub chapters
@@ -333,8 +337,13 @@ export class ChapterPage extends Page {
 		}
 		// debug(`Volume reset chapters ? ${volumeResetChapter}`);
 		if (volumeResetChapter) {
-			// debug(`Volume reset chapters ${JSON.stringify(volumeChapterCount)}`);
+			/*debug(
+				`Volume reset chapters.\nVolume chapter count: ${JSON.stringify(
+					volumeChapterCount
+				)}\nVolume offset: ${JSON.stringify(volumeChapterOffset)}`
+			);*/
 			this.title.volumeChapterCount = volumeChapterCount;
+			this.title.volumeChapterOffset = volumeChapterOffset;
 			this.title.volumeResetChapter = true;
 			this.updateReverseChapters();
 		}

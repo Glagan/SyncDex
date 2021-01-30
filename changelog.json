@@ -1,6 +1,14 @@
 {
 	"updates": [
 		{
+			"version": "0.2.9",
+			"description": [
+				"Fix chapter count for Titles with volumes that reset chapters.##40",
+				"Fix next chapter being lower than the previous in some cases if volumes reset chapters.",
+				"Add missing `saveOnLastPage` option in MyMangaDex Import."
+			]
+		},
+		{
 			"version": "0.2.8",
 			"description": [
 				"Fix History being deleted on pages other than Reading.##14",

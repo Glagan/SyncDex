@@ -238,7 +238,7 @@ interface StorageTitle {
 	sc?: number; // score
 	p: SaveProgress; // progress
 	m?: Partial<SaveProgress>; // maxProgress
-	v?: { [key: number]: number }; // volumeChapterCount
+	v?: { [key: number]: number | [number, number] }; // volumeChapterCount
 	c?: number[]; // chapters
 	sd?: number; // start
 	ed?: number; // end

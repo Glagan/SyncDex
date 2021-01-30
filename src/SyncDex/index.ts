@@ -10,6 +10,7 @@ import { HistoryPage } from './Page/History';
 import { ChapterPage } from './Page/Chapter';
 import { History } from '../Core/History';
 
+const start = Date.now();
 console.log('SyncDex :: Index');
 
 (async () => {
@@ -87,7 +88,8 @@ console.log('SyncDex :: Index');
 			if (location.match(routeLocation)) {
 				/// @ts-ignore
 				const page = new route.page();
-				page.run();
+				await page.run();
+				console.log(`Syncdex :: Initial Load in ${Date.now() - start}ms`);
 				return;
 			}
 		}

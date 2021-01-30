@@ -42,6 +42,7 @@ interface MyMangaDexOptions extends MyMangaDexColors {
 	hideLastRead: false;
 	saveOnlyHigher: boolean;
 	saveAllOpened: boolean;
+	saveOnLastPage: boolean;
 	maxChapterSaved: number;
 	updateMDList: boolean;
 	showTooltips: boolean;
@@ -86,6 +87,7 @@ export class MyMangaDex extends SpecialService {
 			this.assignValidOption('highlight', old.highlightChapters);
 			this.assignValidOption('saveOnlyNext', old.saveOnlyNext);
 			this.assignValidOption('confirmChapter', old.confirmChapter);
+			this.assignValidOption('saveOnLastPage', old.saveOnLastPage);
 			Options.colors = {
 				highlights: old.lastOpenColors || Options.colors.highlights,
 				nextChapter: old.nextChapterColor || Options.colors.nextChapter,

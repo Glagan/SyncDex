@@ -459,6 +459,7 @@ class ChapterList {
 	rowLanguages: { code: string; node: HTMLElement }[] = [];
 	volumeResetChapter: boolean;
 	volumeChapterCount: { [key: number]: number };
+	volumeChapterOffset: { [key: number]: number };
 	// Flag if there is more than one page if Volume reset chapters
 	incomplete: boolean;
 
@@ -470,6 +471,7 @@ class ChapterList {
 		let lastVolume: number = 0;
 		this.volumeResetChapter = false;
 		this.volumeChapterCount = {};
+		this.volumeChapterOffset = {};
 		for (const row of chapterRows) {
 			if (row.dataset.id == undefined) continue;
 			const chapterRow = new ChapterRow(row);
@@ -487,6 +489,9 @@ class ChapterList {
 						// Check if volumes actually reset chapter or abort
 						if (currentVolume > 1 && chapterRow.progress.chapter <= 1) {
 							this.volumeResetChapter = true;
+							if (chapterRow.progress.chapter == 1) {
+								this.volumeChapterOffset[currentVolume] = 1;
+							}
 						} else if (currentVolume > 1) lastVolume = -1;
 					}
 					// Avoid adding sub chapters
@@ -513,7 +518,7 @@ class ChapterList {
 				// Avoid having a lower chapter on a new volume from the previous last chapter that is usually a 0.5
 				if (row.progress.chapter <= previous) {
 					if (previous - Math.floor(previous) >= 0.5) {
-						row.progress.chapter += 0.1;
+						row.progress.chapter += 0.5;
 					} else row.progress.chapter += 0.5;
 				}
 				row.updateDisplayedProgress();
@@ -1151,8 +1156,13 @@ export class TitlePage extends Page {
 		if (overview.chapterList.volumeResetChapter || title.volumeResetChapter) {
 			// If we have all available chapters, we can update the volumeChapterCount of the title
 			if (!overview.chapterList.incomplete) {
-				debug(`Complete volumes chapters ${JSON.stringify(overview.chapterList.volumeChapterCount)}`);
+				/*debug(
+					`Volume reset chapters.\nVolume chapter count: ${JSON.stringify(
+						overview.chapterList.volumeChapterCount
+					)}\nVolume offset: ${JSON.stringify(overview.chapterList.volumeChapterOffset)}`
+				);*/
 				title.volumeChapterCount = overview.chapterList.volumeChapterCount;
+				title.volumeChapterOffset = overview.chapterList.volumeChapterOffset;
 				title.volumeResetChapter = true;
 			}
 			// If we don't we need to fetch the chapter list from the API sadly
@@ -1172,10 +1182,16 @@ export class TitlePage extends Page {
 					if (response.ok) {
 						const uniqueChapters: { [key: number]: number[] } = {};
 						const volumeChapterCount: { [key: number]: number } = {};
+						const volumeChapterOffset: { [key: number]: number } = {};
+						let lastVolume = 0;
 						for (const mdChapter of response.body.data.chapters) {
 							if (!mdChapter.volume) continue;
 							const volume = parseInt(mdChapter.volume);
 							const chapter = parseFloat(mdChapter.chapter);
+							if (volume != lastVolume && chapter == 1) {
+								volumeChapterOffset[volume] = 1;
+								lastVolume = volume;
+							}
 							if (uniqueChapters[volume] === undefined || uniqueChapters[volume].indexOf(chapter) < 0) {
 								if (Math.floor(chapter) == chapter && chapter > 0) {
 									if (!volumeChapterCount[volume]) volumeChapterCount[volume] = 1;
@@ -1186,6 +1202,7 @@ export class TitlePage extends Page {
 							}
 						}
 						title.volumeChapterCount = volumeChapterCount;
+						title.volumeChapterOffset = volumeChapterOffset;
 						title.volumeResetChapter = true;
 					} else SimpleNotification.error({ text: 'MangaDex API Error.\nVolume chapters not updated.' });
 				}
