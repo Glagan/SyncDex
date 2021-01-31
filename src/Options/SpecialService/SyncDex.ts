@@ -1,4 +1,3 @@
-import { browser } from 'webextension-polyfill-ts';
 import { DOM } from '../../Core/DOM';
 import { log } from '../../Core/Log';
 import { ModuleInterface } from '../../Core/ModuleInterface';
@@ -9,6 +8,7 @@ import { dateFormat } from '../../Core/Utility';
 import { ServiceKey } from '../../Service/Keys';
 import { History } from '../../Core/History';
 import { SpecialService } from '../SpecialService';
+import { Updates } from '../../Core/Updates';
 
 export class SyncDexImport extends SpecialService {
 	handleFile = async (data: ExportedSave, moduleInterface: ModuleInterface): Promise<any> => {
@@ -92,6 +92,7 @@ export class SyncDexImport extends SpecialService {
 			await Storage.set(otherValues);
 		}
 		await Options.save();
+		await Updates.apply();
 
 		// Save
 		await collection.persist();

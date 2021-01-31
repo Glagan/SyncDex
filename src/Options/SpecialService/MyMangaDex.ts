@@ -17,11 +17,11 @@ interface MyMangaDexTitle {
 	lastTitle?: number;
 	lastMAL?: number;
 	// History
-	chapterId: number;
-	lastRead: number;
-	name: string;
-	highest: number;
-	progress: {
+	chapterId?: number;
+	lastRead?: number;
+	name?: string;
+	highest?: number;
+	progress?: {
 		chapter: number;
 		volume?: number;
 	};
@@ -147,18 +147,17 @@ export class MyMangaDex extends SpecialService {
 				progress: {
 					chapter: title.last,
 				},
-				max: {
-					chapter: title.highest ? title.highest : undefined,
-				},
 				lastTitle: title.lastTitle,
 				chapters: title.chapters,
 				name: title.name,
-				// History
-				highest: title.highest,
-				lastChapter: title.chapterId,
-				history: title.progress,
 			};
 			if (title.mal) localTitle.services!.mal = { id: title.mal };
+			// History
+			if (title.highest) localTitle.highest = title.highest;
+			if (title.name) localTitle.name = title.name;
+			if (title.chapterId) localTitle.lastChapter = title.chapterId;
+			if (title.lastRead) localTitle.lastRead = title.lastRead;
+			if (title.progress) localTitle.history = title.progress;
 			collection.add(new LocalTitle(title.id, localTitle));
 		}
 		message.classList.remove('loading');
@@ -171,7 +170,12 @@ export class MyMangaDex extends SpecialService {
 		if (data.history && data.history.length > 0) {
 			for (const id of data.history) {
 				const found = collection.find(id);
-				if (found !== undefined && found.name && found.lastChapter && found.history) {
+				if (
+					found !== undefined &&
+					found.name !== undefined &&
+					found.lastChapter !== undefined &&
+					found.history !== undefined
+				) {
 					history.unshift(id);
 				}
 			}

@@ -291,6 +291,7 @@ export class ChapterPage extends Page {
 			}
 		}
 		// Generate reverse chapters and check if the Title reset chapter on each volumes
+		let highestChapter = 0;
 		let lastVolume: number = 0;
 		let volumeResetChapter: boolean = false;
 		const volumeChapterCount: { [key: number]: number } = {};
@@ -307,6 +308,10 @@ export class ChapterPage extends Page {
 				progress: this.chapterProgress(chapter),
 			};
 			this.reverseChapters[chapter.id] = chapterDetails;
+			const currentChapter = parseFloat(chapterDetails.chapter);
+			if (currentChapter > highestChapter) {
+				highestChapter = currentChapter;
+			}
 			// Always check for volumeChapterCount while reading to update the chapter count
 			//  since chapters are always available unlike in the Title page.
 			if (lastVolume >= 0) {
@@ -360,6 +365,8 @@ export class ChapterPage extends Page {
 				}
 			}
 		}
+		this.title.highest = highestChapter;
+		await this.title.persist(); // Always save
 		// Send initial requests
 		if (this.overview) this.overview.remove();
 		this.overview = new ReadingOverview();

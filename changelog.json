@@ -5,7 +5,11 @@
 			"description": [
 				"Fix chapter count for Titles with volumes that reset chapters.##40",
 				"Fix next chapter being lower than the previous in some cases if volumes reset chapters.",
-				"Add missing `saveOnLastPage` option in MyMangaDex Import."
+				"Add missing `saveOnLastPage` option in MyMangaDex Import.",
+				"Update History card display order to not always follow the MangaDex History.",
+				"Fix SyncDex version on Import.",
+				"Fix types and missing fields in MyMangaDex Import.",
+				"Apply updates on startup to fix possible wrong version."
 			]
 		},
 		{

@@ -148,10 +148,12 @@ export class HistoryPage extends Page {
 		);
 
 		// Add current elements to the history - first one is inserted last
+		const historyCards: { [key: number]: HTMLElement } = {};
 		const currentHistory = Array.from(
 			document.querySelectorAll<HTMLElement>('.large_logo.rounded.position-relative.mx-1.my-2')
 		).reverse();
 		const addedTitles = new TitleCollection();
+		let position = currentHistory.length - 1;
 		for (const node of currentHistory) {
 			const chapterLink = node.querySelector<HTMLAnchorElement>(`a[href^='/chapter/']`)!;
 			const titleLink = node.querySelector<HTMLAnchorElement>(`a[href^='/title/']`)!;
@@ -161,9 +163,11 @@ export class HistoryPage extends Page {
 			const wasInHistory = History.find(id) >= 0;
 			const title = wasInHistory ? titles.find(id) : await LocalTitle.get(id);
 			if (title) {
+				historyCards[id] = node;
 				const progress = progressFromString(chapterLink.textContent!);
 				if (isNaN(progress.chapter)) continue;
 				if (!title.history) title.history = progress;
+				else chapterLink.textContent = progressToString(title.history);
 				if (title.lastChapter !== chapter) title.lastChapter = chapter;
 				if (!title.inList) {
 					title.name = node.querySelector<HTMLElement>('.manga_title')!.textContent!;
@@ -172,30 +176,28 @@ export class HistoryPage extends Page {
 				}
 				if (!wasInHistory) {
 					titles.add(title);
-					History.add(id);
+					History.ids.splice(position, 0, id);
 				}
 			}
+			node.remove();
+			position++;
 		}
-		infoNode.appendChild(DOM.text(`Your last ${History.ids.length} opened titles are listed below.`));
 		await addedTitles.persist();
 		await History.save();
 
 		// Display History
-		const historyCards: { [key: number]: HTMLElement } = {};
+		let totalValid = 0;
 		for (const id of History.ids) {
 			const title = titles.find(id);
 			if (title !== undefined && title.history !== undefined) {
-				const exist = container.querySelector(`a[href^='/title/${id}']`);
-				let card: HTMLElement;
-				if (!exist) {
-					card = this.buildCard(title);
-					container.insertBefore(card, container.lastElementChild);
-				} else card = exist.parentElement!.parentElement!;
-				this.updateCard(card, title);
-				this.highlight(card, title);
-				historyCards[id] = card;
+				if (!historyCards[id]) historyCards[id] = this.buildCard(title);
+				this.updateCard(historyCards[id], title);
+				this.highlight(historyCards[id], title);
+				container.insertBefore(historyCards[id], container.lastElementChild);
+				totalValid++;
 			}
 		}
+		infoNode.appendChild(DOM.text(`Your last ${totalValid} opened titles are listed below.`));
 
 		// Activate Tooltips
 		injectScript(() => {

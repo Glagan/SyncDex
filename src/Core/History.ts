@@ -11,9 +11,10 @@ export class History {
 
 	static add(id: number) {
 		const index = History.find(id);
-		if (index == 0) return;
+		if (index == 0) return false;
 		if (index > 0) History.ids.splice(index, 1);
 		History.ids.unshift(id);
+		return true;
 	}
 
 	static async load(): Promise<void> {

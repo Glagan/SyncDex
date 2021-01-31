@@ -2,13 +2,14 @@ import { Alarms, browser, Runtime as BrowserRuntime, WebRequest } from 'webexten
 import { isChrome } from '../Core/IsChrome';
 import { loadLogs, log } from '../Core/Log';
 import { ModuleStatus } from '../Core/Module';
-import { DefaultOptions, LogLevel, Options } from '../Core/Options';
+import { DefaultOptions, Options } from '../Core/Options';
 import { Runtime } from '../Core/Runtime';
 import { SaveSync } from '../Core/SaveSync';
 import { SaveSyncServices } from '../SaveSync/Map';
 import { Services } from '../Service/Class/Map';
 import { Storage } from '../Core/Storage';
 import { createModule } from '../Service/ImportExport/Utility';
+import { Updates } from '../Core/Updates';
 
 console.log('SyncDex :: Background');
 
@@ -257,19 +258,6 @@ if (!isChrome) {
 	);
 }
 
-interface Update {
-	version: number;
-	subVersion: number;
-	fnct: () => void;
-}
-const updates: Update[] = [
-	{
-		version: 0.2,
-		subVersion: 0.1,
-		fnct: () => (Options.logLevel = LogLevel.Default),
-	},
-];
-
 browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstalledDetailsType) => {
 	if (!isChrome) browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
 
@@ -278,27 +266,7 @@ browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstall
 	if (details.reason === 'update') {
 		await Options.load();
 		await loadLogs(true);
-
-		const version = `${DefaultOptions.version}.${DefaultOptions.subVersion}`;
-		const currentVersion = `${Options.version}.${Options.subVersion}`;
-		if (version != currentVersion) {
-			await log(`Updating from version ${currentVersion} to ${version}`);
-			for (const update of updates) {
-				if (
-					update.version > Options.version ||
-					(update.version == Options.version && update.subVersion > Options.subVersion)
-				) {
-					update.fnct();
-					Options.version = update.version;
-					Options.subVersion = update.subVersion;
-					await log(`Applied patch version ${update.version}.${update.subVersion}`);
-				}
-			}
-			Options.version = DefaultOptions.version;
-			Options.subVersion = DefaultOptions.subVersion;
-			await Options.save();
-			updated = true;
-		}
+		updated = await Updates.apply();
 	} else await log(`Installation version ${DefaultOptions.version}.${DefaultOptions.subVersion}`);
 
 	// Open the options with a Modal
@@ -400,6 +368,8 @@ async function onStartup() {
 	if (!isChrome) browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
 	await Storage.remove(['dropboxState', 'googleDriveState', 'saveSyncInProgress', 'importInProgress']);
 
+	await Options.load();
+	await Updates.apply();
 	await syncSave();
 	await silentImport();
 }

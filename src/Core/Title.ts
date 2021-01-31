@@ -3,7 +3,6 @@ import { ActivableKey } from '../Service/Keys';
 import { Options } from './Options';
 import { History } from './History';
 import { Storage } from './Storage';
-import { debug } from './Log';
 
 export const StatusMap: { [key in Status]: string } = {
 	[Status.NONE]: 'No Status',
@@ -535,8 +534,9 @@ export class LocalTitle extends Title {
 		this.lastChapter = chapterId;
 		this.lastRead = Date.now();
 		this.history = progress ? progress : this.progress;
-		History.add(this.key.id!);
-		await History.save();
+		if (History.add(this.key.id!)) {
+			await History.save();
+		}
 	};
 
 	doForceService = (key: ActivableKey): boolean => {

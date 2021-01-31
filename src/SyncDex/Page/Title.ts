@@ -578,7 +578,7 @@ class ChapterList {
 					}
 				}
 				if (Options.biggerHistory) {
-					await title.setHistory(row.chapterId);
+					await title.setHistory(row.chapterId, row.progress);
 				}
 				await title.persist();
 				syncModule.overview?.syncedLocal(title);
