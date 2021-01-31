@@ -1,6 +1,13 @@
 {
 	"updates": [
 		{
+			"version": "0.2.11",
+			"description": [
+				"Fix missing Titles with no MyAnimeList ID on MyMangaDex Import.",
+				"Display Titles with missing History progress in the History page."
+			]
+		},
+		{
 			"version": "0.2.10",
 			"description": ["Fix missing Language buttons in Title page.##41"]
 		},

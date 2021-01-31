@@ -106,7 +106,6 @@ export class MyMangaDex extends SpecialService {
 		return (
 			typeof title.mal === 'number' &&
 			!isNaN(title.mal) &&
-			title.mal > 0 &&
 			typeof title.last === 'number' &&
 			Array.isArray(title.chapters) &&
 			(title.lastTitle === undefined || typeof title.lastTitle === 'number')
@@ -170,12 +169,7 @@ export class MyMangaDex extends SpecialService {
 		if (data.history && data.history.length > 0) {
 			for (const id of data.history) {
 				const found = collection.find(id);
-				if (
-					found !== undefined &&
-					found.name !== undefined &&
-					found.lastChapter !== undefined &&
-					found.history !== undefined
-				) {
+				if (found !== undefined) {
 					history.unshift(id);
 				}
 			}

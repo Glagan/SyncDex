@@ -189,7 +189,7 @@ export class HistoryPage extends Page {
 		let totalValid = 0;
 		for (const id of History.ids) {
 			const title = titles.find(id);
-			if (title !== undefined && title.history !== undefined) {
+			if (title !== undefined) {
 				if (!historyCards[id]) historyCards[id] = this.buildCard(title);
 				this.updateCard(historyCards[id], title);
 				this.highlight(historyCards[id], title);
@@ -358,7 +358,7 @@ export class HistoryPage extends Page {
 		const chapterLink = DOM.create('a', {
 			class: 'white',
 			href: `/chapter/${title.lastChapter}`,
-			textContent: progressToString(title.history!),
+			textContent: title.history ? progressToString(title.history) : 'Unknown Chapter',
 		});
 		if (!title.lastChapter) {
 			chapterLink.href = '#';
@@ -378,7 +378,7 @@ export class HistoryPage extends Page {
 							childs: [
 								DOM.create('img', {
 									class: 'rounded',
-									title: title.name,
+									title: title.name ?? '[Unknown Name]',
 									src: `/images/manga/${title.key.id}.large.jpg`,
 									css: { width: '100%' },
 								}),
@@ -394,9 +394,9 @@ export class HistoryPage extends Page {
 							childs: [
 								DOM.create('a', {
 									class: 'manga_title white',
-									title: title.name,
+									title: title.name ?? '[Unknown Name]',
 									href: `/title/${title.key.id}`,
-									textContent: title.name,
+									textContent: title.name ?? '[Unknown Name]',
 								}),
 							],
 						}),
