@@ -772,10 +772,9 @@ export class TitleOverview extends Overview {
 		incChapter.replaceWith(this.mdProgress.incChapter);
 
 		// Add Language buttons
+		this.chapterList = new ChapterList();
 		const navTabs = document.querySelector<HTMLElement>('ul.edit.nav.nav-tabs');
 		ChapterRow.generateLanguageButtons(navTabs);
-
-		this.chapterList = new ChapterList();
 	}
 
 	reset() {
