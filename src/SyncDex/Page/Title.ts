@@ -470,6 +470,7 @@ class ChapterList {
 		const chapterRows = Array.from(document.querySelectorAll<HTMLElement>('.chapter-row')).reverse();
 		let lastVolume: number = 0;
 		this.volumeResetChapter = false;
+		let uniqueChapters: number[] = [];
 		this.volumeChapterCount = {};
 		this.volumeChapterOffset = {};
 		for (const row of chapterRows) {
@@ -493,15 +494,18 @@ class ChapterList {
 								this.volumeChapterOffset[currentVolume] = 1;
 							}
 						} else if (currentVolume > 1) lastVolume = -1;
+						uniqueChapters = [];
 					}
-					// Avoid adding sub chapters
+					// Avoid adding sub chapters and duplicates
 					if (
+						uniqueChapters.indexOf(chapterRow.progress.chapter) < 0 &&
 						chapterRow.progress.chapter >= 1 &&
 						Math.floor(chapterRow.progress.chapter) == chapterRow.progress.chapter
 					) {
 						if (this.volumeChapterCount[currentVolume]) {
 							this.volumeChapterCount[currentVolume]++;
 						} else this.volumeChapterCount[currentVolume] = 1;
+						uniqueChapters.push(chapterRow.progress.chapter);
 					}
 				} else lastVolume = -1;
 			}
@@ -1179,7 +1183,7 @@ export class TitlePage extends Page {
 					SimpleNotification.info({ text: 'Updating volumes from API...' });
 					const response = await this.getMdTitle(id);
 					if (response.ok) {
-						const uniqueChapters: { [key: number]: number[] } = {};
+						let uniqueChapters: number[] = [];
 						const volumeChapterCount: { [key: number]: number } = {};
 						const volumeChapterOffset: { [key: number]: number } = {};
 						let lastVolume = 0;
@@ -1190,14 +1194,14 @@ export class TitlePage extends Page {
 							if (volume != lastVolume && chapter == 1) {
 								volumeChapterOffset[volume] = 1;
 								lastVolume = volume;
+								uniqueChapters = [];
 							}
-							if (uniqueChapters[volume] === undefined || uniqueChapters[volume].indexOf(chapter) < 0) {
+							if (uniqueChapters.indexOf(chapter) < 0) {
 								if (Math.floor(chapter) == chapter && chapter > 0) {
 									if (!volumeChapterCount[volume]) volumeChapterCount[volume] = 1;
 									else volumeChapterCount[volume]++;
 								}
-								if (!uniqueChapters[volume]) uniqueChapters[volume] = [chapter];
-								else uniqueChapters[volume].push(chapter);
+								uniqueChapters.push(chapter);
 							}
 						}
 						title.volumeChapterCount = volumeChapterCount;

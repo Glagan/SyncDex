@@ -294,6 +294,7 @@ export class ChapterPage extends Page {
 		let highestChapter = 0;
 		let lastVolume: number = 0;
 		let volumeResetChapter: boolean = false;
+		let uniqueChapters: number[] = [];
 		const volumeChapterCount: { [key: number]: number } = {};
 		const volumeChapterOffset: { [key: number]: number } = {};
 		this.reverseChapters = {};
@@ -327,15 +328,18 @@ export class ChapterPage extends Page {
 								volumeChapterOffset[currentVolume] = 1;
 							}
 						} else if (currentVolume > 1) lastVolume = -1;
+						uniqueChapters = [];
 					}
-					// Avoid adding sub chapters
+					// Avoid adding sub chapters and duplicates
 					if (
+						uniqueChapters.indexOf(chapterDetails.progress.chapter) < 0 &&
 						chapterDetails.progress.chapter >= 1 &&
 						Math.floor(chapterDetails.progress.chapter) == chapterDetails.progress.chapter
 					) {
 						if (volumeChapterCount[currentVolume]) {
 							volumeChapterCount[currentVolume]++;
 						} else volumeChapterCount[currentVolume] = 1;
+						uniqueChapters.push(chapterDetails.progress.chapter);
 					}
 				} else lastVolume = -1;
 			}
