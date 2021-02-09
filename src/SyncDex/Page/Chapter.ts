@@ -398,9 +398,10 @@ export class ChapterPage extends Page {
 				}
 			} // 403 Error is expected if not logged in
 			else if (response.code >= 500) {
-				SimpleNotification.error({
-					text: `Error while getting **MangaDex** Status.\ncode: **${response.code}**`,
-				});
+				SimpleNotification.error(
+					{ text: `Error while getting **MangaDex** Status.\ncode: **${response.code}**` },
+					{ duration: Options.errorDuration }
+				);
 			}
 		}
 		// Check initial Status if it's the first time
@@ -429,10 +430,10 @@ export class ChapterPage extends Page {
 		// Exit early if there is no progress
 		if (isNaN(currentProgress.chapter)) {
 			if (Options.errorNotifications) {
-				SimpleNotification.error({
-					title: 'No Chapter found',
-					text: 'No Chapter could be found and no progress was saved.',
-				});
+				SimpleNotification.error(
+					{ title: 'No Chapter found', text: 'No Chapter could be found and no progress was saved.' },
+					{ duration: Options.errorDuration }
+				);
 			}
 			// Execute basic first request sync if needed before leaving
 			// Only sync if Title has a Status to be synced to
@@ -486,10 +487,13 @@ export class ChapterPage extends Page {
 		let mdListOptionValid = true;
 		if (Options.updateOnlyInList) {
 			if (!this.syncModule.loggedIn) {
-				SimpleNotification.error({
-					title: 'Not Logged In',
-					text: `You are not logged in on **MangaDex** but you have the *Update Only in List** option enabled.\nDisable it or login on **MangaDex** !`,
-				});
+				SimpleNotification.error(
+					{
+						title: 'Not Logged In',
+						text: `You are not logged in on **MangaDex** but you have the *Update Only in List** option enabled.\nDisable it or login on **MangaDex** !`,
+					},
+					{ duration: Options.errorDuration }
+				);
 			}
 			mdListOptionValid =
 				this.syncModule.mdState.status !== undefined && this.syncModule.mdState.status !== Status.NONE;
@@ -522,12 +526,15 @@ export class ChapterPage extends Page {
 		}
 		// If there is reasons to NOT update automatically to the current progress, display all reasons in a single Notification
 		if (missingUpdateValidations.length > 0) {
-			SimpleNotification.info({
-				title: 'Not Updated',
-				image: MangaDex.thumbnail(this.title.key, 'thumb'),
-				text: missingUpdateValidations.join(`\n`),
-				buttons: confirmButtons(),
-			});
+			SimpleNotification.info(
+				{
+					title: 'Not Updated',
+					image: MangaDex.thumbnail(this.title.key, 'thumb'),
+					text: missingUpdateValidations.join(`\n`),
+					buttons: confirmButtons(),
+				},
+				{ duration: Options.infoDuration }
+			);
 		}
 		// Always Update History values if enabled, do not look at other options
 		if (Options.biggerHistory) {
@@ -584,25 +591,28 @@ export class ChapterPage extends Page {
 
 		// Check if there is no Services enabled -- Progress is still saved locally
 		if (Options.services.length == 0 && Options.errorNotifications) {
-			SimpleNotification.error({
-				title: 'No active Services',
-				text: `You have no **active Services** !\nEnable one in the **Options** and refresh this page.\nAll Progress is still saved locally.`,
-				buttons: [
-					{
-						type: 'info',
-						value: 'Options',
-						onClick: (notification) => {
-							Runtime.openOptions();
-							notification.closeAnimated();
+			SimpleNotification.error(
+				{
+					title: 'No active Services',
+					text: `You have no **active Services** !\nEnable one in the **Options** and refresh this page.\nAll Progress is still saved locally.`,
+					buttons: [
+						{
+							type: 'info',
+							value: 'Options',
+							onClick: (notification) => {
+								Runtime.openOptions();
+								notification.closeAnimated();
+							},
 						},
-					},
-					{
-						type: 'message',
-						value: 'Close',
-						onClick: (notification) => notification.closeAnimated(),
-					},
-				],
-			});
+						{
+							type: 'message',
+							value: 'Close',
+							onClick: (notification) => notification.closeAnimated(),
+						},
+					],
+				},
+				{ duration: Options.errorDuration }
+			);
 		}
 
 		// No support for Legacy Reader

@@ -52,7 +52,7 @@ export class SaveSyncManager {
 					this.toggleButtons(true);
 					OptionsManager.instance.toggleImportProgressState(true);
 					if ((await this.syncService.import()) == SaveSyncResult.DOWNLOADED) {
-						SimpleNotification.success({ text: 'Save successfully manually imported. ' });
+						SimpleNotification.success({ text: 'Save successfully manually imported.' });
 					}
 					this.toggleButtons(false);
 					OptionsManager.instance.toggleImportProgressState(false);
@@ -71,7 +71,7 @@ export class SaveSyncManager {
 					this.toggleButtons(true);
 					OptionsManager.instance.toggleImportProgressState(true);
 					if ((await this.syncService.export()) == SaveSyncResult.UPLOADED) {
-						SimpleNotification.success({ text: 'Save successfully manually exported. ' });
+						SimpleNotification.success({ text: 'Save successfully manually exported.' });
 					}
 					this.toggleButtons(false);
 					OptionsManager.instance.toggleImportProgressState(false);

@@ -24,9 +24,9 @@ console.log('SyncDex :: Save Sync Token');
 			})
 			.join('&')}`;
 	} else {
-		SimpleNotification.error({
-			title: 'Huh?',
-			text: `**SyncDex** didn't found a **Save Sync Service** to redirect to.`,
-		});
+		SimpleNotification.error(
+			{ title: 'Huh ?', text: `**SyncDex** didn't found a **Save Sync Service** to redirect to.` },
+			{ sticky: true }
+		);
 	}
 })();

@@ -273,8 +273,18 @@
 					<label for="ck_notifications">Show Notifications.</label>
 					<p class="helper">Error notifications will still be displayed unless you also toggle them off below.<br />
 						Confirmation notifications are always displayed.</p>
+					<div class="dependencies">
+						<label for="ck_successDuration">Success notifications duration (in milliseconds).</label>
+						<input type="number" id="ck_successDuration" min="1" data-input="successDuration" data-dependency="notifications">
+						<label for="ck_infoDuration">Information notifications duration (in milliseconds).</label>
+						<input type="number" id="ck_infoDuration" min="1" data-input="infoDuration" data-dependency="notifications">
+					</div>
 					<input type="checkbox" id="ck_errorNotifications" data-name="errorNotifications" />
 					<label for="ck_errorNotifications">Show Error Notifications.</label>
+					<div class="dependencies">
+						<label for="ck_errorDuration">Error notifications duration (in milliseconds).</label>
+						<input type="number" id="ck_errorDuration" min="1" data-input="errorDuration" data-dependency="errorNotifications">
+					</div>
 				</div>
 			</div>
 		</div>

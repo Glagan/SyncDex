@@ -1,6 +1,10 @@
 import { log } from './Log';
 import { DefaultOptions, LogLevel, Options } from './Options';
 
+/**
+ * Update for a version.subVersion.
+ * Applied when the Update version match the current version.
+ */
 interface Update {
 	version: number;
 	subVersion: number;
@@ -13,6 +17,15 @@ export class Updates {
 			version: 0.2,
 			subVersion: 0.1,
 			fnct: () => (Options.logLevel = LogLevel.Default),
+		},
+		{
+			version: 0.2,
+			subVersion: 0.12,
+			fnct: () => {
+				Options.errorDuration = 4000;
+				Options.infoDuration = 4000;
+				Options.successDuration = 4000;
+			},
 		},
 	];
 

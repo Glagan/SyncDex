@@ -4,7 +4,8 @@
 			"version": "0.2.12",
 			"description": [
 				"Keep Services tokens if the Service list match after a Save Sync.##42",
-				"Fix wrong chapters when volumes reset chapters with multiple languages.##40"
+				"Fix wrong chapters when volumes reset chapters with multiple languages.##40",
+				"Add options to set the duration for each type of notifications."
 			]
 		},
 		{

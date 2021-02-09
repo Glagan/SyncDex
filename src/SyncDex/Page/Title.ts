@@ -801,11 +801,15 @@ export class TitleOverview extends Overview {
 			syncModule.mdState.status = status;
 			const response = await syncModule.syncMangaDex(status == Status.NONE ? 'unfollow' : 'status');
 			if (response.ok) {
-				SimpleNotification.success({ text: '**MangaDex Status** updated.' });
+				SimpleNotification.success(
+					{ text: '**MangaDex Status** updated.' },
+					{ duration: Options.successDuration }
+				);
 			} else {
-				SimpleNotification.error({
-					text: `Error while updating **MangaDex Status**.\ncode: ${response.code}`,
-				});
+				SimpleNotification.error(
+					{ text: `Error while updating **MangaDex Status**.\ncode: ${response.code}` },
+					{ duration: Options.errorDuration }
+				);
 			}
 		}
 	};
@@ -848,11 +852,15 @@ export class TitleOverview extends Overview {
 					syncModule.mdState.score = score;
 					const response = await syncModule.syncMangaDex('score');
 					if (response.ok) {
-						SimpleNotification.success({ text: '**MangaDex Score** updated.' });
+						SimpleNotification.success(
+							{ text: '**MangaDex Score** updated.' },
+							{ duration: Options.successDuration }
+						);
 					} else {
-						SimpleNotification.error({
-							text: `Error while updating **MangaDex Score**.\ncode: ${response.code}`,
-						});
+						SimpleNotification.error(
+							{ text: `Error while updating **MangaDex Score**.\ncode: ${response.code}` },
+							{ duration: Options.errorDuration }
+						);
 					}
 				}
 			});
@@ -866,7 +874,10 @@ export class TitleOverview extends Overview {
 			} else syncModule.mdState.progress.volume++;
 			const response = await syncModule.syncMangaDex('progress');
 			if (response.ok) {
-				SimpleNotification.success({ text: '**MangaDex Progress** updated.' });
+				SimpleNotification.success(
+					{ text: '**MangaDex Progress** updated.' },
+					{ duration: Options.successDuration }
+				);
 				this.mdProgress.currentVolume.textContent = `${syncModule.mdState.progress.volume}`;
 				this.mdProgress.inputVolume.value = `${syncModule.mdState.progress.volume}`;
 			}
@@ -876,7 +887,10 @@ export class TitleOverview extends Overview {
 			syncModule.mdState.progress.chapter++;
 			const response = await syncModule.syncMangaDex('progress');
 			if (response.ok) {
-				SimpleNotification.success({ text: '**MangaDex Progress** updated.' });
+				SimpleNotification.success(
+					{ text: '**MangaDex Progress** updated.' },
+					{ duration: Options.successDuration }
+				);
 				this.mdProgress.currentChapter.textContent = `${syncModule.mdState.progress.chapter}`;
 				this.mdProgress.inputChapter.value = `${syncModule.mdState.progress.chapter}`;
 			}
@@ -1180,7 +1194,10 @@ export class TitlePage extends Page {
 					doUpdate = !title.lastTitle || lastChapterOut > title.lastTitle;
 				}
 				if (doUpdate) {
-					SimpleNotification.info({ text: 'Updating volumes from API...' });
+					SimpleNotification.info(
+						{ text: 'Updating volumes from API...' },
+						{ duration: Options.infoDuration }
+					);
 					const response = await this.getMdTitle(id);
 					if (response.ok) {
 						let uniqueChapters: number[] = [];
@@ -1207,7 +1224,11 @@ export class TitlePage extends Page {
 						title.volumeChapterCount = volumeChapterCount;
 						title.volumeChapterOffset = volumeChapterOffset;
 						title.volumeResetChapter = true;
-					} else SimpleNotification.error({ text: 'MangaDex API Error.\nVolume chapters not updated.' });
+					} else
+						SimpleNotification.error(
+							{ text: 'MangaDex API Error.\nVolume chapters not updated.' },
+							{ duration: Options.errorDuration }
+						);
 				}
 			}
 			overview.chapterList.update(title);

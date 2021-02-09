@@ -167,6 +167,9 @@ interface AvailableOptions {
 	// Notifications
 	notifications: boolean;
 	errorNotifications: boolean;
+	errorDuration: number;
+	infoDuration: number;
+	successDuration: number;
 	// Global
 	useMochi: boolean;
 	acceptLowScore: boolean;

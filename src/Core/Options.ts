@@ -42,6 +42,9 @@ export const DefaultOptions: AvailableOptions = {
 	// Notifications
 	notifications: true,
 	errorNotifications: true,
+	errorDuration: 4000,
+	infoDuration: 4000,
+	successDuration: 4000,
 	// Global
 	useMochi: true,
 	acceptLowScore: false,

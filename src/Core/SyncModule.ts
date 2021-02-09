@@ -245,10 +245,10 @@ export class SyncModule {
 			}
 			this.previousIsSubChapter = isSubChapter;
 			if (strings.success.length > 0) {
-				SimpleNotification.success({ text: strings.success.join('\n') });
+				SimpleNotification.success({ text: strings.success.join('\n') }, { duration: Options.successDuration });
 			}
 			if (strings.error.length > 0) {
-				SimpleNotification.error({ text: strings.error.join('\n') });
+				SimpleNotification.error({ text: strings.error.join('\n') }, { duration: Options.errorDuration });
 			}
 		}
 		await Promise.all(promises);
@@ -422,37 +422,40 @@ export class SyncModule {
 			} else if (!informations.firstRequest || Options.services.length == 0 || informations.localUpdated) {
 				ending = this.reportNotificationRow(StaticKey.SyncDex, 'Synced');
 			}
-			SimpleNotification.success({
-				title: 'Progress Updated',
-				image: MangaDex.thumbnail(this.title.key, 'thumb'),
-				text: `Chapter ${this.title.chapter}\n${informations.created ? '**Start Date** set to Today !\n' : ''}${
-					informations.completed ? '**End Date** set to Today !\n' : ''
-				}${ending}`,
-				buttons: [
-					{
-						type: 'warning',
-						value: 'Cancel',
-						onClick: async (notification) => {
-							notification.closeAnimated();
-							this.restoreState(previousState);
-							await this.title.persist();
-							this.overview?.syncedLocal(this.title);
-							await this.syncExternal();
-							if (onCancel) onCancel();
-							SimpleNotification.success({
-								title: 'Cancelled',
-								image: MangaDex.thumbnail(this.title.key, 'thumb'),
-								text: `**${this.title.name}** update cancelled.\n${
-									this.title.status == Status.NONE
-										? 'Removed from list'
-										: `[${StatusMap[this.title.status]}] Chapter ${this.title.chapter}`
-								}`,
-							});
+			SimpleNotification.success(
+				{
+					title: 'Progress Updated',
+					image: MangaDex.thumbnail(this.title.key, 'thumb'),
+					text: `Chapter ${this.title.chapter}\n${
+						informations.created ? '**Start Date** set to Today !\n' : ''
+					}${informations.completed ? '**End Date** set to Today !\n' : ''}${ending}`,
+					buttons: [
+						{
+							type: 'warning',
+							value: 'Cancel',
+							onClick: async (notification) => {
+								notification.closeAnimated();
+								this.restoreState(previousState);
+								await this.title.persist();
+								this.overview?.syncedLocal(this.title);
+								await this.syncExternal();
+								if (onCancel) onCancel();
+								SimpleNotification.success({
+									title: 'Cancelled',
+									image: MangaDex.thumbnail(this.title.key, 'thumb'),
+									text: `**${this.title.name}** update cancelled.\n${
+										this.title.status == Status.NONE
+											? 'Removed from list'
+											: `[${StatusMap[this.title.status]}] Chapter ${this.title.chapter}`
+									}`,
+								});
+							},
 						},
-					},
-					{ type: 'message', value: 'Close', onClick: (notification) => notification.closeAnimated() },
-				],
-			});
+						{ type: 'message', value: 'Close', onClick: (notification) => notification.closeAnimated() },
+					],
+				},
+				{ duration: Options.successDuration }
+			);
 		}
 		if (Options.errorNotifications && errorRows.length > 0) {
 			SimpleNotification.error(

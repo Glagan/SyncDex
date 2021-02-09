@@ -64,10 +64,13 @@ export class HistoryPage extends Page {
 			// else result.maxPage = body.meta.lastPage;
 		} else {
 			result.isLastPage = true;
-			SimpleNotification.error({
-				title: 'MangaDex Error',
-				text: `There was an error while making a request to **MangaDex**, retry later.\ncode: ${result.code}`,
-			});
+			SimpleNotification.error(
+				{
+					title: 'MangaDex Error',
+					text: `There was an error while making a request to **MangaDex**, retry later.\ncode: ${result.code}`,
+				},
+				{ duration: Options.errorDuration }
+			);
 			return false;
 		}
 		return result;
