@@ -30,7 +30,7 @@ export class Storage {
 	static async set<T extends ExportedSave, K extends keyof T>(key: K, data: T[K]): Promise<void>;
 	static async set(...args: any[]): Promise<void> {
 		if (typeof args[0] === 'object') {
-			return await browser.storage.local.set(args[0]);
+			return browser.storage.local.set(args[0]);
 		}
 		if (SaveSync.state && Storage.isSyncableKey(args[0])) {
 			await Runtime.sendMessage({ action: MessageAction.saveSync });
@@ -90,6 +90,7 @@ export class Storage {
 			key != StorageUniqueKey.Logs &&
 			key != StorageUniqueKey.SaveSync &&
 			key != StorageUniqueKey.SaveSyncInProgress &&
+			key != StorageUniqueKey.LastSync &&
 			key != StorageUniqueKey.DropboxState &&
 			key != StorageUniqueKey.GoogleDriveState
 		);

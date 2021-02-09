@@ -1,6 +1,10 @@
 {
 	"updates": [
 		{
+			"version": "0.2.12",
+			"description": ["Keep Services tokens if the Service list match after a Save Sync."]
+		},
+		{
 			"version": "0.2.11",
 			"description": [
 				"Fix missing Titles with no MyAnimeList ID on MyMangaDex Import.",

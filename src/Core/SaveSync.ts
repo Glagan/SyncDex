@@ -1,5 +1,7 @@
 import { log } from './Log';
+import { Options } from './Options';
 import { Storage } from './Storage';
+import { Updates } from './Updates';
 
 export function Declare(serviceName: string, iconFct: () => HTMLElement) {
 	return function (constructor: typeof SaveSync) {
@@ -32,6 +34,7 @@ export abstract class SaveSync {
 	abstract createCard(): HTMLButtonElement;
 	abstract onCardClick(): Promise<void>;
 
+	abstract refreshTokenIfNeeded(): Promise<boolean>;
 	abstract login(query: { [key: string]: string }): Promise<SaveSyncLoginResult>;
 	abstract lastSync(): Promise<number>;
 	logout = async (): Promise<boolean> => {
@@ -42,8 +45,7 @@ export abstract class SaveSync {
 		return Storage.remove('saveSync');
 	};
 
-	abstract refreshTokenIfNeeded(): Promise<boolean>;
-	abstract uploadLocalSave(): Promise<number>;
+	abstract downloadExternalSave(): Promise<string | boolean>;
 	import = async (lastSync?: number): Promise<SaveSyncResult> => {
 		if (await this.refreshTokenIfNeeded()) {
 			if (!lastSync) {
@@ -53,7 +55,21 @@ export abstract class SaveSync {
 			const file = await this.downloadExternalSave();
 			if (typeof file === 'string') {
 				try {
-					await Storage.set({ ...JSON.parse(file), lastSync: lastSync } as ExportedSave);
+					const [services, tokens] = [Options.services, Options.tokens];
+					const newSave = JSON.parse(file) as ExportedSave;
+					newSave.lastSync = lastSync;
+					// Restore tokens if the services did not change
+					const newServices = newSave?.options?.services;
+					if (
+						Array.isArray(newServices) &&
+						newServices.length === services.length &&
+						newServices.every((value) => services.indexOf(value) >= 0)
+					) {
+						newSave.options!.tokens = tokens;
+					}
+					await Storage.set(newSave);
+					await Options.load();
+					await Updates.apply();
 					return SaveSyncResult.DOWNLOADED;
 				} catch (error) {
 					await log(error);
@@ -62,7 +78,8 @@ export abstract class SaveSync {
 		}
 		return SaveSyncResult.ERROR;
 	};
-	abstract downloadExternalSave(): Promise<string | boolean>;
+
+	abstract uploadLocalSave(): Promise<number>;
 	export = async (): Promise<SaveSyncResult> => {
 		if (await this.refreshTokenIfNeeded()) {
 			const result = await this.uploadLocalSave();
@@ -80,12 +97,12 @@ export abstract class SaveSync {
 	sync = async (force: boolean = false): Promise<SaveSyncResult> => {
 		const lastSync = await this.lastSync();
 		if (force || lastSync == 0) {
-			await log(`No external lastSync or ${force ? 'forced' : 'not forced'}, uploading save.`);
+			await log(`${force ? 'Forced' : 'No lastSync'}, uploading save.`);
 			return this.export();
 		} else if (lastSync > 0) {
 			const localSync = await Storage.get('lastSync');
 			if (localSync === undefined || localSync < lastSync) {
-				await log(`No local lastSync or ${localSync} < ${lastSync}, downloading save.`);
+				await log(`${localSync ? `${localSync} < ${lastSync}` : 'No local lastSync'}, downloading save.`);
 				return this.import(lastSync);
 			} else if (localSync > lastSync) {
 				await log(`${localSync} > ${lastSync}, uploading save.`);
