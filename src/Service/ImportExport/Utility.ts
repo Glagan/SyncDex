@@ -22,5 +22,6 @@ export function createModule(
 	const map = type == 'import' ? ServicesImport : ServicesExport;
 	if (!map[key]) return false;
 	const module = map[key]!;
+	/// @ts-ignore
 	return new module(Services[key], moduleInterface);
 }
