@@ -158,7 +158,9 @@ export abstract class Title {
 			completed = this.status !== Status.COMPLETED || !this.end;
 			this.status = Status.COMPLETED;
 			if (!this.end) this.end = new Date();
-		} else this.status = Status.READING;
+		} else if (this.status == Status.NONE) {
+			this.status = Status.READING;
+		}
 		this.progress.chapter = progress.chapter;
 		if (progress.volume && (!this.volume || this.volume < progress.volume)) {
 			this.volume = progress.volume;

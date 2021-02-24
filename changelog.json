@@ -2,7 +2,10 @@
 	"updates": [
 		{
 			"version": "0.2.13",
-			"description": ["Fix Delayed and External chapters.##43"]
+			"description": [
+				"Fix Delayed and External chapters.##43",
+				"Avoid always updating status to Reading when clicking \"Set Latest\" button.##44"
+			]
 		},
 		{
 			"version": "0.2.12",
