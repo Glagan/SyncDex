@@ -1,6 +1,10 @@
 {
 	"updates": [
 		{
+			"version": "0.2.14",
+			"description": ["Fix MangaDex Progress export.##34"]
+		},
+		{
 			"version": "0.2.13",
 			"description": [
 				"Fix Delayed and External chapters.##43",

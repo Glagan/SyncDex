@@ -110,17 +110,24 @@ export class MangaDexImport extends SpecialService {
 }
 
 export class MangaDexExport extends SpecialService {
-	persistTitle = async (title: LocalTitle): Promise<RequestStatus> => {
+	persistTitle = async (
+		online: { status: Status; rating: number; progress?: Progress },
+		title: LocalTitle
+	): Promise<RequestStatus> => {
 		// Status
-		const response = await Runtime.request<RawResponse>({
-			url: MangaDex.api('set:title:status', title.key.id!, title.status),
-			credentials: 'include',
-			headers: {
-				'X-Requested-With': 'XMLHttpRequest',
-			},
-		});
+		let status = RequestStatus.SUCCESS;
+		if (online.status != title.status) {
+			const response = await Runtime.request<RawResponse>({
+				url: MangaDex.api('set:title:status', title.key.id!, title.status),
+				credentials: 'include',
+				headers: {
+					'X-Requested-With': 'XMLHttpRequest',
+				},
+			});
+			status = Runtime.responseStatus(response);
+		}
 		// Score
-		if (title.score > 0) {
+		if (online.rating != Math.round(title.score / 10)) {
 			await Runtime.request<RawResponse>({
 				url: MangaDex.api('set:title:rating', title.key.id!, title.score / 10),
 				credentials: 'include',
@@ -130,7 +137,10 @@ export class MangaDexExport extends SpecialService {
 			});
 		}
 		// Progress
-		if (Options.updateMDProgress && title.progress.chapter > 0) {
+		if (
+			Options.updateMDProgress &&
+			(online.progress?.chapter !== title.progress.chapter || online.progress?.volume !== title.progress.volume)
+		) {
 			await Runtime.request({
 				method: 'POST',
 				url: MangaDex.api('update:title:progress', title.key.id!),
@@ -138,11 +148,11 @@ export class MangaDexExport extends SpecialService {
 				headers: { 'X-Requested-With': 'XMLHttpRequest' },
 				form: {
 					volume: title.progress.volume ?? 0,
-					chapter: title.progress.chapter,
+					chapter: title.progress.chapter ?? 0,
 				},
 			});
 		}
-		return Runtime.responseStatus(response);
+		return status;
 	};
 
 	start = async (): Promise<void> => {
@@ -157,6 +167,7 @@ export class MangaDexExport extends SpecialService {
 			const response = await Runtime.jsonRequest<MangaDexAPIResponse>({
 				url: MangaDex.api('get:user:followed:list'),
 			});
+			message.classList.remove('loading');
 			if (!response.ok) {
 				moduleInterface.message(
 					'warning',
@@ -170,15 +181,26 @@ export class MangaDexExport extends SpecialService {
 
 			// Fetch all Titles already in list to avoid sending extra requests
 			message = moduleInterface.message('loading', 'Filtering Titles already on MangaDex List...');
-			const onlineList: { [key: string]: { status: Status; rating: number } } = {};
+			const onlineList: { [key: string]: { status: Status; rating: number; progress?: Progress } } = {};
 			for (const title of response.body.data) {
-				onlineList[title.mangaId] = { status: title.followType, rating: title.rating ?? 0 };
+				onlineList[title.mangaId] = {
+					status: title.followType,
+					rating: title.rating ?? 0,
+				};
+				const chapter = parseFloat(title.chapter);
+				const volume = parseInt(title.volume);
+				if ((!isNaN(chapter) && chapter) || (!isNaN(volume) && volume)) {
+					onlineList[title.mangaId].progress = { chapter: chapter ?? 0, volume: volume ?? 0 };
+				}
 			}
 			titles = titles.filter(
 				(t) =>
 					onlineList[t.key.id!] === undefined ||
 					onlineList[t.key.id!].status !== t.status ||
-					(t.score > 0 && onlineList[t.key.id!].rating !== Math.round(t.score / 10))
+					(t.score > 0 && onlineList[t.key.id!].rating !== Math.round(t.score / 10)) ||
+					(Options.updateMDProgress &&
+						((t.progress.chapter && onlineList[t.key.id!].progress?.chapter != t.progress.chapter) ||
+							(t.progress.volume && onlineList[t.key.id!].progress?.volume != t.progress.volume)))
 			);
 			message.classList.remove('loading');
 
@@ -192,16 +214,10 @@ export class MangaDexExport extends SpecialService {
 				progress.textContent = `Exporting Title ${i + 1} out of ${max} (${
 					title.name ? title.name : 'No Name'
 				})`;
-				if (
-					onlineList[title.key.id!] === undefined ||
-					onlineList[title.key.id!].status !== title.status ||
-					(title.score > 0 && onlineList[title.key.id!].rating !== title.score)
-				) {
-					await this.persistTitle(title);
-				}
+				await this.persistTitle(onlineList[title.key.id!], title);
 			}
 			message.classList.remove('loading');
-			moduleInterface.message('success', `Exported ${i + 1} Titles !`);
+			moduleInterface.message('success', `Exported ${i} Titles !`);
 			moduleInterface.complete();
 		});
 		moduleInterface.modal.show();
