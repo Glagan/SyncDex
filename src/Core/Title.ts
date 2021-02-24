@@ -162,9 +162,7 @@ export abstract class Title {
 			this.status = Status.READING;
 		}
 		this.progress.chapter = progress.chapter;
-		if (progress.volume && (!this.volume || this.volume < progress.volume)) {
-			this.volume = progress.volume;
-		}
+		if (progress.volume) this.volume = progress.volume;
 		this.progress.oneshot = progress.oneshot;
 		if (created && !this.start) {
 			this.start = new Date();

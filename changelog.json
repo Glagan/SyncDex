@@ -2,7 +2,7 @@
 	"updates": [
 		{
 			"version": "0.2.14",
-			"description": ["Fix MangaDex Progress export.##34"]
+			"description": ["Fix MangaDex Progress export.##34", "Fix lower Volume not being assigned in updates.##45"]
 		},
 		{
 			"version": "0.2.13",
