@@ -1,6 +1,10 @@
 {
 	"updates": [
 		{
+			"version": "0.2.13",
+			"description": ["Fix Delayed and External chapters.##43"]
+		},
+		{
 			"version": "0.2.12",
 			"description": [
 				"Keep Services tokens if the Service list match after a Save Sync.##42",

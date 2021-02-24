@@ -2,7 +2,6 @@ import { Page } from '../Page';
 import { iconToService, LocalTitle, Title } from '../../Core/Title';
 import { ReportInformations, SyncModule } from '../../Core/SyncModule';
 import { Options } from '../../Core/Options';
-import { History } from '../../Core/History';
 import { Mochi } from '../../Core/Mochi';
 import { Services } from '../../Service/Class/Map';
 import { Runtime } from '../../Core/Runtime';
@@ -11,7 +10,7 @@ import { injectScript, progressFromString, progressToString } from '../../Core/U
 import { ActivableKey } from '../../Service/Keys';
 import { DOM } from '../../Core/DOM';
 import { TitleEditor } from '../../Core/TitleEditor';
-import { debug, LogExecTime, TryCatch } from '../../Core/Log';
+import { LogExecTime, TryCatch } from '../../Core/Log';
 
 type ReaderEvent =
 	| 'loadingchange'
@@ -199,7 +198,6 @@ export class ChapterPage extends Page {
 		done: boolean;
 		state: { promise: () => Promise<any>; resolve: () => void };
 	} = { state: initPromise(), done: false, inProgress: false };
-	currentDetails: ChapterChangeDetails | undefined;
 	lastChecked: { id: number; page: number } = { id: 0, page: 0 };
 	content: HTMLElement;
 	queue: { id: number; page: number }[] = [];
@@ -300,6 +298,9 @@ export class ChapterPage extends Page {
 		this.reverseChapters = {};
 		// Avoid counting sub chapters
 		for (const chapter of details._chapters) {
+			if (chapter.status == undefined) {
+				chapter.status = typeof chapter.pages === 'string' ? 'external' : 'OK';
+			}
 			const chapterDetails = {
 				id: chapter.id,
 				title: chapter.title,
@@ -653,14 +654,8 @@ export class ChapterPage extends Page {
 			// ? Finish processing queue before changing title
 			await this.initialize((event as CustomEvent<MangaChangeDetails>).detail);
 		});
-		document.addEventListener('ReaderChapterChange', (event) => {
-			this.currentDetails = (event as CustomEvent<ChapterChangeDetails>).detail;
-		});
 		const lastChange = { id: 0, page: 0 };
-		document.addEventListener('ReaderPageChange', async (event) => {
-			if (!this.currentDetails) return;
-			const id = parseInt(this.content.dataset.chapterId!);
-			const page = (event as CustomEvent<number>).detail;
+		const addAndProcessQueue = (id: number, page: number) => {
 			if (lastChange.id != id || lastChange.page != page) {
 				this.queue.push({ id, page });
 				if (!this.processingQueue) {
@@ -669,6 +664,32 @@ export class ChapterPage extends Page {
 			}
 			lastChange.id = id;
 			lastChange.page = page;
+		};
+		document.addEventListener('ReaderChapterChange', (event) => {
+			const details = (event as CustomEvent<ChapterChangeDetails>).detail;
+			// Update reverse chapter details
+			if (details.status == undefined) {
+				details.status = typeof details.pages === 'string' ? 'external' : 'OK';
+			}
+			this.reverseChapters[details.id] = {
+				id: details.id,
+				title: details.title,
+				chapter: details.chapter,
+				volume: details.volume,
+				status: details.status,
+				progress: this.chapterProgress(details),
+			};
+			// Process queue directly for external chapters, no ReaderPageChange trigerred
+			if (details.status == 'external' || details.status == 'delayed') {
+				const id = parseInt(this.content.dataset.chapterId!);
+				const page = Infinity;
+				addAndProcessQueue(id, page);
+			}
+		});
+		document.addEventListener('ReaderPageChange', async (event) => {
+			const id = parseInt(this.content.dataset.chapterId!);
+			const page = (event as CustomEvent<number>).detail;
+			addAndProcessQueue(id, page);
 		});
 	}
 }

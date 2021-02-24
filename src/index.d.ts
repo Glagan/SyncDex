@@ -291,7 +291,7 @@ interface MangaDexChapter {
 	groupIds: number[];
 	groupWebsite: string | null;
 	language: string;
-	pages: string[];
+	pages: string[] | string;
 	read: boolean;
 	server: string | undefined;
 	serverFallback: string | undefined;
