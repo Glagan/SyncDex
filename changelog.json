@@ -1,6 +1,10 @@
 {
 	"updates": [
 		{
+			"version": "0.2.15",
+			"description": ["Fix MangaDex Export.##34", "Request all titles in MangaDex API list endpoints."]
+		},
+		{
 			"version": "0.2.14",
 			"description": ["Fix MangaDex Progress export.##34", "Fix lower Volume not being assigned in updates.##45"]
 		},

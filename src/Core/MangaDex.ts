@@ -45,9 +45,9 @@ export namespace MangaDex {
 			case 'get:title':
 				return `${MangaDexAPI}/manga/${args[0]}${args[1] && args[1].chapters ? '?include=chapters' : ''}`;
 			case 'get:user:followed:list':
-				return `${MangaDexAPI}/user/me/followed-manga`;
+				return `${MangaDexAPI}/user/me/followed-manga?hentai=1`;
 			case 'get:user:followed:updates':
-				return `${MangaDexAPI}/user/me/followed-updates?type=1&p=${args[0]}`;
+				return `${MangaDexAPI}/user/me/followed-updates?type=1&hentai=1&p=${args[0]}`;
 			case 'set:title:status':
 				return `https://mangadex.org/ajax/actions.ajax.php?function=manga_follow&id=${args[0]}&type=${
 					args[1]

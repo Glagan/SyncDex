@@ -111,12 +111,12 @@ export class MangaDexImport extends SpecialService {
 
 export class MangaDexExport extends SpecialService {
 	persistTitle = async (
-		online: { status: Status; rating: number; progress?: Progress },
+		online: { status: Status; rating: number; progress?: Progress } | undefined,
 		title: LocalTitle
 	): Promise<RequestStatus> => {
 		// Status
 		let status = RequestStatus.SUCCESS;
-		if (online.status != title.status) {
+		if (online?.status != title.status) {
 			const response = await Runtime.request<RawResponse>({
 				url: MangaDex.api('set:title:status', title.key.id!, title.status),
 				credentials: 'include',
@@ -127,7 +127,7 @@ export class MangaDexExport extends SpecialService {
 			status = Runtime.responseStatus(response);
 		}
 		// Score
-		if (online.rating != Math.round(title.score / 10)) {
+		if (online?.rating != Math.round(title.score / 10)) {
 			await Runtime.request<RawResponse>({
 				url: MangaDex.api('set:title:rating', title.key.id!, title.score / 10),
 				credentials: 'include',
@@ -139,7 +139,7 @@ export class MangaDexExport extends SpecialService {
 		// Progress
 		if (
 			Options.updateMDProgress &&
-			(online.progress?.chapter !== title.progress.chapter || online.progress?.volume !== title.progress.volume)
+			(online?.progress?.chapter !== title.progress.chapter || online?.progress?.volume !== title.progress.volume)
 		) {
 			await Runtime.request({
 				method: 'POST',
