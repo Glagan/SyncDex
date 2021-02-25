@@ -288,7 +288,7 @@ export class AnilistTitle extends Title {
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		this.mediaEntryId = 0;
-		this.inList = false;
+		this.reset();
 		return RequestStatus.DELETED;
 	};
 

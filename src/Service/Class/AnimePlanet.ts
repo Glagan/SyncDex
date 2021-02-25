@@ -197,7 +197,7 @@ export class AnimePlanetTitle extends Title {
 			method: 'GET',
 			credentials: 'include',
 		});
-		this.inList = false;
+		this.reset();
 		const status = Runtime.responseStatus(response);
 		return status == RequestStatus.SUCCESS ? RequestStatus.DELETED : status;
 	};

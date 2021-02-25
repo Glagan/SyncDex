@@ -93,6 +93,8 @@ export class MangaUpdatesTitle extends Title {
 
 	static missingFields: MissableField[] = ['start', 'end'];
 
+	static magicDelete: string = '---';
+
 	current?: {
 		progress: Progress;
 		status: Status;
@@ -132,7 +134,7 @@ export class MangaUpdatesTitle extends Title {
 				return 'unfinished';
 		}
 		// Status.NONE: '---' magic string for [deletion] (*not* for creation)
-		return '---';
+		return MangaUpdatesTitle.magicDelete;
 	};
 
 	// Get a list of status to go through to be able to update to the wanted status
@@ -186,7 +188,9 @@ export class MangaUpdatesTitle extends Title {
 			await log(`Could not sync MangaUpdates: status ${this.status}`);
 			return RequestStatus.BAD_REQUEST;
 		}
-		if (!this.current) this.current = { progress: { chapter: 0 }, status: Status.NONE };
+		if (!this.current) {
+			this.current = { progress: { chapter: 0 }, status: Status.NONE };
+		}
 		// Avoid updating status since reassigning the same status delete from the list
 		if (this.status !== this.current.status) {
 			// If there is no status, we need an initial status to update from
@@ -261,14 +265,29 @@ export class MangaUpdatesTitle extends Title {
 
 	delete = async (): Promise<RequestStatus> => {
 		if (!this.inList) {
-			await log(`Could not sync MangaUpdates: status ${this.status}`);
+			await log(`Could not sync MangaUpdates: status ${this.status} / current ${this.current?.status}`);
 			return RequestStatus.BAD_REQUEST;
 		}
 		const response = await Runtime.request<RawResponse>({
-			url: `https://www.mangaupdates.com/ajax/list_update.php?s=${this.key.id}&r=1`,
-			credentials: 'include',
+			url: 'https://www.mangaupdates.com/mylist.html',
+			method: 'POST',
+			headers: {
+				Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+			body: Runtime.buildQuery(
+				{
+					act: 'update',
+					list: MangaUpdatesTitle.statusToList(this.current!.status),
+					moveto: MangaUpdatesTitle.statusToList(Status.NONE),
+					deleteSubmit: 'Delete+Selected',
+					[`DELETE[${this.key.id}]`]: '1',
+				},
+				false
+			),
 		});
-		this.inList = false;
+		this.current = { progress: { chapter: 0 }, status: Status.NONE };
+		this.reset();
 		const status = Runtime.responseStatus(response);
 		return status == RequestStatus.SUCCESS ? RequestStatus.DELETED : status;
 	};

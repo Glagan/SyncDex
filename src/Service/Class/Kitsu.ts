@@ -292,7 +292,7 @@ export class KitsuTitle extends Title {
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
 		this.libraryEntryId = 0;
-		this.inList = false;
+		this.reset();
 		return RequestStatus.DELETED;
 	};
 

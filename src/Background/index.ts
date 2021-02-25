@@ -53,6 +53,7 @@ const cooldowns: Record<string, number> = {
 	'myanimelist.net': 1500,
 	'nikurasu.org': 500,
 };
+const cookieDomains = ['myanimelist.net', 'mangadex.org', 'mangaupdates.com', 'anime-planet.com'];
 // TODO: Handle containers in checkOnStartup since there is no sender
 // Probably gate which containers to update based on the future containers update with state for each containers
 // and import lists for each containers that need it by sending a fake MessageSender with preloaded tab informations for the container
@@ -60,15 +61,18 @@ function handleMessage(message: Message, sender?: BrowserRuntime.MessageSender) 
 	if (message.action == MessageAction.request) {
 		return new Promise(async (resolve) => {
 			const msg = message as RequestMessage;
+
 			// Cooldown
 			const domain = findDomain(msg.url);
 			const now = Date.now();
+
 			// Sleep until cooldown is reached
 			if (nextRequest[domain] && nextRequest[domain] >= now) {
 				const diff = nextRequest[domain] - now;
 				nextRequest[domain] = now + diff + (cooldowns[domain] ?? DEFAULT_COOLDOWN) + 100;
 				await new Promise((resolve) => setTimeout(resolve, diff));
 			} else nextRequest[domain] = now + (cooldowns[domain] ?? DEFAULT_COOLDOWN) + 100;
+
 			// Options
 			msg.isJson = msg.isJson !== undefined ? msg.isJson : false;
 			msg.method = msg.method !== undefined ? msg.method : 'GET';
@@ -126,23 +130,26 @@ function handleMessage(message: Message, sender?: BrowserRuntime.MessageSender) 
 			} else if (msg.body !== null) {
 				body = msg.body;
 			}
-			// Fetch
+
+			// Get container cookies
+			// Doesn't work on Chrome, cookieStoreId is static
+			// Only find for sites which require cookies
 			if (
 				sender &&
 				((!isChrome && msg.credentials == 'same-origin') ||
-					(msg.credentials == 'include' && sender.tab?.cookieStoreId !== undefined))
+					(msg.credentials == 'include' && sender.tab?.cookieStoreId !== undefined)) &&
+				cookieDomains.indexOf(domain) >= 0
 			) {
 				const cookieStoreId = sender.tab!.cookieStoreId;
 				const cookiesList = await browser.cookies.getAll({ url: message.url, storeId: cookieStoreId });
 				const cookies = cookiesList.map((c) => `${c.name}=${c.value}`).join('; ');
 				if (cookies != '') msg.headers['X-Cookie'] = cookies;
 			}
-			// Add Sec- Headers
-			/*for (const header of ['Sec-Fetch-Dest', 'Sec-Fetch-Mode', 'Sec-Fetch-Site', 'Sec-Fetch-User']) {
-				if (msg.headers[header] !== undefined) {
-					msg.headers[`X-${header}`] = msg.headers[header];
-				}
-			}*/
+
+			// Add X-Origin and X-Referer if needed
+			// if (msg.headers['Origin']) msg.headers['X-Origin'] = msg.headers['Origin'];
+			// if (msg.headers['Referer']) msg.headers['X-Referer'] = msg.headers['Referer'];
+
 			const result = await fetch(msg.url, {
 				...message,
 				body,
@@ -218,22 +225,25 @@ if (!isChrome) {
 		details?: WebRequest.OnBeforeSendHeadersDetailsType
 	): WebRequest.BlockingResponseOrPromise | void {
 		if (!details || !details.originUrl || !details.requestHeaders) return;
+
 		// Only update requests sent by MyMangaDex
 		if (details.originUrl.indexOf('moz-extension://') < 0) {
 			return { requestHeaders: details.requestHeaders };
 		}
+
 		// Replace Cookie headers by X-Cookie value
-		const rewrite = ['x-cookie'];
 		const headers: WebRequest.HttpHeaders = [];
-		let i = -1;
 		for (const header of details.requestHeaders) {
 			const headerName = header.name.toLowerCase();
-			if ((i = rewrite.indexOf(headerName)) >= 0) {
+			const needRewrite = headerName.indexOf('x-') === 0 && headerName != 'x-requested-with';
+			if (needRewrite) {
 				headers.push({
-					name: rewrite[i].slice(2),
+					name: headerName.slice(2),
 					value: header.value,
 				});
-			} else headers.push(header);
+			} else if (!needRewrite /* Somehow needed ? */) {
+				headers.push(header);
+			}
 		}
 		return { requestHeaders: headers };
 	}
@@ -243,15 +253,10 @@ if (!isChrome) {
 		setContainersCookies,
 		{
 			urls: [
-				'https://myanimelist.net/about.php',
-				'https://myanimelist.net/manga/*',
-				'https://myanimelist.net/ownlist/manga/*',
-				'https://myanimelist.net/mangalist/*',
+				'https://myanimelist.net/*',
 				'https://mangadex.org/*',
-				'https://*.mangaupdates.com/series.html?id=*',
-				'https://*.mangaupdates.com/ajax/*',
-				'https://*.anime-planet.com/manga/*',
-				'https://*.anime-planet.com/api/*',
+				'https://*.mangaupdates.com/*',
+				'https://*.anime-planet.com/*',
 			],
 		},
 		['blocking', 'requestHeaders']

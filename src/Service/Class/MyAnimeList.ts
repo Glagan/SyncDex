@@ -241,7 +241,7 @@ export class MyAnimeListTitle extends Title {
 			body: `csrf_token=${this.csrf}`,
 		});
 		if (!response.ok) return Runtime.responseStatus(response);
-		this.inList = false;
+		this.reset();
 		return RequestStatus.DELETED;
 	};
 

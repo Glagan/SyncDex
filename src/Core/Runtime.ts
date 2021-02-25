@@ -62,9 +62,9 @@ export class Runtime {
 		}
 	}
 
-	static buildQuery(params: { [key: string]: any }): string {
+	static buildQuery(params: { [key: string]: any }, doBody: boolean = true): string {
 		return Object.keys(params)
-			.map((field) => `${encodeURIComponent(field)}=${encodeURIComponent(params[field])}`)
+			.map((f) => `${encodeURIComponent(f)}=${doBody ? encodeURIComponent(params[f]) : params[f]}`)
 			.join('&');
 	}
 

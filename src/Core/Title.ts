@@ -228,6 +228,16 @@ export abstract class Title {
 		return progress.chapter > this.chapter && progress.chapter < Math.floor(this.chapter) + 2;
 	};
 
+	reset = (): void => {
+		this.inList = false;
+		this.status = Status.NONE;
+		delete this.start;
+		delete this.end;
+		this.progress.chapter = 0;
+		delete this.progress.volume;
+		this.score = 0;
+	};
+
 	/**
 	 * Get the ID used by Mochi that can only be a number or a string.
 	 */
@@ -434,12 +444,7 @@ export class LocalTitle extends Title {
 	};
 
 	delete = async (): Promise<RequestStatus> => {
-		this.inList = false;
-		this.status = Status.NONE;
-		this.progress = { chapter: 0 };
-		this.score = 0;
-		this.start = undefined;
-		this.end = undefined;
+		this.reset();
 		this.name = undefined;
 		this.chapters = [];
 		await Storage.remove(`${this.key.id}`);

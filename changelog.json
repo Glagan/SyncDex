@@ -2,7 +2,13 @@
 	"updates": [
 		{
 			"version": "0.2.15",
-			"description": ["Fix MangaDex Export.##34", "Request all titles in MangaDex API list endpoints."]
+			"description": [
+				"Fix MangaDex Export.##34",
+				"Request all titles in MangaDex API list endpoints.",
+				"Fix MangaUpdates Title deletion.",
+				"Fix possible errors after deletion on any Service.",
+				"Fix possible infinite redirection when logged out of MyAnimeList."
+			]
 		},
 		{
 			"version": "0.2.14",
