@@ -1,4 +1,5 @@
 import { AppendableElement, DOM } from '../../Core/DOM';
+import { dispatch } from '../../Core/Event';
 import { Extension } from '../../Core/Extension';
 import { debug, LogExecTime, TryCatch } from '../../Core/Log';
 import { MangaDex } from '../../Core/MangaDex';
@@ -396,11 +397,11 @@ class LocalOverview extends ServiceOverview {
 		this.editButton.addEventListener('click', async (event) => {
 			event.preventDefault();
 			TitleEditor.create(syncModule, async (updatedIDs) => {
-				if (!syncModule.overview) return;
 				// Update all overviews if external services IDs were updated
 				debug(`Updated IDs after Title Editor ? ${updatedIDs}`);
 				if (updatedIDs) {
-					syncModule.overview.reset();
+					// TODO: Update all interface after Title Editor
+					/*syncModule.overview.reset();
 					for (const serviceKey of Options.services) {
 						const key = syncModule.title.services[serviceKey];
 						syncModule.overview.initializeService(serviceKey, key != undefined);
@@ -409,14 +410,14 @@ class LocalOverview extends ServiceOverview {
 							syncModule.services[serviceKey]!,
 							syncModule
 						);
-					}
+					}*/
 				}
 			}).show();
 		});
 		this.refreshButton.addEventListener('click', async (event) => {
 			event.preventDefault();
 			await syncModule.title.refresh();
-			syncModule.overview?.reset();
+			// syncModule.overview?.reset();
 			// Initialize SyncModule again if there is new Service IDs
 			syncModule.initialize();
 			await syncModule.syncLocal();
@@ -586,7 +587,7 @@ class ChapterList {
 					await title.setHistory(row.chapterId, row.progress);
 				}
 				await title.persist();
-				syncModule.overview?.syncedLocal(title);
+				dispatch('title:synced', { title }); // TODO: syncModule.setProgress and revert here with dispatch
 				const report = await syncModule.syncExternal(true);
 				syncModule.displayReportNotifications(report, { completed: completed }, previousState);
 				row.markButton.classList.remove('loading');
@@ -850,8 +851,8 @@ export class TitleOverview extends Overview {
 					await syncModule.syncExternal(true);
 				}
 				if (!Options.mdUpdateSyncDex || !Options.updateMD) {
-					syncModule.mdState.score = score;
-					const response = await syncModule.syncMangaDex('score');
+					syncModule.mdState.rating = score;
+					const response = await syncModule.syncMangaDex('rating');
 					if (response.ok) {
 						SimpleNotification.success(
 							{ text: '**MangaDex Score** updated.' },
@@ -1033,11 +1034,11 @@ export class TitleOverview extends Overview {
 				this.mdStatus.followButton.remove();
 			}
 		} else if (type == 'score') {
-			if (syncModule.mdState.score == 0) {
+			if (syncModule.mdState.rating == 0) {
 				this.mdScore.ratings[0].classList.add('disabled');
 				this.mdScore.button.childNodes[1].textContent = ` `;
 			} else {
-				const newScore = syncModule.mdState.score < 10 ? 1 : Math.round(syncModule.mdState.score / 10);
+				const newScore = syncModule.mdState.rating < 10 ? 1 : Math.round(syncModule.mdState.rating / 10);
 				this.mdScore.ratings[newScore].classList.add('disabled');
 				this.mdScore.button.childNodes[1].textContent = ` ${newScore} `;
 			}
@@ -1241,17 +1242,18 @@ export class TitlePage extends Page {
 		await title.persist(); // Always save
 
 		// Load each Services to Sync
-		const syncModule = new SyncModule('title', title, overview);
+		const syncModule = new SyncModule('title', title);
 		// Find MangaDex login status
 		syncModule.loggedIn = !document.querySelector('button[title="You need to log in to use this function."]');
-		syncModule.overview!.syncedLocal(syncModule.title);
+		// syncModule.overview!.syncedLocal(syncModule.title);
+		dispatch('title:synced', { title });
 		syncModule.initialize();
 		// Get MangaDex Status
 		const statusButton = document.querySelector('.manga_follow_button.disabled');
 		if (statusButton) syncModule.mdState.status = parseInt(statusButton.id.trim());
 		// Get MangaDex Score
 		const scoreButton = document.querySelector('.manga_rating_button.disabled');
-		if (scoreButton) syncModule.mdState.score = parseInt(scoreButton.id.trim()) * 10;
+		if (scoreButton) syncModule.mdState.rating = parseInt(scoreButton.id.trim()) * 10;
 		const imported = await syncModule.syncLocal();
 		// Get MangaDex Progress -- defaults to 0
 		syncModule.mdState.progress.chapter = parseFloat(overview.mdProgress.currentChapter.textContent!);

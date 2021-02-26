@@ -302,6 +302,14 @@ type ExportedSave = {
  * MangaDex
  */
 
+interface MangaDexState {
+	status: Status;
+	rating: number;
+	progress: Progress;
+}
+
+type MangaDexTitleField = 'unfollow' | 'status' | 'rating' | 'progress';
+
 interface MangaDexChapter {
 	id: number;
 	hash: string;
@@ -354,21 +362,19 @@ interface MangaDexSimpleManga {
 type Title = import('./Core/Title').Title;
 type EventPayloads = {
 	// Title
-	'title:synced': { fields: (keyof Title)[]; title: Title };
+	'title:syncing': never;
+	'title:synced': { title: Title };
 	// MangaDex
-	'mangadex:syncing': { field: 'status' | 'rating' | 'progress' };
-	'mangadex:synced': {
-		field: 'status' | 'rating' | 'progress';
-		value: { status: Status; progress: Progress; score: number };
-	};
+	'mangadex:syncing': { field: MangaDexTitleField };
+	'mangadex:synced': { field: MangaDexTitleField; state: MangaDexState };
 	// Sync Module
 	'sync:initialize:start': never;
-	'sync:initialize:end': never;
+	'sync:initialize:end': { title: import('./Core/Title').LocalTitle };
 	// Services
-	'service:syncing': { service: import('./Service/Keys').ServiceKey };
+	'service:syncing': { key: import('./Service/Keys').ServiceKey };
 	'service:synced': {
-		service: import('./Service/Keys').ServiceKey;
-		title: Title;
+		key: import('./Service/Keys').ServiceKey;
+		title: Title | RequestStatus | boolean;
 		local: import('./Core/Title').LocalTitle;
 	};
 	// Save Sync

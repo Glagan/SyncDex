@@ -377,7 +377,7 @@ export class ChapterPage extends Page {
 		// Send initial requests
 		if (this.overview) this.overview.remove();
 		this.overview = new ReadingOverview();
-		this.syncModule = new SyncModule('chapter', this.title, this.overview);
+		this.syncModule = new SyncModule('chapter', this.title);
 		// Check if we're logged in on MangaDex
 		this.syncModule.loggedIn = document.querySelector(`a.nav-link[href^='/user']`) !== null;
 		this.syncModule.initialize();
@@ -389,7 +389,7 @@ export class ChapterPage extends Page {
 					this.syncModule.mdState.status = response.body.data.followType;
 				}
 				if (typeof response.body.data.rating === 'number') {
-					this.syncModule.mdState.score = response.body.data.rating * 10;
+					this.syncModule.mdState.rating = response.body.data.rating * 10;
 				}
 				if (typeof response.body.data.chapter === 'string') {
 					this.syncModule.mdState.progress.chapter = parseFloat(response.body.data.chapter);

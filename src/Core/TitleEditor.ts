@@ -9,6 +9,7 @@ import { Services } from '../Service/Class/Map';
 import { ActivableKey } from '../Service/Keys';
 import { LocalTitle } from '../Core/Title';
 import { Extension } from './Extension';
+import { dispatch } from './Event';
 
 interface HistoryChapter {
 	node: HTMLElement;
@@ -520,7 +521,7 @@ export class TitleEditor {
 			if (notification) notification.remove();
 			clearTimeout(timeout);
 			// Remove exit
-			if (syncModule.overview?.syncingLocal) syncModule.overview.syncingLocal();
+			dispatch('title:syncing');
 			modal.disableExit();
 			submitButton.disabled = true;
 			cancelButton.disabled = true;
@@ -532,7 +533,7 @@ export class TitleEditor {
 				const report = await syncModule.syncExternal();
 				syncModule.displayReportNotifications(report, { completed: false }, previousState, onCancel);
 			} else syncModule.displayReportNotifications({}, { completed: false }, previousState, onCancel);
-			if (syncModule.overview?.syncedLocal) syncModule.overview.syncedLocal(syncModule.title);
+			dispatch('title:synced', { title });
 			modal.enableExit();
 			modal.remove();
 			if (postDelete) postDelete();
