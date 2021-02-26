@@ -1,10 +1,11 @@
 import { debug } from './Log';
 
+type EventID<K extends keyof EventPayloads> = { [id: number]: EventDescription<K> };
 type EventList<K extends keyof EventPayloads> = {
-	[key in K]?: { [id: number]: EventDescription<K> };
+	[key in K]?: EventID<K>;
 };
-const listeners: EventList<keyof EventPayloads> = {};
 let nextListener: number = 0;
+const listeners: EventList<keyof EventPayloads> = {};
 const listenersMap: { [key: number]: keyof EventPayloads } = {};
 
 /**
@@ -29,18 +30,20 @@ export function listen<K extends keyof EventPayloads>(
  * @param event Event name
  * @param payload Payload given to the callbacks
  */
-export function dispatch<K extends keyof EventPayloads>(event: K, payload: EventPayloads[K]): void {
+export function dispatch<K extends keyof EventPayloads>(...params: EventDispatchParams<K>): void {
+	const event = params[0];
 	if (!listeners[event]) {
 		debug(`No listeners for triggered {${event}}`);
 		return;
 	}
 	debug(`triggered {${event}} for ${Object.keys(listeners[event]!).length} listeners`);
 	// Start listeners callback in anonymous function to not block trigger call with blocking events
+	const payload = params[1];
 	(async () => {
 		for (const id in listeners[event]!) {
 			if (listeners[event]![id].options?.blocking) {
-				await (listeners[event]![id].callback as EventCallback<K>)(payload);
-			} else (listeners[event]![id].callback as EventCallback<K>)(payload);
+				await listeners[event]![id].callback(payload);
+			} else listeners[event]![id].callback(payload);
 		}
 	})();
 }

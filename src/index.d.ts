@@ -362,8 +362,8 @@ type EventPayloads = {
 		value: { status: Status; progress: Progress; score: number };
 	};
 	// Sync Module
-	'sync:initialize:start': undefined;
-	'sync:initialize:end': undefined;
+	'sync:initialize:start': never;
+	'sync:initialize:end': never;
 	// Services
 	'service:syncing': { service: import('./Service/Keys').ServiceKey };
 	'service:synced': {
@@ -375,15 +375,18 @@ type EventPayloads = {
 	'savesync:start': { service: import('./Core/SaveSync').SaveSync };
 	'savesync:end': { service: import('./Core/SaveSync').SaveSync };
 	// Options
-	'options:saving': undefined;
-	'options:saved': undefined;
+	'options:saving': never;
+	'options:saved': never;
 	'options:updated': { name: keyof AvailableOptions; options: Options };
 	// SyncDex
-	'syncdex:reloaded': undefined;
+	'syncdex:reloaded': never;
 	'syncdex:loaded': { page: import('./SyncDex/Page').Page };
 };
 
 type EventCallback<K extends keyof EventPayloads> = (payload?: EventPayloads[K]) => void;
+type EventDispatchParams<K extends keyof EventPayloads> = EventPayloads[K] extends never
+	? [event: K]
+	: [event: K, payload: EventPayloads[K]];
 
 interface EventOptions {
 	// Block the following events of the same type until callback is completed
