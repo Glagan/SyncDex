@@ -1,5 +1,4 @@
 import { Alarms, browser, Runtime as BrowserRuntime, WebRequest } from 'webextension-polyfill-ts';
-import { isChrome } from '../Core/IsChrome';
 import { loadLogs, log } from '../Core/Log';
 import { ModuleStatus } from '../Core/Module';
 import { DefaultOptions, Options } from '../Core/Options';
@@ -13,6 +12,8 @@ import { Message } from '../Core/Message';
 
 console.log('SyncDex :: Background');
 
+/// @ts-ignore
+const isChrome = window.chrome && window.browser === undefined;
 const SaveSyncAlarmName = 'saveSyncBackup';
 
 function setIcon(title: string = '', bgColor: string = '', text: string = '') {
