@@ -1,5 +1,5 @@
 import { DOM } from '../Core/DOM';
-import { Runtime } from '../Core/Runtime';
+import { Request } from '../Core/Request';
 import { Storage } from '../Core/Storage';
 import { generateRandomString, pkceChallengeFromVerifier } from '../Options/PKCEHelper';
 import { Declare, SaveSync } from '../Core/SaveSync';
@@ -98,7 +98,7 @@ export class Dropbox extends SaveSync {
 		const codeVerifier = generateRandomString();
 		const codeChallenge = await pkceChallengeFromVerifier(codeVerifier);
 		await Storage.set(StorageUniqueKey.DropboxState, { state: state, verifier: codeVerifier });
-		const url = `https://www.dropbox.com/oauth2/authorize?${Runtime.buildQuery({
+		const url = `https://www.dropbox.com/oauth2/authorize?${Request.buildQuery({
 			response_type: 'code',
 			client_id: Dropbox.CLIENT_ID,
 			state: state,
@@ -115,7 +115,7 @@ export class Dropbox extends SaveSync {
 	 */
 	fileMetadata = async (): Promise<DropboxFile | boolean | null> => {
 		if (await this.refreshTokenIfNeeded()) {
-			const response = await Runtime.jsonRequest<DropboxSearchResult>({
+			const response = await Request.json<DropboxSearchResult>({
 				method: 'POST',
 				url: 'https://api.dropboxapi.com/2/files/search_v2',
 				headers: {
@@ -147,7 +147,7 @@ export class Dropbox extends SaveSync {
 	@LogExecTime
 	async downloadExternalSave(): Promise<string | boolean> {
 		if (await this.refreshTokenIfNeeded()) {
-			const response = await Runtime.request({
+			const response = await Request.get({
 				method: 'POST',
 				url: 'https://content.dropboxapi.com/2/files/download',
 				headers: {
@@ -166,7 +166,7 @@ export class Dropbox extends SaveSync {
 	@LogExecTime
 	async uploadLocalSave(): Promise<number> {
 		if (await this.refreshTokenIfNeeded()) {
-			const response = await Runtime.jsonRequest<DropboxUploadResult>({
+			const response = await Request.json<DropboxUploadResult>({
 				method: 'POST',
 				url: 'https://content.dropboxapi.com/2/files/upload',
 				headers: {
@@ -187,11 +187,11 @@ export class Dropbox extends SaveSync {
 		if (!SaveSync.state) return false;
 		if (SaveSync.state.expires < Date.now()) {
 			await debug(`Refreshing Dropbox token (expired ${SaveSync.state.expires})`);
-			const response = await Runtime.request<RawResponse>({
+			const response = await Request.get<RawResponse>({
 				method: 'POST',
 				url: 'https://api.dropboxapi.com/oauth2/token',
 				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-				body: Runtime.buildQuery({
+				body: Request.buildQuery({
 					grant_type: 'refresh_token',
 					refresh_token: SaveSync.state.refresh,
 					client_id: Dropbox.CLIENT_ID,
@@ -208,11 +208,11 @@ export class Dropbox extends SaveSync {
 		if (dropboxState == undefined || dropboxState.state !== query.state) {
 			return SaveSyncLoginResult.STATE_ERROR;
 		}
-		const response = await Runtime.request<RawResponse>({
+		const response = await Request.get<RawResponse>({
 			method: 'POST',
 			url: 'https://api.dropboxapi.com/oauth2/token',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-			body: Runtime.buildQuery({
+			body: Request.buildQuery({
 				grant_type: 'authorization_code',
 				code: query.code,
 				client_id: Dropbox.CLIENT_ID,
@@ -225,7 +225,7 @@ export class Dropbox extends SaveSync {
 
 	delete = async (): Promise<boolean> => {
 		if (await this.refreshTokenIfNeeded()) {
-			const response = await Runtime.request({
+			const response = await Request.get({
 				method: 'POST',
 				url: 'https://api.dropboxapi.com/2/files/delete_v2',
 				headers: {

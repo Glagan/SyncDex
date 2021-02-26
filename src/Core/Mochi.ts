@@ -2,7 +2,7 @@ import { LocalTitle } from './Title';
 import { ServiceKey } from '../Service/Keys';
 import { ServiceName } from '../Service/Names';
 import { log } from './Log';
-import { Runtime } from './Runtime';
+import { Request } from './Request';
 
 interface ComplexType {
 	bar: boolean;
@@ -76,7 +76,7 @@ export class Mochi {
 		source: ServiceName = ServiceName.MangaDex,
 		extra?: MochiExtra
 	): Promise<MochiService | undefined> {
-		const response = await Runtime.jsonRequest<MochiResult>({
+		const response = await Request.json<MochiResult>({
 			url: Mochi.connections(id, source, extra),
 			headers: { Accept: 'application/json' },
 		});
@@ -102,7 +102,7 @@ export class Mochi {
 		source: ServiceName = ServiceName.MangaDex,
 		extra?: MochiExtra
 	): Promise<MochiService[] | undefined> {
-		const response = await Runtime.jsonRequest<MochiResult>({
+		const response = await Request.json<MochiResult>({
 			url: Mochi.connections(ids, source, extra),
 		});
 		if (!response.ok) {

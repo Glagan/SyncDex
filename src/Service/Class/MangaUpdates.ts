@@ -1,5 +1,5 @@
 import { debug, log, LogExecTime } from '../../Core/Log';
-import { Runtime } from '../../Core/Runtime';
+import { Request } from '../../Core/Request';
 import { LoginMethod, Service } from '../../Core/Service';
 import { MissableField, Title } from '../../Core/Title';
 import { ActivableKey } from '../Keys';
@@ -23,23 +23,23 @@ export class MangaUpdates extends Service {
 	loginUrl = 'https://www.mangaupdates.com/login.html';
 
 	loggedIn = async (): Promise<RequestStatus> => {
-		const response = await Runtime.request<RawResponse>({
+		const response = await Request.get<RawResponse>({
 			url: 'https://www.mangaupdates.com/aboutus.html',
 			credentials: 'include',
 		});
-		if (!response.ok) return Runtime.responseStatus(response);
+		if (!response.ok) return Request.status(response);
 		if (response.body && response.body.indexOf(`You are currently logged in as`) >= 0) return RequestStatus.SUCCESS;
 		return RequestStatus.FAIL;
 	};
 
 	@LogExecTime
 	async get(key: MediaKey): Promise<Title | RequestStatus> {
-		const response = await Runtime.request<RawResponse>({
+		const response = await Request.get<RawResponse>({
 			url: this.link(key),
 			method: 'GET',
 			credentials: 'include',
 		});
-		if (!response.ok) return Runtime.responseStatus(response);
+		if (!response.ok) return Request.status(response);
 		const parser = new DOMParser();
 		const body = parser.parseFromString(response.body, 'text/html');
 		const values: Partial<MangaUpdatesTitle> = { progress: { chapter: 0 }, key: key };
@@ -175,7 +175,7 @@ export class MangaUpdatesTitle extends Title {
 	};
 
 	updateStatus = async (status: MangaUpdatesStatus): Promise<RawResponse> => {
-		return await Runtime.request<RawResponse>({
+		return await Request.get<RawResponse>({
 			url: `https://www.mangaupdates.com/ajax/list_update.php?s=${this.key.id}&l=${status}`,
 			method: 'GET',
 			credentials: 'include',
@@ -205,22 +205,22 @@ export class MangaUpdatesTitle extends Title {
 					this.status == Status.COMPLETED;
 				const initialStatus = updated ? this.status : Status.READING;
 				const response = await this.updateStatus(MangaUpdatesTitle.fromStatus(initialStatus));
-				if (!response.ok) return Runtime.responseStatus(response);
+				if (!response.ok) return Request.status(response);
 				this.current.status = initialStatus;
 			}
 			if (!updated) {
-				const response = await Runtime.request<RawResponse>({
+				const response = await Request.get<RawResponse>({
 					url: 'https://www.mangaupdates.com/mylist.html',
 					method: 'POST',
 					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-					body: Runtime.buildQuery({
+					body: Request.buildQuery({
 						act: 'update',
 						list: MangaUpdatesTitle.statusToList(this.current.status),
 						moveto: MangaUpdatesTitle.statusToList(this.status),
 						[`DELETE[${this.key.id}]`]: '1',
 					}),
 				});
-				if (!response.ok) return Runtime.responseStatus(response);
+				if (!response.ok) return Request.status(response);
 			}
 			this.current.status = this.status;
 		}
@@ -230,13 +230,13 @@ export class MangaUpdatesTitle extends Title {
 			(this.volume !== undefined && this.volume > 0 && this.volume != this.current.progress.volume)
 		) {
 			const volume = this.volume !== undefined && this.volume > 0 ? `&set_v=${this.volume}` : '';
-			const response = await Runtime.request<RawResponse>({
+			const response = await Request.get<RawResponse>({
 				url: `https://www.mangaupdates.com/ajax/chap_update.php?s=${this.key.id}${volume}&set_c=${Math.floor(
 					this.chapter
 				)}`,
 				credentials: 'include',
 			});
-			if (!response.ok) return Runtime.responseStatus(response);
+			if (!response.ok) return Request.status(response);
 			this.current.progress = {
 				chapter: this.chapter,
 				volume: this.volume,
@@ -249,11 +249,11 @@ export class MangaUpdatesTitle extends Title {
 		) {
 			// Convert back to the MangaUpdates 0-10 range
 			const muScore = Math.round(this.score / 10);
-			const response = await Runtime.request<RawResponse>({
+			const response = await Request.get<RawResponse>({
 				url: `https://www.mangaupdates.com/ajax/update_rating.php?s=${this.key.id}&r=${muScore}`,
 				credentials: 'include',
 			});
-			if (!response.ok) return Runtime.responseStatus(response);
+			if (!response.ok) return Request.status(response);
 			this.current.score = this.score;
 		}
 		if (!this.inList) {
@@ -268,14 +268,14 @@ export class MangaUpdatesTitle extends Title {
 			await log(`Could not sync MangaUpdates: status ${this.status} / current ${this.current?.status}`);
 			return RequestStatus.BAD_REQUEST;
 		}
-		const response = await Runtime.request<RawResponse>({
+		const response = await Request.get<RawResponse>({
 			url: 'https://www.mangaupdates.com/mylist.html',
 			method: 'POST',
 			headers: {
 				Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
 				'Content-Type': 'application/x-www-form-urlencoded',
 			},
-			body: Runtime.buildQuery(
+			body: Request.buildQuery(
 				{
 					act: 'update',
 					list: MangaUpdatesTitle.statusToList(this.current!.status),
@@ -288,7 +288,7 @@ export class MangaUpdatesTitle extends Title {
 		});
 		this.current = { progress: { chapter: 0 }, status: Status.NONE };
 		this.reset();
-		const status = Runtime.responseStatus(response);
+		const status = Request.status(response);
 		return status == RequestStatus.SUCCESS ? RequestStatus.DELETED : status;
 	};
 

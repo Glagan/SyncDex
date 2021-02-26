@@ -114,7 +114,7 @@ if (quickDebug) {
 	}
 
 	// Toggle import buttons when starting/ending an import
-	browser.runtime.onMessage.addListener((message: Message): void => {
+	browser.runtime.onMessage.addListener((message: MessagePayload): void => {
 		const syncEnded = message.action == MessageAction.saveSyncComplete;
 		if (message.action == MessageAction.importStart || message.action == MessageAction.saveSyncStart) {
 			OptionsManager.instance.toggleImportProgressState(true);

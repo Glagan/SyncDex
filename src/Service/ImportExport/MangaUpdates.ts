@@ -1,6 +1,6 @@
 import { DOM } from '../../Core/DOM';
 import { duration, ExportModule, ImportModule } from '../../Core/Module';
-import { Runtime } from '../../Core/Runtime';
+import { Request } from '../../Core/Request';
 import { FoundTitle } from '../../Core/Title';
 import { MangaUpdatesTitle } from '../Class/MangaUpdates';
 import { ActivableKey } from '../Keys';
@@ -27,7 +27,7 @@ export class MangaUpdatesImport extends ImportModule {
 		for (let current = 0; !this.interface?.doStop && current < max; current++) {
 			const page = MangaUpdatesImport.lists[current];
 			progress.textContent = `Fetching all titles... Page ${current + 1} out of ${max}.`;
-			const response = await Runtime.request<RawResponse>({
+			const response = await Request.get<RawResponse>({
 				url: `https://www.mangaupdates.com/mylist.html?list=${page}`,
 				credentials: 'include',
 			});

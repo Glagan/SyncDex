@@ -1,7 +1,7 @@
 import { DOM } from '../../Core/DOM';
 import { duration, ExportModule, ImportModule } from '../../Core/Module';
 import { Options } from '../../Core/Options';
-import { Runtime } from '../../Core/Runtime';
+import { Request } from '../../Core/Request';
 import { FoundTitle } from '../../Core/Title';
 import { KitsuAPI, KitsuHeaders, KitsuManga, KitsuResponse, KitsuTitle } from '../Class/Kitsu';
 import { ActivableKey } from '../Keys';
@@ -25,7 +25,7 @@ export class KitsuImport extends ImportModule {
 		let max = 1;
 		while (!lastPage) {
 			progress.textContent = `Fetching all titles... Page ${current} out of ${max}.`;
-			const response = await Runtime.jsonRequest<KitsuResponse>({
+			const response = await Request.json<KitsuResponse>({
 				url: `${KitsuAPI}?
 						filter[user_id]=${Options.tokens.kitsuUser}&
 						filter[kind]=manga&
@@ -102,7 +102,7 @@ export class KitsuExport extends ExportModule {
 		let max = Math.ceil(titles.length / 500);
 		for (let current = 1; !this.interface?.doStop && current <= max; current++) {
 			const ids = titles.slice((current - 1) * 500, current * 500).map((title) => title.services.ku!.id!);
-			const response = await Runtime.jsonRequest<KitsuResponse>({
+			const response = await Request.json<KitsuResponse>({
 				url: `${KitsuAPI}
 					?filter[user_id]=${Options.tokens.kitsuUser}
 					&filter[mangaId]=${ids.join(',')}

@@ -1,5 +1,5 @@
 import { log, LogExecTime } from '../../Core/Log';
-import { Runtime } from '../../Core/Runtime';
+import { Request } from '../../Core/Request';
 import { LoginMethod, Service } from '../../Core/Service';
 import { Title } from '../../Core/Title';
 import { ActivableKey } from '../Keys';
@@ -29,13 +29,13 @@ export class MyAnimeList extends Service {
 	static username: string = '';
 
 	loggedIn = async (): Promise<RequestStatus> => {
-		const response = await Runtime.request<RawResponse>({
+		const response = await Request.get<RawResponse>({
 			url: 'https://myanimelist.net/about.php',
 			method: 'GET',
 			credentials: 'include',
 			cache: 'no-cache',
 		});
-		if (!response.ok) return Runtime.responseStatus(response);
+		if (!response.ok) return Request.status(response);
 		if (response.body == '') return RequestStatus.SERVER_ERROR;
 		const body = new DOMParser().parseFromString(response.body, 'text/html');
 		const header = body.querySelector<HTMLElement>('a.header-profile-link');
@@ -58,14 +58,14 @@ export class MyAnimeList extends Service {
 
 	@LogExecTime
 	async get(key: MediaKey): Promise<Title | RequestStatus> {
-		const response = await Runtime.request<RawResponse>({
+		const response = await Request.get<RawResponse>({
 			url: `https://myanimelist.net/ownlist/manga/${key.id}/edit?hideLayout`,
 			method: 'GET',
 			cache: 'no-cache',
 			credentials: 'include',
 			redirect: 'follow',
 		});
-		if (!response.ok) return Runtime.responseStatus(response);
+		if (!response.ok) return Request.status(response);
 		const values: Partial<MyAnimeListTitle> = { key: key, inList: false };
 		// name='csrf_token' content='0011223344556677788900112233445566777889'>
 		const csrf = /'csrf_token'\s*content='(.{40})'/.exec(response.body);
@@ -204,7 +204,7 @@ export class MyAnimeListTitle extends Title {
 		if (this.status == Status.REREADING) body['add_manga[is_rereading]'] = 1;
 		body['submitIt'] = 0;
 		body['csrf_token'] = this.csrf;
-		const response = await Runtime.request<RawResponse>({
+		const response = await Request.get<RawResponse>({
 			url: url,
 			method: 'POST',
 			credentials: 'include',
@@ -218,7 +218,7 @@ export class MyAnimeListTitle extends Title {
 				})
 				.join('&'),
 		});
-		if (!response.ok) return Runtime.responseStatus(response);
+		if (!response.ok) return Request.status(response);
 		if (!this.inList) {
 			this.inList = true;
 			return RequestStatus.CREATED;
@@ -231,7 +231,7 @@ export class MyAnimeListTitle extends Title {
 			await log(`Could not sync MyAnimeList: status ${this.status} csrf ${!!this.csrf}`);
 			return RequestStatus.BAD_REQUEST;
 		}
-		const response = await Runtime.request<RawResponse>({
+		const response = await Request.get<RawResponse>({
 			url: `https://myanimelist.net/ownlist/manga/${this.key.id}/delete`,
 			method: 'POST',
 			credentials: 'include',
@@ -240,7 +240,7 @@ export class MyAnimeListTitle extends Title {
 			},
 			body: `csrf_token=${this.csrf}`,
 		});
-		if (!response.ok) return Runtime.responseStatus(response);
+		if (!response.ok) return Request.status(response);
 		this.reset();
 		return RequestStatus.DELETED;
 	};

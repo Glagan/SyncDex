@@ -1,6 +1,6 @@
 import { DOM } from '../../Core/DOM';
 import { duration, ExportModule, ImportModule } from '../../Core/Module';
-import { Runtime } from '../../Core/Runtime';
+import { Request } from '../../Core/Request';
 import { LocalTitle } from '../../Core/Title';
 import { AnilistAPI, AnilistHeaders, AnilistTitle, AnilistStatus, AnilistDate } from '../Class/Anilist';
 import { ActivableKey } from '../Keys';
@@ -85,7 +85,7 @@ export class AnilistImport extends ImportModule {
 
 	preExecute = async (): Promise<boolean> => {
 		// Find required username
-		const viewerResponse = await Runtime.jsonRequest({
+		const viewerResponse = await Request.json({
 			url: AnilistAPI,
 			method: 'POST',
 			headers: AnilistHeaders(),
@@ -107,7 +107,7 @@ export class AnilistImport extends ImportModule {
 	execute = async (): Promise<boolean> => {
 		// Get list of *all* titles
 		const message = this.interface?.message('loading', 'Fetching all titles...');
-		const response = await Runtime.jsonRequest<AnilistListResponse>({
+		const response = await Request.json<AnilistListResponse>({
 			url: AnilistAPI,
 			method: 'POST',
 			headers: AnilistHeaders(),

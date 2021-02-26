@@ -5,10 +5,11 @@ import { dateFormat, progressToString } from '../Core/Utility';
 import { TitleEditor } from '../Core/TitleEditor';
 import { SyncModule } from '../Core/SyncModule';
 import { Services } from '../Service/Class/Map';
-import { Runtime } from '../Core/Runtime';
+import { Request } from '../Core/Request';
 import { ActivableKey } from '../Service/Keys';
 import { LocalTitle, TitleCollection } from '../Core/Title';
 import { MangaDex } from '../Core/MangaDex';
+import { Extension } from '../Core/Extension';
 
 interface SaveRow {
 	title: LocalTitle;
@@ -187,7 +188,7 @@ export class SaveViewer {
 				DOM.create('a', {
 					target: '_blank',
 					href: Services[key].link(title.services[key]!),
-					childs: [DOM.create('img', { src: Runtime.icon(serviceKey) })],
+					childs: [DOM.create('img', { src: Extension.icon(serviceKey) })],
 				})
 			);
 		}
@@ -347,7 +348,7 @@ export class SaveViewer {
 		DOM.clear(this.pagingPages);
 		DOM.clear(this.body);
 		if (reload) {
-			const response = await Runtime.jsonRequest({
+			const response = await Request.json({
 				url: MangaDex.api('get:user:me'),
 				credentials: 'include',
 			});

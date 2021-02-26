@@ -2,7 +2,7 @@ import { DOM } from '../../Core/DOM';
 import { MangaDex } from '../../Core/MangaDex';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { Options } from '../../Core/Options';
-import { Runtime } from '../../Core/Runtime';
+import { Request } from '../../Core/Request';
 import { Storage } from '../../Core/Storage';
 import { LocalTitle, TitleCollection } from '../../Core/Title';
 import { ServiceKey } from '../../Service/Keys';
@@ -50,7 +50,7 @@ export class MangaDexImport extends SpecialService {
 
 			// Check login and get an Username
 			let message = moduleInterface.message('loading', 'Fetching all Titles...');
-			const response = await Runtime.jsonRequest<MangaDexAPIResponse>({
+			const response = await Request.json<MangaDexAPIResponse>({
 				url: MangaDex.api('get:user:followed:list'),
 			});
 			message.classList.remove('loading');
@@ -117,18 +117,18 @@ export class MangaDexExport extends SpecialService {
 		// Status
 		let status = RequestStatus.SUCCESS;
 		if (online?.status != title.status) {
-			const response = await Runtime.request<RawResponse>({
+			const response = await Request.get<RawResponse>({
 				url: MangaDex.api('set:title:status', title.key.id!, title.status),
 				credentials: 'include',
 				headers: {
 					'X-Requested-With': 'XMLHttpRequest',
 				},
 			});
-			status = Runtime.responseStatus(response);
+			status = Request.status(response);
 		}
 		// Score
 		if (online?.rating != Math.round(title.score / 10)) {
-			await Runtime.request<RawResponse>({
+			await Request.get<RawResponse>({
 				url: MangaDex.api('set:title:rating', title.key.id!, title.score / 10),
 				credentials: 'include',
 				headers: {
@@ -141,7 +141,7 @@ export class MangaDexExport extends SpecialService {
 			Options.updateMDProgress &&
 			(online?.progress?.chapter !== title.progress.chapter || online?.progress?.volume !== title.progress.volume)
 		) {
-			await Runtime.request({
+			await Request.get({
 				method: 'POST',
 				url: MangaDex.api('update:title:progress', title.key.id!),
 				credentials: 'include',
@@ -164,7 +164,7 @@ export class MangaDexExport extends SpecialService {
 		moduleInterface.bindFormSubmit(async () => {
 			// Check login and get an Username
 			let message = moduleInterface.message('loading', 'Fetching all Titles...');
-			const response = await Runtime.jsonRequest<MangaDexAPIResponse>({
+			const response = await Request.json<MangaDexAPIResponse>({
 				url: MangaDex.api('get:user:followed:list'),
 			});
 			message.classList.remove('loading');

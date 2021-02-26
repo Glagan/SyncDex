@@ -1,5 +1,5 @@
 import { DOM } from '../Core/DOM';
-import { Runtime } from '../Core/Runtime';
+import { Request } from '../Core/Request';
 import { Storage } from '../Core/Storage';
 import { generateRandomString } from '../Options/PKCEHelper';
 import { Declare, SaveSync } from '../Core/SaveSync';
@@ -44,7 +44,7 @@ export class GoogleDrive extends SaveSync {
 	onCardClick = async () => {
 		const state = generateRandomString();
 		await Storage.set(StorageUniqueKey.GoogleDriveState, state);
-		const url = `https://accounts.google.com/o/oauth2/v2/auth?${Runtime.buildQuery({
+		const url = `https://accounts.google.com/o/oauth2/v2/auth?${Request.buildQuery({
 			access_type: 'offline',
 			prompt: 'consent',
 			response_type: 'code',
@@ -60,7 +60,7 @@ export class GoogleDrive extends SaveSync {
 		if (await this.refreshTokenIfNeeded()) {
 			if (SaveSync.state?.id) {
 				// Get the file Metadata if it exists
-				const response = await Runtime.jsonRequest<GoogleDriveMetadata>({
+				const response = await Request.json<GoogleDriveMetadata>({
 					url: `https://www.googleapis.com/drive/v3/files/${SaveSync.state.id}?fields=modifiedTime`,
 					headers: { Authorization: `Bearer ${SaveSync.state.token}` },
 				});
@@ -68,7 +68,7 @@ export class GoogleDrive extends SaveSync {
 					return new Date(response.body.modifiedTime).getTime();
 				}
 			} else {
-				const response = await Runtime.jsonRequest<GoogleDriveSearchResult>({
+				const response = await Request.json<GoogleDriveSearchResult>({
 					url: `https://www.googleapis.com/drive/v3/files/?pageSize=1&spaces=appDataFolder&q=name='Save.json'&fields=files(id,modifiedTime)`,
 					headers: { Authorization: `Bearer ${SaveSync.state!.token}` },
 				});
@@ -91,7 +91,7 @@ export class GoogleDrive extends SaveSync {
 	async downloadExternalSave(): Promise<string | boolean> {
 		if (await this.refreshTokenIfNeeded()) {
 			if (!SaveSync.state?.id) return '{}';
-			const response = await Runtime.request({
+			const response = await Request.get({
 				method: 'GET',
 				url: `https://www.googleapis.com/drive/v3/files/${SaveSync.state!.id}?alt=media`,
 				headers: { Authorization: `Bearer ${SaveSync.state!.token}` },
@@ -108,7 +108,7 @@ export class GoogleDrive extends SaveSync {
 	async uploadLocalSave(): Promise<number> {
 		if (await this.refreshTokenIfNeeded()) {
 			if (SaveSync.state?.id) {
-				const response = await Runtime.jsonRequest<GoogleDriveMetadata>({
+				const response = await Request.json<GoogleDriveMetadata>({
 					method: 'PATCH',
 					url: `https://www.googleapis.com/upload/drive/v3/files/${SaveSync.state.id}?uploadType=media&fields=id,modifiedTime`,
 					headers: { Authorization: `Bearer ${SaveSync.state!.token}`, 'Content-Type': 'application/json' },
@@ -123,7 +123,7 @@ export class GoogleDrive extends SaveSync {
 					return new Date(response.body.modifiedTime).getTime();
 				}
 			} else {
-				const response = await Runtime.jsonRequest<GoogleDriveMetadata>({
+				const response = await Request.json<GoogleDriveMetadata>({
 					method: 'POST',
 					url: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime',
 					headers: { Authorization: `Bearer ${SaveSync.state!.token}` },
@@ -144,11 +144,11 @@ export class GoogleDrive extends SaveSync {
 		if (!SaveSync.state) return false;
 		if (SaveSync.state.expires < Date.now()) {
 			await debug(`Refreshing Google Drive token (expired ${SaveSync.state.expires})`);
-			const response = await Runtime.request<RawResponse>({
+			const response = await Request.get<RawResponse>({
 				method: 'POST',
 				url: 'https://syncdex.nikurasu.org/',
 				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-				body: Runtime.buildQuery({
+				body: Request.buildQuery({
 					service: 'GoogleDrive',
 					refresh_token: SaveSync.state.refresh,
 				}),
@@ -164,11 +164,11 @@ export class GoogleDrive extends SaveSync {
 		if (googleDriveState == undefined || googleDriveState !== query.state) {
 			return SaveSyncLoginResult.STATE_ERROR;
 		}
-		const response = await Runtime.request({
+		const response = await Request.get({
 			method: 'POST',
 			url: 'https://syncdex.nikurasu.org/',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-			body: Runtime.buildQuery({
+			body: Request.buildQuery({
 				service: 'GoogleDrive',
 				code: query.code,
 				scope: GoogleDrive.SCOPE,
@@ -181,7 +181,7 @@ export class GoogleDrive extends SaveSync {
 	delete = async (): Promise<boolean> => {
 		if (await this.refreshTokenIfNeeded()) {
 			if (!SaveSync.state?.id) return false;
-			const response = await Runtime.request({
+			const response = await Request.get({
 				method: 'DELETE',
 				url: `https://www.googleapis.com/drive/v3/files/${SaveSync.state.id}`,
 				headers: { Authorization: `Bearer ${SaveSync.state?.token}` },

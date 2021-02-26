@@ -1,6 +1,6 @@
 import { DOM } from '../../Core/DOM';
 import { ExportModule, ImportModule } from '../../Core/Module';
-import { Runtime } from '../../Core/Runtime';
+import { Request } from '../../Core/Request';
 import { FoundTitle } from '../../Core/Title';
 import { MyAnimeList, MyAnimeListTitle, MyAnimeListStatus } from '../Class/MyAnimeList';
 import { dateFormatInput } from '../../Core/Utility';
@@ -76,7 +76,7 @@ export class MyAnimeListImport extends ImportModule {
 		let current = 1;
 		while (!this.interface?.doStop && !lastPage) {
 			progress.textContent = `Fetching all titles... Page ${current}.`;
-			const response = await Runtime.jsonRequest<MyAnimeListAPITitle[]>({
+			const response = await Request.json<MyAnimeListAPITitle[]>({
 				url: MyAnimeListImport.api(MyAnimeList.username, (current - 1) * 300),
 			});
 			if (!response.ok) {
@@ -179,7 +179,7 @@ export class MyAnimeListExport extends ExportModule {
 	};
 
 	preExecute = async (titles: LocalTitle[]): Promise<boolean> => {
-		let response = await Runtime.request<RawResponse>({
+		let response = await Request.get<RawResponse>({
 			url: `https://myanimelist.net/import.php`,
 			method: 'GET',
 			credentials: 'include',
@@ -208,7 +208,7 @@ export class MyAnimeListExport extends ExportModule {
 
 		// Send file
 		message = this.interface?.message('loading', 'Sending export file...');
-		const response = await Runtime.request<RawResponse>({
+		const response = await Request.get<RawResponse>({
 			url: `https://myanimelist.net/import.php`,
 			method: 'POST',
 			credentials: 'include',

@@ -3,13 +3,13 @@ import { isChrome } from '../Core/IsChrome';
 import { loadLogs, log } from '../Core/Log';
 import { ModuleStatus } from '../Core/Module';
 import { DefaultOptions, Options } from '../Core/Options';
-import { Runtime } from '../Core/Runtime';
 import { SaveSync } from '../Core/SaveSync';
 import { SaveSyncServices } from '../SaveSync/Map';
 import { Services } from '../Service/Class/Map';
 import { Storage } from '../Core/Storage';
 import { createModule } from '../Service/ImportExport/Utility';
 import { Updates } from '../Core/Updates';
+import { Message } from '../Core/Message';
 
 console.log('SyncDex :: Background');
 
@@ -23,7 +23,7 @@ function setIcon(title: string = '', bgColor: string = '', text: string = '') {
 	}
 }
 
-Runtime.messageSender = (message: Message) => handleMessage(message);
+Message.messageSender = (message: MessagePayload) => handleMessage(message);
 
 async function getCleanSave() {
 	const save = await Storage.get();
@@ -57,7 +57,7 @@ const cookieDomains = ['myanimelist.net', 'mangadex.org', 'mangaupdates.com', 'a
 // TODO: Handle containers in checkOnStartup since there is no sender
 // Probably gate which containers to update based on the future containers update with state for each containers
 // and import lists for each containers that need it by sending a fake MessageSender with preloaded tab informations for the container
-function handleMessage(message: Message, sender?: BrowserRuntime.MessageSender) {
+function handleMessage(message: MessagePayload, sender?: BrowserRuntime.MessageSender) {
 	if (message.action == MessageAction.request) {
 		return new Promise(async (resolve) => {
 			const msg = message as RequestMessage;

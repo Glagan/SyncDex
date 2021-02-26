@@ -8,25 +8,9 @@ interface Window {
 	};
 }
 
-declare const enum Status {
-	NONE,
-	READING,
-	COMPLETED,
-	PAUSED,
-	PLAN_TO_READ,
-	DROPPED,
-	REREADING,
-	WONT_READ,
-}
-
-//type ServiceID = { id: number } | { slug: string };
-type MediaKey = { id: number; slug?: string } | { id?: number; slug: string } | { id: number; slug: string };
-
-interface Progress {
-	chapter: number;
-	volume?: number;
-	oneshot?: boolean;
-}
+/**
+ * Messages
+ */
 
 interface FormDataFile {
 	content: string[];
@@ -116,7 +100,7 @@ type SaveSyncMessage =
 			status?: SaveSyncResult;
 	  };
 
-type Message = RequestMessage | OpenOptionsMessage | ImportMessage | SaveSyncMessage;
+type MessagePayload = RequestMessage | OpenOptionsMessage | ImportMessage | SaveSyncMessage;
 
 interface RequestResponse<T extends {} = Record<string, any> | string> {
 	url: string;
@@ -132,6 +116,29 @@ interface JSONResponse<T extends {} = Record<string, any>> extends RequestRespon
 
 interface RawResponse extends RequestResponse<string> {}
 
+/**
+ * Storage
+ */
+
+declare const enum Status {
+	NONE,
+	READING,
+	COMPLETED,
+	PAUSED,
+	PLAN_TO_READ,
+	DROPPED,
+	REREADING,
+	WONT_READ,
+}
+
+interface Progress {
+	chapter: number;
+	volume?: number;
+	oneshot?: boolean;
+}
+
+//type ServiceID = { id: number } | { slug: string };
+type MediaKey = { id: number; slug?: string } | { id?: number; slug: string } | { id: number; slug: string };
 type ServiceList = { [key in import('./Service/Keys').ActivableKey]?: MediaKey };
 
 interface AvailableOptions {
@@ -199,6 +206,15 @@ interface AvailableOptions {
 	version: number;
 	subVersion: number;
 }
+
+interface ManageOptions {
+	load: () => Promise<void>;
+	reloadTokens: () => Promise<void>;
+	save: () => Promise<void>;
+	reset: () => void;
+}
+
+type Options = AvailableOptions & ManageOptions;
 
 interface PKCEWaitingState {
 	state: string;
@@ -282,6 +298,10 @@ type ExportedSave = {
 	[StorageUniqueKey.LastSync]: number;
 }>;
 
+/**
+ * MangaDex
+ */
+
 interface MangaDexChapter {
 	id: number;
 	hash: string;
@@ -325,4 +345,54 @@ interface MangaDexSimpleManga {
 	mainCover: string;
 	tags: number[];
 	title: string;
+}
+
+/**
+ * Events
+ */
+
+type Title = import('./Core/Title').Title;
+type EventPayloads = {
+	// Title
+	'title:synced': { fields: (keyof Title)[]; title: Title };
+	// MangaDex
+	'mangadex:syncing': { field: 'status' | 'rating' | 'progress' };
+	'mangadex:synced': {
+		field: 'status' | 'rating' | 'progress';
+		value: { status: Status; progress: Progress; score: number };
+	};
+	// Sync Module
+	'sync:initialize:start': undefined;
+	'sync:initialize:end': undefined;
+	// Services
+	'service:syncing': { service: import('./Service/Keys').ServiceKey };
+	'service:synced': {
+		service: import('./Service/Keys').ServiceKey;
+		title: Title;
+		local: import('./Core/Title').LocalTitle;
+	};
+	// Save Sync
+	'savesync:start': { service: import('./Core/SaveSync').SaveSync };
+	'savesync:end': { service: import('./Core/SaveSync').SaveSync };
+	// Options
+	'options:saving': undefined;
+	'options:saved': undefined;
+	'options:updated': { name: keyof AvailableOptions; options: Options };
+	// SyncDex
+	'syncdex:reloaded': undefined;
+	'syncdex:loaded': { page: import('./SyncDex/Page').Page };
+};
+
+type EventCallback<K extends keyof EventPayloads> = (payload?: EventPayloads[K]) => void;
+
+interface EventOptions {
+	// Block the following events of the same type until callback is completed
+	blocking?: boolean;
+	// Send the event trough a Runtime message to be received in the background script/in the options or in a tab
+	global?: boolean;
+}
+
+interface EventDescription<K extends keyof EventPayloads> {
+	callback: EventCallback<K>;
+	options?: EventOptions;
 }

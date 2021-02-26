@@ -1,5 +1,5 @@
 import { browser } from 'webextension-polyfill-ts';
-import { Runtime } from './Runtime';
+import { Message } from './Message';
 import { SaveSync } from './SaveSync';
 
 console.log('SyncDex :: Storage');
@@ -33,7 +33,7 @@ export class Storage {
 			return browser.storage.local.set(args[0]);
 		}
 		if (SaveSync.state && Storage.isSyncableKey(args[0])) {
-			await Runtime.sendMessage({ action: MessageAction.saveSync });
+			await Message.send({ action: MessageAction.saveSync });
 		}
 		return browser.storage.local.set({ [`${args[0]}`]: args[1] });
 	}
@@ -60,7 +60,7 @@ export class Storage {
 		if (isNumber) key = key.toString();
 		await browser.storage.local.remove(key as string | string[]);
 		if (SaveSync.state && (typeof key !== 'string' || Storage.isSyncableKey(key))) {
-			await Runtime.sendMessage({ action: MessageAction.saveSync });
+			await Message.send({ action: MessageAction.saveSync });
 		}
 	}
 

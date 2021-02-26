@@ -2,13 +2,13 @@ import { StatusMap, Title } from './Title';
 import { DOM, AppendableElement } from './DOM';
 import { Modal } from './Modal';
 import { dateFormatInput } from './Utility';
-import { Runtime } from './Runtime';
 import { Options } from './Options';
 import { SyncModule } from './SyncModule';
 import { Service } from './Service';
 import { Services } from '../Service/Class/Map';
 import { ActivableKey } from '../Service/Keys';
 import { LocalTitle } from '../Core/Title';
+import { Extension } from './Extension';
 
 interface HistoryChapter {
 	node: HTMLElement;
@@ -154,7 +154,7 @@ export class TitleEditor {
 			const link = DOM.create('a', {
 				href: '#',
 				title: serviceName,
-				childs: [DOM.create('img', { src: Runtime.icon(serviceKey), title: serviceName })],
+				childs: [DOM.create('img', { src: Extension.icon(serviceKey), title: serviceName })],
 			});
 			if (title.services[serviceKey]) {
 				link.href = Services[serviceKey].link(title.services[serviceKey]!);

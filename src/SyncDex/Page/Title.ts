@@ -1,13 +1,14 @@
 import { AppendableElement, DOM } from '../../Core/DOM';
+import { Extension } from '../../Core/Extension';
 import { debug, LogExecTime, TryCatch } from '../../Core/Log';
 import { MangaDex } from '../../Core/MangaDex';
 import { Mochi } from '../../Core/Mochi';
 import { Options } from '../../Core/Options';
-import { Runtime } from '../../Core/Runtime';
+import { Request } from '../../Core/Request';
 import { SyncModule } from '../../Core/SyncModule';
 import { iconToService, LocalTitle, MissableField, StatusMap, Title } from '../../Core/Title';
 import { TitleEditor } from '../../Core/TitleEditor';
-import { dateCompare, dateFormat, isDate, progressToString } from '../../Core/Utility';
+import { dateCompare, dateFormat, isDate } from '../../Core/Utility';
 import { Services } from '../../Service/Class/Map';
 import { ActivableKey, ServiceKey, StaticKey } from '../../Service/Keys';
 import { ChapterRow } from '../ChapterRow';
@@ -69,7 +70,7 @@ class ServiceOverview {
 		this.tab = DOM.create('li', {
 			class: `tab ${key}`,
 			childs: [
-				DOM.create('img', { src: Runtime.icon(key) }),
+				DOM.create('img', { src: Extension.icon(key) }),
 				DOM.space(),
 				key == ServiceKey.SyncDex ? DOM.text('SyncDex') : Services[key].createTitle(),
 			],
@@ -355,7 +356,7 @@ class ServiceOverview {
 			events: {
 				click: (event) => {
 					event.preventDefault();
-					Runtime.openOptions();
+					Extension.openOptions();
 				},
 			},
 		});
@@ -1052,7 +1053,7 @@ export class TitleOverview extends Overview {
 export class TitlePage extends Page {
 	@LogExecTime
 	getMdTitle(id: number): Promise<JSONResponse<MangaDexTitleWithChaptersResponse>> {
-		return Runtime.jsonRequest<MangaDexTitleWithChaptersResponse>({
+		return Request.json<MangaDexTitleWithChaptersResponse>({
 			method: 'GET',
 			url: MangaDex.api('get:title', id, { chapters: true }),
 			credentials: 'include',
@@ -1145,7 +1146,7 @@ export class TitlePage extends Page {
 					const link = DOM.create('li', {
 						class: 'list-inline-item',
 						childs: [
-							DOM.create('img', { src: Runtime.icon(key), title: serviceName }),
+							DOM.create('img', { src: Extension.icon(key), title: serviceName }),
 							DOM.space(),
 							DOM.create('a', {
 								href: Services[key].link(title.services[key]!),

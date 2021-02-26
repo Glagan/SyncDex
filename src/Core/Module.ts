@@ -5,11 +5,12 @@ import { FoundTitle } from './Title';
 import { Mochi } from './Mochi';
 import { Storage } from './Storage';
 import { Options } from './Options';
-import { Runtime } from './Runtime';
+import { Request } from './Request';
 import { log } from './Log';
 import { ServiceKey } from '../Service/Keys';
 import { LocalTitle, TitleCollection } from './Title';
 import { MangaDex } from './MangaDex';
+import { Extension } from './Extension';
 
 export const enum ModuleStatus {
 	SUCCESS,
@@ -211,7 +212,7 @@ export abstract class ImportModule extends Module {
 										href: this.service.link(title.key),
 										childs: [
 											DOM.create('img', {
-												src: Runtime.icon(this.service.key),
+												src: Extension.icon(this.service.key),
 												title: this.service.name,
 											}),
 											DOM.space(),
@@ -393,7 +394,7 @@ export abstract class ExportModule extends Module {
 								target: '_blank',
 								href: MangaDex.link(title.key),
 								childs: [
-									DOM.create('img', { src: Runtime.icon(ServiceKey.MangaDex), title: 'MangaDex' }),
+									DOM.create('img', { src: Extension.icon(ServiceKey.MangaDex), title: 'MangaDex' }),
 									DOM.space(),
 									DOM.text(name),
 									DOM.space(),
@@ -412,7 +413,7 @@ export abstract class ExportModule extends Module {
 								target: '_blank',
 								href: this.service.link(title.services[this.service.key]!),
 								childs: [
-									DOM.create('img', { src: Runtime.icon(this.service.key), title: 'MangaDex' }),
+									DOM.create('img', { src: Extension.icon(this.service.key), title: 'MangaDex' }),
 									DOM.space(),
 									DOM.text(name),
 									DOM.space(),

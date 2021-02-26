@@ -6,11 +6,10 @@ import { Service, LoginMethod } from '../../Core/Service';
 import { SaveOptions } from '../Utility';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { OptionsManager } from '../OptionsManager';
-import { Runtime } from '../../Core/Runtime';
 import { ActivableKey, ServiceKey } from '../../Service/Keys';
 import { ServicesExport, ServicesImport } from '../../Service/ImportExport/Map';
-import { ExportModule, ImportModule } from '../../Core/Module';
 import { createModule } from '../../Service/ImportExport/Utility';
+import { Message } from '../../Core/Message';
 
 class ServiceCard {
 	manager: ServiceManager;
@@ -404,7 +403,7 @@ export class ServiceManager {
 		this.importAllButton.addEventListener('click', async (event) => {
 			event.preventDefault();
 			// Start modules in the background -- response will be received in toggleImportProgressState
-			await Runtime.sendMessage({ action: MessageAction.silentImport });
+			await Message.send({ action: MessageAction.silentImport });
 		});
 		// Default State
 		this.refreshActive();

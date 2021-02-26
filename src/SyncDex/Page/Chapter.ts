@@ -4,13 +4,15 @@ import { ReportInformations, SyncModule } from '../../Core/SyncModule';
 import { Options } from '../../Core/Options';
 import { Mochi } from '../../Core/Mochi';
 import { Services } from '../../Service/Class/Map';
-import { Runtime } from '../../Core/Runtime';
+import { Request } from '../../Core/Request';
 import { MangaDex } from '../../Core/MangaDex';
-import { injectScript, progressFromString, progressToString } from '../../Core/Utility';
+import { injectScript, progressFromString } from '../../Core/Utility';
 import { ActivableKey } from '../../Service/Keys';
 import { DOM } from '../../Core/DOM';
 import { TitleEditor } from '../../Core/TitleEditor';
 import { LogExecTime, TryCatch } from '../../Core/Log';
+import { Extension } from '../../Core/Extension';
+import { Button } from 'SimpleNotification';
 
 type ReaderEvent =
 	| 'loadingchange'
@@ -109,7 +111,7 @@ class ReadingOverview {
 
 	initializeService = (key: ActivableKey, hasId: boolean): void => {
 		const icon = DOM.create('img', {
-			src: Runtime.icon(key),
+			src: Extension.icon(key),
 			title: Services[key].name,
 		});
 		if (hasId) {
@@ -219,7 +221,7 @@ export class ChapterPage extends Page {
 
 	@LogExecTime
 	getMdUserTitle(id: number): Promise<JSONResponse<MangaDexUserTitleResponse>> {
-		return Runtime.jsonRequest<MangaDexUserTitleResponse>({
+		return Request.json<MangaDexUserTitleResponse>({
 			method: 'GET',
 			url: MangaDex.api('get:user:title', id),
 			credentials: 'include',
@@ -601,7 +603,7 @@ export class ChapterPage extends Page {
 							type: 'info',
 							value: 'Options',
 							onClick: (notification) => {
-								Runtime.openOptions();
+								Extension.openOptions();
 								notification.closeAnimated();
 							},
 						},

@@ -1,6 +1,6 @@
 import { log, LogExecTime } from '../../Core/Log';
 import { Options } from '../../Core/Options';
-import { Runtime } from '../../Core/Runtime';
+import { Request } from '../../Core/Request';
 import { LoginMethod, Service } from '../../Core/Service';
 import { Title } from '../../Core/Title';
 import { ActivableKey } from '../Keys';
@@ -117,30 +117,30 @@ export class Kitsu extends Service {
 
 	getUserId = async (): Promise<RequestStatus> => {
 		if (Options.tokens.kitsuToken === undefined) return RequestStatus.MISSING_TOKEN;
-		let response = await Runtime.jsonRequest<KitsuUserResponse>({
+		let response = await Request.json<KitsuUserResponse>({
 			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
 			method: 'GET',
 			headers: KitsuHeaders(),
 		});
-		if (!response.ok) return Runtime.responseStatus(response);
+		if (!response.ok) return Request.status(response);
 		Options.tokens.kitsuUser = response.body.data[0].id;
 		return RequestStatus.SUCCESS;
 	};
 
 	loggedIn = async (): Promise<RequestStatus> => {
 		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken) return RequestStatus.MISSING_TOKEN;
-		const response = await Runtime.jsonRequest<KitsuUserResponse>({
+		const response = await Request.json<KitsuUserResponse>({
 			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
 			headers: {
 				Authorization: `Bearer ${Options.tokens.kitsuToken}`,
 				Accept: 'application/vnd.api+json',
 			},
 		});
-		return Runtime.responseStatus(response);
+		return Request.status(response);
 	};
 
 	login = async (username: string, password: string): Promise<RequestStatus> => {
-		let response = await Runtime.jsonRequest({
+		let response = await Request.json({
 			url: 'https://kitsu.io/api/oauth/token',
 			method: 'POST',
 			headers: {
@@ -151,7 +151,7 @@ export class Kitsu extends Service {
 				password
 			)}`,
 		});
-		if (!response.ok) return Runtime.responseStatus(response);
+		if (!response.ok) return Request.status(response);
 		Options.tokens.kitsuToken = response.body.access_token;
 		const userIdResp = await this.getUserId();
 		if (userIdResp !== RequestStatus.SUCCESS) return userIdResp;
@@ -161,12 +161,12 @@ export class Kitsu extends Service {
 	@LogExecTime
 	async get(key: MediaKey): Promise<Title | RequestStatus> {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
-		const response = await Runtime.jsonRequest<KitsuResponse>({
+		const response = await Request.json<KitsuResponse>({
 			url: `${KitsuAPI}?filter[manga_id]=${key.id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=chapterCount,volumeCount,canonicalTitle`,
 			method: 'GET',
 			headers: KitsuHeaders(),
 		});
-		if (!response.ok) return Runtime.responseStatus(response);
+		if (!response.ok) return Request.status(response);
 		const body = response.body;
 		const values: Partial<KitsuTitle> = { loggedIn: true, key: key };
 		if (body.data.length == 1) {
@@ -237,7 +237,7 @@ export class KitsuTitle extends Title {
 				progress.volume = this.max.volume;
 			}
 		}
-		const response = await Runtime.jsonRequest<KitsuPersistResponse>({
+		const response = await Request.json<KitsuPersistResponse>({
 			url: url,
 			method: method,
 			headers: KitsuHeaders(),
@@ -270,7 +270,7 @@ export class KitsuTitle extends Title {
 				},
 			}),
 		});
-		if (!response.ok) return Runtime.responseStatus(response);
+		if (!response.ok) return Request.status(response);
 		this.libraryEntryId = parseInt(response.body.data.id);
 		if (!this.inList) {
 			this.inList = true;
@@ -285,12 +285,12 @@ export class KitsuTitle extends Title {
 			await log(`Could not sync Kitsu: status ${this.status} libraryEntryId ${this.libraryEntryId}`);
 			return RequestStatus.BAD_REQUEST;
 		}
-		let response = await Runtime.request({
+		let response = await Request.get({
 			url: `https://kitsu.io/api/edge/library-entries/${this.libraryEntryId}`,
 			method: 'DELETE',
 			headers: KitsuHeaders(),
 		});
-		if (!response.ok) return Runtime.responseStatus(response);
+		if (!response.ok) return Request.status(response);
 		this.libraryEntryId = 0;
 		this.reset();
 		return RequestStatus.DELETED;

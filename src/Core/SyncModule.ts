@@ -1,13 +1,13 @@
 import { Title, StatusMap } from './Title';
 import { Options } from './Options';
-import { Runtime } from './Runtime';
+import { Request } from './Request';
 import { Overview } from '../SyncDex/Overview';
 import { Services } from '../Service/Class/Map';
-import { debug, log, LogExecTime } from './Log';
+import { log, LogExecTime } from './Log';
 import { ActivableKey, StaticKey } from '../Service/Keys';
 import { LocalTitle } from './Title';
 import { MangaDex } from './MangaDex';
-import { progressToString } from './Utility';
+import { Extension } from './Extension';
 
 export type SyncReport = {
 	[key in ActivableKey]?: RequestStatus | false;
@@ -277,7 +277,7 @@ export class SyncModule {
 	async syncMangaDex(fct: 'unfollow' | 'status' | 'score' | 'progress'): Promise<RequestResponse> {
 		let response: RawResponse;
 		if (fct == 'progress') {
-			response = await Runtime.request({
+			response = await Request.get({
 				method: 'POST',
 				url: this.mangaDexFunction(fct),
 				credentials: 'include',
@@ -288,7 +288,7 @@ export class SyncModule {
 				},
 			});
 		} else {
-			response = await Runtime.request({
+			response = await Request.get({
 				method: 'GET',
 				url: this.mangaDexFunction(fct),
 				credentials: 'include',
@@ -358,7 +358,7 @@ export class SyncModule {
 
 	reportNotificationRow = (key: ActivableKey | StaticKey.SyncDex, status: string) => {
 		const name = key === StaticKey.SyncDex ? 'SyncDex' : Services[key].name;
-		return `![${name}|${Runtime.icon(key)}] **${name}**>*>[${status}]<`;
+		return `![${name}|${Extension.icon(key)}] **${name}**>*>[${status}]<`;
 	};
 
 	/**

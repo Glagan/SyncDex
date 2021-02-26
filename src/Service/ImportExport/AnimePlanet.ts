@@ -1,6 +1,6 @@
 import { DOM } from '../../Core/DOM';
 import { duration, ExportModule, ImportModule } from '../../Core/Module';
-import { Runtime } from '../../Core/Runtime';
+import { Request } from '../../Core/Request';
 import { LocalTitle } from '../../Core/Title';
 import { AnimePlanet, AnimePlanetTitle } from '../Class/AnimePlanet';
 import { ActivableKey } from '../Keys';
@@ -12,7 +12,7 @@ export class AnimePlanetImport extends ImportModule {
 			return false;
 		}
 		const message = this.interface?.message('loading', 'Setting list type...');
-		const response = await Runtime.request<RawResponse>({
+		const response = await Request.get<RawResponse>({
 			url: `https://www.anime-planet.com/users/${AnimePlanet.username}/manga/reading?sort=title&mylist_view=list`,
 			credentials: 'include',
 		});
@@ -31,7 +31,7 @@ export class AnimePlanetImport extends ImportModule {
 		let max = 1;
 		while (!this.interface?.doStop && !lastPage) {
 			progress.textContent = `Fetching all titles... Page ${current} out of ${max}.`;
-			const response = await Runtime.request<RawResponse>({
+			const response = await Request.get<RawResponse>({
 				url: `https://www.anime-planet.com/users/${AnimePlanet.username}/manga?sort=title&page=${current}`,
 				credentials: 'include',
 			});

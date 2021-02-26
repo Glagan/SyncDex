@@ -9,7 +9,7 @@ export enum LogLevel {
 	Debug = 2,
 }
 
-export const DefaultOptions: AvailableOptions = {
+export const DefaultOptions: Readonly<AvailableOptions> = {
 	// Chapter and Title List / Updates
 	hideHigher: false,
 	hideLower: true,
@@ -75,14 +75,7 @@ export const DefaultOptions: AvailableOptions = {
 	subVersion: parseInt(/\.(\d+)$/.exec(browser.runtime.getManifest().version)![1]),
 };
 
-interface ManageOptions {
-	load: () => Promise<void>;
-	reloadTokens: () => Promise<void>;
-	save: () => Promise<void>;
-	reset: () => void;
-}
-
-export const Options: AvailableOptions & ManageOptions = Object.assign(
+export const Options: Options = Object.assign(
 	JSON.parse(JSON.stringify(DefaultOptions)), // Avoid references
 	{
 		load: async (): Promise<void> => {
@@ -102,6 +95,7 @@ export const Options: AvailableOptions & ManageOptions = Object.assign(
 
 		save: (): Promise<void> => {
 			const values = Object.assign({}, Options) as AvailableOptions & Partial<ManageOptions>;
+			// Delete functions, we can't pass them and they are not deleted
 			delete values.load;
 			delete values.reloadTokens;
 			delete values.save;

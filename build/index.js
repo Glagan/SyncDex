@@ -95,7 +95,7 @@ let bundleList = [
 const bundles = bundleList.map((bundle) => {
 	return {
 		input: bundle.input,
-		// external: ['SimpleNotification'],
+		external: ['SimpleNotification'],
 		plugins: (() => {
 			let list = [
 				typescript({ cacheRoot: 'build/.cache' }),
