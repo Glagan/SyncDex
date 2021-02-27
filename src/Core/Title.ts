@@ -47,7 +47,7 @@ export interface FoundTitle {
 	mochiKey: number | string;
 }
 
-export abstract class Title {
+export abstract class Title implements Title {
 	key: MediaKey = { id: 0 };
 	inList: boolean = false;
 	loggedIn: boolean = false;
@@ -151,9 +151,9 @@ export abstract class Title {
 		return synced;
 	};
 
-	setProgress(progress: Progress): boolean {
+	setProgress(progress: Progress): ProgressUpdate {
 		let completed = false;
-		const created = this.status == Status.NONE || this.status == Status.PLAN_TO_READ;
+		const started = this.status == Status.NONE || this.status == Status.PLAN_TO_READ;
 		if (progress.oneshot || (this.max?.chapter && this.max.chapter <= progress.chapter)) {
 			completed = this.status !== Status.COMPLETED || !this.end;
 			this.status = Status.COMPLETED;
@@ -164,10 +164,10 @@ export abstract class Title {
 		this.progress.chapter = progress.chapter;
 		if (progress.volume) this.volume = progress.volume;
 		this.progress.oneshot = progress.oneshot;
-		if (created && !this.start) {
+		if (started && !this.start) {
 			this.start = new Date();
 		}
-		return completed;
+		return { started, completed };
 	}
 
 	/**
@@ -246,7 +246,7 @@ export abstract class Title {
 	}
 }
 
-export class LocalTitle extends Title {
+export class LocalTitle extends Title implements LocalTitle {
 	// `ServiceKey` list of mapped Service for the Title.
 	services!: ServiceList;
 	forceServices!: ActivableKey[];
@@ -481,7 +481,7 @@ export class LocalTitle extends Title {
 		}
 	}
 
-	setProgress(progress: Progress): boolean {
+	setProgress(progress: Progress): ProgressUpdate {
 		const res = super.setProgress(progress);
 		if (Options.saveOpenedChapters) {
 			this.addChapter(progress.chapter);

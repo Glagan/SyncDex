@@ -1,6 +1,6 @@
 import { Page } from '../Page';
 import { iconToService, LocalTitle, Title } from '../../Core/Title';
-import { ReportInformations, SyncModule } from '../../Core/SyncModule';
+import { SyncModule } from '../../Core/SyncModule';
 import { Options } from '../../Core/Options';
 import { Mochi } from '../../Core/Mochi';
 import { Services } from '../../Service/Class/Map';
@@ -12,7 +12,7 @@ import { DOM } from '../../Core/DOM';
 import { TitleEditor } from '../../Core/TitleEditor';
 import { LogExecTime, TryCatch } from '../../Core/Log';
 import { Extension } from '../../Core/Extension';
-import { Button } from 'SimpleNotification';
+import { UpdateQueue } from '../../Core/UpdateQueue';
 
 type ReaderEvent =
 	| 'loadingchange'
@@ -209,15 +209,6 @@ export class ChapterPage extends Page {
 		super();
 		this.content = document.getElementById('content') as HTMLElement;
 	}
-
-	syncShowResult = async (
-		syncModule: SyncModule,
-		informations: ReportInformations,
-		previousState: LocalTitle
-	): Promise<void> => {
-		const report = await syncModule.syncExternal();
-		syncModule.displayReportNotifications(report, informations, previousState);
-	};
 
 	@LogExecTime
 	getMdUserTitle(id: number): Promise<JSONResponse<MangaDexUserTitleResponse>> {
@@ -423,13 +414,8 @@ export class ChapterPage extends Page {
 	@LogExecTime
 	async update(details: SimpleChapter): Promise<void> {
 		if (!this.syncModule || !this.title) return;
-
-		// Save State for *Cancel* button
-		const previousState = this.syncModule.saveState();
-		// Find current Chapter Progress
-		const created = this.title.status == Status.NONE || this.title.status == Status.PLAN_TO_READ;
-		let completed = false;
 		const currentProgress = details.progress;
+
 		// Exit early if there is no progress
 		if (isNaN(currentProgress.chapter)) {
 			if (Options.errorNotifications) {
@@ -440,49 +426,18 @@ export class ChapterPage extends Page {
 			}
 			// Execute basic first request sync if needed before leaving
 			// Only sync if Title has a Status to be synced to
-			await this.title.persist();
 			if (this.firstRequest && Options.services.length > 0 && this.title.status !== Status.NONE) {
-				const report = await this.syncModule.syncExternal();
-				this.syncModule.displayReportNotifications(
-					report,
-					{ created, completed: false, firstRequest: this.firstRequest },
-					previousState
-				);
+				await this.syncModule.syncExternal();
 			}
 			return;
 		}
-		// Confirms button if updateOnlyInList or updateHigherOnly/updateNextOnly is enabled
-		const confirmButtons = (): Button[] => [
-			{
-				type: 'success',
-				value: 'Update',
-				onClick: async (notification: SimpleNotification) => {
-					notification.closeAnimated();
-					const completed = this.title!.setProgress(currentProgress);
-					await this.title!.persist();
-					await this.syncShowResult(
-						this.syncModule!,
-						{
-							created: created,
-							completed: completed,
-							localUpdated: true,
-						},
-						previousState
-					);
-				},
-			},
-			{
-				type: 'message',
-				value: 'Close',
-				onClick: (notification) => notification.closeAnimated(),
-			},
-		];
+
 		// Collect all warnings and reasons to not update to the current Chapter
-		let missingUpdateValidations: string[] = [];
+		const reasons: string[] = [];
 		// Update title state if not delayed -- Handle external titles as delayed
-		const delayed = details.status == 'delayed' || details.status == 'external';
-		if (delayed && Options.confirmChapter) {
-			missingUpdateValidations.push(
+		const unavailable = details.status == 'delayed' || details.status == 'external';
+		if (unavailable && Options.confirmChapter) {
+			reasons.push(
 				`**${this.title.name}** Chapter **${currentProgress.chapter}** is delayed or external and has not been updated.`
 			);
 		}
@@ -501,13 +456,11 @@ export class ChapterPage extends Page {
 			mdListOptionValid =
 				this.syncModule.mdState.status !== undefined && this.syncModule.mdState.status !== Status.NONE;
 			if (!mdListOptionValid && Options.confirmChapter) {
-				missingUpdateValidations.push(
-					`**${this.title.name}** is not your **MangaDex** List and wasn't updated.`
-				);
+				reasons.push(`**${this.title.name}** is not your **MangaDex** List and wasn't updated.`);
 			}
 		}
 		// Check if currentProgress should be updated and use setProgress if needed
-		let doUpdate = mdListOptionValid && !delayed;
+		let doUpdate = mdListOptionValid && !unavailable;
 		if (doUpdate) {
 			const isFirstChapter = this.title.chapter == 0 && currentProgress.chapter == 0;
 			if (
@@ -517,50 +470,28 @@ export class ChapterPage extends Page {
 					!Options.saveOnlyNext &&
 					(isFirstChapter || this.title.chapter < currentProgress.chapter))
 			) {
-				completed = this.title.setProgress(currentProgress); // Also update openedChapters
+				await this.syncModule.syncProgress(currentProgress);
 			} else if (Options.confirmChapter && (Options.saveOnlyNext || Options.saveOnlyHigher)) {
-				doUpdate = false;
-				missingUpdateValidations.push(
+				reasons.push(
 					`**${this.title.name}** Chapter **${currentProgress.chapter}** is not ${
 						Options.saveOnlyNext ? 'the next' : 'higher'
 					} and hasn't been updated.`
 				);
+				doUpdate = false;
+				await UpdateQueue.confirm(this.syncModule, currentProgress, reasons);
 			}
-		}
-		// If there is reasons to NOT update automatically to the current progress, display all reasons in a single Notification
-		if (missingUpdateValidations.length > 0) {
-			SimpleNotification.info(
-				{
-					title: 'Not Updated',
-					image: MangaDex.thumbnail(this.title.key, 'thumb'),
-					text: missingUpdateValidations.join(`\n`),
-					buttons: confirmButtons(),
-				},
-				{ duration: Options.infoDuration }
-			);
 		}
 		// Always Update History values if enabled, do not look at other options
 		if (Options.biggerHistory) {
 			await this.title.setHistory(details.id, currentProgress);
+			await this.title.persist();
 		}
-		await this.title.persist(); // Always save
 
-		// If all conditions are met we can sync to current progress
-		if (doUpdate) {
-			await this.syncShowResult(
-				this.syncModule,
-				{
-					created: created,
-					completed: completed,
-					firstRequest: this.firstRequest,
-					localUpdated: doUpdate,
-				},
-				previousState
-			);
-		}
 		// If we do not need to update, we still sync to the current non updated progress but no output
-		else if (this.firstRequest && Options.services.length > 0) await this.syncModule.syncExternal();
-		if (this.firstRequest) this.firstRequest = false;
+		if (!doUpdate && this.firstRequest && Options.services.length > 0) {
+			await this.syncModule.syncExternal();
+		}
+		this.firstRequest = false;
 	}
 
 	@TryCatch(Page.errorNotification)
@@ -594,28 +525,7 @@ export class ChapterPage extends Page {
 
 		// Check if there is no Services enabled -- Progress is still saved locally
 		if (Options.services.length == 0 && Options.errorNotifications) {
-			SimpleNotification.error(
-				{
-					title: 'No active Services',
-					text: `You have no **active Services** !\nEnable one in the **Options** and refresh this page.\nAll Progress is still saved locally.`,
-					buttons: [
-						{
-							type: 'info',
-							value: 'Options',
-							onClick: (notification) => {
-								Extension.openOptions();
-								notification.closeAnimated();
-							},
-						},
-						{
-							type: 'message',
-							value: 'Close',
-							onClick: (notification) => notification.closeAnimated(),
-						},
-					],
-				},
-				{ duration: Options.errorDuration }
-			);
+			UpdateQueue.noServices();
 		}
 
 		// No support for Legacy Reader

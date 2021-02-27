@@ -136,6 +136,7 @@ interface Progress {
 	volume?: number;
 	oneshot?: boolean;
 }
+type ProgressUpdate = { started: boolean; completed: boolean };
 
 //type ServiceID = { id: number } | { slug: string };
 type MediaKey = { id: number; slug?: string } | { id?: number; slug: string } | { id: number; slug: string };
@@ -270,6 +271,48 @@ interface StorageTitle {
 	lr?: number; // lastRead
 }
 
+interface Title {
+	key: MediaKey;
+	inList: boolean;
+	loggedIn: boolean;
+	name?: string;
+	max?: Partial<Progress>;
+	status: Status;
+	progress: Progress;
+	score: number;
+	start?: Date;
+	end?: Date;
+}
+
+interface LocalTitle extends Title {
+	services: ServiceList;
+	forceServices: import('./Service/Keys').ActivableKey[];
+	chapters: number[];
+	lastTitle?: number;
+	lastChapter?: number;
+	history?: Progress;
+	highest?: number;
+	lastRead?: number;
+	volumeChapterCount: { [key: number]: number };
+	volumeChapterOffset: { [key: number]: number };
+	volumeResetChapter: boolean;
+}
+
+type LocalTitleState = Pick<
+	LocalTitle,
+	| 'inList'
+	| 'progress'
+	| 'chapters'
+	| 'status'
+	| 'score'
+	| 'name'
+	| 'lastChapter'
+	| 'lastRead'
+	| 'history'
+	| 'start'
+	| 'end'
+>;
+
 declare const enum StorageUniqueKey {
 	Options = 'options',
 	Import = 'import',
@@ -297,6 +340,14 @@ type ExportedSave = {
 	[StorageUniqueKey.SaveSyncInProgress]: boolean;
 	[StorageUniqueKey.LastSync]: number;
 }>;
+
+/**
+ * SyncModule
+ */
+
+type SyncReport = {
+	[key in import('./Service/Keys').ActivableKey]?: RequestStatus | false;
+};
 
 /**
  * MangaDex
@@ -359,24 +410,35 @@ interface MangaDexSimpleManga {
  * Events
  */
 
-type Title = import('./Core/Title').Title;
 type EventPayloads = {
-	// Title
+	// SyncModule.syncLocal
 	'title:syncing': never;
 	'title:synced': { title: Title };
-	// MangaDex
-	'mangadex:syncing': { field: MangaDexTitleField };
-	'mangadex:synced': { field: MangaDexTitleField; state: MangaDexState };
-	// Sync Module
+	// SyncModule.initialize call
 	'sync:initialize:start': never;
-	'sync:initialize:end': { title: import('./Core/Title').LocalTitle };
-	// Services
+	// await in SyncModule.waitInitialize before SyncModule functions
+	'sync:initialize:end': { title: LocalTitle };
+	// SyncModule.syncExternal
+	'sync:start': { title: LocalTitle };
+	'sync:end': (
+		| { after: 'cancel' }
+		| {
+				after: 'sync';
+				state: LocalTitleState;
+				result: ProgressUpdate;
+				report: SyncReport;
+		  }
+	) & { syncModule: import('./Core/SyncModule').SyncModule };
+	// Single service sync from SyncModule.syncExternal
 	'service:syncing': { key: import('./Service/Keys').ServiceKey };
 	'service:synced': {
 		key: import('./Service/Keys').ServiceKey;
 		title: Title | RequestStatus | boolean;
-		local: import('./Core/Title').LocalTitle;
+		local: LocalTitle;
 	};
+	// SyncModule.syncMangaDex-- also called from syncExternal if enabled
+	'mangadex:syncing': { field: MangaDexTitleField };
+	'mangadex:synced': { field: MangaDexTitleField; state: MangaDexState };
 	// Save Sync
 	'savesync:start': { service: import('./Core/SaveSync').SaveSync };
 	'savesync:end': { service: import('./Core/SaveSync').SaveSync };
@@ -389,7 +451,7 @@ type EventPayloads = {
 	'syncdex:loaded': { page: import('./SyncDex/Page').Page };
 };
 
-type EventCallback<K extends keyof EventPayloads> = (payload?: EventPayloads[K]) => void;
+type EventCallback<K extends keyof EventPayloads> = ((payload: EventPayloads[K]) => void) | (() => void);
 type EventDispatchParams<K extends keyof EventPayloads> = EventPayloads[K] extends never
 	? [event: K]
 	: [event: K, payload: EventPayloads[K]];

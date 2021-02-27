@@ -42,8 +42,8 @@ export function dispatch<K extends keyof EventPayloads>(...params: EventDispatch
 	(async () => {
 		for (const id in listeners[event]!) {
 			if (listeners[event]![id].options?.blocking) {
-				await listeners[event]![id].callback(payload);
-			} else listeners[event]![id].callback(payload);
+				await listeners[event]![id].callback(payload!);
+			} else listeners[event]![id].callback(payload!);
 		}
 	})();
 }

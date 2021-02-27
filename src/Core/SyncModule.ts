@@ -1,24 +1,12 @@
-import { Title, StatusMap } from './Title';
+import { Title } from './Title';
 import { Options } from './Options';
 import { Request } from './Request';
 import { Services } from '../Service/Class/Map';
 import { log, LogExecTime } from './Log';
-import { ActivableKey, StaticKey } from '../Service/Keys';
+import { ActivableKey } from '../Service/Keys';
 import { LocalTitle } from './Title';
 import { MangaDex } from './MangaDex';
-import { Extension } from './Extension';
 import { dispatch } from './Event';
-
-export type SyncReport = {
-	[key in ActivableKey]?: RequestStatus | false;
-};
-
-export interface ReportInformations {
-	created?: boolean;
-	completed: boolean;
-	firstRequest?: boolean;
-	localUpdated?: boolean;
-}
 
 export class SyncModule {
 	title: LocalTitle;
@@ -129,6 +117,19 @@ export class SyncModule {
 		if (doSave) await this.title.persist();
 		dispatch('title:synced', { title: this.title });
 		return doSave;
+	}
+
+	/**
+	 * Update the progress of the instance LocalTitle.
+	 */
+	@LogExecTime
+	async syncProgress(progress: Progress): Promise<void> {
+		dispatch('sync:start', { title: this.title });
+		const state = this.saveState();
+		const result = this.title.setProgress(progress);
+		await this.title.persist();
+		const report = await this.syncExternal();
+		dispatch('sync:end', { after: 'sync', state, result, report, syncModule: this });
 	}
 
 	/**
@@ -244,6 +245,21 @@ export class SyncModule {
 		return report;
 	}
 
+	/**
+	 * Restore state for the instance LocalTitle and update all external Services.
+	 */
+	@LogExecTime
+	async cancel(state: LocalTitleState): Promise<void> {
+		dispatch('sync:start', { title: this.title });
+		this.restoreState(state);
+		await this.title.persist();
+		await this.syncExternal();
+		dispatch('sync:end', { after: 'cancel', syncModule: this });
+	}
+
+	/**
+	 * Build a full URL to interact with the MangaDex API with the instance LocalTitle.
+	 */
 	mangaDexFunction = (fct: MangaDexTitleField): string => {
 		switch (fct) {
 			case 'unfollow':
@@ -291,7 +307,7 @@ export class SyncModule {
 	 * Save a copy of the current Title to be able to restore some of it's value if the *Cancel* button is clicked
 	 * 	in the this.displayReportNotifications function.
 	 */
-	saveState = (): LocalTitle => {
+	saveState = (): LocalTitleState => {
 		this.previousMdState = {
 			status: this.mdState.status,
 			rating: this.mdState.rating,
@@ -304,7 +320,7 @@ export class SyncModule {
 	 * Restore chapters, mdStatus, mdScore, lastChapter, lastRead,
 	 * 	inList, status, progress, score, start, end from previousState.
 	 */
-	restoreState = (title: LocalTitle): void => {
+	restoreState = (title: LocalTitleState): void => {
 		if (this.previousMdState) {
 			this.mdState.status = this.previousMdState.status;
 			this.mdState.rating = this.previousMdState.rating;
@@ -340,119 +356,5 @@ export class SyncModule {
 		if (res > RequestStatus.CREATED) {
 			dispatch('service:synced', { key, title: res, local: this.title });
 		} else dispatch('service:synced', { key, title, local: this.title });
-	};
-
-	reportNotificationRow = (key: ActivableKey | StaticKey.SyncDex, status: string) => {
-		const name = key === StaticKey.SyncDex ? 'SyncDex' : Services[key].name;
-		return `![${name}|${Extension.icon(key)}] **${name}**>*>[${status}]<`;
-	};
-
-	/**
-	 * Display result notification, one line per Service
-	 * {Icon} Name [Created] / [Synced] / [Imported]
-	 * Display another notification for errors, with the same template
-	 * {Icon} Name [Not Logged In] / [Bad Request] / [Server Error]
-	 */
-	displayReportNotifications = (
-		report: SyncReport,
-		informations: ReportInformations,
-		previousState: LocalTitle,
-		onCancel?: () => void
-	): void => {
-		const updateRows: string[] = [];
-		const errorRows: string[] = [];
-		for (const key of Options.services) {
-			if (report[key] === undefined) continue;
-			if (report[key] === false) {
-				if (informations.firstRequest) errorRows.push(this.reportNotificationRow(key, 'Logged Out'));
-			} else if (this.title.services[key] === undefined) {
-				if (informations.firstRequest) errorRows.push(this.reportNotificationRow(key, 'No ID'));
-			} else if (report[key]! <= RequestStatus.DELETED) {
-				updateRows.push(
-					this.reportNotificationRow(
-						key,
-						report[key] === RequestStatus.CREATED
-							? 'Created'
-							: report[key] === RequestStatus.DELETED
-							? 'Deleted'
-							: 'Synced'
-					)
-				);
-			} else {
-				let error = '';
-				switch (report[key]) {
-					case RequestStatus.SERVER_ERROR:
-						error = 'Server Error';
-						break;
-					case RequestStatus.BAD_REQUEST:
-						error = 'Bad Request';
-						break;
-					case RequestStatus.MISSING_TOKEN:
-						error = 'Logged Out';
-						break;
-					case RequestStatus.NOT_FOUND:
-						error = 'Not Found';
-						break;
-					case RequestStatus.FAIL:
-					default:
-						error = 'Error';
-				}
-				errorRows.push(this.reportNotificationRow(key, error));
-			}
-		}
-		// Display Notifications
-		if (Options.notifications) {
-			let ending = '';
-			if (updateRows.length > 0) {
-				ending = updateRows.join('\n');
-			} else if (!informations.firstRequest || Options.services.length == 0 || informations.localUpdated) {
-				ending = this.reportNotificationRow(StaticKey.SyncDex, 'Synced');
-			}
-			SimpleNotification.success(
-				{
-					title: 'Progress Updated',
-					image: MangaDex.thumbnail(this.title.key, 'thumb'),
-					text: `Chapter ${this.title.chapter}\n${
-						informations.created ? '**Start Date** set to Today !\n' : ''
-					}${informations.completed ? '**End Date** set to Today !\n' : ''}${ending}`,
-					buttons: [
-						{
-							type: 'warning',
-							value: 'Cancel',
-							onClick: async (notification) => {
-								notification.closeAnimated();
-								dispatch('title:syncing');
-								this.restoreState(previousState);
-								await this.title.persist();
-								dispatch('title:synced', { title: this.title });
-								await this.syncExternal();
-								if (onCancel) onCancel();
-								SimpleNotification.success({
-									title: 'Cancelled',
-									image: MangaDex.thumbnail(this.title.key, 'thumb'),
-									text: `**${this.title.name}** update cancelled.\n${
-										this.title.status == Status.NONE
-											? 'Removed from list'
-											: `[${StatusMap[this.title.status]}] Chapter ${this.title.chapter}`
-									}`,
-								});
-							},
-						},
-						{ type: 'message', value: 'Close', onClick: (notification) => notification.closeAnimated() },
-					],
-				},
-				{ duration: Options.successDuration }
-			);
-		}
-		if (Options.errorNotifications && errorRows.length > 0) {
-			SimpleNotification.error(
-				{
-					title: 'Error',
-					image: MangaDex.thumbnail(this.title.key, 'thumb'),
-					text: errorRows.join('\n'),
-				},
-				{ sticky: true }
-			);
-		}
 	};
 }
