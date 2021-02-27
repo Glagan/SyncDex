@@ -2,10 +2,11 @@ import { Options } from '../../Core/Options';
 import { Page } from '../Page';
 import { DOM } from '../../Core/DOM';
 import { Thumbnail } from '../Thumbnail';
-import { Title, TitleCollection } from '../../Core/Title';
+import { LocalTitle, TitleCollection } from '../../Core/Title';
 import { ChapterRow } from '../ChapterRow';
 import { SyncModule } from '../../Core/SyncModule';
 import { TryCatch } from '../../Core/Log';
+import { listen } from '../../Core/Event';
 
 class TitleChapterGroup {
 	id: number = 0;
@@ -76,10 +77,21 @@ class TitleChapterGroup {
 		}
 	};
 
-	updateDisplayedRows = (title: Title) => {
+	updateDisplayedRows = (title: LocalTitle) => {
 		if (Options.highlight) this.highlight(title);
 		if (Options.hideHigher || Options.hideLast || Options.hideLower) this.hide(title);
 		if (Options.progressInThumbnail) this.thumbnail?.updateContent(title);
+		if (Options.saveOpenedChapters) {
+			for (const row of this.rows) {
+				row.parent.classList.remove('current');
+				if (title.chapters.indexOf(title.chapter) < 0) {
+					row.disableToggleButton();
+				} else row.enableToggleButton();
+				if (row.progress.chapter == title.chapter) {
+					row.parent.classList.add('current');
+				}
+			}
+		}
 	};
 
 	/**
@@ -146,60 +158,42 @@ class TitleChapterGroup {
 					// Bind Set as Latest button
 					row.markButton.addEventListener('click', async (event) => {
 						event.preventDefault();
+						if (row.progress.chapter == title.chapter) return;
+
 						if (!this.initializedSync) {
 							syncModule?.initialize();
 							await syncModule.syncLocal();
 							this.initializedSync = true;
 						}
-						if (row.progress.chapter == title.chapter) return;
-						row.parent.classList.add('current');
-						const previousState = syncModule.saveState();
-						const completed = title.setProgress(row.progress);
-						// No need to do anything here, only add or remove chapters from the list
-						// Highlight will fix everything
-						if (Options.saveOpenedChapters) {
-							title.updateChapterList(row.progress.chapter);
-							// Update visible rows and add possible subchapters to the chapter list
-							for (const otherRow of this.rows) {
-								otherRow.parent.classList.remove('current');
-								if (otherRow.progress.chapter > row.progress.chapter) {
-									row.disableToggleButton();
-								} else if (otherRow.progress.chapter < row.progress.chapter) {
-									title.addChapter(otherRow.progress.chapter);
-									row.enableToggleButton();
-								} else {
-									otherRow.parent.classList.add('current');
-									row.enableToggleButton();
-								}
-							}
-						}
-						// Update Title
-						title.chapter = row.progress.chapter;
-						if (title.status == Status.NONE) {
-							title.status = Status.READING;
-							if (!title.start) title.start = new Date();
-						}
+
+						// Update to current row progress
+						row.markButton.classList.add('loading');
+						await syncModule.syncProgress(row.progress);
+						row.markButton.classList.remove('loading');
+
+						// Always update History
 						if (Options.biggerHistory) {
 							await title.setHistory(row.chapterId);
+							await title.persist();
 						}
-						await title.persist();
-						this.findNextChapter(title);
-						this.updateDisplayedRows(title);
-						const report = await syncModule!.syncExternal(true);
-						syncModule.displayReportNotifications(report, { completed: completed }, previousState, () => {
-							this.findNextChapter(title);
-							this.updateDisplayedRows(title);
-							// Update toggle buttons
-							for (const row of this.rows) {
-								row.parent.classList.remove('current');
-								if (title.chapters.indexOf(title.chapter) < 0) {
-									row.disableToggleButton();
-								} else row.enableToggleButton();
-								if (row.progress.chapter == title.chapter) {
-									row.parent.classList.add('current');
+
+						// Add possible subchapters to the chapter list
+						if (Options.saveOpenedChapters) {
+							let updated = false;
+							for (const otherRow of this.rows) {
+								if (otherRow.progress.chapter < row.progress.chapter) {
+									title.addChapter(otherRow.progress.chapter);
+									updated = true;
 								}
 							}
-						});
+							if (updated) {
+								await title.persist();
+							}
+						}
+
+						// Update Group
+						this.findNextChapter(title);
+						this.updateDisplayedRows(title);
 					});
 				}
 			}
@@ -230,7 +224,7 @@ class TitleChapterGroup {
 		}
 	};
 
-	hide = (title: Title): void => {
+	hide = (title: LocalTitle): void => {
 		TitleChapterGroup.totalHiddenRows -= this.hiddenRows;
 		this.hiddenRows = 0;
 		const progress = title.progress;
@@ -272,7 +266,7 @@ class TitleChapterGroup {
 		TitleChapterGroup.toggleButton.value.textContent = `${TitleChapterGroup.totalHiddenRows}`;
 	};
 
-	highlight = (title: Title): void => {
+	highlight = (title: LocalTitle): void => {
 		const progress = title.progress;
 		let lastColor = Options.colors.highlights.length;
 		for (const group of this.groups) {
@@ -288,20 +282,23 @@ class TitleChapterGroup {
 				row.node.style.backgroundColor = '';
 				(row.node.firstElementChild as HTMLElement).style.backgroundColor = '';
 				if (row.progress) {
+					// * Next Chapter
 					if (this.nextChapterRows.indexOf(row.node) >= 0) {
-						// * Next Chapter
 						row.node.style.backgroundColor = Options.colors.nextChapter;
 						selected = j;
 						foundNext = true;
 						outerColor = Options.colors.nextChapter;
-					} else if (row.progress.chapter > progress.chapter) {
-						// * Higher Chapter
+					}
+					// * Higher Chapter
+					else if (row.progress.chapter > progress.chapter) {
 						row.node.style.backgroundColor = Options.colors.higherChapter;
-					} else if (row.progress.chapter < progress.chapter) {
-						// * Lower Chapter
+					}
+					// * Lower Chapter
+					else if (row.progress.chapter < progress.chapter) {
 						row.node.style.backgroundColor = Options.colors.lowerChapter;
-					} else if (progress.chapter == row.progress.chapter) {
-						// * Current Chapter
+					}
+					// * Current Chapter
+					else if (progress.chapter == row.progress.chapter) {
 						row.node.style.backgroundColor = Options.colors.highlights[TitleChapterGroup.currentColor];
 						if (!foundNext) selected = j;
 					}
@@ -318,7 +315,7 @@ class TitleChapterGroup {
 		TitleChapterGroup.currentColor = (TitleChapterGroup.currentColor + 1) % lastColor;
 	};
 
-	findNextChapter = (title: Title): void => {
+	findNextChapter = (title: LocalTitle): void => {
 		this.nextChapters = [];
 		const progress = title.progress;
 		let lowestProgress: Progress | undefined = undefined;
@@ -447,6 +444,19 @@ export class ChapterListPage extends Page {
 				group.addTitleLinkToRow(group.rows[0]);
 			}
 		}
+		// Add listener for cancel button after "Set Latest" progress update
+		// 	Find the group and update displayed rows back to the previous progress
+		listen('sync:end', (payload) => {
+			if (payload.after !== 'cancel') return;
+			const title = payload.syncModule.title;
+			for (const group of groups) {
+				if (group.id == payload.syncModule.title.key.id) {
+					group.findNextChapter(title);
+					group.updateDisplayedRows(title);
+					break;
+				}
+			}
+		});
 
 		// Button to toggle hidden chapters
 		const navBar = document.querySelector<HTMLElement>('#content ul.nav.nav-tabs');

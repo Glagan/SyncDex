@@ -1,7 +1,7 @@
 import { DOM } from '../Core/DOM';
 import { MangaDex } from '../Core/MangaDex';
 import { Options } from '../Core/Options';
-import { Title } from '../Core/Title';
+import { LocalTitle } from '../Core/Title';
 
 export class Thumbnail {
 	static container?: HTMLElement;
@@ -15,7 +15,7 @@ export class Thumbnail {
 	currentRow: HTMLElement | undefined;
 	hideTimeout: number | undefined;
 
-	constructor(id: number, title?: Title) {
+	constructor(id: number, title?: LocalTitle) {
 		this.id = id;
 
 		// Create tooltip
@@ -142,7 +142,7 @@ export class Thumbnail {
 		});
 	}
 
-	updateContent = (title: Title): void => {
+	updateContent = (title: LocalTitle): void => {
 		DOM.clear(this.content);
 		let hasContent = false;
 		if (title.chapter) {
@@ -215,7 +215,7 @@ export class Thumbnail {
 		this.thumbnail.style.top = `${top}px`;
 	};
 
-	static bind(id: number, row: HTMLElement, title?: Title): Thumbnail {
+	static bind(id: number, row: HTMLElement, title?: LocalTitle): Thumbnail {
 		if (!Thumbnail.list[id]) {
 			Thumbnail.list[id] = new Thumbnail(id, title);
 		}

@@ -127,6 +127,9 @@ export class SyncModule {
 		dispatch('sync:start', { title: this.title });
 		const state = this.saveState();
 		const result = this.title.setProgress(progress);
+		if (Options.saveOpenedChapters) {
+			this.title.addChapter(progress.chapter);
+		}
 		await this.title.persist();
 		const report = await this.syncExternal();
 		dispatch('sync:end', { after: 'sync', state, result, report, syncModule: this });
