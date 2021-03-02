@@ -575,6 +575,8 @@ class ChapterList {
 	volumeChapterOffset: { [key: number]: number };
 	// Flag if there is more than one page if Volume reset chapters
 	incomplete: boolean;
+	// Keep track of *all* buttons to disabled/enable them
+	buttons: HTMLButtonElement[] = [];
 
 	/**
 	 * Find each rows, their previous/next and add CSS for animations
@@ -648,6 +650,10 @@ class ChapterList {
 		const title = syncModule.title;
 		for (const row of this.rows) {
 			row.addManageButtons();
+			this.buttons.push(row.markButton);
+			if (row.toggleButton) {
+				this.buttons.push(row.toggleButton);
+			}
 
 			// Bind chapter list button -- saveOpenedChapters is enabled if it exist
 			row.toggleButton?.addEventListener('click', async (event) => {
@@ -747,6 +753,18 @@ class ChapterList {
 			if (row.progress.chapter == title.chapter) {
 				row.parent.classList.add('current');
 			}
+		}
+	}
+
+	disable() {
+		for (const button of this.buttons) {
+			button.disabled = true;
+		}
+	}
+
+	enable() {
+		for (const button of this.buttons) {
+			button.disabled = false;
 		}
 	}
 }
@@ -1213,7 +1231,11 @@ export class TitlePage extends Page {
 			mangaDexList.update(payload.field, payload.state);
 			mangaDexList.enable();
 		});
-		listen('sync:initialize:start', () => overviews.main.syncing());
+		listen('sync:initialize:start', () => {
+			overviews.main.syncing();
+			mangaDexList.disable();
+			chapterList.disable();
+		});
 		listen('service:syncing', (payload) => overviews.syncing(payload.key));
 		listen('service:synced', (payload) => overviews.synced(payload.key, payload.title, payload.local));
 		listen('sync:initialize:end', (payload) => {
@@ -1224,19 +1246,27 @@ export class TitlePage extends Page {
 			// Add the *Completed* button only if the title is complete
 			if (title.max && title.max.chapter) {
 				overviews.buttons.addCompletedButton();
-			}
+			} else overviews.buttons.removeCompletedButton();
 			overviews.main.synced();
+			mangaDexList.enable();
+			chapterList.enable();
 		});
 		listen('sync:start', () => {
 			overviews.main.syncing();
 			overviews.buttons.hide();
+			chapterList.disable();
 			mangaDexList.disable();
 		});
 		listen('sync:end', (payload) => {
-			overviews.buttons.toggle(payload.syncModule.title.status);
-			overviews.main.update(payload.syncModule.title, undefined);
+			const title = payload.syncModule.title;
+			if (title.status == Status.NONE) {
+				overviews.buttons.display();
+			} else overviews.buttons.hide();
+			overviews.buttons.toggle(title.status);
+			overviews.main.update(title, undefined);
 			overviews.main.synced();
-			chapterList.highlight(payload.syncModule.title);
+			chapterList.highlight(title);
+			chapterList.enable();
 			mangaDexList.enable();
 		});
 

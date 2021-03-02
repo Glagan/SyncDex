@@ -11,7 +11,7 @@ export class ChapterRow {
 	manage: HTMLElement;
 	toggleButton?: HTMLButtonElement;
 	toggleIcon?: HTMLElement;
-	markButton: HTMLElement;
+	markButton: HTMLButtonElement;
 	progress: Progress;
 	hidden: boolean;
 	language?: string;

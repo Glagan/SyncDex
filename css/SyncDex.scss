@@ -368,7 +368,9 @@
 	display: flex;
 	justify-content: space-between;
 
-	button {
+	button,
+	button.disabled,
+	button:disabled {
 		opacity: 0;
 
 		&.set-latest:not(:last-child) {

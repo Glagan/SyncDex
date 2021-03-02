@@ -9,6 +9,7 @@ import { UpdatesPage } from './Page/Updates';
 import { HistoryPage } from './Page/History';
 import { ChapterPage } from './Page/Chapter';
 import { History } from '../Core/History';
+import { UpdateQueue } from '../Core/UpdateQueue';
 
 const start = Date.now();
 console.log('SyncDex :: Index');
@@ -30,6 +31,7 @@ console.log('SyncDex :: Index');
 		return;
 	}
 	document.body.classList.add('sc-loaded');
+	UpdateQueue.register();
 
 	// Load
 	await Options.load();
