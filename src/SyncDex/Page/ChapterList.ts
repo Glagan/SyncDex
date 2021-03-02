@@ -447,7 +447,7 @@ export class ChapterListPage extends Page {
 		// Add listener for cancel button after "Set Latest" progress update
 		// 	Find the group and update displayed rows back to the previous progress
 		listen('sync:end', (payload) => {
-			if (payload.after !== 'cancel') return;
+			if (payload.type !== 'cancel') return;
 			const title = payload.syncModule.title;
 			for (const group of groups) {
 				if (group.id == payload.syncModule.title.key.id) {

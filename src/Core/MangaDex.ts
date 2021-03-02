@@ -72,4 +72,20 @@ export namespace MangaDex {
 				}&_=${Date.now()}`;
 		}
 	}
+
+	/**
+	 * Build a full URL to interact with the MangaDex API with the instance LocalTitle.
+	 */
+	export function list(field: MangaDexTitleField, id: number, state: MangaDexState): string {
+		switch (field) {
+			case 'unfollow':
+				return MangaDex.api('set:title:unfollow', id);
+			case 'status':
+				return MangaDex.api('set:title:status', id, state.status);
+			case 'rating':
+				return MangaDex.api('set:title:rating', id, Math.round(state.rating! / 10));
+			case 'progress':
+				return MangaDex.api('update:title:progress', id);
+		}
+	}
 }

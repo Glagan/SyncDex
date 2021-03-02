@@ -121,7 +121,7 @@ const staticKeys = nameKeys.staticKeys.join('\n');
 const activableKeys = nameKeys.activableKeys.join('\n');
 fs.writeFileSync(
 	keysPath,
-	`/** Generated File */\nexport enum StaticKey {\n${staticKeys}\n}\n\nexport enum ActivableKey {\n${activableKeys}\n}\n\nexport const ServiceKey = {\n\t...StaticKey, ...ActivableKey\n};\nexport type ServiceKey = StaticKey | ActivableKey;\n`
+	`/** Generated File */\nexport enum StaticKey {\n${staticKeys}\n}\n\nexport enum ActivableKey {\n${activableKeys}\n}\n\nexport const ServiceKey = {\n\t...StaticKey, ...ActivableKey\n};\nexport type OverviewKey = ActivableKey | StaticKey.SyncDex;\nexport type ServiceKey = StaticKey | ActivableKey;\n`
 );
 console.info('Generated Name and Keys.');
 

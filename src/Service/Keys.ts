@@ -14,6 +14,8 @@ export enum ActivableKey {
 }
 
 export const ServiceKey = {
-	...StaticKey, ...ActivableKey
+	...StaticKey,
+	...ActivableKey,
 };
+export type OverviewKey = ActivableKey | StaticKey.SyncDex;
 export type ServiceKey = StaticKey | ActivableKey;

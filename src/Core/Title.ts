@@ -108,7 +108,7 @@ export abstract class Title implements Title {
 	 * Check if *this* Title is more recent that the other Title.
 	 * A different score always trigger a true, since higher Services are tested last.
 	 */
-	isMoreRecent = (other: Title): boolean => {
+	isMoreRecent(other: Title): boolean {
 		const missingFields = this.missingFields;
 		return (
 			this.chapter > other.chapter ||
@@ -123,13 +123,13 @@ export abstract class Title implements Title {
 				this.end !== undefined &&
 				(other.end === undefined || other.end > this.end))
 		);
-	};
+	}
 
 	/**
 	 * Compare the Media on the Service to a Title to check if it has the same progress.
 	 * Avoid checking fields that cannot exist on the Service.
 	 */
-	isSyncedWith = (title: Title): boolean => {
+	isSyncedWith(title: Title): boolean {
 		const missingFields = this.missingFields;
 		const synced =
 			title.status === this.status &&
@@ -149,7 +149,7 @@ export abstract class Title implements Title {
 				(title.end === undefined && this.end === undefined) ||
 				(title.end !== undefined && this.end !== undefined && dateCompare(title.end, this.end)));
 		return synced;
-	};
+	}
 
 	setProgress(progress: Progress): ProgressUpdate {
 		let completed = false;
@@ -164,6 +164,9 @@ export abstract class Title implements Title {
 		this.progress.chapter = progress.chapter;
 		if (progress.volume) this.volume = progress.volume;
 		this.progress.oneshot = progress.oneshot;
+		if (started) {
+			this.status = Status.READING;
+		}
 		if (started && !this.start) {
 			this.start = new Date();
 		}
@@ -174,7 +177,7 @@ export abstract class Title implements Title {
 	 * Assign all values from the Title to *this*.
 	 * If a field is missing in *this* it's ignored and deleted.
 	 */
-	import = (title: Title): void => {
+	import(title: Title): void {
 		const missingFields = this.missingFields;
 		this.status = title.status;
 		this.chapter = title.chapter;
@@ -188,7 +191,7 @@ export abstract class Title implements Title {
 		if (missingFields.indexOf('end') < 0 && title.end) {
 			this.end = new Date(title.end);
 		} else delete this.end;
-	};
+	}
 
 	/**
 	 * Select all higher (or lower for dates) values from both Titles and assign them to *this*.
@@ -220,15 +223,15 @@ export abstract class Title implements Title {
 	/**
 	 * Call merge on the given Title.
 	 */
-	mergeTo = (title: Title): void => {
+	mergeTo(title: Title): void {
 		title.merge(this);
-	};
+	}
 
-	isNextChapter = (progress: Progress): boolean => {
+	isNextChapter(progress: Progress): boolean {
 		return progress.chapter > this.chapter && progress.chapter < Math.floor(this.chapter) + 2;
-	};
+	}
 
-	reset = (): void => {
+	reset(): void {
 		this.inList = false;
 		this.status = Status.NONE;
 		delete this.start;
@@ -236,7 +239,7 @@ export abstract class Title implements Title {
 		this.progress.chapter = 0;
 		delete this.progress.volume;
 		this.score = 0;
-	};
+	}
 
 	/**
 	 * Get the ID used by Mochi that can only be a number or a string.
@@ -365,17 +368,17 @@ export class LocalTitle extends Title implements LocalTitle {
 		return mapped;
 	}
 
-	static get = async (id: number): Promise<LocalTitle> => {
+	static async get(id: number): Promise<LocalTitle> {
 		const data = await Storage.get(id);
 		if (data === undefined) return new LocalTitle(id);
 		return new LocalTitle(id, LocalTitle.fromSave(data));
-	};
+	}
 
 	/**
 	 * Convert a Title to a `SaveTitle` with reduced key length.
 	 * All keys with no value or empty value are not saved.
 	 */
-	toSave = (): StorageTitle => {
+	toSave(): StorageTitle {
 		const mapped: StorageTitle = {
 			s: {},
 			st: this.status,
@@ -429,29 +432,29 @@ export class LocalTitle extends Title implements LocalTitle {
 			};
 		}
 		return mapped;
-	};
+	}
 
-	persist = async (): Promise<RequestStatus> => {
+	async persist(): Promise<RequestStatus> {
 		this.inList = true;
 		await Storage.set({ [`${this.key.id}`]: this.toSave() });
 		return RequestStatus.SUCCESS;
-	};
+	}
 
-	refresh = async (): Promise<RequestStatus> => {
+	async refresh(): Promise<RequestStatus> {
 		const data = await LocalTitle.get(this.key.id!);
 		Object.assign(this, data);
 		return RequestStatus.SUCCESS;
-	};
+	}
 
-	delete = async (): Promise<RequestStatus> => {
+	async delete(): Promise<RequestStatus> {
 		this.reset();
 		this.name = undefined;
 		this.chapters = [];
 		await Storage.remove(`${this.key.id}`);
 		return RequestStatus.SUCCESS;
-	};
+	}
 
-	merge(other: Title): void {
+	merge(other: Title) {
 		if (other instanceof LocalTitle) {
 			// Update all 'number' properties to select the highest ones
 			for (let k in this) {
@@ -489,7 +492,7 @@ export class LocalTitle extends Title implements LocalTitle {
 		return res;
 	}
 
-	addChapter = (chapter: number): boolean => {
+	addChapter(chapter: number): boolean {
 		let max = this.chapters.length;
 		const doAdd = this.chapters.indexOf(chapter) < 0;
 		let index = 0;
@@ -513,18 +516,18 @@ export class LocalTitle extends Title implements LocalTitle {
 			max--;
 		}
 		return doAdd;
-	};
+	}
 
-	removeChapter = (chapter: number): void => {
+	removeChapter(chapter: number): void {
 		const index = this.chapters.indexOf(chapter);
 		if (index >= 0) this.chapters.splice(index, 1);
-	};
+	}
 
 	/**
 	 * Remove all chapters above the current progress and
 	 * 	fill possible gap in chapters between the current progress and a new chapter.
 	 */
-	updateChapterList = (chapter: number): void => {
+	updateChapterList(chapter: number): void {
 		// Prune chapters
 		this.chapters = this.chapters.filter((c) => c <= chapter);
 		this.addChapter(chapter);
@@ -533,39 +536,39 @@ export class LocalTitle extends Title implements LocalTitle {
 		for (let i = chapter; i > limit; i--) {
 			this.addChapter(i);
 		}
-	};
+	}
 
-	setHistory = async (chapterId: number, progress?: Progress): Promise<void> => {
+	async setHistory(chapterId: number, progress?: Progress): Promise<void> {
 		this.lastChapter = chapterId;
 		this.lastRead = Date.now();
 		this.history = progress ? progress : this.progress;
 		if (History.add(this.key.id!)) {
 			await History.save();
 		}
-	};
+	}
 
-	doForceService = (key: ActivableKey): boolean => {
+	doForceService(key: ActivableKey): boolean {
 		return this.forceServices.indexOf(key) >= 0;
-	};
+	}
 
-	addForceService = (key: ActivableKey): boolean => {
+	addForceService(key: ActivableKey): boolean {
 		if (this.forceServices.indexOf(key) < 0) {
 			this.forceServices.push(key);
 			return true;
 		}
 		return false;
-	};
+	}
 
-	removeForceService = (key: ActivableKey): boolean => {
+	removeForceService(key: ActivableKey): boolean {
 		const index = this.forceServices.indexOf(key);
 		if (index >= 0) {
 			this.forceServices.splice(index, 1);
 			return true;
 		}
 		return false;
-	};
+	}
 
-	updateProgressFromVolumes = (progress: Progress): void => {
+	updateProgressFromVolumes(progress: Progress): void {
 		if (this.volumeResetChapter && progress.volume) {
 			if (progress.volume > 1 && progress.chapter == 0) {
 				progress.chapter = 0.1;
@@ -580,7 +583,7 @@ export class LocalTitle extends Title implements LocalTitle {
 				progress.chapter -= this.volumeChapterOffset[progress.volume];
 			}
 		}
-	};
+	}
 }
 
 export class TitleCollection {
@@ -593,16 +596,16 @@ export class TitleCollection {
 	/**
 	 * Add Title(s) to the Collection.
 	 */
-	add = (...title: LocalTitle[]): void => {
+	add(...title: LocalTitle[]): void {
 		this.collection.push(...title);
-	};
+	}
 
-	remove = (id: number): void => {
+	remove(id: number): void {
 		const index = this.collection.findIndex((t) => t.key.id == id);
 		if (index !== undefined) {
 			this.collection.splice(index, 1);
 		}
-	};
+	}
 
 	/**
 	 * List of all MangaDex IDs in the Collection.
@@ -623,26 +626,26 @@ export class TitleCollection {
 	/**
 	 * Find the title with the MangaDex ID `id` inside the Collection.
 	 */
-	find = (id: number): LocalTitle | undefined => {
+	find(id: number): LocalTitle | undefined {
 		for (const title of this) {
 			if (title.key.id === id) return title;
 		}
 		return undefined;
-	};
+	}
 
-	sort = (compareFn?: ((a: LocalTitle, b: LocalTitle) => number) | undefined): LocalTitle[] => {
+	sort(compareFn?: ((a: LocalTitle, b: LocalTitle) => number) | undefined): LocalTitle[] {
 		return this.collection.sort(compareFn);
-	};
+	}
 
-	slice = (start?: number | undefined, end?: number | undefined): LocalTitle[] => {
+	slice(start?: number | undefined, end?: number | undefined): LocalTitle[] {
 		return this.collection.slice(start, end);
-	};
+	}
 
 	/**
 	 * Apply merge to each Titles in the receiving Collection with the other Collection.
 	 * Add missing Titles to the receiving Collection.
 	 */
-	merge = (other: TitleCollection): void => {
+	merge(other: TitleCollection): void {
 		for (const title of other) {
 			let found = this.find(title.key.id!);
 			if (found !== undefined) {
@@ -651,17 +654,17 @@ export class TitleCollection {
 				this.add(title);
 			}
 		}
-	};
+	}
 
 	/**
 	 * @see merge
 	 * Call merge function on other instead of *this*.
 	 */
-	mergeInto = (other: TitleCollection): void => {
+	mergeInto(other: TitleCollection): void {
 		other.merge(this);
-	};
+	}
 
-	static get = async (list?: (string | number)[]): Promise<TitleCollection> => {
+	static async get(list?: (string | number)[]): Promise<TitleCollection> {
 		let collection = new TitleCollection();
 		if (list === undefined) {
 			const localSave = await Storage.get();
@@ -691,15 +694,15 @@ export class TitleCollection {
 			}
 		}
 		return collection;
-	};
+	}
 
-	persist = async (): Promise<void> => {
+	async persist(): Promise<void> {
 		const mapped: { [key: string]: StorageTitle } = {};
 		for (const title of this) {
 			mapped[title.uniqueKey] = title.toSave();
 		}
 		return Storage.set(mapped);
-	};
+	}
 
 	[Symbol.iterator]() {
 		let i = 0;

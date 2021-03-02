@@ -19,10 +19,10 @@ export class UpdateQueue {
 			});
 		});
 		listen('sync:end', (payload) => {
-			if (payload.after == 'sync') {
+			if (payload.type == 'progress') {
 				const { syncModule, result, report, state } = payload;
 				UpdateQueue.displayReportNotifications(syncModule, result, report, state);
-			} /* payload.after == 'cancel') */ else {
+			} else if (payload.type == 'cancel') {
 				const { syncModule } = payload;
 				SimpleNotification.success({
 					title: 'Cancelled',
@@ -34,6 +34,7 @@ export class UpdateQueue {
 					}`,
 				});
 			}
+			// TODO: payload.type == 'score'
 		});
 	}
 

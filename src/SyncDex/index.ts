@@ -89,7 +89,7 @@ console.log('SyncDex :: Index');
 				/// @ts-ignore
 				const page = new route.page();
 				await page.run();
-				console.log(`Syncdex :: Initial Load in ${Date.now() - start}ms`);
+				console.log(`SyncDex :: Initial Load in ${Date.now() - start}ms`);
 				return;
 			}
 		}

@@ -1,6 +1,7 @@
 @use 'Photon.scss';
 
 $animation: cubic-bezier(0.07, 0.95, 0, 1);
+$animation-circular: cubic-bezier(0.79, 0.14, 0.15, 0.86);
 
 @keyframes pulse {
 	0% {

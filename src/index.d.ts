@@ -271,33 +271,6 @@ interface StorageTitle {
 	lr?: number; // lastRead
 }
 
-interface Title {
-	key: MediaKey;
-	inList: boolean;
-	loggedIn: boolean;
-	name?: string;
-	max?: Partial<Progress>;
-	status: Status;
-	progress: Progress;
-	score: number;
-	start?: Date;
-	end?: Date;
-}
-
-interface LocalTitle extends Title {
-	services: ServiceList;
-	forceServices: import('./Service/Keys').ActivableKey[];
-	chapters: number[];
-	lastTitle?: number;
-	lastChapter?: number;
-	history?: Progress;
-	highest?: number;
-	lastRead?: number;
-	volumeChapterCount: { [key: number]: number };
-	volumeChapterOffset: { [key: number]: number };
-	volumeResetChapter: boolean;
-}
-
 type LocalTitleState = Pick<
 	LocalTitle,
 	| 'inList'
@@ -413,7 +386,8 @@ interface MangaDexSimpleManga {
 type EventPayloads = {
 	// SyncModule.syncLocal
 	'title:syncing': never;
-	'title:synced': { title: Title };
+	'title:synced': { title: import('./Core/Title').Title };
+	'title:refresh': { syncModule: import('./Core/SyncModule').SyncModule };
 	// SyncModule.initialize call
 	'sync:initialize:start': never;
 	// await in SyncModule.waitInitialize before SyncModule functions
@@ -421,19 +395,25 @@ type EventPayloads = {
 	// SyncModule.syncExternal
 	'sync:start': { title: LocalTitle };
 	'sync:end': (
-		| { after: 'cancel' }
+		| { type: 'cancel' }
 		| {
-				after: 'sync';
+				type: 'progress';
 				state: LocalTitleState;
 				result: ProgressUpdate;
 				report: SyncReport;
 		  }
+		| {
+				type: 'status' | 'score';
+				state: LocalTitleState;
+				report: SyncReport;
+		  }
 	) & { syncModule: import('./Core/SyncModule').SyncModule };
 	// Single service sync from SyncModule.syncExternal
-	'service:syncing': { key: import('./Service/Keys').ServiceKey };
+	// service:sync title RequestStatus on error false if there is no ID
+	'service:syncing': { key: import('./Service/Keys').ActivableKey };
 	'service:synced': {
-		key: import('./Service/Keys').ServiceKey;
-		title: Title | RequestStatus | boolean;
+		key: import('./Service/Keys').ActivableKey;
+		title: import('./Core/Title').Title | RequestStatus | boolean;
 		local: LocalTitle;
 	};
 	// SyncModule.syncMangaDex-- also called from syncExternal if enabled

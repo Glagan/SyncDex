@@ -29,7 +29,7 @@ export class SyncModule {
 		this.title = title;
 	}
 
-	initializeService = (key: ActivableKey): void => {
+	initializeService(key: ActivableKey): void {
 		dispatch('service:syncing', { key: key });
 		const initialRequest = Services[key].get(this.title.services[key]!);
 		this.loadingServices.push(initialRequest);
@@ -38,12 +38,12 @@ export class SyncModule {
 			dispatch('service:synced', { key, title: res, local: this.title });
 			return res;
 		});
-	};
+	}
 
 	/**
 	 * Send initial Media requests concurrently for each services.
 	 */
-	initialize = (): void => {
+	initialize(): void {
 		dispatch('sync:initialize:start');
 		this.services = {}; // Reset services
 		if (Options.services.length == 0) {
@@ -58,9 +58,9 @@ export class SyncModule {
 			if (hasId) this.initializeService(key);
 			else dispatch('service:synced', { key, title: false, local: this.title });
 		}
-	};
+	}
 
-	waitInitialize = async (): Promise<void> => {
+	async waitInitialize(): Promise<void> {
 		if (this.loadingServices.length > 0) {
 			await Promise.all(this.loadingServices);
 			this.loadingServices = [];
@@ -83,7 +83,16 @@ export class SyncModule {
 			}
 			dispatch('sync:initialize:end', { title: this.title });
 		}
-	};
+	}
+
+	@LogExecTime
+	async refresh() {
+		dispatch('title:refresh', { syncModule: this });
+		await this.title.refresh();
+		this.initialize();
+		await this.syncLocal();
+		await this.syncExternal(true);
+	}
 
 	/**
 	 * Check if any Service in services is available, in the list and more recent that the local Title.
@@ -120,7 +129,26 @@ export class SyncModule {
 	}
 
 	/**
-	 * Update the progress of the instance LocalTitle.
+	 * Update the status of the instance LocalTitle and all external services.
+	 */
+	@LogExecTime
+	async syncStatus(status: Status): Promise<void> {
+		dispatch('sync:start', { title: this.title });
+		const state = this.saveState();
+		this.title.status = status;
+		if (status == Status.READING && !this.title.start) {
+			this.title.start = new Date();
+		} else if (status == Status.COMPLETED) {
+			if (!this.title.start) this.title.start = new Date();
+			if (!this.title.end) this.title.end = new Date();
+		}
+		await this.title.persist();
+		const report = await this.syncExternal();
+		dispatch('sync:end', { type: 'status', state, report, syncModule: this });
+	}
+
+	/**
+	 * Update the progress of the instance LocalTitle and all external services.
 	 */
 	@LogExecTime
 	async syncProgress(progress: Progress): Promise<void> {
@@ -132,7 +160,20 @@ export class SyncModule {
 		}
 		await this.title.persist();
 		const report = await this.syncExternal();
-		dispatch('sync:end', { after: 'sync', state, result, report, syncModule: this });
+		dispatch('sync:end', { type: 'progress', state, result, report, syncModule: this });
+	}
+
+	/**
+	 * Update the score of the instance LocalTitle and all external services.
+	 */
+	@LogExecTime
+	async syncScore(score: number): Promise<void> {
+		dispatch('sync:start', { title: this.title });
+		const state = this.saveState();
+		this.title.score = score;
+		await this.title.persist();
+		const report = await this.syncExternal();
+		dispatch('sync:end', { type: 'score', state, report, syncModule: this });
 	}
 
 	/**
@@ -257,36 +298,20 @@ export class SyncModule {
 		this.restoreState(state);
 		await this.title.persist();
 		await this.syncExternal();
-		dispatch('sync:end', { after: 'cancel', syncModule: this });
+		dispatch('sync:end', { type: 'cancel', syncModule: this });
 	}
-
-	/**
-	 * Build a full URL to interact with the MangaDex API with the instance LocalTitle.
-	 */
-	mangaDexFunction = (fct: MangaDexTitleField): string => {
-		switch (fct) {
-			case 'unfollow':
-				return MangaDex.api('set:title:unfollow', this.title.key.id!);
-			case 'status':
-				return MangaDex.api('set:title:status', this.title.key.id!, this.mdState.status);
-			case 'rating':
-				return MangaDex.api('set:title:rating', this.title.key.id!, Math.round(this.mdState.rating! / 10));
-			case 'progress':
-				return MangaDex.api('update:title:progress', this.title.key.id!);
-		}
-	};
 
 	/**
 	 * Sync MangaDex Status or Rating.
 	 */
 	@LogExecTime
-	async syncMangaDex(field: MangaDexTitleField): Promise<RequestResponse> {
+	private async syncMangaDex(field: MangaDexTitleField): Promise<RequestResponse> {
 		dispatch('mangadex:syncing', { field });
 		let response: RawResponse;
 		if (field == 'progress') {
 			response = await Request.get({
 				method: 'POST',
-				url: this.mangaDexFunction(field),
+				url: MangaDex.list(field, this.title.key.id!, this.mdState),
 				credentials: 'include',
 				headers: { 'X-Requested-With': 'XMLHttpRequest' },
 				form: {
@@ -297,7 +322,7 @@ export class SyncModule {
 		} else {
 			response = await Request.get({
 				method: 'GET',
-				url: this.mangaDexFunction(field),
+				url: MangaDex.list(field, this.title.key.id!, this.mdState),
 				credentials: 'include',
 				headers: { 'X-Requested-With': 'XMLHttpRequest' },
 			});
@@ -306,24 +331,60 @@ export class SyncModule {
 		return response;
 	}
 
+	@LogExecTime
+	async syncMangaDexStatus(status: Status): Promise<boolean> {
+		const oldStatus = this.mdState.status;
+		this.mdState.status = status;
+		const response = await this.syncMangaDex(this.mdState.status == Status.NONE ? 'unfollow' : 'status');
+		// Status update returns a body on error
+		if (!response.ok || (response.body && response.body.length > 0)) {
+			this.mdState.status = oldStatus;
+		}
+		return response.ok;
+	}
+
+	@LogExecTime
+	async syncMangaDexProgress(progress: Progress): Promise<boolean> {
+		const oldProgress = this.mdState.progress;
+		this.mdState.progress = { ...progress };
+		if (!this.mdState.progress.volume) this.mdState.progress.volume = 0;
+		const response = await this.syncMangaDex('progress');
+		if (!response.ok) {
+			this.mdState.progress = oldProgress;
+		}
+		return response.ok;
+	}
+
+	@LogExecTime
+	async syncMangaDexRating(rating: number): Promise<boolean> {
+		if (this.mdState.rating === rating) return true;
+		const oldRating = this.mdState.rating;
+		this.mdState.rating = rating;
+		const response = await this.syncMangaDex('rating');
+		if (!response.ok) {
+			this.mdState.rating = oldRating;
+		}
+		return response.ok;
+	}
+
 	/**
 	 * Save a copy of the current Title to be able to restore some of it's value if the *Cancel* button is clicked
 	 * 	in the this.displayReportNotifications function.
 	 */
-	saveState = (): LocalTitleState => {
+	saveState(): LocalTitleState {
 		this.previousMdState = {
 			status: this.mdState.status,
 			rating: this.mdState.rating,
 			progress: { ...this.mdState.progress },
 		};
 		return JSON.parse(JSON.stringify(this.title)); // Deep copy
-	};
+	}
 
 	/**
 	 * Restore chapters, mdStatus, mdScore, lastChapter, lastRead,
 	 * 	inList, status, progress, score, start, end from previousState.
 	 */
-	restoreState = (title: LocalTitleState): void => {
+	restoreState(title: LocalTitleState): void {
 		if (this.previousMdState) {
 			this.mdState.status = this.previousMdState.status;
 			this.mdState.rating = this.previousMdState.rating;
@@ -340,24 +401,24 @@ export class SyncModule {
 		// Add back Date objects since JSON.stringify made them strings
 		this.title.start = title.start ? new Date(title.start) : undefined;
 		this.title.end = title.end ? new Date(title.end) : undefined;
-	};
+	}
 
-	refreshService = async (key: ActivableKey): Promise<void> => {
+	async refreshService(key: ActivableKey): Promise<void> {
 		if (!this.title.services[key]) return;
 		const res = await Services[key].get(this.title.services[key]!);
 		this.services[key] = res;
 		await this.syncLocal();
 		await this.syncExternal(true);
-	};
+	}
 
-	serviceImport = async (key: ActivableKey): Promise<void> => {
+	async serviceImport(key: ActivableKey): Promise<void> {
 		const title = this.services[key];
 		if (!title || typeof title === 'number') return;
-		title.import(this.title);
 		dispatch('service:syncing', { key });
+		title.import(this.title);
 		const res = await title.persist();
 		if (res > RequestStatus.CREATED) {
 			dispatch('service:synced', { key, title: res, local: this.title });
 		} else dispatch('service:synced', { key, title, local: this.title });
-	};
+	}
 }

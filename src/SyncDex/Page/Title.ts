@@ -1,5 +1,5 @@
 import { AppendableElement, DOM } from '../../Core/DOM';
-import { dispatch } from '../../Core/Event';
+import { listen } from '../../Core/Event';
 import { Extension } from '../../Core/Extension';
 import { debug, LogExecTime, TryCatch } from '../../Core/Log';
 import { MangaDex } from '../../Core/MangaDex';
@@ -11,9 +11,8 @@ import { iconToService, LocalTitle, MissableField, StatusMap, Title } from '../.
 import { TitleEditor } from '../../Core/TitleEditor';
 import { dateCompare, dateFormat, isDate } from '../../Core/Utility';
 import { Services } from '../../Service/Class/Map';
-import { ActivableKey, ServiceKey, StaticKey } from '../../Service/Keys';
+import { ActivableKey, ServiceKey, OverviewKey } from '../../Service/Keys';
 import { ChapterRow } from '../ChapterRow';
-import { Overview, OverviewKey } from '../Overview';
 import { Page } from '../Page';
 
 interface MangaDexExtendedManga extends MangaDexSimpleManga {
@@ -47,17 +46,105 @@ interface MangaDexTitleWithChaptersResponse {
 	data: { manga: MangaDexExtendedManga; chapters: MangaDexChapter[]; groups: { id: number; name: string }[] };
 }
 
-class ServiceOverview {
-	key: OverviewKey;
-	tab: HTMLLIElement;
-	body: HTMLElement;
-	content: HTMLElement;
-	manage: HTMLElement;
-	refreshButton: HTMLButtonElement;
-	syncButton: HTMLElement;
+class QuickButtons {
+	node: HTMLElement;
+	edit: HTMLButtonElement;
+	start: HTMLButtonElement;
+	planToRead: HTMLButtonElement;
+	hasCompleted: boolean = false;
+	completed: HTMLButtonElement;
 
-	tabIcon?: HTMLElement;
-	syncOverlay?: HTMLElement;
+	constructor() {
+		this.edit = DOM.create('button', {
+			class: 'btn btn-secondary',
+			childs: [DOM.icon('edit'), DOM.space(), DOM.text('Edit')],
+		});
+		this.node = DOM.create('div', { class: 'quick-buttons hidden' });
+		this.start = DOM.create('button', {
+			class: 'btn btn-primary',
+			childs: [DOM.icon('book-open'), DOM.space(), DOM.text('Start Reading')],
+		});
+		this.planToRead = DOM.create('button', {
+			class: 'btn btn-secondary',
+			childs: [DOM.icon('bookmark'), DOM.space(), DOM.text('Add to Plan to Read')],
+		});
+		this.completed = DOM.create('button', {
+			class: 'btn btn-success',
+			childs: [DOM.icon('book'), DOM.space(), DOM.text('Completed')],
+		});
+		DOM.append(this.node, this.start, DOM.space(), this.planToRead);
+	}
+
+	bind(syncModule: SyncModule): void {
+		this.edit.addEventListener('click', async (event) => {
+			event.preventDefault();
+			TitleEditor.create(syncModule, async (updatedIDs) => {
+				// Update all overviews if external services IDs were updated
+				debug(`Updated IDs after Title Editor ? ${updatedIDs}`);
+				if (updatedIDs) {
+					// TODO: Update all interface after Title Editor
+					/*syncModule.overview.reset();
+					for (const serviceKey of Options.services) {
+						const key = syncModule.title.services[serviceKey];
+						syncModule.overview.initializeService(serviceKey, key != undefined);
+						syncModule.overview.receivedInitialRequest(
+							serviceKey,
+							syncModule.services[serviceKey]!,
+							syncModule
+						);
+					}*/
+				}
+			}).show();
+		});
+		const quickBind = async (event: Event, status: Status): Promise<void> => {
+			event.preventDefault();
+			await syncModule.syncStatus(status);
+		};
+		this.start.addEventListener('click', (event) => quickBind(event, Status.READING));
+		this.planToRead.addEventListener('click', (event) => quickBind(event, Status.PLAN_TO_READ));
+		this.completed.addEventListener('click', (event) => quickBind(event, Status.COMPLETED));
+	}
+
+	display() {
+		this.node.classList.remove('hidden');
+	}
+
+	hide() {
+		this.node.classList.add('hidden');
+	}
+
+	toggle(status: Status) {
+		if (status == Status.NONE) {
+			this.display();
+		} else this.hide();
+	}
+
+	addCompletedButton(): void {
+		if (!this.hasCompleted) {
+			DOM.append(this.node, DOM.space(), this.completed);
+			this.hasCompleted = true;
+		}
+	}
+
+	removeCompletedButton(): void {
+		if (this.hasCompleted) {
+			this.node.removeChild(this.completed);
+			this.node.removeChild(this.node.lastChild!); // Space
+			this.hasCompleted = false;
+		}
+	}
+}
+
+class Overview {
+	key: OverviewKey;
+	node: HTMLElement;
+	header: HTMLElement;
+	manage: HTMLElement;
+	body: HTMLElement;
+	refreshButton: HTMLButtonElement;
+	syncButton: HTMLButtonElement;
+	icon: HTMLElement;
+	overlay: HTMLElement;
 
 	static readonly missingFieldsMap: { [key in MissableField]: string } = {
 		volume: 'Volume',
@@ -68,30 +155,75 @@ class ServiceOverview {
 
 	constructor(key: OverviewKey) {
 		this.key = key;
-		this.tab = DOM.create('li', {
-			class: `tab ${key}`,
-			childs: [
-				DOM.create('img', { src: Extension.icon(key) }),
-				DOM.space(),
-				key == ServiceKey.SyncDex ? DOM.text('SyncDex') : Services[key].createTitle(),
-			],
-		});
-		this.content = DOM.create('div', { class: 'content', textContent: 'Loading...' });
-		this.manage = DOM.create('div', { class: 'manage' });
-		this.body = DOM.create('div', { class: 'body hidden' });
-		DOM.append(this.body, this.content, this.manage);
-		if (Options.services[0] == key) this.tab.classList.add('main');
+		this.icon = DOM.create('i', { class: 'fas hidden' });
 		this.refreshButton = DOM.create('button', {
-			class: 'btn btn-secondary',
+			class: 'btn btn-xs btn-secondary',
 			childs: [DOM.icon('download'), DOM.space(), DOM.text('Refresh')],
 		});
 		this.syncButton = DOM.create('button', {
-			class: 'btn btn-primary sync-button',
+			class: 'btn btn-xs btn-primary sync-button',
 			childs: [DOM.icon('sync-alt'), DOM.space(), DOM.text('Sync')],
+		});
+		this.manage = DOM.create('div', { class: 'manage', childs: [this.refreshButton] });
+		this.header = DOM.create('div', {
+			class: 'header',
+			childs: [
+				DOM.create('div', {
+					class: 'informations',
+					childs: [
+						DOM.create('img', { src: Extension.icon(key) }),
+						DOM.space(),
+						key == ServiceKey.SyncDex ? DOM.text('SyncDex') : Services[key].createTitle(),
+						DOM.space(),
+						this.icon,
+					],
+				}),
+				this.manage,
+			],
+		});
+		if (this.key != ServiceKey.SyncDex) {
+			this.manage.appendChild(this.syncButton);
+		}
+		this.overlay = DOM.create('div', {
+			class: 'overlay hidden',
+			childs: [DOM.icon('sync-alt fa-spin'), DOM.space(), DOM.text('Syncing...')],
+		});
+		this.body = DOM.create('div', { class: 'body', textContent: 'Loading...', childs: [this.overlay] });
+		this.node = DOM.create('div', {
+			class: `overview ${key}`,
+			childs: [this.header, this.body],
+		});
+		if (Options.services[0] == key) {
+			this.node.classList.add('main');
+		}
+	}
+
+	bind(syncModule: SyncModule) {
+		this.refreshButton.addEventListener('click', async (event) => {
+			event.preventDefault();
+			if (!this.syncButton.classList.contains('loading')) {
+				this.syncButton.classList.add('loading');
+				this.syncing();
+				await Options.load();
+				if (this.key == ServiceKey.SyncDex) {
+					await syncModule.refresh();
+				} else {
+					await syncModule.refreshService(this.key);
+				}
+				this.syncButton.classList.remove('loading');
+			}
+		});
+		this.syncButton.addEventListener('click', async (event) => {
+			event.preventDefault();
+			if (this.key !== ServiceKey.SyncDex && !this.syncButton.classList.contains('loading')) {
+				this.syncButton.classList.add('loading');
+				await syncModule.serviceImport(this.key);
+				this.syncButton.classList.remove('loading');
+			}
 		});
 	}
 
-	overviewRow = <K = Date | number | string>(icon: string, name: string, content?: K, original?: K): HTMLElement => {
+	row<K = Date | number | string>(icon: string, name: string, content?: K, original?: K): HTMLElement {
 		const nameHeader = DOM.create('span', { textContent: name });
 		const row = DOM.create('div', {
 			class: icon == 'ban' ? 'helper' : undefined,
@@ -136,101 +268,121 @@ class ServiceOverview {
 			);
 		}
 		return row;
-	};
+	}
 
 	/**
 	 * Create a list of all values for the Media.
 	 */
-	overview = (title: Title, original: LocalTitle | undefined, parent: HTMLElement): void => {
-		if (!title.loggedIn) {
-			parent.appendChild(
-				DOM.create('div', {
-					class: 'alert alert-danger',
-					textContent: 'You are not Logged In.',
-				})
-			);
-			return;
-		}
-		if (title.inList) {
-			const missingFields = title.missingFields;
-			const rows: HTMLElement[] = [];
-			if (original && title.status != original.status) {
-				rows.push(
+	update(title: Title | RequestStatus | boolean, original: LocalTitle | undefined) {
+		this.clear();
+
+		if (typeof title === 'object') {
+			if (!title.loggedIn) {
+				this.body.appendChild(
 					DOM.create('div', {
-						class: `status st${title.status}`,
-						childs: [
-							DOM.create('span', { class: 'not-synced', textContent: StatusMap[title.status] }),
-							DOM.create('div', {
-								class: `status st${original.status}`,
-								textContent: StatusMap[original.status],
-							}),
-						],
+						class: 'alert alert-danger',
+						textContent: 'You are not Logged In.',
 					})
 				);
-			} else {
-				rows.push(
-					DOM.create('div', { class: `status st${title.status}`, textContent: StatusMap[title.status] })
-				);
-			}
-			rows.push(this.overviewRow('bookmark', 'Chapter', title.chapter, original?.chapter));
-			if (missingFields.indexOf('volume') < 0) {
-				if (title.volume) {
-					rows.push(this.overviewRow('book', 'Volume', title.volume, original?.volume));
+				this.setIcon('times has-error');
+				return;
+			} else if (title.inList && title.status != Status.NONE) {
+				const missingFields = title.missingFields;
+				const rows: HTMLElement[] = [];
+				if (original && title.status != original.status) {
+					rows.push(
+						DOM.create('div', {
+							class: `status st${title.status}`,
+							childs: [
+								DOM.create('span', { class: 'not-synced', textContent: StatusMap[title.status] }),
+								DOM.create('div', {
+									class: `status st${original.status}`,
+									textContent: StatusMap[original.status],
+								}),
+							],
+						})
+					);
 				} else {
-					rows.push(this.overviewRow('book', 'No Volume', undefined, original?.volume));
+					rows.push(
+						DOM.create('div', { class: `status st${title.status}`, textContent: StatusMap[title.status] })
+					);
 				}
+				rows.push(this.row('bookmark', 'Chapter', title.chapter, original?.chapter));
+				if (missingFields.indexOf('volume') < 0) {
+					if (title.volume) {
+						rows.push(this.row('book', 'Volume', title.volume, original?.volume));
+					} else {
+						rows.push(this.row('book', 'No Volume', undefined, original?.volume));
+					}
+				}
+				if (title.start) {
+					rows.push(this.row('calendar-plus', 'Started', title.start, original?.start));
+				} else if (missingFields.indexOf('start') < 0) {
+					rows.push(this.row('calendar-plus', 'No Start Date', undefined, original?.start));
+				}
+				if (title.end) {
+					rows.push(this.row('calendar-check', 'Completed', title.end, original?.end));
+				} else if (missingFields.indexOf('end') < 0) {
+					rows.push(this.row('calendar-check', 'No Completion Date', undefined, original?.end));
+				}
+				if (title.score) {
+					rows.push(
+						this.row(
+							'star',
+							'Scored',
+							`${title.score} out of 100`,
+							original && original.score > 0 ? `${original.score} out of 100` : undefined
+						)
+					);
+				} else if (missingFields.indexOf('score') < 0) {
+					rows.push(
+						this.row(
+							'star',
+							'Not Scored yet',
+							undefined,
+							original && original.score > 0 ? `${original.score} out of 100` : undefined
+						)
+					);
+				}
+				for (const missingField of missingFields) {
+					rows.push(this.row('ban', `No ${Overview.missingFieldsMap[missingField]} available.`));
+				}
+				DOM.append(this.body, ...rows);
+			} else {
+				DOM.append(this.body, DOM.text('Not in List.'));
+				this.setIcon('bookmark has-error');
 			}
-			if (title.start) {
-				rows.push(this.overviewRow('calendar-plus', 'Started', title.start, original?.start));
-			} else if (missingFields.indexOf('start') < 0) {
-				rows.push(this.overviewRow('calendar-plus', 'No Start Date', undefined, original?.start));
-			}
-			if (title.end) {
-				rows.push(this.overviewRow('calendar-check', 'Completed', title.end, original?.end));
-			} else if (missingFields.indexOf('end') < 0) {
-				rows.push(this.overviewRow('calendar-check', 'No Completion Date', undefined, original?.end));
-			}
-			if (title.score) {
-				rows.push(
-					this.overviewRow(
-						'star',
-						'Scored',
-						`${title.score} out of 100`,
-						original && original.score > 0 ? `${original.score} out of 100` : undefined
-					)
-				);
-			} else if (missingFields.indexOf('score') < 0) {
-				rows.push(
-					this.overviewRow(
-						'star',
-						'Not Scored yet',
-						undefined,
-						original && original.score > 0 ? `${original.score} out of 100` : undefined
-					)
-				);
-			}
-			for (const missingField of missingFields) {
-				rows.push(this.overviewRow('ban', `No ${ServiceOverview.missingFieldsMap[missingField]} available.`));
-			}
-			DOM.append(parent, ...rows);
-		} else DOM.append(parent, DOM.text('Not in List.'));
-	};
 
-	bind = (syncModule: SyncModule): void => {
-		this.refreshButton.addEventListener('click', async (event) => {
-			event.preventDefault();
-			this.syncing();
-			await Options.load();
-			await syncModule.refreshService(this.key as ActivableKey);
-		});
-		this.syncButton.addEventListener('click', async (event) => {
-			event.preventDefault();
-			this.syncing();
-			await syncModule.serviceImport(this.key as ActivableKey);
-		});
-	};
+			// Display *Sync* button only if the title is out of sync, with auto sync disabled and if the title is in a list
+			if (!Options.autoSync && !title.isSyncedWith(title) && title.status !== Status.NONE && title.loggedIn) {
+				this.setIcon('sync has-error');
+				// TODO: Display SYNC button
+				// this.syncButton.appendChild(this.syncButton);
+			}
+		} else if (typeof title === 'number') {
+			this.setIcon('times has-error');
+			this.setErrorMessage(title);
+		} else {
+			this.body.appendChild(
+				this.alert(
+					'info',
+					`No ID for ${Services[this.key as ActivableKey].name}, you can manually add one in the Save Editor.`
+				)
+			);
+			this.setIcon('times has-error');
+		}
+	}
 
-	static alert = (type: 'warning' | 'danger' | 'info', content: string | AppendableElement[]): HTMLElement => {
+	setIcon(icon?: string) {
+		if (!icon) {
+			this.icon.classList.add('hidden');
+		} else {
+			this.icon.className = `fas fa-${icon}`;
+			this.icon.classList.remove('hidden');
+		}
+	}
+
+	alert(type: 'warning' | 'danger' | 'info', content: string | AppendableElement[]): HTMLElement {
 		if (typeof content === 'string') {
 			return DOM.create('div', {
 				class: `alert alert-${type}`,
@@ -241,217 +393,176 @@ class ServiceOverview {
 			class: `alert alert-${type}`,
 			childs: content,
 		});
-	};
+	}
 
-	setTabIcon = (icon: string): void => {
-		if (!this.tabIcon) {
-			this.tabIcon = DOM.create('i');
-			DOM.append(this.tab, DOM.space());
-		}
-		this.tabIcon.className = `fas fa-${icon}`;
-		DOM.append(this.tab, this.tabIcon);
-	};
-
-	setErrorMessage = (res: RequestStatus): void => {
+	setErrorMessage(res: RequestStatus) {
 		switch (res) {
 			case RequestStatus.MISSING_TOKEN:
-				this.content.appendChild(
-					ServiceOverview.alert('danger', [
+				this.body.appendChild(
+					this.alert('danger', [
 						DOM.text('Missing Token, check your Login Status in the Options.'),
 						DOM.space(),
-						ServiceOverview.openOptionsButton(),
+						DOM.create('button', {
+							class: 'btn btn-primary',
+							textContent: 'Open Options',
+							events: {
+								click: (event) => {
+									event.preventDefault();
+									Extension.openOptions();
+								},
+							},
+						}),
 					])
 				);
 				break;
 			case RequestStatus.BAD_REQUEST:
-				this.content.appendChild(
-					ServiceOverview.alert('danger', 'Bad Request, if this happen again open an issue.')
-				);
+				this.body.appendChild(this.alert('danger', 'Bad Request, if this happen again open an issue.'));
 				break;
 			case RequestStatus.NOT_FOUND:
-				this.content.appendChild(
-					ServiceOverview.alert('danger', 'The Media was not found on the Service, probably a bad ID.')
+				this.body.appendChild(
+					this.alert('danger', 'The Media was not found on the Service, probably a bad ID.')
 				);
 				break;
 			case RequestStatus.FAIL:
 			case RequestStatus.SERVER_ERROR:
-				this.content.appendChild(
-					ServiceOverview.alert('danger', 'Server Error, the Service might be down, retry later.')
-				);
+				this.body.appendChild(this.alert('danger', 'Server Error, the Service might be down, retry later.'));
 				break;
 		}
-	};
-
-	syncing = (): void => {
-		this.setTabIcon('sync-alt fa-spin');
-		if (!this.syncOverlay) {
-			this.syncOverlay = DOM.create('div', {
-				class: 'syncing',
-				childs: [DOM.icon('sync-alt fa-spin'), DOM.space(), DOM.text('Syncing...')],
-			});
-			this.body.appendChild(this.syncOverlay);
-		}
-	};
-
-	update = (res: Title | RequestStatus, title: LocalTitle): void => {
-		this.clear();
-		if (typeof res === 'object') {
-			this.overview(res, title, this.content);
-			// Display *Sync* button only if the title is out of sync, with auto sync disabled and if the title is in a list
-			if (!Options.autoSync && !res.isSyncedWith(title) && title.status !== Status.NONE && res.loggedIn) {
-				this.setTabIcon('sync has-error');
-				this.manage.appendChild(this.syncButton);
-			}
-			if (!res.loggedIn) {
-				this.setTabIcon('times has-error');
-			} else if (!res.inList) {
-				this.setTabIcon('bookmark has-error');
-			}
-		} else {
-			this.setTabIcon('times has-error');
-			this.setErrorMessage(res);
-		}
-		this.manage.appendChild(this.refreshButton);
-	};
-
-	synced = (): void => {
-		if (this.tabIcon) {
-			this.tabIcon.remove();
-			this.tabIcon = undefined;
-			this.tab.lastChild!.remove(); // Remove whitespace
-		}
-		if (this.syncOverlay) {
-			this.syncOverlay.remove();
-			this.syncOverlay = undefined;
-		}
-	};
-
-	activate = (): void => {
-		this.tab.classList.add('active');
-		this.body.classList.remove('hidden');
-	};
-
-	disable = (): void => {
-		this.tab.classList.remove('active');
-		this.body.classList.add('hidden');
-	};
-
-	clear = (): void => {
-		DOM.clear(this.content);
-		DOM.clear(this.manage);
-		if (this.syncOverlay) {
-			this.syncOverlay.remove();
-			this.syncOverlay = undefined;
-		}
-		if (this.tabIcon) {
-			this.tabIcon.remove();
-			this.tabIcon = undefined;
-			this.tab.lastChild!.remove(); // Remove whitespace
-		}
-	};
-
-	static openOptionsButton = (): HTMLButtonElement => {
-		return DOM.create('button', {
-			class: 'btn btn-primary',
-			textContent: 'Open Options',
-			events: {
-				click: (event) => {
-					event.preventDefault();
-					Extension.openOptions();
-				},
-			},
-		});
-	};
-}
-
-class LocalOverview extends ServiceOverview {
-	editButton: HTMLButtonElement;
-	quickButtons: HTMLElement;
-	startReading: HTMLButtonElement;
-	planToRead: HTMLButtonElement;
-	completed: HTMLButtonElement;
-
-	constructor() {
-		super(StaticKey.SyncDex);
-		this.editButton = DOM.create('button', {
-			class: 'btn btn-secondary',
-			childs: [DOM.icon('edit'), DOM.space(), DOM.text('Edit')],
-		});
-		this.quickButtons = DOM.create('div', { class: 'quick-buttons' });
-		this.startReading = DOM.create('button', {
-			class: 'btn btn-primary',
-			childs: [DOM.icon('book-open'), DOM.space(), DOM.text('Start Reading')],
-		});
-		this.planToRead = DOM.create('button', {
-			class: 'btn btn-secondary',
-			childs: [DOM.icon('bookmark'), DOM.space(), DOM.text('Add to Plan to Read')],
-		});
-		this.completed = DOM.create('button', {
-			class: 'btn btn-success',
-			childs: [DOM.icon('book'), DOM.space(), DOM.text('Completed')],
-		});
-		DOM.append(this.quickButtons, this.startReading, DOM.space(), this.planToRead);
 	}
 
-	bind = (syncModule: SyncModule): void => {
-		this.editButton.addEventListener('click', async (event) => {
-			event.preventDefault();
-			TitleEditor.create(syncModule, async (updatedIDs) => {
-				// Update all overviews if external services IDs were updated
-				debug(`Updated IDs after Title Editor ? ${updatedIDs}`);
-				if (updatedIDs) {
-					// TODO: Update all interface after Title Editor
-					/*syncModule.overview.reset();
-					for (const serviceKey of Options.services) {
-						const key = syncModule.title.services[serviceKey];
-						syncModule.overview.initializeService(serviceKey, key != undefined);
-						syncModule.overview.receivedInitialRequest(
-							serviceKey,
-							syncModule.services[serviceKey]!,
-							syncModule
-						);
-					}*/
-				}
-			}).show();
-		});
-		this.refreshButton.addEventListener('click', async (event) => {
-			event.preventDefault();
-			await syncModule.title.refresh();
-			// syncModule.overview?.reset();
-			// Initialize SyncModule again if there is new Service IDs
-			syncModule.initialize();
-			await syncModule.syncLocal();
-			await syncModule.syncExternal(true);
-		});
-		const quickBind = async (event: Event, status: Status): Promise<void> => {
-			event.preventDefault();
-			syncModule.title.status = status;
-			if (status == Status.READING && !syncModule.title.start) {
-				syncModule.title.start = new Date();
-			} else if (status == Status.COMPLETED) {
-				if (!syncModule.title.start) syncModule.title.start = new Date();
-				if (!syncModule.title.end) syncModule.title.end = new Date();
-			}
-			await syncModule.title.persist();
-			await syncModule.syncLocal();
-			await syncModule.syncExternal(true);
-		};
-		this.startReading.addEventListener('click', (event) => quickBind(event, Status.READING));
-		this.planToRead.addEventListener('click', (event) => quickBind(event, Status.PLAN_TO_READ));
-		this.completed.addEventListener('click', (event) => quickBind(event, Status.COMPLETED));
-	};
+	activate() {
+		this.node.classList.add('active');
+	}
 
-	update = (_res: Title | RequestStatus, title: LocalTitle): void => {
-		this.clear();
-		if (title.status == Status.NONE) {
-			if (title.chapter > 0) {
-				this.overview(title, undefined, this.content);
+	disable() {
+		this.node.classList.remove('active');
+	}
+
+	clear() {
+		DOM.clear(this.body);
+		this.body.appendChild(this.overlay);
+		this.overlay.classList.add('hidden');
+		this.setIcon();
+	}
+
+	syncing() {
+		this.setIcon('sync-alt fa-spin');
+		this.overlay.classList.remove('hidden');
+	}
+
+	synced(): void {
+		this.overlay.classList.add('hidden');
+	}
+}
+
+class Overviews {
+	row: HTMLElement;
+	column: HTMLElement;
+	current!: Overview;
+	main: Overview;
+	overviews: Partial<{ [key in ActivableKey]: Overview }> = {};
+	buttons: QuickButtons;
+
+	constructor() {
+		this.column = DOM.create('div', { class: 'overviews col-lg-9 col-xl-10' });
+		const isDarkTheme =
+			document.querySelector('link[rel="stylesheet"][href*="Dark"]') !== null ||
+			document.querySelector('link[rel="stylesheet"][href*="Abyss"]') !== null;
+		if (isDarkTheme) this.column.classList.add('dark');
+		this.row = DOM.create('div', {
+			class: 'row m-0 py-1 px-0 border-top',
+			childs: [DOM.create('div', { class: 'col-lg-3 col-xl-2 strong', textContent: 'SyncDex:' }), this.column],
+		});
+		const row = document.querySelector<HTMLElement>('.reading_progress')!.parentElement!;
+		row.parentElement!.insertBefore(this.row, row);
+		this.buttons = new QuickButtons();
+
+		// Always create SyncDex Overview
+		this.main = new Overview(ServiceKey.SyncDex);
+		this.bindOverview(this.main);
+		this.reset();
+	}
+
+	bind(syncModule: SyncModule): void {
+		this.buttons.bind(syncModule);
+		this.main.bind(syncModule);
+		for (const key in this.overviews) {
+			this.overviews[key as ActivableKey]!.bind(syncModule);
+		}
+	}
+
+	reset() {
+		DOM.clear(this.column);
+		this.column.appendChild(this.main.node);
+		this.main.activate();
+		this.current = this.main;
+		for (const key of Options.services) {
+			this.createOverview(key);
+		}
+		this.column.appendChild(this.buttons.node);
+	}
+
+	hasNoServices(syncModule: SyncModule): void {
+		const alert = DOM.create('div', {
+			class: 'alert alert-warning',
+			childs: [
+				DOM.text(`You have no active Services, SyncDex won't sync anything until you activate one.`),
+				DOM.space(),
+				DOM.create('button', {
+					class: 'btn btn-secondary',
+					childs: [DOM.icon('sync-alt'), DOM.space(), DOM.text('Refresh')],
+					events: {
+						click: async (event) => {
+							event.preventDefault();
+							await syncModule.refresh();
+						},
+					},
+				}),
+				DOM.icon('edit'),
+				DOM.space(),
+			],
+		});
+		alert.style.marginTop = '8px';
+		this.column.appendChild(alert);
+	}
+
+	createOverview(key: ActivableKey): Overview {
+		// Remove Previous if there is one
+		if (this.overviews[key] !== undefined) {
+			this.overviews[key]!.node.remove();
+			delete this.overviews[key];
+		}
+		// Create the new Overview
+		const overview = new Overview(key);
+		this.column.appendChild(overview.node);
+		this.bindOverview(overview);
+		this.overviews[key] = overview;
+		return overview;
+	}
+
+	bindOverview(overview: Overview): void {
+		overview.header.addEventListener('click', (event) => {
+			event.preventDefault();
+			if (this.current) {
+				this.current.disable();
 			}
-			this.content.appendChild(this.quickButtons);
-		} else this.overview(title, undefined, this.content);
-		this.manage.appendChild(this.editButton);
-		this.manage.appendChild(this.refreshButton);
-	};
+			this.current = overview;
+			this.current.activate();
+		});
+	}
+
+	syncing(key: ActivableKey) {
+		const overview = this.overviews[key];
+		if (overview) overview.syncing();
+	}
+
+	synced(key: ActivableKey, title: Title | RequestStatus | boolean, local: LocalTitle) {
+		const overview = this.overviews[key];
+		if (overview) {
+			overview.update(title, local); // TODO: Boolean no ID
+			overview.synced();
+		}
+	}
 }
 
 class ChapterList {
@@ -546,7 +657,11 @@ class ChapterList {
 					// Toggle all rows with the same chapter value
 					for (const otherRow of this.rows) {
 						if (otherRow.progress.chapter == row.progress.chapter) {
-							if (!otherRow.isNext) otherRow.node.style.backgroundColor = '';
+							// Remove background color if it's not next nor current
+							if (!otherRow.isNext && row.progress.chapter != title.progress.chapter) {
+								otherRow.node.style.backgroundColor = '';
+							}
+							// Still disable toggle button
 							otherRow.disableToggleButton();
 						}
 					}
@@ -555,7 +670,9 @@ class ChapterList {
 					// Toggle all rows with the same chapter value
 					for (const otherRow of this.rows) {
 						if (otherRow.progress.chapter == row.progress.chapter) {
-							if (!otherRow.isNext) otherRow.node.style.backgroundColor = Options.colors.openedChapter;
+							if (!otherRow.isNext && row.progress.chapter != title.progress.chapter) {
+								otherRow.node.style.backgroundColor = Options.colors.openedChapter;
+							}
 							otherRow.enableToggleButton();
 						}
 					}
@@ -564,36 +681,30 @@ class ChapterList {
 			});
 
 			// Bind Set as Latest button
-			let loading = false;
 			row.markButton.addEventListener('click', async (event) => {
 				event.preventDefault();
-				if (loading) return;
-				row.markButton.classList.add('loading');
-				loading = true;
 				if (row.progress.chapter == title.chapter) return;
-				const previousState = syncModule.saveState();
-				const completed = title.setProgress(row.progress);
-				// No need to do anything here, only add or remove chapters from the list
-				// Highlight on syncedLocal will fix everything
-				if (Options.saveOpenedChapters) {
-					title.updateChapterList(row.progress.chapter);
-					for (const otherRow of this.rows) {
-						if (otherRow.progress.chapter < row.progress.chapter) {
-							title.addChapter(otherRow.progress.chapter);
-						}
-					}
-				}
+
+				if (row.markButton.classList.contains('loading')) return;
+				row.markButton.classList.add('loading');
+
+				// Update to current row progress
+				await syncModule.syncProgress(row.progress);
+
+				// Always update History
 				if (Options.biggerHistory) {
-					await title.setHistory(row.chapterId, row.progress);
+					await title.setHistory(row.chapterId);
+					await title.persist();
 				}
-				await title.persist();
-				dispatch('title:synced', { title }); // TODO: syncModule.setProgress and revert here with dispatch
-				const report = await syncModule.syncExternal(true);
-				syncModule.displayReportNotifications(report, { completed: completed }, previousState);
+
 				row.markButton.classList.remove('loading');
-				loading = false;
 			});
 		}
+		this.highlight(title);
+
+		// Create and append Language Button
+		const navTabs = document.querySelector<HTMLElement>('ul.edit.nav.nav-tabs');
+		ChapterRow.generateLanguageButtons(navTabs);
 	}
 
 	highlight(title: LocalTitle): void {
@@ -640,28 +751,20 @@ class ChapterList {
 	}
 }
 
-export class TitleOverview extends Overview {
-	row: HTMLElement;
-	column: HTMLElement;
-	serviceList: HTMLUListElement;
-	bodies: HTMLElement;
-	current?: ServiceOverview;
-	mainOverview: LocalOverview;
-	overviews: Partial<{ [key in ActivableKey]: ServiceOverview }> = {};
-	// MangaDex Status and Score
-	mdStatus?: {
+class MangaDexList {
+	status?: {
 		followButton: HTMLButtonElement;
 		button: HTMLButtonElement;
 		dropdown: HTMLElement;
 		unfollow: HTMLAnchorElement;
 		list: HTMLAnchorElement[];
 	};
-	mdScore: {
+	score: {
 		button: HTMLButtonElement;
 		dropdown: HTMLElement;
 		ratings: HTMLAnchorElement[];
 	};
-	mdProgress: {
+	progress: {
 		currentVolume: HTMLElement;
 		incVolume: HTMLButtonElement;
 		inputVolume: HTMLInputElement;
@@ -669,7 +772,6 @@ export class TitleOverview extends Overview {
 		incChapter: HTMLButtonElement;
 		inputChapter: HTMLInputElement;
 	};
-	chapterList: ChapterList;
 
 	static statusDescription: Partial<{ [key in Status]: [string, string] }> = {
 		[Status.READING]: ['eye', 'success'],
@@ -681,31 +783,9 @@ export class TitleOverview extends Overview {
 	};
 
 	constructor() {
-		super();
-		this.column = DOM.create('div', { class: 'overview col-lg-9 col-xl-10' });
-		const isDarkTheme =
-			document.querySelector('link[rel="stylesheet"][href*="Dark"]') !== null ||
-			document.querySelector('link[rel="stylesheet"][href*="Abyss"]') !== null;
-		if (isDarkTheme) this.column.classList.add('dark');
-		this.row = DOM.create('div', {
-			class: 'row m-0 py-1 px-0 border-top',
-			childs: [DOM.create('div', { class: 'col-lg-3 col-xl-2 strong', textContent: 'SyncDex:' }), this.column],
-		});
-		const row = document.querySelector<HTMLElement>('.reading_progress')!.parentElement!;
-		row.parentElement!.insertBefore(this.row, row);
-		this.serviceList = DOM.create('ul', { class: 'tabs' });
-		this.bodies = DOM.create('div', { class: 'bodies' });
-		DOM.append(this.column, this.serviceList, this.bodies);
-
-		// Always create SyncDex Overview
-		this.mainOverview = new LocalOverview();
-		this.bindOverview(this.mainOverview);
-		this.activateOverview(this.mainOverview);
-
-		// Update Status selector if logged in
 		const statusButtons = document.querySelectorAll<HTMLAnchorElement>('a.manga_follow_button');
 		if (statusButtons.length > 0) {
-			this.mdStatus = {
+			this.status = {
 				followButton: DOM.create('button'),
 				button: statusButtons[0].parentElement!.previousElementSibling as HTMLButtonElement,
 				dropdown: statusButtons[0].parentElement!,
@@ -713,22 +793,22 @@ export class TitleOverview extends Overview {
 				list: Array.from(statusButtons),
 			};
 			// Replace old node to remove all events
-			for (const idx in this.mdStatus.list) {
-				const oldStatus = this.mdStatus.list[idx];
+			for (const idx in this.status.list) {
+				const oldStatus = this.status.list[idx];
 				const status = oldStatus.cloneNode(true) as HTMLAnchorElement;
 				oldStatus.replaceWith(status);
-				this.mdStatus.list[idx] = status;
+				this.status.list[idx] = status;
 			}
 			// Create Follow button if it doesn't exist
 			const followButton = document.querySelector<HTMLButtonElement>('button.manga_follow_button');
 			if (followButton) {
 				const newFollow = followButton.cloneNode(true) as HTMLButtonElement;
 				followButton.replaceWith(newFollow);
-				this.mdStatus.followButton = newFollow;
+				this.status.followButton = newFollow;
 			} else {
-				this.mdStatus.followButton.className = 'btn btn-secondary';
+				this.status.followButton.className = 'btn btn-secondary';
 				DOM.append(
-					this.mdStatus.followButton,
+					this.status.followButton,
 					DOM.icon('bookmark fa-fw'),
 					DOM.space(),
 					DOM.create('span', { class: 'd-none d-xl-inline', textContent: 'Follow' })
@@ -739,17 +819,17 @@ export class TitleOverview extends Overview {
 			if (unfollowButton) {
 				const newUnfollow = unfollowButton.cloneNode(true) as HTMLAnchorElement;
 				unfollowButton.replaceWith(newUnfollow);
-				this.mdStatus.unfollow = newUnfollow;
+				this.status.unfollow = newUnfollow;
 			} else {
-				this.mdStatus.unfollow.className = 'dropdown-item';
-				this.mdStatus.unfollow.href = '#';
-				DOM.append(this.mdStatus.unfollow, DOM.icon('bookmark fa-fw'), DOM.text('Unfollow'));
+				this.status.unfollow.className = 'dropdown-item';
+				this.status.unfollow.href = '#';
+				DOM.append(this.status.unfollow, DOM.icon('bookmark fa-fw'), DOM.text('Unfollow'));
 			}
 		}
 
 		// Update Score selector
 		const ratingButtons = document.querySelectorAll<HTMLAnchorElement>('a.manga_rating_button');
-		this.mdScore = {
+		this.score = {
 			button: ratingButtons[0].parentElement!.previousElementSibling as HTMLButtonElement,
 			dropdown: ratingButtons[0].parentElement!,
 			ratings: [],
@@ -758,14 +838,14 @@ export class TitleOverview extends Overview {
 		for (const oldRating of ratingButtons) {
 			const rating = oldRating.cloneNode(true) as HTMLAnchorElement;
 			oldRating.replaceWith(rating);
-			this.mdScore.ratings.unshift(rating);
+			this.score.ratings.unshift(rating);
 		}
 
 		// Find MangaDex Progress nodes
 		const editProgressForm = document.getElementById('edit_progress_form') as HTMLFormElement;
 		const incVolume = document.getElementById('increment_volume') as HTMLButtonElement;
 		const incChapter = document.getElementById('increment_chapter') as HTMLButtonElement;
-		this.mdProgress = {
+		this.progress = {
 			currentVolume: document.getElementById('current_volume') as HTMLElement,
 			incVolume: incVolume.cloneNode(true) as HTMLButtonElement,
 			inputVolume: editProgressForm.querySelector('#volume') as HTMLInputElement,
@@ -774,62 +854,33 @@ export class TitleOverview extends Overview {
 			inputChapter: editProgressForm.querySelector('#chapter') as HTMLInputElement,
 		};
 		// Replace increment buttons
-		incVolume.replaceWith(this.mdProgress.incVolume);
-		incChapter.replaceWith(this.mdProgress.incChapter);
-
-		// Add Language buttons
-		this.chapterList = new ChapterList();
-		const navTabs = document.querySelector<HTMLElement>('ul.edit.nav.nav-tabs');
-		ChapterRow.generateLanguageButtons(navTabs);
+		incVolume.replaceWith(this.progress.incVolume);
+		incChapter.replaceWith(this.progress.incChapter);
 	}
 
-	reset() {
-		DOM.clear(this.serviceList);
-		DOM.clear(this.bodies);
-		this.serviceList.appendChild(this.mainOverview.tab);
-		this.bodies.appendChild(this.mainOverview.body);
-	}
-
-	bindStatusUpdate = async (event: Event, syncModule: SyncModule, status: Status): Promise<void> => {
+	async bindStatusUpdate(event: Event, syncModule: SyncModule, status: Status): Promise<void> {
 		event.preventDefault();
 		if (syncModule.mdState.status == status) return;
 		if (Options.mdUpdateSyncDex) {
-			syncModule.title.status = status;
-			await syncModule.title.persist();
-			this.syncedLocal(syncModule.title);
-			await syncModule.syncExternal(true);
+			await syncModule.syncStatus(status);
 		}
 		if (!Options.mdUpdateSyncDex || !Options.updateMD) {
-			syncModule.mdState.status = status;
-			const response = await syncModule.syncMangaDex(status == Status.NONE ? 'unfollow' : 'status');
-			if (response.ok) {
-				SimpleNotification.success(
-					{ text: '**MangaDex Status** updated.' },
-					{ duration: Options.successDuration }
-				);
-			} else {
-				SimpleNotification.error(
-					{ text: `Error while updating **MangaDex Status**.\ncode: ${response.code}` },
-					{ duration: Options.errorDuration }
-				);
-			}
+			await syncModule.syncMangaDexStatus(status);
 		}
-	};
+	}
 
-	bind = (syncModule: SyncModule): void => {
-		this.mainOverview.bind(syncModule);
-
+	bind(syncModule: SyncModule): void {
 		// Replace Status
-		if (this.mdStatus) {
-			this.mdStatus.followButton.addEventListener('click', (event) => {
+		if (this.status) {
+			this.status.followButton.addEventListener('click', (event) => {
 				this.bindStatusUpdate(event, syncModule, Status.READING);
 			});
-			this.mdStatus.unfollow.addEventListener('click', (event) => {
+			this.status.unfollow.addEventListener('click', (event) => {
 				if (confirm('This will remove all Read chapters from MangaDex (the eye icon).\nAre you sure ?')) {
 					this.bindStatusUpdate(event, syncModule, Status.NONE);
 				}
 			});
-			for (const row of this.mdStatus.list) {
+			for (const row of this.status.list) {
 				const status = parseInt(row.id);
 				row.addEventListener('click', async (event) => {
 					if (row.classList.contains('disabled')) return;
@@ -839,216 +890,111 @@ export class TitleOverview extends Overview {
 		}
 
 		// Replace ratings
-		for (const row of this.mdScore.ratings) {
+		for (const row of this.score.ratings) {
 			const score = parseInt(row.id) * 10;
 			row.addEventListener('click', async (event) => {
 				event.preventDefault();
 				if (row.classList.contains('disabled')) return;
 				if (Options.mdUpdateSyncDex) {
-					syncModule.title.score = score;
-					await syncModule.title.persist();
-					this.syncedLocal(syncModule.title);
-					await syncModule.syncExternal(true);
+					syncModule.syncScore(score);
 				}
 				if (!Options.mdUpdateSyncDex || !Options.updateMD) {
-					syncModule.mdState.rating = score;
-					const response = await syncModule.syncMangaDex('rating');
-					if (response.ok) {
-						SimpleNotification.success(
-							{ text: '**MangaDex Score** updated.' },
-							{ duration: Options.successDuration }
-						);
-					} else {
-						SimpleNotification.error(
-							{ text: `Error while updating **MangaDex Score**.\ncode: ${response.code}` },
-							{ duration: Options.errorDuration }
-						);
-					}
+					syncModule.syncMangaDexRating(score);
 				}
 			});
 		}
 
 		// Replace Increment buttons
-		this.mdProgress.incVolume.addEventListener('click', async (event) => {
+		this.progress.incVolume.addEventListener('click', async (event) => {
 			event.preventDefault();
-			if (!syncModule.mdState.progress.volume) {
-				syncModule.mdState.progress.volume = 1;
-			} else syncModule.mdState.progress.volume++;
-			const response = await syncModule.syncMangaDex('progress');
-			if (response.ok) {
-				SimpleNotification.success(
-					{ text: '**MangaDex Progress** updated.' },
-					{ duration: Options.successDuration }
-				);
-				this.mdProgress.currentVolume.textContent = `${syncModule.mdState.progress.volume}`;
-				this.mdProgress.inputVolume.value = `${syncModule.mdState.progress.volume}`;
+			let volume = 1;
+			if (syncModule.mdState.progress.volume) {
+				volume = syncModule.mdState.progress.volume++;
 			}
+			syncModule.syncMangaDexProgress({ chapter: syncModule.mdState.progress.chapter, volume });
 		});
-		this.mdProgress.incChapter.addEventListener('click', async (event) => {
+		this.progress.incChapter.addEventListener('click', async (event) => {
 			event.preventDefault();
-			syncModule.mdState.progress.chapter++;
-			const response = await syncModule.syncMangaDex('progress');
-			if (response.ok) {
-				SimpleNotification.success(
-					{ text: '**MangaDex Progress** updated.' },
-					{ duration: Options.successDuration }
-				);
-				this.mdProgress.currentChapter.textContent = `${syncModule.mdState.progress.chapter}`;
-				this.mdProgress.inputChapter.value = `${syncModule.mdState.progress.chapter}`;
-			}
+			const chapter = syncModule.mdState.progress.chapter++;
+			syncModule.syncMangaDexProgress({ chapter, volume: syncModule.mdState.progress.volume });
 		});
+	}
 
-		this.chapterList.bind(syncModule);
-	};
-
-	hasNoServices = (): void => {
-		const alert = ServiceOverview.alert(
-			'warning',
-			`You have no active Services, SyncDex won't sync anything until you activate one.`
-		);
-		alert.style.marginTop = '8px';
-		this.column.appendChild(alert);
-		return;
-	};
-
-	initializeService = (key: ActivableKey, hasId: boolean): void => {
-		if (Options.overviewMainOnly && key !== Options.services[0]) return;
-		const overview = this.createOverview(key);
-		if (hasId) {
-			overview.syncing();
-		} else {
-			overview.content.textContent = '';
-			overview.content.appendChild(
-				ServiceOverview.alert(
-					'info',
-					`No ID for ${Services[key].name}, you can manually add one in the Save Editor.`
-				)
-			);
-			overview.setTabIcon('times has-error');
+	disable() {
+		this.score.button.disabled = true;
+		if (this.status) {
+			this.status.button.disabled = true;
 		}
-	};
+		this.progress.incChapter.disabled = true;
+		this.progress.inputChapter.disabled = true;
+		this.progress.incChapter.disabled = true;
+		this.progress.inputVolume.disabled = true;
+	}
 
-	receivedInitialRequest = (key: ActivableKey, res: Title | RequestStatus, syncModule: SyncModule): void => {
-		const overview = this.overviews[key];
-		if (overview) {
-			overview.bind(syncModule);
-			overview.update(res, syncModule.title);
+	enable() {
+		this.score.button.disabled = false;
+		if (this.status) {
+			this.status.button.disabled = false;
 		}
-	};
+		this.progress.incChapter.disabled = false;
+		this.progress.inputChapter.disabled = false;
+		this.progress.incChapter.disabled = false;
+		this.progress.inputVolume.disabled = false;
+	}
 
-	receivedAllInitialRequests = (syncModule: SyncModule): void => {
-		// Add the *Completed* button only if the title is complete
-		if (syncModule.title.max && syncModule.title.max.chapter) {
-			DOM.append(this.mainOverview.quickButtons, DOM.space(), this.mainOverview.completed);
-		}
-	};
-
-	syncingService = (key: ActivableKey): void => {
-		const overview = this.overviews[key];
-		if (overview) overview.syncing();
-	};
-
-	syncedService = (key: ActivableKey, res: Title | RequestStatus, title: LocalTitle): void => {
-		const overview = this.overviews[key];
-		if (!overview) return;
-		overview.synced();
-		overview.update(res, title);
-	};
-
-	syncingLocal = (): void => {
-		this.mainOverview.syncing();
-	};
-
-	syncedLocal = (title: LocalTitle): void => {
-		this.mainOverview.update(RequestStatus.SUCCESS, title);
-		this.mainOverview.synced();
-		this.chapterList.highlight(title);
-	};
-
-	activateOverview = (overview: ServiceOverview): void => {
-		if (this.current) {
-			this.current.disable();
-			this.column.classList.remove(this.current.key);
-		}
-		this.current = overview;
-		this.current.activate();
-		this.column.classList.add(overview.key);
-	};
-
-	createOverview = (key: ActivableKey): ServiceOverview => {
-		// Remove Previous if there is one
-		if (this.overviews[key] !== undefined) {
-			this.overviews[key]!.tab.remove();
-			this.overviews[key]!.body.remove();
-		}
-		// Create the new Overview
-		const overview = new ServiceOverview(key);
-		this.bindOverview(overview);
-		this.overviews[key] = overview;
-		return overview;
-	};
-
-	bindOverview = (overview: ServiceOverview): void => {
-		this.serviceList.appendChild(overview.tab);
-		this.bodies.appendChild(overview.body);
-		overview.tab.addEventListener('click', (event) => {
-			event.preventDefault();
-			this.activateOverview(overview);
-		});
-	};
-
-	syncedMangaDex = (type: 'unfollow' | 'status' | 'score' | 'progress', syncModule: SyncModule): void => {
-		const dropdown = type == 'score' ? this.mdScore.dropdown : this.mdStatus?.dropdown;
-		if (!dropdown) return;
-		// Remove old value
-		const previous = dropdown.querySelector('.disabled');
-		if (previous) previous.classList.remove('disabled');
+	update(field: MangaDexTitleField, state: MangaDexState) {
 		// Activate new Status or Rating
 		// If we're unfollowing, hide Unfollow and revert to default
-		if (this.mdStatus && type == 'unfollow') {
-			const buttonContainer = this.mdStatus.dropdown.parentElement!;
-			buttonContainer.insertBefore(this.mdStatus.followButton, buttonContainer.firstElementChild);
-			this.mdStatus.button.className = 'btn btn-secondary dropdown-toggle dropdown-toggle-split';
-			DOM.clear(this.mdStatus.button);
-			this.mdStatus.button.appendChild(DOM.create('span', { class: 'sr-only', textContent: 'Toggle Dropdown' }));
-			this.mdStatus.unfollow.remove();
-		} else if (this.mdStatus && type == 'status') {
-			if (syncModule.mdState.status !== Status.NONE) {
-				const status = dropdown.querySelector(`[id='${syncModule.mdState.status}']`);
-				if (!syncModule.mdState.status || !status) return;
+		if (this.status && field == 'unfollow') {
+			const buttonContainer = this.status.dropdown.parentElement!;
+			buttonContainer.insertBefore(this.status.followButton, buttonContainer.firstElementChild);
+			this.status.button.className = 'btn btn-secondary dropdown-toggle dropdown-toggle-split';
+			DOM.clear(this.status.button);
+			this.status.button.appendChild(DOM.create('span', { class: 'sr-only', textContent: 'Toggle Dropdown' }));
+			this.status.unfollow.remove();
+		}
+		// Status
+		else if (this.status && field == 'status') {
+			if (state.status !== Status.NONE) {
+				const status = this.status.dropdown.querySelector(`[id='${state.status}']`);
+				if (!state.status || !status) return;
 				status.classList.add('disabled');
 				// Update button style
-				const description = TitleOverview.statusDescription[syncModule.mdState.status]!;
-				DOM.clear(this.mdStatus.button);
+				const description = MangaDexList.statusDescription[state.status]!;
+				DOM.clear(this.status.button);
 				DOM.append(
-					this.mdStatus.button,
+					this.status.button,
 					DOM.icon(`${description[0]} fa-fw`),
 					DOM.space(),
 					DOM.create('span', {
 						class: 'd-none d-xl-inline',
-						textContent: StatusMap[syncModule.mdState.status],
+						textContent: StatusMap[state.status],
 					})
 				);
-				this.mdStatus.button.className = `btn btn-${description[1]} dropdown-toggle`;
-				this.mdStatus.dropdown.insertBefore(this.mdStatus.unfollow, this.mdStatus.dropdown.firstElementChild);
-				this.mdStatus.followButton.remove();
+				this.status.button.className = `btn btn-${description[1]} dropdown-toggle`;
+				this.status.dropdown.insertBefore(this.status.unfollow, this.status.dropdown.firstElementChild);
+				this.status.followButton.remove();
 			}
-		} else if (type == 'score') {
-			if (syncModule.mdState.rating == 0) {
-				this.mdScore.ratings[0].classList.add('disabled');
-				this.mdScore.button.childNodes[1].textContent = ` `;
-			} else {
-				const newScore = syncModule.mdState.rating < 10 ? 1 : Math.round(syncModule.mdState.rating / 10);
-				this.mdScore.ratings[newScore].classList.add('disabled');
-				this.mdScore.button.childNodes[1].textContent = ` ${newScore} `;
-			}
-		} else if (type == 'progress') {
-			this.mdProgress.currentVolume.textContent = `${syncModule.mdState.progress.volume}`;
-			this.mdProgress.inputVolume.value = `${syncModule.mdState.progress.volume}`;
-			this.mdProgress.currentChapter.textContent = `${syncModule.mdState.progress.chapter}`;
-			this.mdProgress.inputChapter.value = `${syncModule.mdState.progress.chapter}`;
 		}
-	};
+		// Score
+		else if (field == 'rating') {
+			if (state.rating == 0) {
+				this.score.ratings[0].classList.add('disabled');
+				this.score.button.childNodes[1].textContent = ` `;
+			} else {
+				const newScore = state.rating < 10 ? 1 : Math.round(state.rating / 10);
+				this.score.ratings[newScore].classList.add('disabled');
+				this.score.button.childNodes[1].textContent = ` ${newScore} `;
+			}
+		}
+		// Progress
+		else if (field == 'progress') {
+			this.progress.currentChapter.textContent = `${state.progress.chapter}`;
+			this.progress.inputChapter.value = `${state.progress.chapter}`;
+			this.progress.currentVolume.textContent = `${state.progress.volume}`;
+			this.progress.inputVolume.value = `${state.progress.volume}`;
+		}
+	}
 }
 
 export class TitlePage extends Page {
@@ -1064,11 +1010,18 @@ export class TitlePage extends Page {
 	@TryCatch(Page.errorNotification)
 	async run() {
 		console.log('SyncDex :: Title');
-		const overview = new TitleOverview();
+
+		// Interface
+		const chapterList = new ChapterList();
+		const mangaDexList = new MangaDexList();
+		const overviews = new Overviews();
 
 		// Get Title
 		const id = parseInt(document.querySelector<HTMLElement>('.row .fas.fa-hashtag')!.parentElement!.textContent!);
 		const title = await LocalTitle.get(id);
+		overviews.main.update(title, undefined); // Update early to take space
+		const syncModule = new SyncModule('title', title);
+		syncModule.loggedIn = !document.querySelector('button[title="You need to log in to use this function."]');
 		if (!title.inList || title.name === undefined || title.name == '') {
 			const headerTitle = document.querySelector('h6.card-header');
 			if (headerTitle) title.name = headerTitle.textContent!.trim();
@@ -1136,8 +1089,9 @@ export class TitlePage extends Page {
 				const progressRow = document.querySelector('.reading_progress')!.parentElement!;
 				progressRow.parentElement!.insertBefore(informationRow, progressRow);
 			}
-			const serviceList = informationRow.querySelector('ul')!;
+
 			// Add Links
+			const serviceList = informationRow.querySelector('ul')!;
 			for (const key of Object.values(ActivableKey)) {
 				const localService = localServices[key];
 				if (title.services[key] == undefined) continue;
@@ -1171,24 +1125,19 @@ export class TitlePage extends Page {
 			}
 		}
 
-		// debug(`Volume reset chapters ? ${overview.chapterList.volumeResetChapter || title.volumeResetChapter}`);
-		if (overview.chapterList.volumeResetChapter || title.volumeResetChapter) {
+		// Update offset and displayed chapters if volume reset chapter
+		if (chapterList.volumeResetChapter || title.volumeResetChapter) {
 			// If we have all available chapters, we can update the volumeChapterCount of the title
-			if (!overview.chapterList.incomplete) {
-				/*debug(
-					`Volume reset chapters.\nVolume chapter count: ${JSON.stringify(
-						overview.chapterList.volumeChapterCount
-					)}\nVolume offset: ${JSON.stringify(overview.chapterList.volumeChapterOffset)}`
-				);*/
-				title.volumeChapterCount = overview.chapterList.volumeChapterCount;
-				title.volumeChapterOffset = overview.chapterList.volumeChapterOffset;
+			if (!chapterList.incomplete) {
+				title.volumeChapterCount = chapterList.volumeChapterCount;
+				title.volumeChapterOffset = chapterList.volumeChapterOffset;
 				title.volumeResetChapter = true;
 			}
 			// If we don't we need to fetch the chapter list from the API sadly
 			// Only fetch if there is a new chapter since last title visit, last read, or if it's the first time
 			else if (!title.volumeResetChapter) {
 				const currentPage = document.querySelector<HTMLElement>('nav > ul.pagination > .page-item.active');
-				const lastChapter = overview.chapterList.rows[overview.chapterList.rows.length - 1];
+				const lastChapter = chapterList.rows[chapterList.rows.length - 1];
 				let doUpdate = !title.lastTitle || Date.now() - title.lastTitle > 2 * 24 * 60 * 60 * 1000;
 				// If we are on page 1 and there is a chapter, check if it was published sooner than last time
 				if ((!currentPage || currentPage.textContent == '1') && lastChapter) {
@@ -1233,7 +1182,7 @@ export class TitlePage extends Page {
 						);
 				}
 			}
-			overview.chapterList.update(title);
+			chapterList.update(title);
 		}
 		if (!title.volumeResetChapter && !isNaN(max.chapter)) {
 			title.max = max;
@@ -1241,12 +1190,57 @@ export class TitlePage extends Page {
 		title.lastTitle = Date.now();
 		await title.persist(); // Always save
 
-		// Load each Services to Sync
-		const syncModule = new SyncModule('title', title);
-		// Find MangaDex login status
-		syncModule.loggedIn = !document.querySelector('button[title="You need to log in to use this function."]');
-		// syncModule.overview!.syncedLocal(syncModule.title);
-		dispatch('title:synced', { title });
+		// Bind interfaces
+		chapterList.bind(syncModule);
+		mangaDexList.bind(syncModule);
+		overviews.bind(syncModule);
+		if (Options.services.length == 0) {
+			overviews.hasNoServices(syncModule);
+		}
+
+		// Add listeners
+		listen('title:syncing', () => overviews.main.syncing());
+		listen('title:synced', (payload) => {
+			overviews.main.update(payload.title, undefined);
+			overviews.main.synced();
+		});
+		listen('title:refresh', () => {
+			overviews.reset();
+			overviews.bind(syncModule);
+		});
+		listen('mangadex:syncing', () => mangaDexList.disable());
+		listen('mangadex:synced', (payload) => {
+			mangaDexList.update(payload.field, payload.state);
+			mangaDexList.enable();
+		});
+		listen('sync:initialize:start', () => overviews.main.syncing());
+		listen('service:syncing', (payload) => overviews.syncing(payload.key));
+		listen('service:synced', (payload) => overviews.synced(payload.key, payload.title, payload.local));
+		listen('sync:initialize:end', (payload) => {
+			const { title } = payload;
+			if (title.status == Status.NONE) {
+				overviews.buttons.display();
+			} else overviews.buttons.hide();
+			// Add the *Completed* button only if the title is complete
+			if (title.max && title.max.chapter) {
+				overviews.buttons.addCompletedButton();
+			}
+			overviews.main.synced();
+		});
+		listen('sync:start', () => {
+			overviews.main.syncing();
+			overviews.buttons.hide();
+			mangaDexList.disable();
+		});
+		listen('sync:end', (payload) => {
+			overviews.buttons.toggle(payload.syncModule.title.status);
+			overviews.main.update(payload.syncModule.title, undefined);
+			overviews.main.synced();
+			chapterList.highlight(payload.syncModule.title);
+			mangaDexList.enable();
+		});
+
+		// Start syncModule work
 		syncModule.initialize();
 		// Get MangaDex Status
 		const statusButton = document.querySelector('.manga_follow_button.disabled');
@@ -1256,8 +1250,8 @@ export class TitlePage extends Page {
 		if (scoreButton) syncModule.mdState.rating = parseInt(scoreButton.id.trim()) * 10;
 		const imported = await syncModule.syncLocal();
 		// Get MangaDex Progress -- defaults to 0
-		syncModule.mdState.progress.chapter = parseFloat(overview.mdProgress.currentChapter.textContent!);
-		syncModule.mdState.progress.volume = parseInt(overview.mdProgress.currentVolume.textContent!);
+		syncModule.mdState.progress.chapter = parseFloat(mangaDexList.progress.currentChapter.textContent!);
+		syncModule.mdState.progress.volume = parseInt(mangaDexList.progress.currentVolume.textContent!);
 
 		// Add all chapters from the ChapterList if it's a new Title
 		// Update lastChapter for the History if title was synced
@@ -1265,7 +1259,7 @@ export class TitlePage extends Page {
 			if (Options.saveOpenedChapters) {
 				title.updateChapterList(title.chapter);
 			}
-			for (const row of overview.chapterList.rows) {
+			for (const row of chapterList.rows) {
 				if (Options.biggerHistory && row.progress.chapter == title.chapter) {
 					title.lastChapter = row.chapterId;
 					if (!Options.saveOpenedChapters) break;
@@ -1275,11 +1269,11 @@ export class TitlePage extends Page {
 				}
 			}
 			// Highlight again if the chapter list needs update
-			overview.chapterList.highlight(title);
+			chapterList.highlight(title);
 		}
 
 		// Save added previous opened chapters and highest chapter
-		const highest = overview.chapterList.highest;
+		const highest = chapterList.highest;
 		if (Options.biggerHistory && (!title.highest || title.highest < highest)) {
 			title.highest = highest;
 		}

@@ -72,23 +72,26 @@ export class UpdateGroup {
 		for (const row of this.chapters) {
 			if (!row.progress) continue;
 			row.node.classList.add('has-fast-in-transition');
+			// * Next Chapter
 			if (
 				!foundNext &&
 				((row.progress.chapter > progress.chapter && row.progress.chapter < Math.floor(progress.chapter) + 2) ||
 					(row.progress.chapter == 0 && progress.chapter == 0 && title.status !== Status.COMPLETED))
 			) {
-				// * Next Chapter
 				foundNext = true;
 				row.node.style.backgroundColor = Options.colors.nextChapter;
 				bgColumn.style.backgroundColor = Options.colors.nextChapter;
-			} else if (row.progress.chapter > progress.chapter) {
-				// * Higher Chapter
+			}
+			// * Higher Chapter
+			else if (row.progress.chapter > progress.chapter) {
 				row.node.style.backgroundColor = Options.colors.higherChapter;
-			} else if (row.progress.chapter < progress.chapter) {
-				// * Lower Chapter
+			}
+			// * Lower Chapter
+			else if (row.progress.chapter < progress.chapter) {
 				row.node.style.backgroundColor = Options.colors.lowerChapter;
-			} else if (progress.chapter == row.progress.chapter) {
-				// * Current Chapter
+			}
+			// * Current Chapter
+			else if (progress.chapter == row.progress.chapter) {
 				row.node.style.backgroundColor = Options.colors.highlights[UpdateGroup.currentColor];
 				if (!foundNext) {
 					bgColumn.style.backgroundColor = Options.colors.highlights[UpdateGroup.currentColor];
