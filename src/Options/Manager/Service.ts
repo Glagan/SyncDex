@@ -3,7 +3,6 @@ import { Services } from '../../Service/Class/Map';
 import { Modal } from '../../Core/Modal';
 import { Options } from '../../Core/Options';
 import { Service, LoginMethod } from '../../Core/Service';
-import { SaveOptions } from '../Utility';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { OptionsManager } from '../OptionsManager';
 import { ActivableKey, ServiceKey } from '../../Service/Keys';
@@ -171,14 +170,14 @@ class ServiceCard {
 					activeCards[activeCards.length - 1].nextElementSibling
 				);
 			}
-			await SaveOptions();
+			await Options.save();
 			this.manager.reloadCard(this.service.key);
 		});
 		this.mainButton.addEventListener('click', async () => {
 			// Make service the first in the list
 			const index = Options.services.indexOf(this.service.key);
 			Options.services.splice(0, 0, Options.services.splice(index, 1)[0]);
-			await SaveOptions();
+			await Options.save();
 			// Update old card
 			if (this.manager.mainCard) {
 				const oldMainContent = this.manager.mainCard.activeCardContent;
@@ -216,7 +215,7 @@ class ServiceCard {
 			if (this.service.logout !== undefined) {
 				await this.service.logout();
 			}
-			await SaveOptions();
+			await Options.save();
 			// Disable card
 			this.manager.removeActiveService(this.service.key);
 			this.desactivate();
@@ -311,7 +310,7 @@ class ServiceCard {
 						modal.enableExit();
 						modal.wrapper.classList.remove('loading');
 						if (res == RequestStatus.SUCCESS) {
-							await SaveOptions();
+							await Options.save();
 							SimpleNotification.success({ text: `Logged in on **${this.service.name}** !` });
 							this.loginButton.remove();
 							this.updateStatus(res);

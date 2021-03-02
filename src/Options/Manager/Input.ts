@@ -1,5 +1,4 @@
 import { Options } from '../../Core/Options';
-import { SaveOptions } from '../Utility';
 
 type ValidInputs = Omit<
 	Pick<
@@ -55,7 +54,7 @@ export class Input {
 			if (doSave) {
 				clearTimeout(Input.timeout);
 				Input.timeout = window.setTimeout(() => {
-					SaveOptions();
+					Options.save();
 				}, 300);
 			}
 		});

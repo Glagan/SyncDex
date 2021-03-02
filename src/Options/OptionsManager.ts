@@ -6,7 +6,6 @@ import { InputManager } from './Manager/Input';
 import { ServiceManager } from './Manager/Service';
 import { Storage } from '../Core/Storage';
 import { SaveViewer } from './SaveViewer';
-import { SaveOptions } from './Utility';
 import { Options } from '../Core/Options';
 import { Changelog } from './Changelog';
 import { MyMangaDex } from './SpecialService/MyMangaDex';
@@ -78,7 +77,7 @@ export class OptionsManager {
 					Log.logs = [];
 					await Storage.clear();
 					Options.reset();
-					await SaveOptions();
+					await Options.save();
 					this.saveSync.toggleButtons(false);
 					this.saveSync.toggleImportProgressState(false);
 					this.reload();

@@ -1,5 +1,4 @@
 import { Options } from '../../Core/Options';
-import { SaveOptions } from '../Utility';
 
 type SingleColor = Exclude<keyof AvailableOptions['colors'], 'highlights'>;
 
@@ -24,7 +23,7 @@ export class Color {
 			Options.colors[this.optionName] = this.input.value;
 			clearTimeout(Color.timeout);
 			Color.timeout = window.setTimeout(() => {
-				SaveOptions();
+				Options.save();
 			}, 300);
 		});
 	};

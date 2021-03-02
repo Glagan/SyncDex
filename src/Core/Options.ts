@@ -1,5 +1,6 @@
 import { Storage } from './Storage';
 import { browser } from 'webextension-polyfill-ts';
+import { dispatch } from './Event';
 
 console.log('SyncDex :: Options');
 
@@ -78,14 +79,14 @@ export const DefaultOptions: Readonly<AvailableOptions> = {
 export const Options: Options = Object.assign(
 	JSON.parse(JSON.stringify(DefaultOptions)), // Avoid references
 	{
-		load: async (): Promise<void> => {
+		async load() {
 			const options = await Storage.get('options');
 			if (options !== undefined) {
 				Object.assign(Options, options);
 			} else return Options.save();
 		},
 
-		reloadTokens: async (): Promise<void> => {
+		async reloadTokens() {
 			const options = await Storage.get(StorageUniqueKey.Options);
 			if (options !== undefined && options.tokens !== undefined) {
 				Options.tokens = {};
@@ -93,17 +94,19 @@ export const Options: Options = Object.assign(
 			}
 		},
 
-		save: (): Promise<void> => {
+		async save() {
 			const values = Object.assign({}, Options) as AvailableOptions & Partial<ManageOptions>;
 			// Delete functions, we can't pass them and they are not deleted
 			delete values.load;
 			delete values.reloadTokens;
 			delete values.save;
 			delete values.reset;
-			return Storage.set(StorageUniqueKey.Options, values);
+			dispatch('options:saving');
+			await Storage.set(StorageUniqueKey.Options, values);
+			dispatch('options:saved');
 		},
 
-		reset: (): void => {
+		reset() {
 			Object.assign(Options, JSON.parse(JSON.stringify(DefaultOptions)));
 		},
 	}

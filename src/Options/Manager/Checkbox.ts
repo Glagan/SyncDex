@@ -1,5 +1,4 @@
 import { Options } from '../../Core/Options';
-import { SaveOptions } from '../Utility';
 
 // https://medium.com/dailyjs/typescript-create-a-condition-based-subset-types-9d902cea5b8c#6f75
 type BooleanOptions = Pick<
@@ -47,11 +46,10 @@ export class Checkbox {
 		this.node.disabled = true;
 	};
 
-	update = (value: boolean): void => {
+	update = async (value: boolean) => {
 		Options[this.optionName] = value;
-		SaveOptions().then(() => {
-			this.toggle(value);
-		});
+		await Options.save();
+		this.toggle(value);
 	};
 
 	toggleDependencies = (value: boolean): void => {

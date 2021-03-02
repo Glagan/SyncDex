@@ -1,5 +1,6 @@
 import { browser } from 'webextension-polyfill-ts';
 import { DOM } from '../Core/DOM';
+import { listen } from '../Core/Event';
 import { Modal } from '../Core/Modal';
 import { Options } from '../Core/Options';
 import { SaveSync } from '../Core/SaveSync';
@@ -9,6 +10,14 @@ import { OptionsManager } from './OptionsManager';
 import { ThemeHandler } from './ThemeHandler';
 
 console.log('SyncDex :: Options Manager');
+
+let savingNotification: SimpleNotification | undefined;
+listen('options:saved', async () => {
+	if (savingNotification) savingNotification.remove();
+	savingNotification = SimpleNotification.success({
+		title: 'Options Saved',
+	});
+});
 
 // Generate a simple Modal with all options and logs
 const quickDebug = document.getElementById('quickOptionsDebug');
