@@ -13,6 +13,7 @@ import { TitleEditor } from '../../Core/TitleEditor';
 import { LogExecTime, TryCatch } from '../../Core/Log';
 import { Extension } from '../../Core/Extension';
 import { UpdateQueue } from '../../Core/UpdateQueue';
+import { listen } from '../../Core/Event';
 
 type ReaderEvent =
 	| 'loadingchange'
@@ -54,7 +55,7 @@ interface MangaDexUserTitleResponse {
 	};
 }
 
-class ReadingOverview {
+class Overview {
 	rowContainer: HTMLElement;
 	serviceRow: HTMLElement;
 	icons: Partial<{ [key in ActivableKey]: HTMLImageElement }> = {};
@@ -68,8 +69,17 @@ class ReadingOverview {
 		});
 		this.serviceRow = DOM.create('div', {
 			class: 'col row no-gutters reading-overview',
-			childs: [this.editButton],
 		});
+		// Create all icons
+		for (const key of Options.services) {
+			this.icons[key] = DOM.create('img', {
+				src: Extension.icon(key),
+				title: Services[key].name,
+			});
+			this.icons[key]!.classList.add('loading');
+			this.serviceRow.appendChild(this.icons[key]!);
+		}
+		this.serviceRow.appendChild(this.editButton);
 		this.rowContainer = DOM.create('div', {
 			class: 'col-auto row no-gutters p-1',
 			childs: [this.serviceRow],
@@ -82,19 +92,41 @@ class ReadingOverview {
 		DOM.clear(this.rowContainer);
 	}
 
-	bind = (syncModule: SyncModule): void => {
+	bind(syncModule: SyncModule): void {
+		// Add listeners
+		listen('service:syncing', (payload) => {
+			const icon = this.icons[payload.key];
+			if (icon) icon.classList.add('loading');
+		});
+		listen('service:synced', (payload) => {
+			const icon = this.icons[payload.key];
+			if (icon) {
+				icon.classList.remove('loading', 'error', 'synced', 'warning');
+				if (!Options.iconsSilentAfterSync) {
+					const res = payload.title;
+					if (res instanceof Title) {
+						if (!res.loggedIn) {
+							icon.classList.add('error');
+						} else {
+							icon.classList.add('synced');
+						}
+					} else icon.classList.add('warning');
+				}
+			}
+		});
+		// Title Editor
 		this.editButton.addEventListener('click', async (event) => {
 			event.preventDefault();
-			TitleEditor.create(syncModule, async () => {
+			/*TitleEditor.create(syncModule, async () => {
 				this.reset();
 				syncModule.initialize();
 				await syncModule.syncLocal();
 				await syncModule.syncExternal(true);
-			}).show();
+			}).show();*/
 		});
-	};
+	}
 
-	updateIcon = (icon: HTMLImageElement, res: Title | RequestStatus): void => {
+	updateIcon(icon: HTMLImageElement, res: Title | RequestStatus): void {
 		icon.classList.remove('loading', 'error', 'synced', 'warning');
 		if (!Options.iconsSilentAfterSync) {
 			if (res instanceof Title) {
@@ -105,44 +137,7 @@ class ReadingOverview {
 				}
 			} else icon.classList.add('warning');
 		}
-	};
-
-	hasNoServices = (): void => {};
-
-	initializeService = (key: ActivableKey, hasId: boolean): void => {
-		const icon = DOM.create('img', {
-			src: Extension.icon(key),
-			title: Services[key].name,
-		});
-		if (hasId) {
-			icon.classList.add('loading');
-		} else if (!Options.iconsSilentAfterSync) {
-			icon.classList.add('error');
-		}
-		this.serviceRow.insertBefore(icon, this.serviceRow.lastElementChild);
-		this.icons[key] = icon;
-	};
-
-	receivedInitialRequest = (key: ActivableKey, res: Title | RequestStatus, syncModule: SyncModule): void => {
-		const icon = this.icons[key];
-		if (!icon) return;
-		this.updateIcon(icon, res);
-	};
-
-	syncingService = (key: ActivableKey): void => {
-		const icon = this.icons[key];
-		if (!icon) return;
-		icon.classList.add('loading');
-	};
-
-	syncedService = (key: ActivableKey, res: Title | RequestStatus, title: Title): void => {
-		const icon = this.icons[key];
-		if (!icon) return;
-		this.updateIcon(icon, res);
-	};
-
-	syncingLocal = (): void => {};
-	syncedLocal = (title: Title): void => {};
+	}
 
 	remove() {
 		this.rowContainer.remove();
@@ -192,7 +187,7 @@ function initPromise() {
 export class ChapterPage extends Page {
 	syncModule?: SyncModule;
 	title?: LocalTitle;
-	overview?: ReadingOverview = undefined;
+	overview: Overview;
 	firstRequest: boolean = true;
 	reverseChapters: { [key: number]: SimpleChapter } = {};
 	loading: {
@@ -208,6 +203,7 @@ export class ChapterPage extends Page {
 	constructor() {
 		super();
 		this.content = document.getElementById('content') as HTMLElement;
+		this.overview = new Overview();
 	}
 
 	@LogExecTime
@@ -366,9 +362,8 @@ export class ChapterPage extends Page {
 		this.title.highest = highestChapter;
 		await this.title.persist(); // Always save
 		// Send initial requests
-		if (this.overview) this.overview.remove();
-		this.overview = new ReadingOverview();
 		this.syncModule = new SyncModule('chapter', this.title);
+		this.overview.bind(this.syncModule);
 		// Check if we're logged in on MangaDex
 		this.syncModule.loggedIn = document.querySelector(`a.nav-link[href^='/user']`) !== null;
 		this.syncModule.initialize();
