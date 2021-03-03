@@ -52,6 +52,7 @@ const DEFAULT_COOLDOWN = 1250;
 const cooldowns: Record<string, number> = {
 	'mangadex.org': 1500,
 	'myanimelist.net': 1500,
+	'anilist.co': 1500,
 	'nikurasu.org': 500,
 };
 const cookieDomains = ['myanimelist.net', 'mangadex.org', 'mangaupdates.com', 'anime-planet.com'];
@@ -151,6 +152,7 @@ function handleMessage(message: MessagePayload, sender?: BrowserRuntime.MessageS
 			// if (msg.headers['Origin']) msg.headers['X-Origin'] = msg.headers['Origin'];
 			// if (msg.headers['Referer']) msg.headers['X-Referer'] = msg.headers['Referer'];
 
+			// TODO: Handle X-RateLimit header for Anilist
 			const result = await fetch(msg.url, {
 				...message,
 				body,

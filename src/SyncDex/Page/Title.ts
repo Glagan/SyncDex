@@ -49,6 +49,7 @@ interface MangaDexTitleWithChaptersResponse {
 class QuickButtons {
 	node: HTMLElement;
 	edit: HTMLButtonElement;
+	quick: HTMLElement;
 	start: HTMLButtonElement;
 	planToRead: HTMLButtonElement;
 	hasCompleted: boolean = false;
@@ -59,7 +60,6 @@ class QuickButtons {
 			class: 'btn btn-secondary',
 			childs: [DOM.icon('edit'), DOM.space(), DOM.text('Edit')],
 		});
-		this.node = DOM.create('div', { class: 'quick-buttons hidden' });
 		this.start = DOM.create('button', {
 			class: 'btn btn-primary',
 			childs: [DOM.icon('book-open'), DOM.space(), DOM.text('Start Reading')],
@@ -68,33 +68,19 @@ class QuickButtons {
 			class: 'btn btn-secondary',
 			childs: [DOM.icon('bookmark'), DOM.space(), DOM.text('Add to Plan to Read')],
 		});
+		this.quick = DOM.create('div', { class: 'hidden', childs: [this.start, this.planToRead] });
+		this.node = DOM.create('div', { class: 'quick-buttons', childs: [this.edit, this.quick] });
 		this.completed = DOM.create('button', {
 			class: 'btn btn-success',
 			childs: [DOM.icon('book'), DOM.space(), DOM.text('Completed')],
 		});
-		DOM.append(this.node, this.start, DOM.space(), this.planToRead);
+		DOM.append(this.node, this.edit, this.quick);
 	}
 
 	bind(syncModule: SyncModule): void {
 		this.edit.addEventListener('click', async (event) => {
 			event.preventDefault();
-			/*TitleEditor.create(syncModule, async (updatedIDs) => {
-				// Update all overviews if external services IDs were updated
-				debug(`Updated IDs after Title Editor ? ${updatedIDs}`);
-				if (updatedIDs) {
-					// TODO: Update all interface after Title Editor
-					syncModule.overview.reset();
-					for (const serviceKey of Options.services) {
-						const key = syncModule.title.services[serviceKey];
-						syncModule.overview.initializeService(serviceKey, key != undefined);
-						syncModule.overview.receivedInitialRequest(
-							serviceKey,
-							syncModule.services[serviceKey]!,
-							syncModule
-						);
-					}
-				}
-			}).show();*/
+			TitleEditor.create(syncModule).show();
 		});
 		const quickBind = async (event: Event, status: Status): Promise<void> => {
 			event.preventDefault();
@@ -106,11 +92,11 @@ class QuickButtons {
 	}
 
 	display() {
-		this.node.classList.remove('hidden');
+		this.quick.classList.remove('hidden');
 	}
 
 	hide() {
-		this.node.classList.add('hidden');
+		this.quick.classList.add('hidden');
 	}
 
 	toggle(status: Status) {
@@ -121,15 +107,14 @@ class QuickButtons {
 
 	addCompletedButton(): void {
 		if (!this.hasCompleted) {
-			DOM.append(this.node, DOM.space(), this.completed);
+			this.quick.appendChild(this.completed);
 			this.hasCompleted = true;
 		}
 	}
 
 	removeCompletedButton(): void {
 		if (this.hasCompleted) {
-			this.node.removeChild(this.completed);
-			this.node.removeChild(this.node.lastChild!); // Space
+			this.quick.removeChild(this.completed);
 			this.hasCompleted = false;
 		}
 	}
@@ -557,7 +542,7 @@ class Overviews {
 	synced(key: ActivableKey, title: Title | RequestStatus | boolean, local: LocalTitle) {
 		const overview = this.overviews[key];
 		if (overview) {
-			overview.update(title, local); // TODO: Boolean no ID
+			overview.update(title, local);
 			overview.synced();
 		}
 	}

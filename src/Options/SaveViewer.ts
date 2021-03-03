@@ -263,8 +263,8 @@ export class SaveViewer {
 			syncModule.initialize();
 			let removed = false;
 			TitleEditor.create(
-				syncModule,
-				() => this.loadPage(this.currentPage),
+				syncModule
+				/*() => this.loadPage(this.currentPage),
 				() => {
 					removed = true;
 					this.realTitles.remove(title.key.id!);
@@ -275,7 +275,7 @@ export class SaveViewer {
 					const page = this.currentPage;
 					if (removed) await this.updateAll(true);
 					this.loadPage(page);
-				}
+				}*/
 			).show();
 		});
 		// Delete button in list only delete in Local Storage

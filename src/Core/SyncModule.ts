@@ -165,16 +165,21 @@ export class SyncModule {
 		}
 		await this.title.persist();
 		// Remove old externals and initialize new ones
-		const deleteReport: SyncReport = {};
+		if (options.deleteOld || options.updateExternals) {
+			dispatch('title:refresh', { syncModule: this });
+		}
+		const deleteReport: SyncReport | undefined = options.deleteOld ? {} : undefined;
 		await this.waitInitialize();
+		const deletePromises: Promise<RequestStatus>[] = [];
 		for (const update of updatedIDs) {
 			const key = update.key;
 			if (Options.services.indexOf(key) >= 0) {
 				// Remove old services
 				if (options.deleteOld) {
 					if (update.from && typeof this.services[key] === 'object') {
-						// TODO: [parallel] delete all at the same time
-						deleteReport[key] = await (this.services[key] as Title).delete();
+						deletePromises.push(
+							(this.services[key] as Title).delete().then((res) => (deleteReport![key] = res))
+						);
 					}
 					delete this.services[key];
 				}
@@ -184,10 +189,22 @@ export class SyncModule {
 				}
 			}
 		}
+		await Promise.all(deletePromises);
 		// Export
 		await this.waitInitialize();
-		const { report, mdReport } = await this.export();
-		dispatch('sync:end', { type: 'edit', state, deleteReport, report, mdReport, syncModule: this });
+		if (!options.updateExternals) {
+			// Dispatch service:synced to update with difference if updateExternals is disabled
+			const { report, mdReport } = { report: undefined, mdReport: undefined };
+			for (const key of Options.services) {
+				if (this.services[key] !== undefined) {
+					dispatch('service:synced', { key, title: this.services[key]!, local: this.title });
+				}
+			}
+			dispatch('sync:end', { type: 'edit', state, deleteReport, report, mdReport, updatedIDs, syncModule: this });
+		} else {
+			const { report, mdReport } = await this.export();
+			dispatch('sync:end', { type: 'edit', state, deleteReport, report, mdReport, updatedIDs, syncModule: this });
+		}
 	}
 
 	/**

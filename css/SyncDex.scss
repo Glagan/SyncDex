@@ -288,8 +288,23 @@
 	color: $red-60;
 }
 .quick-buttons {
+	display: flex;
+	flex-flow: row nowrap;
+	justify-content: space-between;
 	width: 100%;
-	text-align: center;
+
+	div {
+		flex-grow: 1;
+		text-align: center;
+
+		button {
+			margin-right: 4px;
+
+			&:last-of-type {
+				margin-right: 0;
+			}
+		}
+	}
 }
 
 // Reading Overview

@@ -290,6 +290,7 @@ type TitleEditorState = Pick<
 	import('./Core/Title').LocalTitle,
 	'progress' | 'chapters' | 'status' | 'score' | 'name' | 'start' | 'end'
 > & { services: { [key in import('./Service/Keys').ActivableKey]: ServiceEditorValue } };
+type IDUpdate = { key: import('./Service/Keys').ActivableKey; from?: MediaKey; to?: MediaKey };
 
 declare const enum StorageUniqueKey {
 	Options = 'options',
@@ -423,9 +424,10 @@ type EventPayloads = {
 		| {
 				type: 'edit';
 				state: LocalTitleState;
-				deleteReport: SyncReport;
-				report: SyncReport;
-				mdReport: MDListReport;
+				deleteReport?: SyncReport;
+				report?: SyncReport;
+				mdReport?: MDListReport;
+				updatedIDs: IDUpdate[];
 		  }
 	) & { syncModule: import('./Core/SyncModule').SyncModule };
 	// Single service sync from SyncModule.syncExternal

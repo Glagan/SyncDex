@@ -34,7 +34,9 @@ export class UpdateQueue {
 					}`,
 				});
 			}
+			// TODO: payload.type == 'status'
 			// TODO: payload.type == 'score'
+			// TODO: payload.type == 'edit'
 		});
 	}
 
