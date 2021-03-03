@@ -167,7 +167,6 @@ interface AvailableOptions {
 	// Title
 	linkToServices: boolean;
 	overviewMainOnly: boolean;
-	autoSync: boolean;
 	mdUpdateSyncDex: boolean;
 	// History
 	biggerHistory: boolean;
@@ -272,7 +271,7 @@ interface StorageTitle {
 }
 
 type LocalTitleState = Pick<
-	LocalTitle,
+	import('./Core/Title').LocalTitle,
 	| 'inList'
 	| 'progress'
 	| 'chapters'
@@ -285,6 +284,12 @@ type LocalTitleState = Pick<
 	| 'start'
 	| 'end'
 >;
+
+type ServiceEditorValue = { found: boolean; mediaKey: MediaKey; forced: boolean };
+type TitleEditorState = Pick<
+	import('./Core/Title').LocalTitle,
+	'progress' | 'chapters' | 'status' | 'score' | 'name' | 'start' | 'end'
+> & { services: { [key in import('./Service/Keys').ActivableKey]: ServiceEditorValue } };
 
 declare const enum StorageUniqueKey {
 	Options = 'options',
@@ -319,7 +324,13 @@ type ExportedSave = {
  */
 
 type SyncReport = {
-	[key in import('./Service/Keys').ActivableKey]?: RequestStatus | false;
+	[key in import('./Service/Keys').ActivableKey]?: RequestStatus | boolean;
+};
+
+type MDListReport = {
+	status?: RequestStatus;
+	progress?: RequestStatus;
+	rating?: RequestStatus;
 };
 
 /**
@@ -401,11 +412,20 @@ type EventPayloads = {
 				state: LocalTitleState;
 				result: ProgressUpdate;
 				report: SyncReport;
+				mdReport: MDListReport;
 		  }
 		| {
 				type: 'status' | 'score';
 				state: LocalTitleState;
 				report: SyncReport;
+				mdReport: MDListReport;
+		  }
+		| {
+				type: 'edit';
+				state: LocalTitleState;
+				deleteReport: SyncReport;
+				report: SyncReport;
+				mdReport: MDListReport;
 		  }
 	) & { syncModule: import('./Core/SyncModule').SyncModule };
 	// Single service sync from SyncModule.syncExternal

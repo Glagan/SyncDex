@@ -90,8 +90,8 @@ export class SyncModule {
 		dispatch('title:refresh', { syncModule: this });
 		await this.title.refresh();
 		this.initialize();
-		await this.syncLocal();
-		await this.syncExternal(true);
+		await this.import();
+		await this.export();
 	}
 
 	/**
@@ -99,7 +99,7 @@ export class SyncModule {
 	 * If an external Service is more recent, sync with it and sync all other Services with the then synced Title.
 	 */
 	@LogExecTime
-	async syncLocal(): Promise<boolean> {
+	async import(): Promise<boolean> {
 		dispatch('title:syncing');
 		await this.waitInitialize();
 		// Sync Title with the most recent ServiceTitle ordered by User choice
@@ -132,6 +132,68 @@ export class SyncModule {
 	 * Update the status of the instance LocalTitle and all external services.
 	 */
 	@LogExecTime
+	async syncAll(title: TitleEditorState, options: { deleteOld: boolean; updateExternals: boolean }): Promise<void> {
+		dispatch('sync:start', { title: this.title });
+		const state = this.saveState();
+		this.title.status = title.status;
+		this.title.name = title.name;
+		this.title.progress = title.progress;
+		this.title.score = title.score;
+		this.title.start = title.start;
+		this.title.end = title.end;
+		this.title.chapters = title.chapters;
+		// Services
+		const updatedIDs: { key: ActivableKey; from?: MediaKey; to?: MediaKey }[] = [];
+		for (const key of Object.values(ActivableKey)) {
+			// Update or delete
+			if (title.services[key].found) {
+				if (
+					!this.title.services[key] ||
+					!Services[key].compareId(this.title.services[key]!, title.services[key].mediaKey)
+				) {
+					updatedIDs.push({ key, from: this.title.services[key], to: title.services[key].mediaKey });
+					this.title.services[key] = title.services[key].mediaKey;
+				}
+			} else {
+				updatedIDs.push({ key, from: this.title.services[key], to: undefined });
+				delete this.title.services[key];
+			}
+			// Update forced
+			if (title.services[key].forced) {
+				this.title.addForceService(key);
+			} else this.title.removeForceService(key);
+		}
+		await this.title.persist();
+		// Remove old externals and initialize new ones
+		const deleteReport: SyncReport = {};
+		await this.waitInitialize();
+		for (const update of updatedIDs) {
+			const key = update.key;
+			if (Options.services.indexOf(key) >= 0) {
+				// Remove old services
+				if (options.deleteOld) {
+					if (update.from && typeof this.services[key] === 'object') {
+						// TODO: [parallel] delete all at the same time
+						deleteReport[key] = await (this.services[key] as Title).delete();
+					}
+					delete this.services[key];
+				}
+				// Initialize new Service
+				if (update.to) {
+					this.initializeService(key);
+				}
+			}
+		}
+		// Export
+		await this.waitInitialize();
+		const { report, mdReport } = await this.export();
+		dispatch('sync:end', { type: 'edit', state, deleteReport, report, mdReport, syncModule: this });
+	}
+
+	/**
+	 * Update the status of the instance LocalTitle and all external services.
+	 */
+	@LogExecTime
 	async syncStatus(status: Status): Promise<void> {
 		dispatch('sync:start', { title: this.title });
 		const state = this.saveState();
@@ -143,8 +205,9 @@ export class SyncModule {
 			if (!this.title.end) this.title.end = new Date();
 		}
 		await this.title.persist();
-		const report = await this.syncExternal();
-		dispatch('sync:end', { type: 'status', state, report, syncModule: this });
+		const { report, mdReport } = await this.export();
+		// TODO: MangaDex sync status only
+		dispatch('sync:end', { type: 'status', state, report, mdReport, syncModule: this });
 	}
 
 	/**
@@ -159,8 +222,9 @@ export class SyncModule {
 			this.title.addChapter(progress.chapter);
 		}
 		await this.title.persist();
-		const report = await this.syncExternal();
-		dispatch('sync:end', { type: 'progress', state, result, report, syncModule: this });
+		const { report, mdReport } = await this.export();
+		// TODO: MangaDex sync progress only
+		dispatch('sync:end', { type: 'progress', state, result, report, mdReport, syncModule: this });
 	}
 
 	/**
@@ -172,8 +236,45 @@ export class SyncModule {
 		const state = this.saveState();
 		this.title.score = score;
 		await this.title.persist();
-		const report = await this.syncExternal();
-		dispatch('sync:end', { type: 'score', state, report, syncModule: this });
+		const { report, mdReport } = await this.export();
+		// TODO: MangaDex sync rating only
+		dispatch('sync:end', { type: 'score', state, report, mdReport, syncModule: this });
+	}
+
+	@LogExecTime
+	async exportService(key: ActivableKey): Promise<RequestStatus | boolean | undefined> {
+		const title = this.services[key];
+		if (title === undefined) return;
+		if (!(title instanceof Title)) {
+			return title;
+		} else if (!title.loggedIn) {
+			return false;
+		}
+
+		const synced = title.isSyncedWith(this.title);
+		if (!synced) {
+			dispatch('service:syncing', { key: key });
+			title.import(this.title);
+			// ! To fix: An update without a status (score update only for example) try to delete, maybe ignore ?
+			const promise = this.title.status == Status.NONE ? title.delete() : title.persist();
+			return promise
+				.then((res) => {
+					if (res > RequestStatus.DELETED) {
+						dispatch('service:synced', { key, title: res, local: this.title });
+					} else dispatch('service:synced', { key, title, local: this.title });
+					return res;
+				})
+				.catch(async (error) => {
+					dispatch('service:synced', { key, title: RequestStatus.FAIL, local: this.title });
+					await log(error);
+					throw error;
+				});
+		}
+		// Always update the overview to check against possible imported ServiceTitle
+		else {
+			dispatch('service:synced', { key, title, local: this.title });
+			// TODO: Return true -> updateQueue [Already Synced] ?
+		}
 	}
 
 	/**
@@ -181,61 +282,31 @@ export class SyncModule {
 	 * Also sync MangaDex if Options.updateMD is enabled, also deleting the follow if needed.
 	 */
 	@LogExecTime
-	async syncExternal(checkAutoSyncOption: boolean = false): Promise<SyncReport> {
+	async export(): Promise<{ report: SyncReport; mdReport: MDListReport }> {
 		await this.waitInitialize();
 
-		const promises: Promise<RequestStatus>[] = [];
+		const promises: Promise<RequestStatus | boolean | undefined>[] = [];
 		const report: SyncReport = {};
 		for (const key of Options.services) {
-			const title = this.services[key];
-			if (title === undefined) continue;
-			if (!(title instanceof Title)) {
-				report[key] = title;
-				continue;
-			} else if (!title.loggedIn) {
-				report[key] = false;
-				continue;
-			}
-			const synced = title.isSyncedWith(this.title);
-			// If Auto Sync is on, import from now up to date Title and persist
-			if ((!checkAutoSyncOption || Options.autoSync) && !synced) {
-				title.import(this.title);
-				dispatch('service:syncing', { key: key });
-				// ! To fix: An update without a status (score update only for example) try to delete, maybe ignore ?
-				const promise = this.title.status == Status.NONE ? title.delete() : title.persist();
-				promises.push(promise);
-				promise
-					.then((res) => {
-						if (res > RequestStatus.DELETED) {
-							dispatch('service:synced', { key, title: res, local: this.title });
-						} else dispatch('service:synced', { key, title, local: this.title });
-						report[key] = res;
-					})
-					.catch(async (error) => {
-						dispatch('service:synced', { key, title: RequestStatus.FAIL, local: this.title });
-						report[key] = false;
-						await log(error);
-					});
-			}
-			// Always update the overview to check against possible imported ServiceTitle
-			else dispatch('service:synced', { key, title, local: this.title });
+			const promise = this.exportService(key);
+			promises.push(promise);
+			promise
+				.then((result) => {
+					if (result !== undefined) {
+						report[key] = result;
+					}
+				})
+				.catch(() => (report[key] = false));
 		}
 
 		// Update MangaDex List Status and Score
 		// Can't check loggedIn status since it can be called without MangaDex check first
+		const mdReport: MDListReport = {};
+		// TODO: Update this block
 		if (Options.updateMD && this.loggedIn) {
-			const strings: { success: string[]; error: string[] } = { success: [], error: [] };
 			// Status
 			if (this.mdState.status != this.title.status) {
-				const oldStatus = this.mdState.status;
-				this.mdState.status = this.title.status;
-				const response = await this.syncMangaDex(this.mdState.status == Status.NONE ? 'unfollow' : 'status');
-				if (response.ok && (!response.body || response.body.length == 0)) {
-					strings.success.push('**MangaDex Status** updated.');
-				} else {
-					this.mdState.status = oldStatus;
-					strings.error.push(`Error while updating **MangaDex Status**.\ncode: ${response.code}`);
-				}
+				mdReport.status = await this.syncMangaDexStatus(this.title.status);
 			}
 			// Score
 			if (
@@ -243,15 +314,7 @@ export class SyncModule {
 				this.title.score > 0 &&
 				Math.round(this.mdState.rating / 10) != Math.round(this.title.score / 10)
 			) {
-				// Convert 0-100 SyncDex Score to 0-10
-				const oldScore = this.mdState.rating;
-				this.mdState.rating = this.title.score;
-				const response = await this.syncMangaDex('rating');
-				if (response.ok) strings.success.push('**MangaDex Score** updated.');
-				else {
-					this.mdState.rating = oldScore;
-					strings.error.push(`Error while updating **MangaDex Score**.\ncode: ${response.code}`);
-				}
+				mdReport.rating = await this.syncMangaDexStatus(this.title.score);
 			}
 			// Progress
 			// Update on Chapter Page if it's a sub chapter, since MD don't save them
@@ -267,26 +330,12 @@ export class SyncModule {
 				(this.title.chapter != this.mdState.progress.chapter ||
 					(this.title.volume != undefined && this.title.volume != this.mdState.progress.volume))
 			) {
-				const oldProgress = this.mdState.progress;
-				this.mdState.progress = { ...this.title.progress };
-				if (!this.mdState.progress.volume) this.mdState.progress.volume = 0;
-				const response = await this.syncMangaDex('progress');
-				if (response.ok) strings.success.push('**MangaDex Progress** updated.');
-				else {
-					this.mdState.progress = oldProgress;
-					strings.error.push(`Error while updating **MangaDex Progress**.\ncode: ${response.code}`);
-				}
+				mdReport.progress = await this.syncMangaDexProgress(this.title.progress);
 			}
 			this.previousIsSubChapter = isSubChapter;
-			if (strings.success.length > 0) {
-				SimpleNotification.success({ text: strings.success.join('\n') }, { duration: Options.successDuration });
-			}
-			if (strings.error.length > 0) {
-				SimpleNotification.error({ text: strings.error.join('\n') }, { duration: Options.errorDuration });
-			}
 		}
 		await Promise.all(promises);
-		return report;
+		return { report, mdReport };
 	}
 
 	/**
@@ -295,9 +344,10 @@ export class SyncModule {
 	@LogExecTime
 	async cancel(state: LocalTitleState): Promise<void> {
 		dispatch('sync:start', { title: this.title });
+		// TODO: Save and restore services ?
 		this.restoreState(state);
 		await this.title.persist();
-		await this.syncExternal();
+		await this.export();
 		dispatch('sync:end', { type: 'cancel', syncModule: this });
 	}
 
@@ -332,7 +382,8 @@ export class SyncModule {
 	}
 
 	@LogExecTime
-	async syncMangaDexStatus(status: Status): Promise<boolean> {
+	async syncMangaDexStatus(status: Status): Promise<RequestStatus> {
+		if (this.mdState.status === status) return RequestStatus.SUCCESS;
 		const oldStatus = this.mdState.status;
 		this.mdState.status = status;
 		const response = await this.syncMangaDex(this.mdState.status == Status.NONE ? 'unfollow' : 'status');
@@ -340,11 +391,11 @@ export class SyncModule {
 		if (!response.ok || (response.body && response.body.length > 0)) {
 			this.mdState.status = oldStatus;
 		}
-		return response.ok;
+		return Request.status(response);
 	}
 
 	@LogExecTime
-	async syncMangaDexProgress(progress: Progress): Promise<boolean> {
+	async syncMangaDexProgress(progress: Progress): Promise<RequestStatus> {
 		const oldProgress = this.mdState.progress;
 		this.mdState.progress = { ...progress };
 		if (!this.mdState.progress.volume) this.mdState.progress.volume = 0;
@@ -352,19 +403,19 @@ export class SyncModule {
 		if (!response.ok) {
 			this.mdState.progress = oldProgress;
 		}
-		return response.ok;
+		return Request.status(response);
 	}
 
 	@LogExecTime
-	async syncMangaDexRating(rating: number): Promise<boolean> {
-		if (this.mdState.rating === rating) return true;
+	async syncMangaDexRating(rating: number): Promise<RequestStatus> {
+		if (this.mdState.rating === rating) return RequestStatus.SUCCESS;
 		const oldRating = this.mdState.rating;
 		this.mdState.rating = rating;
 		const response = await this.syncMangaDex('rating');
 		if (!response.ok) {
 			this.mdState.rating = oldRating;
 		}
-		return response.ok;
+		return Request.status(response);
 	}
 
 	/**
@@ -407,8 +458,8 @@ export class SyncModule {
 		if (!this.title.services[key]) return;
 		const res = await Services[key].get(this.title.services[key]!);
 		this.services[key] = res;
-		await this.syncLocal();
-		await this.syncExternal(true);
+		await this.import();
+		await this.export();
 	}
 
 	async serviceImport(key: ActivableKey): Promise<void> {

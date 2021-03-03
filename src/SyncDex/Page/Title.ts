@@ -78,12 +78,12 @@ class QuickButtons {
 	bind(syncModule: SyncModule): void {
 		this.edit.addEventListener('click', async (event) => {
 			event.preventDefault();
-			TitleEditor.create(syncModule, async (updatedIDs) => {
+			/*TitleEditor.create(syncModule, async (updatedIDs) => {
 				// Update all overviews if external services IDs were updated
 				debug(`Updated IDs after Title Editor ? ${updatedIDs}`);
 				if (updatedIDs) {
 					// TODO: Update all interface after Title Editor
-					/*syncModule.overview.reset();
+					syncModule.overview.reset();
 					for (const serviceKey of Options.services) {
 						const key = syncModule.title.services[serviceKey];
 						syncModule.overview.initializeService(serviceKey, key != undefined);
@@ -92,9 +92,9 @@ class QuickButtons {
 							syncModule.services[serviceKey]!,
 							syncModule
 						);
-					}*/
+					}
 				}
-			}).show();
+			}).show();*/
 		});
 		const quickBind = async (event: Event, status: Status): Promise<void> => {
 			event.preventDefault();
@@ -181,9 +181,6 @@ class Overview {
 				this.manage,
 			],
 		});
-		if (this.key != ServiceKey.SyncDex) {
-			this.manage.appendChild(this.syncButton);
-		}
 		this.overlay = DOM.create('div', {
 			class: 'overlay hidden',
 			childs: [DOM.icon('sync-alt fa-spin'), DOM.space(), DOM.text('Syncing...')],
@@ -353,11 +350,12 @@ class Overview {
 				this.setIcon('bookmark has-error');
 			}
 
-			// Display *Sync* button only if the title is out of sync, with auto sync disabled and if the title is in a list
-			if (!Options.autoSync && !title.isSyncedWith(title) && title.status !== Status.NONE && title.loggedIn) {
+			// Display *Sync* button only if the title is out of sync and if the title is in a list
+			if (!title.isSyncedWith(title) && title.status !== Status.NONE && title.loggedIn) {
 				this.setIcon('sync has-error');
-				// TODO: Display SYNC button
-				// this.syncButton.appendChild(this.syncButton);
+				this.manage.appendChild(this.syncButton);
+			} else if (this.syncButton.parentElement == this.manage) {
+				this.manage.removeChild(this.syncButton);
 			}
 		} else if (typeof title === 'number') {
 			this.setIcon('times has-error');
@@ -1143,6 +1141,9 @@ export class TitlePage extends Page {
 			}
 		}
 
+		// TODO: Compare new SyncModule services with Mochi or MangaDex response
+		//		Delete old and update new if it's different
+
 		// Update offset and displayed chapters if volume reset chapter
 		if (chapterList.volumeResetChapter || title.volumeResetChapter) {
 			// If we have all available chapters, we can update the volumeChapterCount of the title
@@ -1278,7 +1279,7 @@ export class TitlePage extends Page {
 		// Get MangaDex Score
 		const scoreButton = document.querySelector('.manga_rating_button.disabled');
 		if (scoreButton) syncModule.mdState.rating = parseInt(scoreButton.id.trim()) * 10;
-		const imported = await syncModule.syncLocal();
+		const imported = await syncModule.import();
 		// Get MangaDex Progress -- defaults to 0
 		syncModule.mdState.progress.chapter = parseFloat(mangaDexList.progress.currentChapter.textContent!);
 		syncModule.mdState.progress.volume = parseInt(mangaDexList.progress.currentVolume.textContent!);
@@ -1310,6 +1311,6 @@ export class TitlePage extends Page {
 		if (imported || Options.biggerHistory) await title.persist();
 
 		// When the Title is synced, all remaining ServiceTitle are synced with it
-		if (title.status != Status.NONE) await syncModule.syncExternal(true);
+		if (title.status != Status.NONE) await syncModule.export();
 	}
 }

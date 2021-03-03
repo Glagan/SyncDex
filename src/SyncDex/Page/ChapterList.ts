@@ -162,7 +162,7 @@ class TitleChapterGroup {
 
 						if (!this.initializedSync) {
 							syncModule?.initialize();
-							await syncModule.syncLocal();
+							await syncModule.import();
 							this.initializedSync = true;
 						}
 

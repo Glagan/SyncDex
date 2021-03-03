@@ -99,32 +99,25 @@ export class TitleEditor {
 		return inputs;
 	};
 
-	static saveServiceInput = (key: ActivableKey, title: LocalTitle, form: HTMLFormElement): void => {
+	static service(form: HTMLFormElement, key: ActivableKey): ServiceEditorValue {
 		let found = false;
+		const mediaKey = { id: 0 } as MediaKey;
 		if (form[`${key}_id`] !== undefined) {
 			const id = parseInt(form[`${key}_id`].value);
 			if (!isNaN(id)) {
-				if (title.services[key] === undefined) title.services[key] = { id: id };
-				else title.services[key]!.id = id;
+				mediaKey.id = id;
 				found = true;
 			}
 		}
-		if (form[`${key}_slug`] !== undefined) {
-			const slug = form[`${key}_slug`].value;
-			if (title.services[key] === undefined) title.services[key] = { slug: slug };
-			else title.services[key]!.slug = slug;
+		if (Services[key].usesSlug && form[`${key}_slug`] !== undefined) {
+			mediaKey.slug = form[`${key}_slug`].value;
+			found = true;
 		}
-		if (form[`${key}_force`]?.checked) title.addForceService(key);
-		else title.removeForceService(key);
-		if (!found) delete title.services[key];
-	};
+		const forced = form[`${key}_force`]?.checked;
+		return { found, mediaKey, forced };
+	}
 
-	static create(
-		syncModule: SyncModule,
-		postSubmit?: (updatedIDs: boolean) => void,
-		postDelete?: () => void,
-		onCancel?: () => void
-	): Modal {
+	static create(syncModule: SyncModule): Modal {
 		const title = syncModule.title;
 		const modal = new Modal('medium');
 		modal.header.classList.add('title');
@@ -179,6 +172,7 @@ export class TitleEditor {
 		// Create form with every rows
 		const form = DOM.create('form', { class: 'save-entry', name: 'entry-form' });
 		const updateAllCheckbox = DOM.create('input', { type: 'checkbox', id: 'scs_updateAll', checked: true });
+		const deleteAllCheckbox = DOM.create('input', { type: 'checkbox', id: 'scs_deleteAll', checked: true });
 		const realSubmit = DOM.create('button', {
 			type: 'submit',
 			css: { display: 'none' },
@@ -382,6 +376,8 @@ export class TitleEditor {
 					services,
 					updateAllCheckbox,
 					DOM.create('label', { htmlFor: 'scs_updateAll', textContent: 'Update all Services' }),
+					deleteAllCheckbox,
+					DOM.create('label', { htmlFor: 'scs_deleteAll', textContent: 'Delete old Services on update' }),
 				]),
 			]),
 			DOM.create('div', {
@@ -408,7 +404,6 @@ export class TitleEditor {
 			realSubmit
 		);
 		// Submit event
-		const previousState = syncModule.saveState();
 		form.addEventListener('submit', async (event) => {
 			event.preventDefault();
 			modal.disableExit();
@@ -416,79 +411,52 @@ export class TitleEditor {
 			submitButton.disabled = true;
 			deleteButton.disabled = true;
 			submitButton.classList.add('loading');
-			// Chapter and Status always required
-			let oldChapter = title.chapter;
-			let chapter = parseFloat(form.chapter.value);
-			if (!isNaN(chapter) && chapter > -1) title.chapter = chapter;
-			else chapter = 0;
-			title.status = parseInt(form.status.value);
-			// Update Chapter list
-			if (Options.saveOpenedChapters && oldChapter != title.chapter) {
-				title.updateChapterList(chapter);
-			}
-			// Volume
-			if (form.volume.value != '') {
-				const volume = parseInt(form.volume.value);
-				if (!isNaN(volume) && volume > -1) title.volume = volume;
-			} else delete title.progress.volume;
-			// Name
-			if (form.mediaName.value != '') title.name = (form.mediaName.value as string).trim();
-			else delete title.name;
-			// Score
-			if (form.score.value != '') {
-				const score = parseInt(form.score.value);
-				if (!isNaN(score) && score >= 0) title.score = score;
-			} else title.score = 0;
-			// Start - YYYY-MM-DD, convert month from 1-12 to 0-11
-			if (form.start.value != '') {
-				const parts = (form.start.value as string).split('-').map((p) => parseInt(p));
-				title.start = new Date(parts[0], parts[1] - 1, parts[2]);
-			} else delete title.start;
-			// End - YYYY-MM-DD
-			if (form.end.value != '') {
-				const parts = (form.end.value as string).split('-').map((p) => parseInt(p));
-				title.end = new Date(parts[0], parts[1] - 1, parts[2]);
-			} else delete title.end;
-			// Services
-			// TODO: Option to delete past Services on change, also applies when finding new ID with MangaDex or Mochi
-			for (const key of Object.values(ActivableKey)) {
-				this.saveServiceInput(key, title, form);
-			}
-			// Chapters
-			title.chapters = historyChapters.map((h) => h.chapter);
-			// Save and close Modal
-			await title.persist();
 
-			// Update initial requests for each new different services
-			let updatedIDs = false;
-			if (updateAllCheckbox.checked || syncModule.origin == 'title' || syncModule.origin == 'chapter') {
-				await syncModule.waitInitialize();
-				for (const key in title.services) {
-					const serviceKey = key as ActivableKey;
-					if (
-						Options.services.indexOf(serviceKey) >= 0 &&
-						(!previousState.services[serviceKey] ||
-							!Services[serviceKey].compareId(
-								previousState.services[serviceKey]!,
-								title.services[serviceKey]!
-							))
-					) {
-						updatedIDs = true;
-						syncModule.initializeService(serviceKey);
+			// Chapter and Status always required
+			const state = {
+				status: parseInt(form.status.value),
+				chapters: historyChapters.map((h) => h.chapter),
+				progress: {
+					chapter: ((c) => {
+						return !isNaN(c) && c > -1 ? c : 0;
+					})(parseFloat(form.chapter.value)),
+					volume: ((v) => {
+						return !isNaN(v) && v > -1 ? v : undefined;
+					})(parseInt(form.volume.value)),
+				},
+				name: form.mediaName.value.trim(),
+				score: ((s) => {
+					return !isNaN(s) && s >= 0 ? s : 0;
+				})(parseInt(form.score.value)),
+				// Start - YYYY-MM-DD, convert month from 1-12 to 0-11
+				start: ((d) => {
+					if (d != '') {
+						const parts = d.split('-');
+						return new Date(parts[0], parts[1] - 1, parts[2]);
 					}
-				}
+					return undefined;
+				})(form.start.value),
+				end: ((d) => {
+					if (d != '') {
+						const parts = d.split('-');
+						return new Date(parts[0], parts[1] - 1, parts[2]);
+					}
+					return undefined;
+				})(form.end.value),
+				services: {},
+			} as TitleEditorState;
+			// Services
+			for (const key of Object.values(ActivableKey)) {
+				state.services[key] = this.service(form, key);
 			}
-			// Sync Services
-			const created = previousState.status == Status.NONE && title.status != Status.NONE;
-			const completed = previousState.status != Status.COMPLETED && title.status == Status.COMPLETED;
-			// Sync external
-			if (updateAllCheckbox.checked) {
-				const report = await syncModule.syncExternal();
-				syncModule.displayReportNotifications(report, { created, completed }, previousState, onCancel);
-			} else syncModule.displayReportNotifications({}, { created, completed }, previousState, onCancel);
-			modal.enableExit();
+			// updateAllCheckbox.checked
+			await syncModule.syncAll(state, {
+				deleteOld: deleteAllCheckbox.checked,
+				updateExternals: updateAllCheckbox.checked,
+			});
+
 			modal.remove();
-			if (postSubmit) await postSubmit(updatedIDs);
+			modal.enableExit();
 		});
 		submitButton.addEventListener('click', (event) => {
 			event.preventDefault();
@@ -521,7 +489,14 @@ export class TitleEditor {
 			if (notification) notification.remove();
 			clearTimeout(timeout);
 			// Remove exit
-			dispatch('title:syncing');
+			modal.disableExit();
+			cancelButton.disabled = true;
+			submitButton.disabled = true;
+			deleteButton.disabled = true;
+			deleteButton.classList.add('loading');
+
+			// await syncModule.delete();
+			/*dispatch('title:syncing');
 			modal.disableExit();
 			submitButton.disabled = true;
 			cancelButton.disabled = true;
@@ -532,11 +507,9 @@ export class TitleEditor {
 			if (updateAllCheckbox.checked) {
 				const report = await syncModule.syncExternal();
 				syncModule.displayReportNotifications(report, { completed: false }, previousState, onCancel);
-			} else syncModule.displayReportNotifications({}, { completed: false }, previousState, onCancel);
-			dispatch('title:synced', { title });
-			modal.enableExit();
+			} else syncModule.displayReportNotifications({}, { completed: false }, previousState, onCancel);*/
 			modal.remove();
-			if (postDelete) postDelete();
+			modal.enableExit();
 		});
 		DOM.append(
 			modal.footer,

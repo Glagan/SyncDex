@@ -35,7 +35,6 @@ export const DefaultOptions: Readonly<AvailableOptions> = {
 	// Title
 	linkToServices: true,
 	overviewMainOnly: true,
-	autoSync: true,
 	mdUpdateSyncDex: false,
 	// History
 	biggerHistory: true,

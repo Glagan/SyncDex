@@ -395,7 +395,7 @@ export class ChapterPage extends Page {
 		}
 		// Check initial Status if it's the first time
 		if (Options.services.length > 0) {
-			await this.syncModule.syncLocal();
+			await this.syncModule.import();
 		}
 		if (volumeResetChapter) {
 			this.overview.addVolumeResetChapters();
@@ -422,7 +422,7 @@ export class ChapterPage extends Page {
 			// Execute basic first request sync if needed before leaving
 			// Only sync if Title has a Status to be synced to
 			if (this.firstRequest && Options.services.length > 0 && this.title.status !== Status.NONE) {
-				await this.syncModule.syncExternal();
+				await this.syncModule.export();
 			}
 			return;
 		}
@@ -484,7 +484,7 @@ export class ChapterPage extends Page {
 
 		// If we do not need to update, we still sync to the current non updated progress but no output
 		if (!doUpdate && this.firstRequest && Options.services.length > 0) {
-			await this.syncModule.syncExternal();
+			await this.syncModule.export();
 		}
 		this.firstRequest = false;
 	}

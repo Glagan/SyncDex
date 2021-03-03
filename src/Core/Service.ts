@@ -21,9 +21,9 @@ export abstract class Service {
 	identifierField?: [string, string];
 
 	abstract link(key: MediaKey): string;
-	createTitle = (): AppendableElement => {
+	createTitle(): AppendableElement {
 		return DOM.text(this.name);
-	};
+	}
 
 	abstract loggedIn(): Promise<RequestStatus>;
 	abstract get(key: MediaKey): Promise<Title | RequestStatus>;
@@ -31,13 +31,18 @@ export abstract class Service {
 	logout?(): Promise<void>;
 
 	abstract idFromLink(href: string): MediaKey;
-	idFromString = (str: string): MediaKey => {
+	idFromString(str: string): MediaKey {
 		return { id: parseInt(str) };
-	};
+	}
 
-	compareId = (id1: MediaKey, id2: MediaKey): boolean => {
+	/**
+	 * Check 2 MediaKey and return true if both the ids and slugs are equals
+	 * @param id1 First MediaKey
+	 * @param id2 Second MediaKey
+	 */
+	compareId(id1: MediaKey, id2: MediaKey): boolean {
 		return (<typeof Service>this.constructor).compareId(id1, id2);
-	};
+	}
 
 	static compareId(id1: MediaKey, id2: MediaKey): boolean {
 		return id1.id == id2.id && id1.slug == id2.slug;

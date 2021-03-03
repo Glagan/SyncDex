@@ -103,9 +103,7 @@ export class UpdateQueue {
 			let ending = '';
 			if (updateRows.length > 0) {
 				ending = updateRows.join('\n');
-			} else if (
-				/*!informations.firstRequest || */ Options.services.length == 0 /* || informations.localUpdated */
-			) {
+			} else if (Options.services.length == 0) {
 				ending = UpdateQueue.reportNotificationRow(StaticKey.SyncDex, 'Synced');
 			}
 			SimpleNotification.success(
