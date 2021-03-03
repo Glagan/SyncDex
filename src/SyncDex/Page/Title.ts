@@ -445,6 +445,7 @@ class Overviews {
 	main: Overview;
 	overviews: Partial<{ [key in ActivableKey]: Overview }> = {};
 	buttons: QuickButtons;
+	binded: boolean = false;
 
 	constructor() {
 		this.column = DOM.create('div', { class: 'overviews col-lg-9 col-xl-10' });
@@ -467,8 +468,11 @@ class Overviews {
 	}
 
 	bind(syncModule: SyncModule): void {
-		this.buttons.bind(syncModule);
-		this.main.bind(syncModule);
+		if (!this.binded) {
+			this.buttons.bind(syncModule);
+			this.main.bind(syncModule);
+			this.binded = true;
+		}
 		for (const key in this.overviews) {
 			this.overviews[key as ActivableKey]!.bind(syncModule);
 		}

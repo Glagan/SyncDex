@@ -175,11 +175,20 @@ export class SyncModule {
 			const key = update.key;
 			if (Options.services.indexOf(key) >= 0) {
 				// Remove old services
-				if (options.deleteOld) {
-					if (update.from && typeof this.services[key] === 'object') {
-						deletePromises.push(
-							(this.services[key] as Title).delete().then((res) => (deleteReport![key] = res))
-						);
+				if (update.from && typeof this.services[key] === 'object') {
+					if (options.deleteOld) {
+						const promise = (this.services[key] as Title).delete();
+						deletePromises.push(promise);
+						promise
+							.then((res) => {
+								dispatch('service:synced', { key, title: res, local: this.title });
+								return res;
+							})
+							.catch(async (error) => {
+								dispatch('service:synced', { key, title: RequestStatus.FAIL, local: this.title });
+								await log(error);
+								throw error;
+							});
 					}
 					delete this.services[key];
 				}
@@ -196,9 +205,7 @@ export class SyncModule {
 			// Dispatch service:synced to update with difference if updateExternals is disabled
 			const { report, mdReport } = { report: undefined, mdReport: undefined };
 			for (const key of Options.services) {
-				if (this.services[key] !== undefined) {
-					dispatch('service:synced', { key, title: this.services[key]!, local: this.title });
-				}
+				dispatch('service:synced', { key, title: this.services[key] ?? false, local: this.title });
 			}
 			dispatch('sync:end', { type: 'edit', state, deleteReport, report, mdReport, updatedIDs, syncModule: this });
 		} else {
@@ -258,22 +265,28 @@ export class SyncModule {
 		dispatch('sync:end', { type: 'score', state, report, mdReport, syncModule: this });
 	}
 
-	@LogExecTime
-	async exportService(key: ActivableKey): Promise<RequestStatus | boolean | undefined> {
+	/**
+	 * Import the Local Instance title on the external service identified by key.
+	 * Returns RequestStatus on request sent, false if the title has no ID or is not logged in.
+	 * @param key The Service key
+	 */
+	async exportService(key: ActivableKey): Promise<RequestStatus | boolean> {
 		const title = this.services[key];
-		if (title === undefined) return;
-		if (!(title instanceof Title)) {
-			return title;
-		} else if (!title.loggedIn) {
+		// If the title is "invalid" still send a service:synced to update the interface
+		if (title === undefined || (typeof title === 'object' && !title.loggedIn)) {
+			dispatch('service:synced', { key, title: false, local: this.title });
 			return false;
+		} else if (typeof title !== 'object') {
+			dispatch('service:synced', { key, title, local: this.title });
+			return title;
 		}
 
 		const synced = title.isSyncedWith(this.title);
 		if (!synced) {
 			dispatch('service:syncing', { key: key });
 			title.import(this.title);
-			// ! To fix: An update without a status (score update only for example) try to delete, maybe ignore ?
-			const promise = this.title.status == Status.NONE ? title.delete() : title.persist();
+			// ! An update without a status (score update only for example) try to delete, maybe ignore ?
+			const promise = title.status == Status.NONE ? title.delete() : title.persist();
 			return promise
 				.then((res) => {
 					if (res > RequestStatus.DELETED) {
@@ -291,6 +304,7 @@ export class SyncModule {
 		else {
 			dispatch('service:synced', { key, title, local: this.title });
 			// TODO: Return true -> updateQueue [Already Synced] ?
+			return true;
 		}
 	}
 
@@ -309,9 +323,7 @@ export class SyncModule {
 			promises.push(promise);
 			promise
 				.then((result) => {
-					if (result !== undefined) {
-						report[key] = result;
-					}
+					report[key] = result;
 				})
 				.catch(() => (report[key] = false));
 		}

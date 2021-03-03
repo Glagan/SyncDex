@@ -7,9 +7,7 @@ import { SyncModule } from './SyncModule';
 import { Service } from './Service';
 import { Services } from '../Service/Class/Map';
 import { ActivableKey } from '../Service/Keys';
-import { LocalTitle } from '../Core/Title';
 import { Extension } from './Extension';
-import { dispatch } from './Event';
 
 interface HistoryChapter {
 	node: HTMLElement;
@@ -494,20 +492,8 @@ export class TitleEditor {
 			submitButton.disabled = true;
 			deleteButton.disabled = true;
 			deleteButton.classList.add('loading');
-
 			// await syncModule.delete();
-			/*dispatch('title:syncing');
-			modal.disableExit();
-			submitButton.disabled = true;
-			cancelButton.disabled = true;
-			deleteButton.disabled = true;
-			deleteButton.classList.add('loading');
-			// Delete Title from lists
-			await syncModule.title.delete();
-			if (updateAllCheckbox.checked) {
-				const report = await syncModule.syncExternal();
-				syncModule.displayReportNotifications(report, { completed: false }, previousState, onCancel);
-			} else syncModule.displayReportNotifications({}, { completed: false }, previousState, onCancel);*/
+
 			modal.remove();
 			modal.enableExit();
 		});
