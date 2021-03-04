@@ -1,7 +1,7 @@
 import { AppendableElement, DOM } from '../../Core/DOM';
 import { listen } from '../../Core/Event';
 import { Extension } from '../../Core/Extension';
-import { debug, LogExecTime, TryCatch } from '../../Core/Log';
+import { LogExecTime, TryCatch } from '../../Core/Log';
 import { MangaDex } from '../../Core/MangaDex';
 import { Mochi } from '../../Core/Mochi';
 import { Options } from '../../Core/Options';
@@ -46,88 +46,13 @@ interface MangaDexTitleWithChaptersResponse {
 	data: { manga: MangaDexExtendedManga; chapters: MangaDexChapter[]; groups: { id: number; name: string }[] };
 }
 
-class QuickButtons {
-	node: HTMLElement;
-	edit: HTMLButtonElement;
-	quick: HTMLElement;
-	start: HTMLButtonElement;
-	planToRead: HTMLButtonElement;
-	hasCompleted: boolean = false;
-	completed: HTMLButtonElement;
-
-	constructor() {
-		this.edit = DOM.create('button', {
-			class: 'btn btn-secondary',
-			childs: [DOM.icon('edit'), DOM.space(), DOM.text('Edit')],
-		});
-		this.start = DOM.create('button', {
-			class: 'btn btn-primary',
-			childs: [DOM.icon('book-open'), DOM.space(), DOM.text('Start Reading')],
-		});
-		this.planToRead = DOM.create('button', {
-			class: 'btn btn-secondary',
-			childs: [DOM.icon('bookmark'), DOM.space(), DOM.text('Add to Plan to Read')],
-		});
-		this.quick = DOM.create('div', { class: 'hidden', childs: [this.start, this.planToRead] });
-		this.node = DOM.create('div', { class: 'quick-buttons', childs: [this.edit, this.quick] });
-		this.completed = DOM.create('button', {
-			class: 'btn btn-success',
-			childs: [DOM.icon('book'), DOM.space(), DOM.text('Completed')],
-		});
-		DOM.append(this.node, this.edit, this.quick);
-	}
-
-	bind(syncModule: SyncModule): void {
-		this.edit.addEventListener('click', async (event) => {
-			event.preventDefault();
-			TitleEditor.create(syncModule).show();
-		});
-		const quickBind = async (event: Event, status: Status): Promise<void> => {
-			event.preventDefault();
-			await syncModule.syncStatus(status);
-		};
-		this.start.addEventListener('click', (event) => quickBind(event, Status.READING));
-		this.planToRead.addEventListener('click', (event) => quickBind(event, Status.PLAN_TO_READ));
-		this.completed.addEventListener('click', (event) => quickBind(event, Status.COMPLETED));
-	}
-
-	display() {
-		this.quick.classList.remove('hidden');
-	}
-
-	hide() {
-		this.quick.classList.add('hidden');
-	}
-
-	toggle(status: Status) {
-		if (status == Status.NONE) {
-			this.display();
-		} else this.hide();
-	}
-
-	addCompletedButton(): void {
-		if (!this.hasCompleted) {
-			this.quick.appendChild(this.completed);
-			this.hasCompleted = true;
-		}
-	}
-
-	removeCompletedButton(): void {
-		if (this.hasCompleted) {
-			this.quick.removeChild(this.completed);
-			this.hasCompleted = false;
-		}
-	}
-}
-
-class Overview {
+abstract class Overview {
 	key: OverviewKey;
 	node: HTMLElement;
 	header: HTMLElement;
 	manage: HTMLElement;
 	body: HTMLElement;
 	refreshButton: HTMLButtonElement;
-	syncButton: HTMLButtonElement;
 	icon: HTMLElement;
 	overlay: HTMLElement;
 
@@ -138,16 +63,14 @@ class Overview {
 		score: 'Score',
 	};
 
+	abstract title(): AppendableElement;
+
 	constructor(key: OverviewKey) {
 		this.key = key;
 		this.icon = DOM.create('i', { class: 'fas hidden' });
 		this.refreshButton = DOM.create('button', {
 			class: 'btn btn-xs btn-secondary',
 			childs: [DOM.icon('download'), DOM.space(), DOM.text('Refresh')],
-		});
-		this.syncButton = DOM.create('button', {
-			class: 'btn btn-xs btn-primary sync-button',
-			childs: [DOM.icon('sync-alt'), DOM.space(), DOM.text('Sync')],
 		});
 		this.manage = DOM.create('div', { class: 'manage', childs: [this.refreshButton] });
 		this.header = DOM.create('div', {
@@ -158,7 +81,7 @@ class Overview {
 					childs: [
 						DOM.create('img', { src: Extension.icon(key) }),
 						DOM.space(),
-						key == ServiceKey.SyncDex ? DOM.text('SyncDex') : Services[key].createTitle(),
+						this.title(),
 						DOM.space(),
 						this.icon,
 					],
@@ -180,30 +103,7 @@ class Overview {
 		}
 	}
 
-	bind(syncModule: SyncModule) {
-		this.refreshButton.addEventListener('click', async (event) => {
-			event.preventDefault();
-			if (!this.syncButton.classList.contains('loading')) {
-				this.syncButton.classList.add('loading');
-				this.syncing();
-				await Options.load();
-				if (this.key == ServiceKey.SyncDex) {
-					await syncModule.refresh();
-				} else {
-					await syncModule.refreshService(this.key);
-				}
-				this.syncButton.classList.remove('loading');
-			}
-		});
-		this.syncButton.addEventListener('click', async (event) => {
-			event.preventDefault();
-			if (this.key !== ServiceKey.SyncDex && !this.syncButton.classList.contains('loading')) {
-				this.syncButton.classList.add('loading');
-				await syncModule.serviceImport(this.key);
-				this.syncButton.classList.remove('loading');
-			}
-		});
-	}
+	abstract bind(syncModule: SyncModule): void;
 
 	row<K = Date | number | string>(icon: string, name: string, content?: K, original?: K): HTMLElement {
 		const nameHeader = DOM.create('span', { textContent: name });
@@ -251,6 +151,8 @@ class Overview {
 		}
 		return row;
 	}
+
+	abstract notInList(): void;
 
 	/**
 	 * Create a list of all values for the Media.
@@ -331,16 +233,7 @@ class Overview {
 				}
 				DOM.append(this.body, ...rows);
 			} else {
-				DOM.append(this.body, DOM.text('Not in List.'));
-				this.setIcon('bookmark has-error');
-			}
-
-			// Display *Sync* button only if the title is out of sync and if the title is in a list
-			if (!title.isSyncedWith(title) && title.status !== Status.NONE && title.loggedIn) {
-				this.setIcon('sync has-error');
-				this.manage.appendChild(this.syncButton);
-			} else if (this.syncButton.parentElement == this.manage) {
-				this.manage.removeChild(this.syncButton);
+				this.notInList();
 			}
 		} else if (typeof title === 'number') {
 			this.setIcon('times has-error');
@@ -431,10 +324,168 @@ class Overview {
 	syncing() {
 		this.setIcon('sync-alt fa-spin');
 		this.overlay.classList.remove('hidden');
+		this.refreshButton.disabled = true;
 	}
 
 	synced(): void {
 		this.overlay.classList.add('hidden');
+		this.refreshButton.disabled = false;
+	}
+}
+
+class LocalOverview extends Overview {
+	edit: HTMLButtonElement;
+	quick: HTMLElement;
+	start: HTMLButtonElement;
+	planToRead: HTMLButtonElement;
+	hasCompleted: boolean = false;
+	completed: HTMLButtonElement;
+
+	constructor() {
+		super(ServiceKey.SyncDex);
+		this.edit = DOM.create('button', {
+			class: 'btn btn-xs btn-secondary',
+			childs: [DOM.icon('edit'), DOM.space(), DOM.text('Edit')],
+		});
+		this.manage.appendChild(this.edit);
+		this.start = DOM.create('button', {
+			class: 'btn btn-primary',
+			childs: [DOM.icon('book-open'), DOM.space(), DOM.text('Start Reading')],
+		});
+		this.planToRead = DOM.create('button', {
+			class: 'btn btn-secondary',
+			childs: [DOM.icon('bookmark'), DOM.space(), DOM.text('Add to Plan to Read')],
+		});
+		this.completed = DOM.create('button', {
+			class: 'btn btn-success',
+			childs: [DOM.icon('book'), DOM.space(), DOM.text('Completed')],
+		});
+		this.quick = DOM.create('div', { class: 'quick-buttons', childs: [this.start, this.planToRead] });
+	}
+
+	title(): AppendableElement {
+		return DOM.text('SyncDex');
+	}
+
+	bind(syncModule: SyncModule) {
+		this.refreshButton.addEventListener('click', async (event) => {
+			event.preventDefault();
+			if (!this.refreshButton.classList.contains('loading')) {
+				this.refreshButton.classList.add('loading');
+				this.syncing();
+				await Options.load();
+				await syncModule.refresh();
+				this.refreshButton.classList.remove('loading');
+			}
+		});
+		this.edit.addEventListener('click', async (event) => {
+			event.preventDefault();
+			TitleEditor.create(syncModule).show();
+		});
+		const quickBind = async (event: Event, status: Status): Promise<void> => {
+			event.preventDefault();
+			await syncModule.syncStatus(status);
+		};
+		this.start.addEventListener('click', (event) => quickBind(event, Status.READING));
+		this.planToRead.addEventListener('click', (event) => quickBind(event, Status.PLAN_TO_READ));
+		this.completed.addEventListener('click', (event) => quickBind(event, Status.COMPLETED));
+	}
+
+	notInList() {
+		this.body.appendChild(this.quick);
+	}
+
+	addCompletedButton(): void {
+		if (!this.hasCompleted) {
+			this.quick.appendChild(this.completed);
+			this.hasCompleted = true;
+		}
+	}
+
+	removeCompletedButton(): void {
+		if (this.hasCompleted) {
+			this.quick.removeChild(this.completed);
+			this.hasCompleted = false;
+		}
+	}
+
+	syncing() {
+		super.syncing();
+		this.edit.disabled = true;
+	}
+
+	synced(): void {
+		super.synced();
+		this.edit.disabled = false;
+	}
+}
+
+class ExternalOverview extends Overview {
+	syncButton: HTMLButtonElement;
+
+	constructor(key: ActivableKey) {
+		super(key);
+		this.syncButton = DOM.create('button', {
+			class: 'btn btn-xs btn-primary sync-button',
+			childs: [DOM.icon('sync-alt'), DOM.space(), DOM.text('Sync')],
+		});
+		if (Options.services[0] == key) {
+			this.node.classList.add('main');
+		}
+	}
+
+	title() {
+		return Services[this.key as ActivableKey].createTitle();
+	}
+
+	bind(syncModule: SyncModule) {
+		this.refreshButton.addEventListener('click', async (event) => {
+			event.preventDefault();
+			if (!this.refreshButton.classList.contains('loading')) {
+				this.refreshButton.classList.add('loading');
+				this.syncing();
+				await Options.load();
+				await syncModule.refreshService(this.key as ActivableKey);
+				this.refreshButton.classList.remove('loading');
+			}
+		});
+		this.syncButton.addEventListener('click', async (event) => {
+			event.preventDefault();
+			if (this.key !== ServiceKey.SyncDex && !this.syncButton.classList.contains('loading')) {
+				this.syncButton.classList.add('loading');
+				await syncModule.serviceImport(this.key);
+				this.syncButton.classList.remove('loading');
+			}
+		});
+	}
+
+	notInList() {
+		DOM.append(this.body, DOM.text('Not in List.'));
+		this.setIcon('bookmark has-error');
+	}
+
+	update(title: Title | RequestStatus | boolean, original: LocalTitle | undefined) {
+		super.update(title, original);
+
+		// Display *Sync* button only if the title is out of sync and if the title is in a list
+		if (typeof title === 'object') {
+			if (!title.isSyncedWith(title) && title.status !== Status.NONE && title.loggedIn) {
+				this.setIcon('sync has-error');
+				this.manage.appendChild(this.syncButton);
+			} else if (this.syncButton.parentElement == this.manage) {
+				this.manage.removeChild(this.syncButton);
+			}
+		}
+	}
+
+	syncing() {
+		super.syncing();
+		this.syncButton.disabled = true;
+	}
+
+	synced(): void {
+		super.synced();
+		this.syncButton.disabled = false;
 	}
 }
 
@@ -442,9 +493,8 @@ class Overviews {
 	row: HTMLElement;
 	column: HTMLElement;
 	current!: Overview;
-	main: Overview;
-	overviews: Partial<{ [key in ActivableKey]: Overview }> = {};
-	buttons: QuickButtons;
+	main: LocalOverview;
+	overviews: Partial<{ [key in ActivableKey]: ExternalOverview }> = {};
 	binded: boolean = false;
 
 	constructor() {
@@ -459,17 +509,15 @@ class Overviews {
 		});
 		const row = document.querySelector<HTMLElement>('.reading_progress')!.parentElement!;
 		row.parentElement!.insertBefore(this.row, row);
-		this.buttons = new QuickButtons();
 
 		// Always create SyncDex Overview
-		this.main = new Overview(ServiceKey.SyncDex);
+		this.main = new LocalOverview();
 		this.bindOverview(this.main);
 		this.reset();
 	}
 
 	bind(syncModule: SyncModule): void {
 		if (!this.binded) {
-			this.buttons.bind(syncModule);
 			this.main.bind(syncModule);
 			this.binded = true;
 		}
@@ -486,7 +534,6 @@ class Overviews {
 		for (const key of Options.services) {
 			this.createOverview(key);
 		}
-		this.column.appendChild(this.buttons.node);
 	}
 
 	hasNoServices(syncModule: SyncModule): void {
@@ -513,18 +560,17 @@ class Overviews {
 		this.column.appendChild(alert);
 	}
 
-	createOverview(key: ActivableKey): Overview {
+	createOverview(key: ActivableKey) {
 		// Remove Previous if there is one
 		if (this.overviews[key] !== undefined) {
 			this.overviews[key]!.node.remove();
 			delete this.overviews[key];
 		}
 		// Create the new Overview
-		const overview = new Overview(key);
+		const overview = new ExternalOverview(key);
 		this.column.appendChild(overview.node);
 		this.bindOverview(overview);
 		this.overviews[key] = overview;
-		return overview;
 	}
 
 	bindOverview(overview: Overview): void {
@@ -1230,29 +1276,21 @@ export class TitlePage extends Page {
 		listen('service:synced', (payload) => overviews.synced(payload.key, payload.title, payload.local));
 		listen('sync:initialize:end', (payload) => {
 			const { title } = payload;
-			if (title.status == Status.NONE) {
-				overviews.buttons.display();
-			} else overviews.buttons.hide();
 			// Add the *Completed* button only if the title is complete
 			if (title.max && title.max.chapter) {
-				overviews.buttons.addCompletedButton();
-			} else overviews.buttons.removeCompletedButton();
+				overviews.main.addCompletedButton();
+			} else overviews.main.removeCompletedButton();
 			overviews.main.synced();
 			mangaDexList.enable();
 			chapterList.enable();
 		});
 		listen('sync:start', () => {
 			overviews.main.syncing();
-			overviews.buttons.hide();
 			chapterList.disable();
 			mangaDexList.disable();
 		});
 		listen('sync:end', (payload) => {
 			const title = payload.syncModule.title;
-			if (title.status == Status.NONE) {
-				overviews.buttons.display();
-			} else overviews.buttons.hide();
-			overviews.buttons.toggle(title.status);
 			overviews.main.update(title, undefined);
 			overviews.main.synced();
 			chapterList.highlight(title);

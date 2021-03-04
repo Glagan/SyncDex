@@ -70,7 +70,17 @@ class Overview {
 		this.serviceRow = DOM.create('div', {
 			class: 'col row no-gutters reading-overview',
 		});
-		// Create all icons
+		this.rowContainer = DOM.create('div', {
+			class: 'col-auto row no-gutters p-1',
+			childs: [this.serviceRow],
+		});
+		const actionsRow = document.querySelector('.reader-controls-mode')!;
+		actionsRow.parentElement!.insertBefore(this.rowContainer, actionsRow);
+		this.reset();
+	}
+
+	reset() {
+		DOM.clear(this.serviceRow);
 		for (const key of Options.services) {
 			this.icons[key] = DOM.create('img', {
 				src: Extension.icon(key),
@@ -80,20 +90,11 @@ class Overview {
 			this.serviceRow.appendChild(this.icons[key]!);
 		}
 		this.serviceRow.appendChild(this.editButton);
-		this.rowContainer = DOM.create('div', {
-			class: 'col-auto row no-gutters p-1',
-			childs: [this.serviceRow],
-		});
-		const actionsRow = document.querySelector('.reader-controls-mode')!;
-		actionsRow.parentElement!.insertBefore(this.rowContainer, actionsRow);
-	}
-
-	reset() {
-		DOM.clear(this.rowContainer);
 	}
 
 	bind(syncModule: SyncModule): void {
 		// Add listeners
+		listen('title:refresh', () => this.reset());
 		listen('service:syncing', (payload) => {
 			const icon = this.icons[payload.key];
 			if (icon) icon.classList.add('loading');
@@ -104,7 +105,9 @@ class Overview {
 				icon.classList.remove('loading', 'error', 'synced', 'warning');
 				if (!Options.iconsSilentAfterSync) {
 					const res = payload.title;
-					if (res instanceof Title) {
+					if (res === false) {
+						icon.classList.add('error');
+					} else if (res instanceof Title) {
 						if (!res.loggedIn) {
 							icon.classList.add('error');
 						} else {
@@ -132,11 +135,6 @@ class Overview {
 				}
 			} else icon.classList.add('warning');
 		}
-	}
-
-	remove() {
-		this.rowContainer.remove();
-		this.volumeChapterReset?.remove();
 	}
 
 	addVolumeResetChapters() {
