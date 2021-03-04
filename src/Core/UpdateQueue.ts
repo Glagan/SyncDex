@@ -143,7 +143,7 @@ export class UpdateQueue {
 		}
 	};
 
-	static async confirm(syncModule: SyncModule, progress: Progress, reasons: string[]): Promise<void> {
+	static confirm(syncModule: SyncModule, progress: Progress, reasons: string[]) {
 		const title = syncModule.title;
 		SimpleNotification.info(
 			{

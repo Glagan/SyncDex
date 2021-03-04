@@ -55,7 +55,7 @@ console.log('SyncDex :: Index');
 		},
 		{
 			page: ChapterPage,
-			location: ['/chapter/\\d+(/\\d+)?$'],
+			location: ['/chapter/\\d+(/\\d+)?(/gap)?$'],
 		},
 		{
 			page: TitleListPage,

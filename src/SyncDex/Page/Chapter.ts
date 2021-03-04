@@ -117,12 +117,7 @@ class Overview {
 		// Title Editor
 		this.editButton.addEventListener('click', async (event) => {
 			event.preventDefault();
-			/*TitleEditor.create(syncModule, async () => {
-				this.reset();
-				syncModule.initialize();
-				await syncModule.syncLocal();
-				await syncModule.syncExternal(true);
-			}).show();*/
+			TitleEditor.create(syncModule).show();
 		});
 	}
 
@@ -473,8 +468,10 @@ export class ChapterPage extends Page {
 					} and hasn't been updated.`
 				);
 				doUpdate = false;
-				await UpdateQueue.confirm(this.syncModule, currentProgress, reasons);
+				UpdateQueue.confirm(this.syncModule, currentProgress, reasons);
 			}
+		} else {
+			UpdateQueue.confirm(this.syncModule, currentProgress, reasons);
 		}
 		// Always Update History values if enabled, do not look at other options
 		if (Options.biggerHistory) {
