@@ -403,9 +403,9 @@ type EventPayloads = {
 	// SyncModule.initialize call
 	'sync:initialize:start': never;
 	// await in SyncModule.waitInitialize before SyncModule functions
-	'sync:initialize:end': { title: LocalTitle };
+	'sync:initialize:end': { title: import('./Core/Title').LocalTitle };
 	// SyncModule.syncExternal
-	'sync:start': { title: LocalTitle };
+	'sync:start': { title: import('./Core/Title').LocalTitle };
 	'sync:end': (
 		| { type: 'cancel' }
 		| {
@@ -436,7 +436,7 @@ type EventPayloads = {
 	'service:synced': {
 		key: import('./Service/Keys').ActivableKey;
 		title: import('./Core/Title').Title | RequestStatus | boolean;
-		local: LocalTitle;
+		local: import('./Core/Title').LocalTitle;
 	};
 	// SyncModule.syncMangaDex-- also called from syncExternal if enabled
 	'mangadex:syncing': { field: MangaDexTitleField };

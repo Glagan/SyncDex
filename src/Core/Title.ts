@@ -448,7 +448,6 @@ export class LocalTitle extends Title implements LocalTitle {
 
 	async delete(): Promise<RequestStatus> {
 		this.reset();
-		this.name = undefined;
 		this.chapters = [];
 		await Storage.remove(`${this.key.id}`);
 		return RequestStatus.SUCCESS;

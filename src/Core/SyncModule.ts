@@ -343,7 +343,7 @@ export class SyncModule {
 				this.title.score > 0 &&
 				Math.round(this.mdState.rating / 10) != Math.round(this.title.score / 10)
 			) {
-				mdReport.rating = await this.syncMangaDexStatus(this.title.score);
+				mdReport.rating = await this.syncMangaDexRating(this.title.score);
 			}
 			// Progress
 			// Update on Chapter Page if it's a sub chapter, since MD don't save them

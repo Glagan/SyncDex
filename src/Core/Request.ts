@@ -70,4 +70,20 @@ export class Request {
 		else if (response.code >= 400) return RequestStatus.BAD_REQUEST;
 		return RequestStatus.SUCCESS;
 	}
+
+	static statusToString(status: RequestStatus): string {
+		switch (status) {
+			case RequestStatus.SERVER_ERROR:
+				return 'Server Error';
+			case RequestStatus.BAD_REQUEST:
+				return 'Bad Request';
+			case RequestStatus.MISSING_TOKEN:
+				return 'Logged Out';
+			case RequestStatus.NOT_FOUND:
+				return 'Not Found';
+			case RequestStatus.FAIL:
+			default:
+				return 'Error';
+		}
+	}
 }
