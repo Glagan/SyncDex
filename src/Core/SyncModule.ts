@@ -501,4 +501,13 @@ export class SyncModule {
 			dispatch('service:synced', { key, title: res, local: this.title });
 		} else dispatch('service:synced', { key, title, local: this.title });
 	}
+
+	async delete(): Promise<void> {
+		dispatch('sync:start', { title: this.title });
+		const state = this.saveState();
+		this.title.delete();
+		await this.title.persist();
+		const { report, mdReport } = await this.export();
+		dispatch('sync:end', { type: 'delete', state, report, mdReport, syncModule: this });
+	}
 }

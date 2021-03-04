@@ -416,7 +416,7 @@ type EventPayloads = {
 				mdReport: MDListReport;
 		  }
 		| {
-				type: 'status' | 'score';
+				type: 'status' | 'score' | 'delete';
 				state: LocalTitleState;
 				report: SyncReport;
 				mdReport: MDListReport;

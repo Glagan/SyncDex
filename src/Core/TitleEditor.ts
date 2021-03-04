@@ -492,8 +492,7 @@ export class TitleEditor {
 			submitButton.disabled = true;
 			deleteButton.disabled = true;
 			deleteButton.classList.add('loading');
-			// await syncModule.delete();
-
+			await syncModule.delete();
 			modal.remove();
 			modal.enableExit();
 		});
