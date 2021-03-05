@@ -81,8 +81,8 @@ export class SyncModule {
 					}
 				}
 			}
-			dispatch('sync:initialize:end', { title: this.title });
 		}
+		dispatch('sync:initialize:end', { title: this.title });
 	}
 
 	@LogExecTime
@@ -385,7 +385,7 @@ export class SyncModule {
 	 */
 	@LogExecTime
 	private async syncMangaDex(field: MangaDexTitleField): Promise<RequestResponse> {
-		dispatch('mangadex:syncing', { field });
+		dispatch('mangadex:syncing', { title: this.title, field });
 		let response: RawResponse;
 		if (field == 'progress') {
 			response = await Request.get({
@@ -406,7 +406,8 @@ export class SyncModule {
 				headers: { 'X-Requested-With': 'XMLHttpRequest' },
 			});
 		}
-		dispatch('mangadex:synced', { field, state: this.mdState });
+		const status = Request.status(response);
+		dispatch('mangadex:synced', { title: this.title, field, status, state: this.mdState });
 		return response;
 	}
 

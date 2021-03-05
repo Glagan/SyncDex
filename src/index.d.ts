@@ -438,9 +438,14 @@ type EventPayloads = {
 		title: import('./Core/Title').Title | RequestStatus | boolean;
 		local: import('./Core/Title').LocalTitle;
 	};
-	// SyncModule.syncMangaDex-- also called from syncExternal if enabled
-	'mangadex:syncing': { field: MangaDexTitleField };
-	'mangadex:synced': { field: MangaDexTitleField; state: MangaDexState };
+	// SyncModule.syncMangaDex -- also called from syncExternal if enabled
+	'mangadex:syncing': { title: import('./Core/Title').LocalTitle; field: MangaDexTitleField };
+	'mangadex:synced': {
+		title: import('./Core/Title').LocalTitle;
+		field: MangaDexTitleField;
+		status: RequestStatus;
+		state: MangaDexState;
+	};
 	// Save Sync
 	'savesync:start': { service: import('./Core/SaveSync').SaveSync };
 	'savesync:end': { service: import('./Core/SaveSync').SaveSync };

@@ -806,7 +806,7 @@ class MangaDexList {
 	status?: {
 		followButton: HTMLButtonElement;
 		button: HTMLButtonElement;
-		dropdown: HTMLElement;
+		dropdown: HTMLSelectElement;
 		unfollow: HTMLAnchorElement;
 		list: HTMLAnchorElement[];
 	};
@@ -839,7 +839,7 @@ class MangaDexList {
 			this.status = {
 				followButton: DOM.create('button'),
 				button: statusButtons[0].parentElement!.previousElementSibling as HTMLButtonElement,
-				dropdown: statusButtons[0].parentElement!,
+				dropdown: statusButtons[0].parentElement as HTMLSelectElement,
 				unfollow: DOM.create('a'),
 				list: Array.from(statusButtons),
 			};
@@ -975,10 +975,12 @@ class MangaDexList {
 		this.score.button.disabled = true;
 		if (this.status) {
 			this.status.button.disabled = true;
+			this.status.followButton.disabled = true;
+			this.status.dropdown.disabled = true;
 		}
 		this.progress.incChapter.disabled = true;
 		this.progress.inputChapter.disabled = true;
-		this.progress.incChapter.disabled = true;
+		this.progress.incVolume.disabled = true;
 		this.progress.inputVolume.disabled = true;
 	}
 
@@ -986,10 +988,12 @@ class MangaDexList {
 		this.score.button.disabled = false;
 		if (this.status) {
 			this.status.button.disabled = false;
+			this.status.followButton.disabled = false;
+			this.status.dropdown.disabled = false;
 		}
 		this.progress.incChapter.disabled = false;
 		this.progress.inputChapter.disabled = false;
-		this.progress.incChapter.disabled = false;
+		this.progress.incVolume.disabled = false;
 		this.progress.inputVolume.disabled = false;
 	}
 
@@ -997,6 +1001,8 @@ class MangaDexList {
 		// Activate new Status or Rating
 		// If we're unfollowing, hide Unfollow and revert to default
 		if (this.status && field == 'unfollow') {
+			const previous = this.status.dropdown.querySelector('.disabled');
+			if (previous) previous.classList.remove('disabled');
 			const buttonContainer = this.status.dropdown.parentElement!;
 			buttonContainer.insertBefore(this.status.followButton, buttonContainer.firstElementChild);
 			this.status.button.className = 'btn btn-secondary dropdown-toggle dropdown-toggle-split';
@@ -1006,6 +1012,8 @@ class MangaDexList {
 		}
 		// Status
 		else if (this.status && field == 'status') {
+			const previous = this.status.dropdown.querySelector('.disabled');
+			if (previous) previous.classList.remove('disabled');
 			if (state.status !== Status.NONE) {
 				const status = this.status.dropdown.querySelector(`[id='${state.status}']`);
 				if (!state.status || !status) return;
