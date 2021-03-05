@@ -195,7 +195,11 @@ export class UpdateQueue {
 		);
 	}
 
-	static miniOverview(name: string, message: string, payload: { syncModule: SyncModule; state?: LocalTitleState }) {
+	static miniOverview(
+		name: string,
+		message: string,
+		payload: { syncModule: SyncModule; report?: SyncReport; state?: LocalTitleState }
+	) {
 		const title = payload.syncModule.title;
 		// Add a "Cancel" button if payload.state exists
 		// 	If state exists the notification is a "edit" type and cancellable
@@ -204,13 +208,14 @@ export class UpdateQueue {
 			buttons.unshift(this.cancelButton(payload as { syncModule: SyncModule; state: LocalTitleState }));
 		}
 		// Done
+		const report = payload.report ? `\n${this.report(payload.syncModule.title, payload.report)}` : '';
 		this.notifications[payload.syncModule.title.key.id!] = SimpleNotification.success(
 			{
 				title: name,
 				image: MangaDex.thumbnail(title.key, 'thumb'),
 				text: `${message}\nStatus: **${StatusMap[title.status]}**\nProgress: **${progressToString(
 					title.progress
-				)}**\nScore: **${title.score}** (${Math.floor(title.score / 10)}/10)`,
+				)}**\nScore: **${title.score}** (${Math.floor(title.score / 10)}/10)${report}`,
 				buttons,
 			},
 			{ duration: Options.successDuration, events: this.deleteEvents('sync', payload.syncModule.title.key.id!) }

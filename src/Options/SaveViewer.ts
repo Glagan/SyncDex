@@ -10,6 +10,7 @@ import { ActivableKey } from '../Service/Keys';
 import { LocalTitle, TitleCollection } from '../Core/Title';
 import { MangaDex } from '../Core/MangaDex';
 import { Extension } from '../Core/Extension';
+import { listen } from '../Core/Event';
 
 interface SaveRow {
 	title: LocalTitle;
@@ -161,15 +162,31 @@ export class SaveViewer {
 			this.updateAll(true);
 		});
 
+		// Register Title Editor Events
+		listen('sync:end', async (payload) => {
+			if (payload.type == 'cancel') {
+				const page = this.currentPage;
+				await this.updateAll(true);
+				this.loadPage(page);
+			} else if (payload.type == 'delete') {
+				const id = payload.syncModule.title.key.id!;
+				this.realTitles.remove(id);
+				this.titles.remove(id);
+				this.updateDisplayedPage();
+			} else if (payload.type == 'edit') {
+				this.loadPage(this.currentPage);
+			}
+		});
 		this.updateAll(true);
 	}
 
-	loadPage = (page: number): void => {
+	loadPage(page: number): void {
 		DOM.clear(this.body);
 		this.selectAllCheckbox.checked = false;
 		this.deleteSelected.style.display = 'none';
 		this.currentPage = page;
 		this.displayedRows = [];
+		// TODO: Check if page > maximum page ?
 		let titles = this.titles.slice(SaveViewer.perPage * (page - 1), page * SaveViewer.perPage);
 		const fragment = document.createDocumentFragment();
 		for (const title of titles) {
@@ -178,9 +195,9 @@ export class SaveViewer {
 			fragment.appendChild(row.node);
 		}
 		this.body.appendChild(fragment);
-	};
+	}
 
-	titleServices = (title: LocalTitle): AppendableElement[] => {
+	titleServices(title: LocalTitle): AppendableElement[] {
 		const icons: AppendableElement[] = [];
 		for (const serviceKey in title.services) {
 			const key = serviceKey as ActivableKey;
@@ -196,12 +213,12 @@ export class SaveViewer {
 			icons.push(DOM.text('-'));
 		}
 		return icons;
-	};
+	}
 
 	/**
 	 * Remove page buttons and load new pages if necessary
 	 */
-	updateDisplayedPage = (): void => {
+	updateDisplayedPage(): void {
 		const oldMax = this.maxPage;
 		this.maxPage = Math.ceil(this.titles.length / SaveViewer.perPage);
 		if (oldMax > this.maxPage) {
@@ -217,9 +234,9 @@ export class SaveViewer {
 			this.loadPage(this.currentPage);
 		}
 		if (this.titles.length == 0) this.body.appendChild(this.emptySave);
-	};
+	}
 
-	createRow = (title: LocalTitle): SaveRow => {
+	createRow(title: LocalTitle): SaveRow {
 		const selectCheckbox = DOM.create('input', { type: 'checkbox', id: `save_${title.key.id}` });
 		const editButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('edit')], title: 'Edit' });
 		const deleteButton = DOM.create('button', { class: 'ghost', childs: [DOM.icon('trash')], title: 'Delete' });
@@ -261,22 +278,7 @@ export class SaveViewer {
 			const syncModule = new SyncModule('options', title);
 			syncModule.loggedIn = SaveViewer.loggedIn;
 			syncModule.initialize();
-			let removed = false;
-			TitleEditor.create(
-				syncModule
-				/*() => this.loadPage(this.currentPage),
-				() => {
-					removed = true;
-					this.realTitles.remove(title.key.id!);
-					this.titles.remove(title.key.id!);
-					this.updateDisplayedPage();
-				},
-				async () => {
-					const page = this.currentPage;
-					if (removed) await this.updateAll(true);
-					this.loadPage(page);
-				}*/
-			).show();
+			TitleEditor.create(syncModule).show();
 		});
 		// Delete button in list only delete in Local Storage
 		let deletePrevention: [number, SimpleNotification] | undefined = undefined;
@@ -324,9 +326,9 @@ export class SaveViewer {
 			}
 		});
 		return saveRow;
-	};
+	}
 
-	sortTitles = (): void => {
+	sortTitles(): void {
 		const order = this.sortBy.order == 'ASC' ? 1 : -1;
 		if (this.sortBy.field == 'key') {
 			this.titles.sort((a, b) => (a.key.id! > b.key.id! ? order : -order));
@@ -342,9 +344,9 @@ export class SaveViewer {
 				return a[this.sortBy.field]! > b[this.sortBy.field]! ? order : -order;
 			});
 		} else this.titles.sort((a, b) => (a[this.sortBy.field]! > b[this.sortBy.field]! ? order : -order));
-	};
+	}
 
-	updateAll = async (reload: boolean): Promise<void> => {
+	async updateAll(reload: boolean): Promise<void> {
 		DOM.clear(this.pagingPages);
 		DOM.clear(this.body);
 		if (reload) {
@@ -402,5 +404,5 @@ export class SaveViewer {
 			}
 			this.body.appendChild(this.emptySave);
 		}
-	};
+	}
 }

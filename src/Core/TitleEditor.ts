@@ -99,15 +99,15 @@ export class TitleEditor {
 
 	static service(form: HTMLFormElement, key: ActivableKey): ServiceEditorValue {
 		let found = false;
-		const mediaKey = { id: 0 } as MediaKey;
+		const mediaKey = {} as MediaKey;
 		if (form[`${key}_id`] !== undefined) {
 			const id = parseInt(form[`${key}_id`].value);
-			if (!isNaN(id)) {
+			if (!isNaN(id) && id > 0) {
 				mediaKey.id = id;
 				found = true;
 			}
 		}
-		if (Services[key].usesSlug && form[`${key}_slug`] !== undefined) {
+		if (Services[key].usesSlug && form[`${key}_slug`] !== undefined && form[`${key}_slug`].value) {
 			mediaKey.slug = form[`${key}_slug`].value;
 			found = true;
 		}

@@ -31,13 +31,24 @@ export class SyncModule {
 
 	initializeService(key: ActivableKey): void {
 		dispatch('service:syncing', { key: key });
-		const initialRequest = Services[key].get(this.title.services[key]!);
-		this.loadingServices.push(initialRequest);
-		initialRequest.then((res) => {
-			this.services[key] = res;
-			dispatch('service:synced', { key, title: res, local: this.title });
-			return res;
-		});
+		if (this.title.services[key]) {
+			const initialRequest = Services[key].get(this.title.services[key]!);
+			this.loadingServices.push(initialRequest);
+			initialRequest
+				.then((res) => {
+					this.services[key] = res;
+					dispatch('service:synced', { key, title: res, local: this.title });
+					return res;
+				})
+				.catch((error) => {
+					log(error);
+					this.services[key] = RequestStatus.FAIL;
+					dispatch('service:synced', { key, title: RequestStatus.FAIL, local: this.title });
+					return RequestStatus.FAIL;
+				});
+		} else {
+			dispatch('service:synced', { key, title: false, local: this.title });
+		}
 	}
 
 	/**
@@ -49,14 +60,9 @@ export class SyncModule {
 		if (Options.services.length == 0) {
 			return dispatch('sync:initialize:end', { title: this.title });
 		}
-		const activeServices = Object.keys(this.title.services).filter(
-			(key) => Options.services.indexOf(key as ActivableKey) >= 0
-		);
 		// Add Services ordered by Options.services to check Main Service first
 		for (const key of Options.services) {
-			const hasId = activeServices.indexOf(key) >= 0;
-			if (hasId) this.initializeService(key);
-			else dispatch('service:synced', { key, title: false, local: this.title });
+			this.initializeService(key);
 		}
 	}
 
@@ -154,7 +160,7 @@ export class SyncModule {
 					updatedIDs.push({ key, from: this.title.services[key], to: title.services[key].mediaKey });
 					this.title.services[key] = title.services[key].mediaKey;
 				}
-			} else {
+			} else if (this.title.services[key]) {
 				updatedIDs.push({ key, from: this.title.services[key], to: undefined });
 				delete this.title.services[key];
 			}

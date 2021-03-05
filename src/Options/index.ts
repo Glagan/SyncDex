@@ -5,6 +5,7 @@ import { Modal } from '../Core/Modal';
 import { Options } from '../Core/Options';
 import { SaveSync } from '../Core/SaveSync';
 import { Storage } from '../Core/Storage';
+import { UpdateQueue } from '../Core/UpdateQueue';
 import { Changelog } from './Changelog';
 import { OptionsManager } from './OptionsManager';
 import { ThemeHandler } from './ThemeHandler';
@@ -75,6 +76,7 @@ if (quickDebug) {
 
 (async () => {
 	ThemeHandler.bind();
+	UpdateQueue.register();
 	SimpleNotification._options.position = 'bottom-left';
 	await Options.load();
 	const versionSpan = document.getElementById('version');
