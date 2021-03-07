@@ -169,7 +169,7 @@ export class KitsuExport extends ExportModule {
 			const response = await title.persist();
 			if (average == 0) average = Date.now() - before;
 			else average = (average + (Date.now() - before)) / 2;
-			if (response <= RequestStatus.CREATED) this.summary.valid++;
+			if (response <= ResponseStatus.CREATED) this.summary.valid++;
 			else this.summary.failed.push(localTitle);
 		}
 		message?.classList.remove('loading');

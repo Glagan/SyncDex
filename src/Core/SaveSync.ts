@@ -56,7 +56,7 @@ export abstract class SaveSync {
 			if (typeof file === 'string') {
 				try {
 					const [services, tokens] = [Options.services, Options.tokens];
-					const newSave = JSON.parse(file) as ExportedSave;
+					const newSave = JSON.parse(file) as StorageValues;
 					newSave.lastSync = lastSync;
 					// Restore tokens if the services did not change
 					const newServices = newSave?.options?.services;

@@ -309,7 +309,7 @@ class ServiceCard {
 						cancelButton.disabled = false;
 						modal.enableExit();
 						modal.wrapper.classList.remove('loading');
-						if (res == RequestStatus.SUCCESS) {
+						if (res == ResponseStatus.SUCCESS) {
 							await Options.save();
 							SimpleNotification.success({ text: `Logged in on **${this.service.name}** !` });
 							this.loginButton.remove();
@@ -357,11 +357,11 @@ class ServiceCard {
 		});
 	};
 
-	updateStatus = (status: RequestStatus): void => {
+	updateStatus = (status: ResponseStatus): void => {
 		// Avoid updating card if the Service has been removed while updating status
 		if (this.activeCard.classList.contains('active')) {
 			this.activate();
-			if (status == RequestStatus.SUCCESS) {
+			if (status == ResponseStatus.SUCCESS) {
 				this.statusMessage.className = 'message success';
 				this.statusMessageContent.textContent = 'Active';
 				this.loginButton.remove();
@@ -411,16 +411,16 @@ export class ServiceManager {
 	/**
 	 * Update the inactiveServices list and display warnings if the status isn't SUCCESS
 	 */
-	updateServiceStatus = (key: ActivableKey, status: RequestStatus): void => {
+	updateServiceStatus = (key: ActivableKey, status: ResponseStatus): void => {
 		const index = this.inactiveServices.indexOf(key);
 		if (index > -1) {
-			if (status == RequestStatus.SUCCESS) {
+			if (status == ResponseStatus.SUCCESS) {
 				this.inactiveServices.splice(index, 1);
 				if (this.inactiveServices.length == 0) {
 					this.inactiveWarning.classList.add('hidden');
 				}
 			}
-		} else if (status != RequestStatus.SUCCESS) {
+		} else if (status != ResponseStatus.SUCCESS) {
 			this.inactiveServices.push(key);
 			this.inactiveWarning.classList.remove('hidden');
 		}

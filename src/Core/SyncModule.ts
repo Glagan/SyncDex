@@ -10,8 +10,8 @@ import { dispatch } from './Event';
 
 export class SyncModule {
 	title: LocalTitle;
-	loadingServices: Promise<Title | RequestStatus>[] = [];
-	services: { [key in ActivableKey]?: Title | RequestStatus } = {};
+	loadingServices: Promise<Title | ResponseStatus>[] = [];
+	services: { [key in ActivableKey]?: Title | ResponseStatus } = {};
 	// Logged in on MangaDex
 	loggedIn: boolean = true;
 	// MangaDex Status and Score
@@ -42,9 +42,9 @@ export class SyncModule {
 				})
 				.catch((error) => {
 					log(error);
-					this.services[key] = RequestStatus.FAIL;
-					dispatch('service:synced', { key, title: RequestStatus.FAIL, local: this.title });
-					return RequestStatus.FAIL;
+					this.services[key] = ResponseStatus.FAIL;
+					dispatch('service:synced', { key, title: ResponseStatus.FAIL, local: this.title });
+					return ResponseStatus.FAIL;
 				});
 		} else {
 			dispatch('service:synced', { key, title: false, local: this.title });
@@ -176,7 +176,7 @@ export class SyncModule {
 		}
 		const deleteReport: SyncReport | undefined = options.deleteOld ? {} : undefined;
 		await this.waitInitialize();
-		const deletePromises: Promise<RequestStatus>[] = [];
+		const deletePromises: Promise<ResponseStatus>[] = [];
 		for (const update of updatedIDs) {
 			const key = update.key;
 			if (Options.services.indexOf(key) >= 0) {
@@ -191,7 +191,7 @@ export class SyncModule {
 								return res;
 							})
 							.catch(async (error) => {
-								dispatch('service:synced', { key, title: RequestStatus.FAIL, local: this.title });
+								dispatch('service:synced', { key, title: ResponseStatus.FAIL, local: this.title });
 								await log(error);
 								throw error;
 							});
@@ -276,7 +276,7 @@ export class SyncModule {
 	 * Returns RequestStatus on request sent, false if the title has no ID or is not logged in.
 	 * @param key The Service key
 	 */
-	async exportService(key: ActivableKey): Promise<RequestStatus | boolean> {
+	async exportService(key: ActivableKey): Promise<ResponseStatus | boolean> {
 		const title = this.services[key];
 		// If the title is "invalid" still send a service:synced to update the interface
 		if (title === undefined || (typeof title === 'object' && !title.loggedIn)) {
@@ -295,13 +295,13 @@ export class SyncModule {
 			const promise = title.status == Status.NONE ? title.delete() : title.persist();
 			return promise
 				.then((res) => {
-					if (res > RequestStatus.DELETED) {
+					if (res > ResponseStatus.DELETED) {
 						dispatch('service:synced', { key, title: res, local: this.title });
 					} else dispatch('service:synced', { key, title, local: this.title });
 					return res;
 				})
 				.catch(async (error) => {
-					dispatch('service:synced', { key, title: RequestStatus.FAIL, local: this.title });
+					dispatch('service:synced', { key, title: ResponseStatus.FAIL, local: this.title });
 					await log(error);
 					throw error;
 				});
@@ -322,7 +322,7 @@ export class SyncModule {
 	async export(): Promise<{ report: SyncReport; mdReport: MDListReport }> {
 		await this.waitInitialize();
 
-		const promises: Promise<RequestStatus | boolean | undefined>[] = [];
+		const promises: Promise<ResponseStatus | boolean | undefined>[] = [];
 		const report: SyncReport = {};
 		for (const key of Options.services) {
 			const promise = this.exportService(key);
@@ -418,8 +418,8 @@ export class SyncModule {
 	}
 
 	@LogExecTime
-	async syncMangaDexStatus(status: Status): Promise<RequestStatus> {
-		if (this.mdState.status === status) return RequestStatus.SUCCESS;
+	async syncMangaDexStatus(status: Status): Promise<ResponseStatus> {
+		if (this.mdState.status === status) return ResponseStatus.SUCCESS;
 		const oldStatus = this.mdState.status;
 		this.mdState.status = status;
 		const response = await this.syncMangaDex(this.mdState.status == Status.NONE ? 'unfollow' : 'status');
@@ -431,7 +431,7 @@ export class SyncModule {
 	}
 
 	@LogExecTime
-	async syncMangaDexProgress(progress: Progress): Promise<RequestStatus> {
+	async syncMangaDexProgress(progress: Progress): Promise<ResponseStatus> {
 		const oldProgress = this.mdState.progress;
 		this.mdState.progress = { ...progress };
 		if (!this.mdState.progress.volume) this.mdState.progress.volume = 0;
@@ -443,8 +443,8 @@ export class SyncModule {
 	}
 
 	@LogExecTime
-	async syncMangaDexRating(rating: number): Promise<RequestStatus> {
-		if (this.mdState.rating === rating) return RequestStatus.SUCCESS;
+	async syncMangaDexRating(rating: number): Promise<ResponseStatus> {
+		if (this.mdState.rating === rating) return ResponseStatus.SUCCESS;
 		const oldRating = this.mdState.rating;
 		this.mdState.rating = rating;
 		const response = await this.syncMangaDex('rating');
@@ -504,7 +504,7 @@ export class SyncModule {
 		dispatch('service:syncing', { key });
 		title.import(this.title);
 		const res = await title.persist();
-		if (res > RequestStatus.CREATED) {
+		if (res > ResponseStatus.CREATED) {
 			dispatch('service:synced', { key, title: res, local: this.title });
 		} else dispatch('service:synced', { key, title, local: this.title });
 	}

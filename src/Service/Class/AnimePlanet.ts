@@ -36,7 +36,7 @@ export class AnimePlanet extends Service {
 	static username: string = '';
 	static token: string = '';
 
-	async loggedIn(): Promise<RequestStatus> {
+	async loggedIn(): Promise<ResponseStatus> {
 		const response = await Request.get<RawResponse>({
 			url: 'https://www.anime-planet.com/contact',
 			credentials: 'include',
@@ -50,20 +50,20 @@ export class AnimePlanet extends Service {
 			AnimePlanet.username = profileLink.getAttribute('title') ?? '';
 			const token = /TOKEN\s*=\s*'(.{40})';/.exec(response.body);
 			if (token !== null) AnimePlanet.token = token[1];
-			return RequestStatus.SUCCESS;
+			return ResponseStatus.SUCCESS;
 		}
-		return RequestStatus.FAIL;
+		return ResponseStatus.FAIL;
 	}
 
 	@LogExecTime
-	async get(key: MediaKey): Promise<Title | RequestStatus> {
+	async get(key: MediaKey): Promise<Title | ResponseStatus> {
 		const response = await Request.get<RawResponse>({
 			url: this.link(key),
 			method: 'GET',
 			credentials: 'include',
 		});
 		if (!response.ok) return Request.status(response);
-		if (response.redirected) return RequestStatus.NOT_FOUND;
+		if (response.redirected) return ResponseStatus.NOT_FOUND;
 		const values: Partial<AnimePlanetTitle> = { status: Status.NONE, key: key };
 		values.current = { progress: { chapter: 0 }, status: Status.NONE };
 		const tokenArr = /TOKEN\s*=\s*'(.{40})';/.exec(response.body);
@@ -143,10 +143,10 @@ export class AnimePlanetTitle extends Title {
 	} = { progress: { chapter: 0 }, status: Status.NONE };
 
 	@LogExecTime
-	async persist(): Promise<RequestStatus> {
+	async persist(): Promise<ResponseStatus> {
 		if (this.status === Status.NONE || !this.token) {
 			await log(`Could not sync AnimePlanet: status ${this.status} token ${!!this.token}`);
-			return RequestStatus.BAD_REQUEST;
+			return ResponseStatus.BAD_REQUEST;
 		}
 		const id = this.key.id;
 		// Only update Status if it's different
@@ -181,15 +181,15 @@ export class AnimePlanetTitle extends Title {
 		}
 		if (!this.inList) {
 			this.inList = true;
-			return RequestStatus.CREATED;
+			return ResponseStatus.CREATED;
 		}
-		return RequestStatus.SUCCESS;
+		return ResponseStatus.SUCCESS;
 	}
 
-	delete = async (): Promise<RequestStatus> => {
+	delete = async (): Promise<ResponseStatus> => {
 		if (!this.inList || !this.token) {
 			await log(`Could not sync AnimePlanet: status ${this.status} token ${!!this.token}`);
-			return RequestStatus.BAD_REQUEST;
+			return ResponseStatus.BAD_REQUEST;
 		}
 		const id = this.key.id;
 		const response = await Request.json({
@@ -199,7 +199,7 @@ export class AnimePlanetTitle extends Title {
 		});
 		this.reset();
 		const status = Request.status(response);
-		return status == RequestStatus.SUCCESS ? RequestStatus.DELETED : status;
+		return status == ResponseStatus.SUCCESS ? ResponseStatus.DELETED : status;
 	};
 
 	static toStatus = (status: AnimePlanetStatus): Status => {

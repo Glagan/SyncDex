@@ -129,7 +129,7 @@ export abstract class Module {
 
 	checkLogin = async (): Promise<boolean> => {
 		const notification = this.interface?.message('loading', 'Checking login status...');
-		const loggedIn = (await this.service.loggedIn()) === RequestStatus.SUCCESS;
+		const loggedIn = (await this.service.loggedIn()) === ResponseStatus.SUCCESS;
 		notification?.classList.remove('loading');
 		return loggedIn;
 	};
@@ -246,7 +246,7 @@ export abstract class ImportModule extends Module {
 		try {
 			// Check login status
 			const loginMessage = this.interface?.message('loading', 'Checking login status...');
-			if ((await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
+			if ((await this.service.loggedIn()) !== ResponseStatus.SUCCESS) {
 				loginMessage?.classList.remove('loading');
 				this.interface?.message('error', `Importing need you to be logged in on ${this.service.name} !`);
 				this.interface?.complete();
@@ -448,7 +448,7 @@ export abstract class ExportModule extends Module {
 		try {
 			// Check login status
 			const loginMessage = this.interface?.message('loading', 'Checking login status...');
-			if ((await this.service.loggedIn()) !== RequestStatus.SUCCESS) {
+			if ((await this.service.loggedIn()) !== ResponseStatus.SUCCESS) {
 				loginMessage?.classList.remove('loading');
 				this.interface?.message('error', `Exporting need you to be logged in on ${this.service.name} !`);
 				this.interface?.complete();

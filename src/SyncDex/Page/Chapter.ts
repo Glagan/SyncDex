@@ -124,7 +124,7 @@ class Overview {
 		});
 	}
 
-	updateIcon(icon: HTMLImageElement, res: Title | RequestStatus): void {
+	updateIcon(icon: HTMLImageElement, res: Title | ResponseStatus): void {
 		icon.classList.remove('loading', 'error', 'synced', 'warning');
 		if (!Options.iconsSilentAfterSync) {
 			if (res instanceof Title) {

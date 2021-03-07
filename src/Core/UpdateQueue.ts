@@ -146,19 +146,19 @@ export class UpdateQueue {
 				rows.push(this.reportNotificationRow(key, 'Logged out'));
 			} else if (title.services[key] === undefined) {
 				rows.push(this.reportNotificationRow(key, 'No ID'));
-			} else if (report[key]! <= RequestStatus.DELETED) {
+			} else if (report[key]! <= ResponseStatus.DELETED) {
 				rows.push(
 					this.reportNotificationRow(
 						key,
-						report[key] === RequestStatus.CREATED
+						report[key] === ResponseStatus.CREATED
 							? 'Created'
-							: report[key] === RequestStatus.DELETED
+							: report[key] === ResponseStatus.DELETED
 							? 'Deleted'
 							: 'Synced'
 					)
 				);
 			} else {
-				const error = Request.statusToString(report[key] as RequestStatus);
+				const error = Request.statusToString(report[key] as ResponseStatus);
 				rows.push(this.reportNotificationRow(key, error));
 			}
 		}

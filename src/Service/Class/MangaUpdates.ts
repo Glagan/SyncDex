@@ -22,18 +22,19 @@ export class MangaUpdates extends Service {
 	loginMethod = LoginMethod.EXTERNAL;
 	loginUrl = 'https://www.mangaupdates.com/login.html';
 
-	loggedIn = async (): Promise<RequestStatus> => {
+	loggedIn = async (): Promise<ResponseStatus> => {
 		const response = await Request.get<RawResponse>({
 			url: 'https://www.mangaupdates.com/aboutus.html',
 			credentials: 'include',
 		});
 		if (!response.ok) return Request.status(response);
-		if (response.body && response.body.indexOf(`You are currently logged in as`) >= 0) return RequestStatus.SUCCESS;
-		return RequestStatus.FAIL;
+		if (response.body && response.body.indexOf(`You are currently logged in as`) >= 0)
+			return ResponseStatus.SUCCESS;
+		return ResponseStatus.FAIL;
 	};
 
 	@LogExecTime
-	async get(key: MediaKey): Promise<Title | RequestStatus> {
+	async get(key: MediaKey): Promise<Title | ResponseStatus> {
 		const response = await Request.get<RawResponse>({
 			url: this.link(key),
 			method: 'GET',
@@ -183,10 +184,10 @@ export class MangaUpdatesTitle extends Title {
 	};
 
 	@LogExecTime
-	async persist(): Promise<RequestStatus> {
+	async persist(): Promise<ResponseStatus> {
 		if (this.status === Status.NONE) {
 			await log(`Could not sync MangaUpdates: status ${this.status}`);
-			return RequestStatus.BAD_REQUEST;
+			return ResponseStatus.BAD_REQUEST;
 		}
 		if (!this.current) {
 			this.current = { progress: { chapter: 0 }, status: Status.NONE };
@@ -258,15 +259,15 @@ export class MangaUpdatesTitle extends Title {
 		}
 		if (!this.inList) {
 			this.inList = true;
-			return RequestStatus.CREATED;
+			return ResponseStatus.CREATED;
 		}
-		return RequestStatus.SUCCESS;
+		return ResponseStatus.SUCCESS;
 	}
 
-	delete = async (): Promise<RequestStatus> => {
+	delete = async (): Promise<ResponseStatus> => {
 		if (!this.inList) {
 			await log(`Could not sync MangaUpdates: status ${this.status} / current ${this.current?.status}`);
-			return RequestStatus.BAD_REQUEST;
+			return ResponseStatus.BAD_REQUEST;
 		}
 		const response = await Request.get<RawResponse>({
 			url: 'https://www.mangaupdates.com/mylist.html',
@@ -289,7 +290,7 @@ export class MangaUpdatesTitle extends Title {
 		this.current = { progress: { chapter: 0 }, status: Status.NONE };
 		this.reset();
 		const status = Request.status(response);
-		return status == RequestStatus.SUCCESS ? RequestStatus.DELETED : status;
+		return status == ResponseStatus.SUCCESS ? ResponseStatus.DELETED : status;
 	};
 
 	static toStatus = (status: MangaUpdatesStatus): Status => {

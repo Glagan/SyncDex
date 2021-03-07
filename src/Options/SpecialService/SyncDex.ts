@@ -11,7 +11,7 @@ import { SpecialService } from '../SpecialService';
 import { Updates } from '../../Core/Updates';
 
 export class SyncDexImport extends SpecialService {
-	handleFile = async (data: ExportedSave, moduleInterface: ModuleInterface): Promise<any> => {
+	handleFile = async (data: StorageValues, moduleInterface: ModuleInterface): Promise<any> => {
 		// Find all Titles
 		let message = moduleInterface.message('loading', 'Loading SyncDex Titles...');
 		const collection = new TitleCollection();
@@ -161,9 +161,9 @@ export class SyncDexImport extends SpecialService {
 					message = moduleInterface.message('warning', 'Unknown error, wrong file type.');
 					return moduleInterface.complete();
 				}
-				let data: ExportedSave;
+				let data: StorageValues;
 				try {
-					data = JSON.parse(reader.result) as ExportedSave;
+					data = JSON.parse(reader.result) as StorageValues;
 					if (message) message.classList.remove('loading');
 					this.handleFile(data, moduleInterface);
 				} catch (error) {

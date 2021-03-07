@@ -25,9 +25,9 @@ export abstract class Service {
 		return DOM.text(this.name);
 	}
 
-	abstract loggedIn(): Promise<RequestStatus>;
-	abstract get(key: MediaKey): Promise<Title | RequestStatus>;
-	login?(username: string, password: string): Promise<RequestStatus>;
+	abstract loggedIn(): Promise<ResponseStatus>;
+	abstract get(key: MediaKey): Promise<Title | ResponseStatus>;
+	login?(username: string, password: string): Promise<ResponseStatus>;
 	logout?(): Promise<void>;
 
 	abstract idFromLink(href: string): MediaKey;

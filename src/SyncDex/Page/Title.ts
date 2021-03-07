@@ -157,7 +157,7 @@ abstract class Overview {
 	/**
 	 * Create a list of all values for the Media.
 	 */
-	update(title: Title | RequestStatus | boolean, original: LocalTitle | undefined) {
+	update(title: Title | ResponseStatus | boolean, original: LocalTitle | undefined) {
 		this.clear();
 
 		if (typeof title === 'object') {
@@ -271,9 +271,9 @@ abstract class Overview {
 		});
 	}
 
-	setErrorMessage(res: RequestStatus) {
+	setErrorMessage(res: ResponseStatus) {
 		switch (res) {
-			case RequestStatus.MISSING_TOKEN:
+			case ResponseStatus.MISSING_TOKEN:
 				this.body.appendChild(
 					this.alert('danger', [
 						DOM.text('Missing Token, check your Login Status in the Options.'),
@@ -291,16 +291,16 @@ abstract class Overview {
 					])
 				);
 				break;
-			case RequestStatus.BAD_REQUEST:
+			case ResponseStatus.BAD_REQUEST:
 				this.body.appendChild(this.alert('danger', 'Bad Request, if this happen again open an issue.'));
 				break;
-			case RequestStatus.NOT_FOUND:
+			case ResponseStatus.NOT_FOUND:
 				this.body.appendChild(
 					this.alert('danger', 'The Media was not found on the Service, probably a bad ID.')
 				);
 				break;
-			case RequestStatus.FAIL:
-			case RequestStatus.SERVER_ERROR:
+			case ResponseStatus.FAIL:
+			case ResponseStatus.SERVER_ERROR:
 				this.body.appendChild(this.alert('danger', 'Server Error, the Service might be down, retry later.'));
 				break;
 		}
@@ -464,7 +464,7 @@ class ExternalOverview extends Overview {
 		this.setIcon('bookmark has-error');
 	}
 
-	update(title: Title | RequestStatus | boolean, original: LocalTitle | undefined) {
+	update(title: Title | ResponseStatus | boolean, original: LocalTitle | undefined) {
 		super.update(title, original);
 
 		// Display *Sync* button only if the title is out of sync and if the title is in a list
@@ -589,7 +589,7 @@ class Overviews {
 		if (overview) overview.syncing();
 	}
 
-	synced(key: ActivableKey, title: Title | RequestStatus | boolean, local: LocalTitle) {
+	synced(key: ActivableKey, title: Title | ResponseStatus | boolean, local: LocalTitle) {
 		const overview = this.overviews[key];
 		if (overview) {
 			overview.update(title, local);

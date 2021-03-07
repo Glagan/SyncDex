@@ -63,25 +63,25 @@ export class Request {
 	/**
 	 * Return the response.code corresponding RequestStatus code.
 	 */
-	static status<R extends RequestResponse>(response: R): RequestStatus {
-		if (response.code == 0) return RequestStatus.FAIL;
-		else if (response.code >= 500) return RequestStatus.SERVER_ERROR;
-		else if (response.code == 404) return RequestStatus.NOT_FOUND;
-		else if (response.code >= 400) return RequestStatus.BAD_REQUEST;
-		return RequestStatus.SUCCESS;
+	static status<R extends RequestResponse>(response: R): ResponseStatus {
+		if (response.code == 0) return ResponseStatus.FAIL;
+		else if (response.code >= 500) return ResponseStatus.SERVER_ERROR;
+		else if (response.code == 404) return ResponseStatus.NOT_FOUND;
+		else if (response.code >= 400) return ResponseStatus.BAD_REQUEST;
+		return ResponseStatus.SUCCESS;
 	}
 
-	static statusToString(status: RequestStatus): string {
+	static statusToString(status: ResponseStatus): string {
 		switch (status) {
-			case RequestStatus.SERVER_ERROR:
+			case ResponseStatus.SERVER_ERROR:
 				return 'Server Error';
-			case RequestStatus.BAD_REQUEST:
+			case ResponseStatus.BAD_REQUEST:
 				return 'Bad Request';
-			case RequestStatus.MISSING_TOKEN:
+			case ResponseStatus.MISSING_TOKEN:
 				return 'Logged Out';
-			case RequestStatus.NOT_FOUND:
+			case ResponseStatus.NOT_FOUND:
 				return 'Not Found';
-			case RequestStatus.FAIL:
+			case ResponseStatus.FAIL:
 			default:
 				return 'Error';
 		}

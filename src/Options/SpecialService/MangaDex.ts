@@ -113,9 +113,9 @@ export class MangaDexExport extends SpecialService {
 	persistTitle = async (
 		online: { status: Status; rating: number; progress?: Progress } | undefined,
 		title: LocalTitle
-	): Promise<RequestStatus> => {
+	): Promise<ResponseStatus> => {
 		// Status
-		let status = RequestStatus.SUCCESS;
+		let status = ResponseStatus.SUCCESS;
 		if (online?.status != title.status) {
 			const response = await Request.get<RawResponse>({
 				url: MangaDex.api('set:title:status', title.key.id!, title.status),

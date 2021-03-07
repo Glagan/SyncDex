@@ -161,7 +161,7 @@ class TitleChapterGroup {
 						if (row.progress.chapter == title.chapter) return;
 
 						if (!this.initializedSync) {
-							syncModule?.initialize();
+							syncModule.initialize();
 							await syncModule.import();
 							this.initializedSync = true;
 						}

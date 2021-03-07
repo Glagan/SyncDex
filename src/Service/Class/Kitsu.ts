@@ -115,8 +115,8 @@ export class Kitsu extends Service {
 	loginMethod = LoginMethod.FORM;
 	identifierField: [string, string] = ['Email', 'email'];
 
-	getUserId = async (): Promise<RequestStatus> => {
-		if (Options.tokens.kitsuToken === undefined) return RequestStatus.MISSING_TOKEN;
+	getUserId = async (): Promise<ResponseStatus> => {
+		if (Options.tokens.kitsuToken === undefined) return ResponseStatus.MISSING_TOKEN;
 		let response = await Request.json<KitsuUserResponse>({
 			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
 			method: 'GET',
@@ -124,11 +124,11 @@ export class Kitsu extends Service {
 		});
 		if (!response.ok) return Request.status(response);
 		Options.tokens.kitsuUser = response.body.data[0].id;
-		return RequestStatus.SUCCESS;
+		return ResponseStatus.SUCCESS;
 	};
 
-	loggedIn = async (): Promise<RequestStatus> => {
-		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken) return RequestStatus.MISSING_TOKEN;
+	loggedIn = async (): Promise<ResponseStatus> => {
+		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken) return ResponseStatus.MISSING_TOKEN;
 		const response = await Request.json<KitsuUserResponse>({
 			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
 			headers: {
@@ -139,7 +139,7 @@ export class Kitsu extends Service {
 		return Request.status(response);
 	};
 
-	login = async (username: string, password: string): Promise<RequestStatus> => {
+	login = async (username: string, password: string): Promise<ResponseStatus> => {
 		let response = await Request.json({
 			url: 'https://kitsu.io/api/oauth/token',
 			method: 'POST',
@@ -154,13 +154,13 @@ export class Kitsu extends Service {
 		if (!response.ok) return Request.status(response);
 		Options.tokens.kitsuToken = response.body.access_token;
 		const userIdResp = await this.getUserId();
-		if (userIdResp !== RequestStatus.SUCCESS) return userIdResp;
-		return RequestStatus.SUCCESS;
+		if (userIdResp !== ResponseStatus.SUCCESS) return userIdResp;
+		return ResponseStatus.SUCCESS;
 	};
 
 	@LogExecTime
-	async get(key: MediaKey): Promise<Title | RequestStatus> {
-		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
+	async get(key: MediaKey): Promise<Title | ResponseStatus> {
+		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return ResponseStatus.MISSING_TOKEN;
 		const response = await Request.json<KitsuResponse>({
 			url: `${KitsuAPI}?filter[manga_id]=${key.id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=chapterCount,volumeCount,canonicalTitle`,
 			method: 'GET',
@@ -213,14 +213,14 @@ export class KitsuTitle extends Title {
 	libraryEntryId?: number;
 
 	@LogExecTime
-	async persist(): Promise<RequestStatus> {
+	async persist(): Promise<ResponseStatus> {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) {
 			await log(`Could not sync Kitsu: token ${!!Options.tokens.kitsuToken} user ${Options.tokens.kitsuUser}`);
-			return RequestStatus.MISSING_TOKEN;
+			return ResponseStatus.MISSING_TOKEN;
 		}
 		if (this.status === Status.NONE) {
 			await log(`Could not sync Kitsu: status ${this.status}`);
-			return RequestStatus.BAD_REQUEST;
+			return ResponseStatus.BAD_REQUEST;
 		}
 		const libraryEntryId = this.libraryEntryId ? this.libraryEntryId : 0;
 		const method = libraryEntryId > 0 ? 'PATCH' : 'POST';
@@ -274,16 +274,16 @@ export class KitsuTitle extends Title {
 		this.libraryEntryId = parseInt(response.body.data.id);
 		if (!this.inList) {
 			this.inList = true;
-			return RequestStatus.CREATED;
+			return ResponseStatus.CREATED;
 		}
-		return RequestStatus.SUCCESS;
+		return ResponseStatus.SUCCESS;
 	}
 
-	delete = async (): Promise<RequestStatus> => {
-		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return RequestStatus.MISSING_TOKEN;
+	delete = async (): Promise<ResponseStatus> => {
+		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return ResponseStatus.MISSING_TOKEN;
 		if (!this.libraryEntryId || this.libraryEntryId <= 0) {
 			await log(`Could not sync Kitsu: status ${this.status} libraryEntryId ${this.libraryEntryId}`);
-			return RequestStatus.BAD_REQUEST;
+			return ResponseStatus.BAD_REQUEST;
 		}
 		let response = await Request.get({
 			url: `https://kitsu.io/api/edge/library-entries/${this.libraryEntryId}`,
@@ -293,7 +293,7 @@ export class KitsuTitle extends Title {
 		if (!response.ok) return Request.status(response);
 		this.libraryEntryId = 0;
 		this.reset();
-		return RequestStatus.DELETED;
+		return ResponseStatus.DELETED;
 	};
 
 	static toStatus = (status: KitsuStatus): Status => {

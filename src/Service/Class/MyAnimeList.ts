@@ -28,7 +28,7 @@ export class MyAnimeList extends Service {
 
 	static username: string = '';
 
-	loggedIn = async (): Promise<RequestStatus> => {
+	loggedIn = async (): Promise<ResponseStatus> => {
 		const response = await Request.get<RawResponse>({
 			url: 'https://myanimelist.net/about.php',
 			method: 'GET',
@@ -36,14 +36,14 @@ export class MyAnimeList extends Service {
 			cache: 'no-cache',
 		});
 		if (!response.ok) return Request.status(response);
-		if (response.body == '') return RequestStatus.SERVER_ERROR;
+		if (response.body == '') return ResponseStatus.SERVER_ERROR;
 		const body = new DOMParser().parseFromString(response.body, 'text/html');
 		const header = body.querySelector<HTMLElement>('a.header-profile-link');
 		if (header) {
 			MyAnimeList.username = header.textContent!.trim();
-			return RequestStatus.SUCCESS;
+			return ResponseStatus.SUCCESS;
 		}
-		return RequestStatus.FAIL;
+		return ResponseStatus.FAIL;
 	};
 
 	dateRowToDate = (body: Document, row: 'start' | 'finish'): Date | undefined => {
@@ -57,7 +57,7 @@ export class MyAnimeList extends Service {
 	};
 
 	@LogExecTime
-	async get(key: MediaKey): Promise<Title | RequestStatus> {
+	async get(key: MediaKey): Promise<Title | ResponseStatus> {
 		const response = await Request.get<RawResponse>({
 			url: `https://myanimelist.net/ownlist/manga/${key.id}/edit?hideLayout`,
 			method: 'GET',
@@ -153,10 +153,10 @@ export class MyAnimeListTitle extends Title {
 	};
 
 	@LogExecTime
-	async persist(): Promise<RequestStatus> {
+	async persist(): Promise<ResponseStatus> {
 		if (this.status === Status.NONE || !this.csrf) {
 			await log(`Could not sync MyAnimeList: status ${this.status} csrf ${!!this.csrf}`);
-			return RequestStatus.BAD_REQUEST;
+			return ResponseStatus.BAD_REQUEST;
 		}
 		let url = `https://myanimelist.net/ownlist/manga/${this.key.id}/edit?hideLayout`;
 		if (!this.inList) url = `https://myanimelist.net/ownlist/manga/add?selected_manga_id=${this.key.id}&hideLayout`;
@@ -221,15 +221,15 @@ export class MyAnimeListTitle extends Title {
 		if (!response.ok) return Request.status(response);
 		if (!this.inList) {
 			this.inList = true;
-			return RequestStatus.CREATED;
+			return ResponseStatus.CREATED;
 		}
-		return RequestStatus.SUCCESS;
+		return ResponseStatus.SUCCESS;
 	}
 
-	delete = async (): Promise<RequestStatus> => {
+	delete = async (): Promise<ResponseStatus> => {
 		if (!this.inList || !this.csrf) {
 			await log(`Could not sync MyAnimeList: status ${this.status} csrf ${!!this.csrf}`);
-			return RequestStatus.BAD_REQUEST;
+			return ResponseStatus.BAD_REQUEST;
 		}
 		const response = await Request.get<RawResponse>({
 			url: `https://myanimelist.net/ownlist/manga/${this.key.id}/delete`,
@@ -242,7 +242,7 @@ export class MyAnimeListTitle extends Title {
 		});
 		if (!response.ok) return Request.status(response);
 		this.reset();
-		return RequestStatus.DELETED;
+		return ResponseStatus.DELETED;
 	};
 
 	static toStatus = (status: MyAnimeListStatus): Status => {

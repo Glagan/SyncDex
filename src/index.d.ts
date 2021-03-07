@@ -9,7 +9,7 @@ interface Window {
 }
 
 /**
- * Messages
+ * Requests
  */
 
 interface FormDataFile {
@@ -22,31 +22,7 @@ interface FormDataProxy {
 	[key: string]: string | number | FormDataFile;
 }
 
-declare const enum RequestStatus {
-	SUCCESS,
-	CREATED,
-	DELETED,
-	MISSING_TOKEN,
-	FAIL,
-	SERVER_ERROR,
-	BAD_REQUEST,
-	NOT_FOUND,
-}
-
-declare const enum MessageAction {
-	request = 'request',
-	openOptions = 'openOptions',
-	silentImport = 'silentImport',
-	importStart = 'importStart',
-	importComplete = 'importComplete',
-	saveSync = 'saveSync',
-	saveSyncStart = 'saveSyncStart',
-	saveSyncComplete = 'saveSyncComplete',
-	saveSyncLogout = 'saveSyncLogout',
-}
-
-interface RequestMessage {
-	action: MessageAction.request;
+interface Request {
 	method?: 'GET' | 'POST' | 'HEAD' | 'OPTIONS' | 'DELETE' | 'PUT' | 'PATCH';
 	url: string;
 	isJson?: boolean;
@@ -60,61 +36,71 @@ interface RequestMessage {
 	fileRequest?: 'localSave' | 'namedLocalSave';
 }
 
-interface FetchJSONMessage extends RequestMessage {
-	isJson: true;
-}
-
-interface OpenOptionsMessage {
-	action: MessageAction.openOptions;
-}
-
-interface ImportMessage {
-	action: MessageAction.silentImport | MessageAction.importStart | MessageAction.importComplete;
-}
-
-declare const enum SaveSyncLoginResult {
+declare const enum ResponseStatus {
 	SUCCESS,
-	STATE_ERROR,
-	API_ERROR,
-	ERROR,
+	CREATED,
+	DELETED,
+	MISSING_TOKEN,
+	FAIL,
+	SERVER_ERROR,
+	BAD_REQUEST,
+	NOT_FOUND,
 }
 
-declare const enum SaveSyncResult {
-	UPLOADED,
-	DOWNLOADED,
-	SYNCED,
-	NOTHING,
-	ERROR,
-}
-
-type SaveSyncMessage =
-	| {
-			action: MessageAction.saveSync;
-			delay?: number;
-	  }
-	| {
-			action: MessageAction.saveSyncStart | MessageAction.saveSyncLogout;
-	  }
-	| {
-			action: MessageAction.saveSyncComplete;
-			status?: SaveSyncResult;
-	  };
-
-type MessagePayload = RequestMessage | OpenOptionsMessage | ImportMessage | SaveSyncMessage;
-
-interface RequestResponse<T extends {} = Record<string, any> | string> {
+interface Response<T extends {} = Record<string, any> | string> {
 	url: string;
 	redirected: boolean;
 	ok: boolean;
+	status: ResponseStatus;
 	failed: boolean;
 	code: number;
 	headers: Record<string, string>;
 	body: T;
 }
 
-interface JSONResponse<T extends {} = Record<string, any>> extends RequestResponse<T> {}
+/**
+ * Messages
+ */
 
-interface RawResponse extends RequestResponse<string> {}
+// type MessagePayload = RequestMessage | OpenOptionsMessage | ImportMessage | SaveSyncMessage | StorageMessage;
+
+/**
+ * Pair of [send message payload, received response] for each type of messages.
+ */
+type MessageDescriptions = {
+	request: [Request, Response];
+	openOptions: never;
+	'import:start': never;
+	'import:event': { type: 'start' | 'finish' };
+	'saveSync:start': [{ delay?: number }, void];
+	'saveSync:logout': never;
+	'saveSync:event': { type: 'start' } | { type: 'finish'; status: SaveSyncResult };
+	// ? No type safety can be achieved here
+	// ?	storage:get need to be generic inside a non-generic type with unrelated other keys
+	// ?	same for storage:set and storage:remove
+	'storage:get': [{ key?: any }, any];
+	'storage:usage': [{ method: 'usage'; key?: any }, number];
+	'storage:set': [{ method: 'set'; values: object }, boolean];
+	'storage:remove': [{ method: 'remove'; key: number | string | (number | string)[] }, boolean];
+	'storage:clear': [{ method: 'clear' }, boolean];
+};
+type MessageParams<K extends keyof MessageDescriptions> = MessageDescriptions[K] extends never
+	? [action: K]
+	: MessageDescriptions[K] extends Array<any>
+	? MessageDescriptions[K][0] extends never
+		? [action: K]
+		: [action: K, payload: MessageDescriptions[K][0]]
+	: [action: K, payload: MessageDescriptions[K]];
+type MessagePayload<K extends keyof MessageDescriptions> = { action: K } & (MessageDescriptions[K] extends never
+	? never
+	: MessageDescriptions[K] extends Array<any>
+	? MessageDescriptions[K][0]
+	: MessageDescriptions[K]);
+type MessageResponse<K extends keyof MessageDescriptions> = MessageDescriptions[K] extends never
+	? void
+	: MessageDescriptions[K] extends Array<any>
+	? MessageDescriptions[K][1]
+	: MessageDescriptions[K];
 
 /**
  * Storage
@@ -305,9 +291,7 @@ declare const enum StorageUniqueKey {
 	LastSync = 'lastSync',
 }
 
-type ExportedSave = {
-	[key: string]: StorageTitle;
-} & Partial<{
+interface StorageUniqueValues {
 	[StorageUniqueKey.Options]: AvailableOptions;
 	[StorageUniqueKey.Import]: number | string[];
 	[StorageUniqueKey.ImportInProgress]: boolean;
@@ -318,20 +302,24 @@ type ExportedSave = {
 	[StorageUniqueKey.SaveSync]: SaveSyncState;
 	[StorageUniqueKey.SaveSyncInProgress]: boolean;
 	[StorageUniqueKey.LastSync]: number;
-}>;
+}
+
+type StorageValues = {
+	[key: string]: StorageTitle;
+} & Partial<StorageUniqueValues>;
 
 /**
  * SyncModule
  */
 
 type SyncReport = {
-	[key in import('./Service/Keys').ActivableKey]?: RequestStatus | boolean;
+	[key in import('./Service/Keys').ActivableKey]?: ResponseStatus | boolean;
 };
 
 type MDListReport = {
-	status?: RequestStatus;
-	progress?: RequestStatus;
-	rating?: RequestStatus;
+	status?: ResponseStatus;
+	progress?: ResponseStatus;
+	rating?: ResponseStatus;
 };
 
 /**
@@ -392,6 +380,25 @@ interface MangaDexSimpleManga {
 }
 
 /**
+ * Save Sync
+ */
+
+declare const enum SaveSyncLoginResult {
+	SUCCESS,
+	STATE_ERROR,
+	API_ERROR,
+	ERROR,
+}
+
+declare const enum SaveSyncResult {
+	UPLOADED,
+	DOWNLOADED,
+	SYNCED,
+	NOTHING,
+	ERROR,
+}
+
+/**
  * Events
  */
 
@@ -435,7 +442,7 @@ type EventPayloads = {
 	'service:syncing': { key: import('./Service/Keys').ActivableKey };
 	'service:synced': {
 		key: import('./Service/Keys').ActivableKey;
-		title: import('./Core/Title').Title | RequestStatus | boolean;
+		title: import('./Core/Title').Title | ResponseStatus | boolean;
 		local: import('./Core/Title').LocalTitle;
 	};
 	// SyncModule.syncMangaDex -- also called from syncExternal if enabled
@@ -443,7 +450,7 @@ type EventPayloads = {
 	'mangadex:synced': {
 		title: import('./Core/Title').LocalTitle;
 		field: MangaDexTitleField;
-		status: RequestStatus;
+		status: ResponseStatus;
 		state: MangaDexState;
 	};
 	// Save Sync

@@ -97,12 +97,12 @@ export abstract class Title implements Title {
 	/**
 	 * Send any necessary requests to save the Media on the Service.
 	 */
-	abstract persist(): Promise<RequestStatus>;
+	abstract persist(): Promise<ResponseStatus>;
 
 	/**
 	 * Send any necessary requests to delete the Media on the Service.
 	 */
-	abstract delete(): Promise<RequestStatus>;
+	abstract delete(): Promise<ResponseStatus>;
 
 	/**
 	 * Check if *this* Title is more recent that the other Title.
@@ -434,23 +434,23 @@ export class LocalTitle extends Title implements LocalTitle {
 		return mapped;
 	}
 
-	async persist(): Promise<RequestStatus> {
+	async persist(): Promise<ResponseStatus> {
 		this.inList = true;
 		await Storage.set({ [`${this.key.id}`]: this.toSave() });
-		return RequestStatus.SUCCESS;
+		return ResponseStatus.SUCCESS;
 	}
 
-	async refresh(): Promise<RequestStatus> {
+	async refresh(): Promise<ResponseStatus> {
 		const data = await LocalTitle.get(this.key.id!);
 		Object.assign(this, data);
-		return RequestStatus.SUCCESS;
+		return ResponseStatus.SUCCESS;
 	}
 
-	async delete(): Promise<RequestStatus> {
+	async delete(): Promise<ResponseStatus> {
 		this.reset();
 		this.chapters = [];
 		await Storage.remove(`${this.key.id}`);
-		return RequestStatus.SUCCESS;
+		return ResponseStatus.SUCCESS;
 	}
 
 	merge(other: Title) {

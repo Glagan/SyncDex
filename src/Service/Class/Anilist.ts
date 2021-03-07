@@ -115,8 +115,8 @@ export class Anilist extends Service {
 			}
 		}`.replace(/\n\t+/g, ' ');
 
-	async loggedIn(): Promise<RequestStatus> {
-		if (Options.tokens.anilistToken === undefined) return RequestStatus.MISSING_TOKEN;
+	async loggedIn(): Promise<ResponseStatus> {
+		if (Options.tokens.anilistToken === undefined) return ResponseStatus.MISSING_TOKEN;
 		const response = await Request.json({
 			method: 'POST',
 			url: AnilistAPI,
@@ -127,9 +127,9 @@ export class Anilist extends Service {
 	}
 
 	@LogExecTime
-	async get(key: MediaKey): Promise<AnilistTitle | RequestStatus> {
+	async get(key: MediaKey): Promise<AnilistTitle | ResponseStatus> {
 		const id = key.id!;
-		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
+		if (!Options.tokens.anilistToken) return ResponseStatus.MISSING_TOKEN;
 		const response = await Request.json<AnilistGetResponse>({
 			url: AnilistAPI,
 			method: 'POST',
@@ -239,11 +239,11 @@ export class AnilistTitle extends Title {
 	};
 
 	@LogExecTime
-	async persist(): Promise<RequestStatus> {
-		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
+	async persist(): Promise<ResponseStatus> {
+		if (!Options.tokens.anilistToken) return ResponseStatus.MISSING_TOKEN;
 		if (this.status === Status.NONE) {
 			await log(`Could not sync Anilist: status ${this.status}`);
-			return RequestStatus.BAD_REQUEST;
+			return ResponseStatus.BAD_REQUEST;
 		}
 		const response = await Request.json<AnilistPersistResponse>({
 			url: AnilistAPI,
@@ -266,16 +266,16 @@ export class AnilistTitle extends Title {
 		this.mediaEntryId = response.body.data.SaveMediaListEntry.id;
 		if (!this.inList) {
 			this.inList = true;
-			return RequestStatus.CREATED;
+			return ResponseStatus.CREATED;
 		}
-		return RequestStatus.SUCCESS;
+		return ResponseStatus.SUCCESS;
 	}
 
-	delete = async (): Promise<RequestStatus> => {
-		if (!Options.tokens.anilistToken) return RequestStatus.MISSING_TOKEN;
+	delete = async (): Promise<ResponseStatus> => {
+		if (!Options.tokens.anilistToken) return ResponseStatus.MISSING_TOKEN;
 		if (!this.inList || !this.mediaEntryId) {
 			await log(`Could not sync Anilist: status ${this.status}`);
-			return RequestStatus.BAD_REQUEST;
+			return ResponseStatus.BAD_REQUEST;
 		}
 		const response = await Request.json({
 			url: AnilistAPI,
@@ -289,7 +289,7 @@ export class AnilistTitle extends Title {
 		if (!response.ok) return Request.status(response);
 		this.mediaEntryId = 0;
 		this.reset();
-		return RequestStatus.DELETED;
+		return ResponseStatus.DELETED;
 	};
 
 	static toStatus = (status: AnilistStatus): Status => {
