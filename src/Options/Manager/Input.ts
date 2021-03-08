@@ -27,7 +27,7 @@ export class Input {
 		this.optionName = this.input.dataset.input as keyof ValidInputs;
 	}
 
-	bind = (): void => {
+	bind() {
 		this.update(Options[this.optionName]);
 		this.input.addEventListener('input', () => {
 			this.input.classList.remove('invalid');
@@ -58,11 +58,11 @@ export class Input {
 				}, 300);
 			}
 		});
-	};
+	}
 
-	update = <K extends keyof ValidInputs>(value: ValidInputs[K]): void => {
+	update<K extends keyof ValidInputs>(value: ValidInputs[K]) {
 		this.input.value = value.toString();
-	};
+	}
 }
 
 export class InputManager {
@@ -77,9 +77,9 @@ export class InputManager {
 		}
 	}
 
-	updateAll = (): void => {
+	updateAll() {
 		for (const input of this.inputs) {
 			input.update(Options[input.optionName]);
 		}
-	};
+	}
 }

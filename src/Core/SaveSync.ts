@@ -37,16 +37,16 @@ export abstract class SaveSync {
 	abstract refreshTokenIfNeeded(): Promise<boolean>;
 	abstract login(query: { [key: string]: string }): Promise<SaveSyncLoginResult>;
 	abstract lastSync(): Promise<number>;
-	logout = async (): Promise<boolean> => {
+	async logout(): Promise<boolean> {
 		return true;
-	};
+	}
 	abstract delete(): Promise<boolean>;
-	clean = async (): Promise<void> => {
+	async clean(): Promise<void> {
 		return Storage.remove('saveSync');
-	};
+	}
 
 	abstract downloadExternalSave(): Promise<string | boolean>;
-	import = async (lastSync?: number): Promise<SaveSyncResult> => {
+	async import(lastSync?: number): Promise<SaveSyncResult> {
 		if (await this.refreshTokenIfNeeded()) {
 			if (!lastSync) {
 				lastSync = await this.lastSync();
@@ -77,10 +77,10 @@ export abstract class SaveSync {
 			}
 		}
 		return SaveSyncResult.ERROR;
-	};
+	}
 
 	abstract uploadLocalSave(): Promise<number>;
-	export = async (): Promise<SaveSyncResult> => {
+	async export(): Promise<SaveSyncResult> {
 		if (await this.refreshTokenIfNeeded()) {
 			const result = await this.uploadLocalSave();
 			if (result > 0) {
@@ -89,12 +89,12 @@ export abstract class SaveSync {
 			}
 		}
 		return SaveSyncResult.ERROR;
-	};
+	}
 
 	// Error when localSave is more recent than the external save and *should* be exported but there is no way to check.
 	// lastSync is never deleted, if there is no service change it shouldn't be a problem,
 	// 	the old save will have the same lastSync server side and it will export, and maybe that's enough.
-	sync = async (force: boolean = false): Promise<SaveSyncResult> => {
+	async sync(force: boolean = false): Promise<SaveSyncResult> {
 		const lastSync = await this.lastSync();
 		if (force || lastSync == 0) {
 			await log(`${force ? 'Forced' : 'No lastSync'}, uploading save.`);
@@ -111,5 +111,5 @@ export abstract class SaveSync {
 			return SaveSyncResult.NOTHING;
 		}
 		return SaveSyncResult.ERROR;
-	};
+	}
 }

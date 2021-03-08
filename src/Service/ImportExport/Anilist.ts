@@ -83,7 +83,7 @@ export class AnilistImport extends ImportModule {
 		}`.replace(/\n\t+/g, ' '); // Require $userName
 	username: string = '';
 
-	preExecute = async (): Promise<boolean> => {
+	async preExecute(): Promise<boolean> {
 		// Find required username
 		const viewerResponse = await Http.json(AnilistAPI, {
 			method: 'POST',
@@ -101,9 +101,9 @@ export class AnilistImport extends ImportModule {
 		}
 		this.username = (viewerResponse.body as AnilistViewerResponse).data.Viewer.name;
 		return true;
-	};
+	}
 
-	execute = async (): Promise<boolean> => {
+	async execute(): Promise<boolean> {
 		// Get list of *all* titles
 		const message = this.interface?.message('loading', 'Fetching all titles...');
 		const response = await Http.json<AnilistListResponse>(AnilistAPI, {
@@ -150,19 +150,19 @@ export class AnilistImport extends ImportModule {
 			}
 		}
 		return true;
-	};
+	}
 }
 
 export class AnilistExport extends ExportModule {
-	extendOptions = (): void => {
+	extendOptions(): void {
 		this.options.merge = {
 			description: 'Merge with current external Anilist save',
 			display: true,
 			default: true,
 		};
-	};
+	}
 
-	execute = async (titles: LocalTitle[]): Promise<boolean> => {
+	async execute(titles: LocalTitle[]): Promise<boolean> {
 		const max = titles.length;
 		this.interface?.message('default', `Exporting ${max} Titles...`);
 		const progress = DOM.create('p');
@@ -185,5 +185,5 @@ export class AnilistExport extends ExportModule {
 		}
 		message?.classList.remove('loading');
 		return this.interface ? !this.interface.doStop : true;
-	};
+	}
 }

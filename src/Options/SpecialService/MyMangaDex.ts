@@ -67,7 +67,7 @@ type MyMangaDexSave = {
 };
 
 export class MyMangaDex extends SpecialService {
-	convertOptions = (data: MyMangaDexSave): void => {
+	convertOptions(data: MyMangaDexSave) {
 		const old = data.options;
 		if (old !== undefined) {
 			this.assignValidOption('thumbnail', old.showTooltips);
@@ -100,9 +100,9 @@ export class MyMangaDex extends SpecialService {
 		if (Options.services.indexOf(ServiceKey.MyAnimeList) < 0) {
 			Options.services.unshift(ServiceKey.MyAnimeList);
 		}
-	};
+	}
 
-	isValidMyMangaDexTitle = (title: Record<string, any>): boolean => {
+	isValidMyMangaDexTitle(title: Record<string, any>): boolean {
 		return (
 			typeof title.mal === 'number' &&
 			!isNaN(title.mal) &&
@@ -110,9 +110,9 @@ export class MyMangaDex extends SpecialService {
 			Array.isArray(title.chapters) &&
 			(title.lastTitle === undefined || typeof title.lastTitle === 'number')
 		);
-	};
+	}
 
-	handleFile = async (data: MyMangaDexSave, moduleInterface: ModuleInterface): Promise<any> => {
+	async handleFile(data: MyMangaDexSave, moduleInterface: ModuleInterface) {
 		// Find all Titles
 		let message = moduleInterface.message('loading', 'Loading MyMangaDex Titles...');
 		const titles: MyMangaDexTitle[] = [];
@@ -205,9 +205,9 @@ export class MyMangaDex extends SpecialService {
 		moduleInterface.message('success', `Imported ${collection.length} Titles, History and Options !`);
 		this.reload();
 		moduleInterface.complete();
-	};
+	}
 
-	start = async (): Promise<void> => {
+	async start(): Promise<void> {
 		// Create a ModuleInterface from scratch
 		const moduleInterface = new ModuleInterface();
 		moduleInterface.createOptions(this.options);
@@ -272,5 +272,5 @@ export class MyMangaDex extends SpecialService {
 			reader.readAsText(form.save.files[0]);
 		});
 		moduleInterface.modal.show();
-	};
+	}
 }

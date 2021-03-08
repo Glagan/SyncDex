@@ -59,7 +59,7 @@ export class ModuleInterface {
 		DOM.append(this.modal.footer, this.startButton, this.cancelButton);
 	}
 
-	createModal = (): void => {
+	createModal(): void {
 		this.modal.modal.classList.add('import-export-modal');
 		this.stopButton.disabled = false;
 		this.doStop = false;
@@ -76,9 +76,9 @@ export class ModuleInterface {
 			event.preventDefault();
 			realSubmit.click();
 		});
-	};
+	}
 
-	createOptions = (options: ModuleOptions): void => {
+	createOptions(options: ModuleOptions): void {
 		this.form.appendChild(DOM.create('h2', { textContent: 'Options' }));
 		const section = DOM.create('div', {
 			class: 'parameter',
@@ -100,24 +100,24 @@ export class ModuleInterface {
 			}
 		}
 		this.form.appendChild(section);
-	};
+	}
 
-	setOptionsValues = (options: ModuleOptions): void => {
+	setOptionsValues(options: ModuleOptions): void {
 		for (const name in options) {
 			if (this.form[name]) {
 				options[name].active = this.form[name].checked;
 			}
 		}
-	};
+	}
 
-	setStyle = (title: AppendableElement, key: string): void => {
+	setStyle(title: AppendableElement, key: string): void {
 		this.modal.header.classList.add(key);
 		this.modal.header.appendChild(title);
 		this.form.name = `save_form_${key}`;
 		this.startButton.setAttribute('form', `save_form_${key}`);
-	};
+	}
 
-	bindFormSubmit = (fcnt: () => void) => {
+	bindFormSubmit(fcnt: () => void) {
 		this.form.addEventListener('animationend', (event) => {
 			if (event.target == this.form && event.animationName == 'shrink') {
 				this.form.remove();
@@ -128,20 +128,20 @@ export class ModuleInterface {
 				fcnt();
 			}
 		});
-	};
+	}
 
-	clear = (): void => {
+	clear(): void {
 		DOM.clear(this.modal.body);
 		DOM.clear(this.modal.footer);
-	};
+	}
 
-	complete = (): boolean => {
+	complete(): boolean {
 		this.modal.enableExit();
 		this.stopButton.replaceWith(this.closeButton);
 		return true;
-	};
+	}
 
-	message = (type: MessageType, content: string | AppendableElement[], parent?: HTMLElement): HTMLElement => {
+	message(type: MessageType, content: string | AppendableElement[], parent?: HTMLElement): HTMLElement {
 		const notification = DOM.message(type, content);
 		if (parent) {
 			parent.appendChild(notification);
@@ -149,7 +149,7 @@ export class ModuleInterface {
 			this.modal.body.appendChild(notification);
 		}
 		return notification;
-	};
+	}
 
 	get body() {
 		return this.modal.body;

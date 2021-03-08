@@ -1,4 +1,5 @@
 /**
+ * TODO: Look at identity API https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/identity
  * Helper for PKCE Request to OAuth2 APIs.
  * @source https://developer.okta.com/blog/2019/05/01/is-the-oauth-implicit-flow-dead
  */

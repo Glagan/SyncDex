@@ -16,7 +16,7 @@ export class Color {
 		this.display = this.node.querySelector('.color') as HTMLElement;
 	}
 
-	bind = (): void => {
+	bind() {
 		this.update(Options.colors[this.optionName]);
 		this.input.addEventListener('input', () => {
 			this.display.style.backgroundColor = this.input.value;
@@ -26,12 +26,12 @@ export class Color {
 				Options.save();
 			}, 300);
 		});
-	};
+	}
 
-	update = (value: string): void => {
+	update(value: string) {
 		this.input.value = value;
 		this.display.style.backgroundColor = value;
-	};
+	}
 }
 
 export class ColorManager {
@@ -46,9 +46,9 @@ export class ColorManager {
 		}
 	}
 
-	updateAll = (): void => {
+	updateAll() {
 		for (const color of this.colors) {
 			color.update(Options.colors[color.optionName]);
 		}
-	};
+	}
 }

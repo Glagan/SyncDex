@@ -86,14 +86,14 @@ interface DropboxUploadResult {
 export class Dropbox extends SaveSync {
 	static CLIENT_ID = 'd8aw9vtzpdqg93y';
 
-	createCard = (): HTMLButtonElement => {
+	createCard(): HTMLButtonElement {
 		return DOM.create('button', {
 			class: 'dropbox',
 			childs: [Dropbox.icon(), DOM.space(), DOM.text('Dropbox')],
 		});
-	};
+	}
 
-	onCardClick = async () => {
+	async onCardClick() {
 		const state = generateRandomString();
 		const codeVerifier = generateRandomString();
 		const codeChallenge = await pkceChallengeFromVerifier(codeVerifier);
@@ -108,12 +108,12 @@ export class Dropbox extends SaveSync {
 			token_access_type: 'offline',
 		})}`;
 		window.location.href = url;
-	};
+	}
 
 	/**
 	 * Return a DropboxFile if it exists, true if it doesn't and false if the API returned an error.
 	 */
-	fileMetadata = async (): Promise<DropboxFile | boolean | null> => {
+	async fileMetadata(): Promise<DropboxFile | boolean | null> {
 		if (await this.refreshTokenIfNeeded()) {
 			const response = await Http.json<DropboxSearchResult>('https://api.dropboxapi.com/2/files/search_v2', {
 				method: 'POST',
@@ -131,9 +131,9 @@ export class Dropbox extends SaveSync {
 			}
 		}
 		return false;
-	};
+	}
 
-	lastSync = async (): Promise<number> => {
+	async lastSync(): Promise<number> {
 		if (await this.refreshTokenIfNeeded()) {
 			const file = await this.fileMetadata();
 			if (typeof file === 'object' && file !== null) {
@@ -141,7 +141,7 @@ export class Dropbox extends SaveSync {
 			} else if (file !== false) return 0;
 		}
 		return -1;
-	};
+	}
 
 	@LogExecTime
 	async downloadExternalSave(): Promise<string | boolean> {
@@ -179,7 +179,7 @@ export class Dropbox extends SaveSync {
 		return -1;
 	}
 
-	refreshTokenIfNeeded = async (): Promise<boolean> => {
+	async refreshTokenIfNeeded(): Promise<boolean> {
 		if (!SaveSync.state) return false;
 		if (SaveSync.state.expires < Date.now()) {
 			await debug(`Refreshing Dropbox token (expired ${SaveSync.state.expires})`);
@@ -194,9 +194,9 @@ export class Dropbox extends SaveSync {
 			return (await this.handleTokenResponse(response)) == SaveSyncLoginResult.SUCCESS;
 		}
 		return true;
-	};
+	}
 
-	login = async (query: { [key: string]: string }): Promise<SaveSyncLoginResult> => {
+	async login(query: { [key: string]: string }): Promise<SaveSyncLoginResult> {
 		const dropboxState = await Storage.get(StorageUniqueKey.DropboxState);
 		await Storage.remove(StorageUniqueKey.DropboxState);
 		if (dropboxState == undefined || dropboxState.state !== query.state) {
@@ -213,9 +213,9 @@ export class Dropbox extends SaveSync {
 			}),
 		});
 		return this.handleTokenResponse(response);
-	};
+	}
 
-	delete = async (): Promise<boolean> => {
+	async delete(): Promise<boolean> {
 		if (await this.refreshTokenIfNeeded()) {
 			const response = await Http.post('https://api.dropboxapi.com/2/files/delete_v2', {
 				headers: {
@@ -228,9 +228,9 @@ export class Dropbox extends SaveSync {
 			return response.ok;
 		}
 		return false;
-	};
+	}
 
-	handleTokenResponse = async (response: RawResponse): Promise<SaveSyncLoginResult> => {
+	async handleTokenResponse(response: RawResponse): Promise<SaveSyncLoginResult> {
 		try {
 			if (response.ok && response.body) {
 				const body: DropboxTokenResponse = JSON.parse(response.body);
@@ -254,5 +254,5 @@ export class Dropbox extends SaveSync {
 		//SimpleNotification.error({ title: 'API Error', text: 'Could not parse a body from the Dropbox API.' });
 		await log('Failed to obtain Dropbox token');
 		return SaveSyncLoginResult.API_ERROR;
-	};
+	}
 }

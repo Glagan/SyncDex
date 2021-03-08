@@ -34,14 +34,14 @@ export class GoogleDrive extends SaveSync {
 	static CLIENT_ID = '589655435156-a6hi0egsv77ub9au4lqghia3pqnorgfr.apps.googleusercontent.com';
 	static SCOPE = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file';
 
-	createCard = (): HTMLButtonElement => {
+	createCard(): HTMLButtonElement {
 		return DOM.create('button', {
 			class: 'googleDrive',
 			childs: [GoogleDrive.icon(), DOM.space(), DOM.text('Google Drive')],
 		});
-	};
+	}
 
-	onCardClick = async () => {
+	async onCardClick() {
 		const state = generateRandomString();
 		await Storage.set(StorageUniqueKey.GoogleDriveState, state);
 		const url = `https://accounts.google.com/o/oauth2/v2/auth?${Http.buildQuery({
@@ -54,9 +54,9 @@ export class GoogleDrive extends SaveSync {
 			state: state,
 		})}`;
 		window.location.href = url;
-	};
+	}
 
-	lastSync = async (): Promise<number> => {
+	async lastSync(): Promise<number> {
 		if (await this.refreshTokenIfNeeded()) {
 			if (SaveSync.state?.id) {
 				// Get the file Metadata if it exists
@@ -85,7 +85,7 @@ export class GoogleDrive extends SaveSync {
 			}
 		}
 		return -1;
-	};
+	}
 
 	@LogExecTime
 	async downloadExternalSave(): Promise<string | boolean> {
@@ -146,7 +146,7 @@ export class GoogleDrive extends SaveSync {
 		return -1;
 	}
 
-	refreshTokenIfNeeded = async (): Promise<boolean> => {
+	async refreshTokenIfNeeded(): Promise<boolean> {
 		if (!SaveSync.state) return false;
 		if (SaveSync.state.expires < Date.now()) {
 			await debug(`Refreshing Google Drive token (expired ${SaveSync.state.expires})`);
@@ -160,9 +160,9 @@ export class GoogleDrive extends SaveSync {
 			return (await this.handleTokenResponse(response)) == SaveSyncLoginResult.SUCCESS;
 		}
 		return true;
-	};
+	}
 
-	login = async (query: { [key: string]: string }): Promise<SaveSyncLoginResult> => {
+	async login(query: { [key: string]: string }): Promise<SaveSyncLoginResult> {
 		const googleDriveState = await Storage.get(StorageUniqueKey.GoogleDriveState);
 		await Storage.remove(StorageUniqueKey.GoogleDriveState);
 		if (googleDriveState == undefined || googleDriveState !== query.state) {
@@ -178,9 +178,9 @@ export class GoogleDrive extends SaveSync {
 			}),
 		});
 		return this.handleTokenResponse(response);
-	};
+	}
 
-	delete = async (): Promise<boolean> => {
+	async delete(): Promise<boolean> {
 		if (await this.refreshTokenIfNeeded()) {
 			if (!SaveSync.state?.id) return false;
 			const response = await Http.delete(`https://www.googleapis.com/drive/v3/files/${SaveSync.state.id}`, {
@@ -190,9 +190,9 @@ export class GoogleDrive extends SaveSync {
 			return response.ok;
 		}
 		return false;
-	};
+	}
 
-	handleTokenResponse = async (response: RawResponse): Promise<SaveSyncLoginResult> => {
+	async handleTokenResponse(response: RawResponse): Promise<SaveSyncLoginResult> {
 		try {
 			if (response.ok && response.body) {
 				const body: GoogleDriveTokenResponse = JSON.parse(response.body);
@@ -221,5 +221,5 @@ export class GoogleDrive extends SaveSync {
 		//SimpleNotification.error({ title: 'API Error', text: 'Could not parse a body from the Dropbox API.' });
 		await log('Failed to obtain Google Drive token');
 		return SaveSyncLoginResult.API_ERROR;
-	};
+	}
 }

@@ -170,7 +170,7 @@ export class Anilist extends Service {
 		return `https://anilist.co/manga/${key.id}`;
 	}
 
-	createTitle = (): AppendableElement => {
+	createTitle(): AppendableElement {
 		return DOM.create('span', {
 			class: 'ani',
 			textContent: 'Ani',
@@ -181,13 +181,13 @@ export class Anilist extends Service {
 				}),
 			],
 		});
-	};
+	}
 
-	idFromLink = (href: string): MediaKey => {
+	idFromLink(href: string): MediaKey {
 		const regexp = /https:\/\/(?:www\.)?anilist\.co\/manga\/(\d+)\/?/.exec(href);
 		if (regexp !== null) return { id: parseInt(regexp[1]) };
 		return { id: 0 };
-	};
+	}
 }
 
 export class AnilistTitle extends Title {
@@ -222,19 +222,19 @@ export class AnilistTitle extends Title {
 
 	mediaEntryId?: number;
 
-	static dateFromAnilist = (date: AnilistDate): Date | undefined => {
+	static dateFromAnilist(date: AnilistDate): Date | undefined {
 		if (date.day !== null && date.month !== null && date.year !== null) {
 			return new Date(date.year, Math.max(0, date.month - 1), date.day);
 		}
 		return undefined;
-	};
+	}
 
-	static dateToAnilist = (date?: Date): AnilistDate | null => {
+	static dateToAnilist(date?: Date): AnilistDate | null {
 		if (date !== undefined) {
 			return { day: date.getDate(), month: date.getMonth() + 1, year: date.getFullYear() };
 		}
 		return null;
-	};
+	}
 
 	@LogExecTime
 	async persist(): Promise<ResponseStatus> {
@@ -268,7 +268,7 @@ export class AnilistTitle extends Title {
 		return ResponseStatus.SUCCESS;
 	}
 
-	delete = async (): Promise<ResponseStatus> => {
+	async delete(): Promise<ResponseStatus> {
 		if (!Options.tokens.anilistToken) return ResponseStatus.MISSING_TOKEN;
 		if (!this.inList || !this.mediaEntryId) {
 			await log(`Could not sync Anilist: status ${this.status}`);
@@ -286,9 +286,9 @@ export class AnilistTitle extends Title {
 		this.mediaEntryId = 0;
 		this.reset();
 		return ResponseStatus.DELETED;
-	};
+	}
 
-	static toStatus = (status: AnilistStatus): Status => {
+	static toStatus(status: AnilistStatus): Status {
 		switch (status) {
 			case AnilistStatus.READING:
 				return Status.READING;
@@ -304,9 +304,9 @@ export class AnilistTitle extends Title {
 				return Status.REREADING;
 		}
 		return Status.NONE;
-	};
+	}
 
-	static fromStatus = (status: Status): AnilistStatus => {
+	static fromStatus(status: Status): AnilistStatus {
 		switch (status) {
 			case Status.READING:
 				return AnilistStatus.READING;
@@ -322,5 +322,5 @@ export class AnilistTitle extends Title {
 				return AnilistStatus.REREADING;
 		}
 		return AnilistStatus.NONE;
-	};
+	}
 }

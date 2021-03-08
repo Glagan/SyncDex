@@ -38,7 +38,7 @@ export class MangaDexHelper {
 }
 
 export class MangaDexImport extends SpecialService {
-	start = async (): Promise<void> => {
+	async start(): Promise<void> {
 		// Create a ModuleInterface from scratch
 		const moduleInterface = new ModuleInterface();
 		moduleInterface.createOptions(this.options);
@@ -106,14 +106,14 @@ export class MangaDexImport extends SpecialService {
 			moduleInterface.complete();
 		});
 		moduleInterface.modal.show();
-	};
+	}
 }
 
 export class MangaDexExport extends SpecialService {
-	persistTitle = async (
+	async persistTitle(
 		online: { status: Status; rating: number; progress?: Progress } | undefined,
 		title: LocalTitle
-	): Promise<ResponseStatus> => {
+	): Promise<ResponseStatus> {
 		// Status
 		let status = ResponseStatus.SUCCESS;
 		if (online?.status != title.status) {
@@ -149,9 +149,9 @@ export class MangaDexExport extends SpecialService {
 			});
 		}
 		return status;
-	};
+	}
 
-	start = async (): Promise<void> => {
+	async start(): Promise<void> {
 		// Create a ModuleInterface from scratch
 		const moduleInterface = new ModuleInterface();
 		moduleInterface.setStyle(MangaDexHelper.createTitle(), ServiceKey.MangaDex);
@@ -217,5 +217,5 @@ export class MangaDexExport extends SpecialService {
 			moduleInterface.complete();
 		});
 		moduleInterface.modal.show();
-	};
+	}
 }

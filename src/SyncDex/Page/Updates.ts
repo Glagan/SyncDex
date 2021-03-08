@@ -25,7 +25,7 @@ export class UpdateGroup {
 		this.titleRow = titleRow;
 	}
 
-	hide = (title: Title): void => {
+	hide(title: Title) {
 		const progress = title.progress;
 		let chapterCount = this.chapters.length;
 		let hidden = 0;
@@ -61,9 +61,9 @@ export class UpdateGroup {
 			firstRowColumn.dataset.originalSpan = `${firstRowColumn.rowSpan}`;
 			firstRowColumn.rowSpan = newSpan;
 		}
-	};
+	}
 
-	highlight = (title: Title): void => {
+	highlight(title: Title) {
 		const progress = title.progress;
 		let lastColor = Options.colors.highlights.length;
 		let foundNext = false;
@@ -99,9 +99,9 @@ export class UpdateGroup {
 			}
 		}
 		UpdateGroup.currentColor = (UpdateGroup.currentColor + 1) % lastColor;
-	};
+	}
 
-	static getGroups = (): UpdateGroup[] => {
+	static getGroups(): UpdateGroup[] {
 		const groups: UpdateGroup[] = [];
 		const rows = document.querySelectorAll<HTMLTableDataCellElement>('table tbody tr');
 		let currentGroup: UpdateGroup | undefined = undefined;
@@ -128,7 +128,7 @@ export class UpdateGroup {
 			}
 		}
 		return groups;
-	};
+	}
 }
 
 export class UpdatesPage extends Page {

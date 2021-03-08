@@ -11,7 +11,7 @@ import { SpecialService } from '../SpecialService';
 import { Updates } from '../../Core/Updates';
 
 export class SyncDexImport extends SpecialService {
-	handleFile = async (data: StorageValues, moduleInterface: ModuleInterface): Promise<any> => {
+	async handleFile(data: StorageValues, moduleInterface: ModuleInterface) {
 		// Find all Titles
 		let message = moduleInterface.message('loading', 'Loading SyncDex Titles...');
 		const collection = new TitleCollection();
@@ -101,9 +101,9 @@ export class SyncDexImport extends SpecialService {
 		moduleInterface.message('success', `Imported ${collection.length} Titles, History and Options !`);
 		this.reload();
 		moduleInterface.complete();
-	};
+	}
 
-	start = async (): Promise<void> => {
+	async start() {
 		// Create a ModuleInterface from scratch
 		const moduleInterface = new ModuleInterface();
 		moduleInterface.createOptions(this.options);
@@ -176,11 +176,11 @@ export class SyncDexImport extends SpecialService {
 			reader.readAsText(form.save.files[0]);
 		});
 		moduleInterface.modal.show();
-	};
+	}
 }
 
 export class SyncDexExport extends SpecialService {
-	start = async (): Promise<void> => {
+	async start() {
 		const data = await Storage.get();
 		if (data.options) {
 			delete (data.options as any).tokens;
@@ -202,5 +202,5 @@ export class SyncDexExport extends SpecialService {
 			URL.revokeObjectURL(href);
 			SimpleNotification.success({ title: 'Save Exported' });
 		}
-	};
+	}
 }

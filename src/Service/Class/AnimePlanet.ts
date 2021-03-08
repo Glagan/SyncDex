@@ -113,15 +113,15 @@ export class AnimePlanet extends Service {
 		return `https://www.anime-planet.com/manga/${key.slug}`;
 	}
 
-	idFromLink = (href: string): MediaKey => {
+	idFromLink(href: string): MediaKey {
 		const regexp = /https:\/\/(?:www\.)?anime-planet\.com\/manga\/(.+)\/?/.exec(href);
 		if (regexp !== null) return { slug: regexp[1] };
 		return { slug: '', id: 0 };
-	};
+	}
 
-	idFromString = (str: string): MediaKey => {
+	idFromString(str: string): MediaKey {
 		return { slug: str };
-	};
+	}
 
 	static compareId(id1: MediaKey, id2: MediaKey): boolean {
 		return (id1.id == id2.id || !id1.id || !id2.id) && id1.slug == id2.slug;
@@ -183,7 +183,7 @@ export class AnimePlanetTitle extends Title {
 		return ResponseStatus.SUCCESS;
 	}
 
-	delete = async (): Promise<ResponseStatus> => {
+	async delete(): Promise<ResponseStatus> {
 		if (!this.inList || !this.token) {
 			await log(`Could not sync AnimePlanet: status ${this.status} token ${!!this.token}`);
 			return ResponseStatus.BAD_REQUEST;
@@ -196,9 +196,9 @@ export class AnimePlanetTitle extends Title {
 		this.reset();
 		const status = response.status;
 		return status == ResponseStatus.SUCCESS ? ResponseStatus.DELETED : status;
-	};
+	}
 
-	static toStatus = (status: AnimePlanetStatus): Status => {
+	static toStatus(status: AnimePlanetStatus): Status {
 		switch (status) {
 			case AnimePlanetStatus.NONE:
 				return Status.NONE;
@@ -215,9 +215,9 @@ export class AnimePlanetTitle extends Title {
 			case AnimePlanetStatus.WONT_READ:
 				return Status.WONT_READ;
 		}
-	};
+	}
 
-	static fromStatus = (status: Status): AnimePlanetStatus => {
+	static fromStatus(status: Status): AnimePlanetStatus {
 		switch (status) {
 			case Status.READING:
 				return AnimePlanetStatus.READING;
@@ -233,5 +233,5 @@ export class AnimePlanetTitle extends Title {
 				return AnimePlanetStatus.WONT_READ;
 		}
 		return AnimePlanetStatus.NONE;
-	};
+	}
 }

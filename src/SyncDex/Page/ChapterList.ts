@@ -60,7 +60,7 @@ class TitleChapterGroup {
 		this.isH = titleColumn.querySelector('span.badge.badge-danger') != null;
 	}
 
-	addTitleLinkToRow = (row: ChapterRow): void => {
+	addTitleLinkToRow(row: ChapterRow): void {
 		if (!row.node.firstElementChild) return;
 		row.node.firstElementChild.appendChild(
 			DOM.create('a', {
@@ -75,9 +75,9 @@ class TitleChapterGroup {
 				DOM.create('span', { class: 'badge badge-danger ml-1', textContent: 'H' })
 			);
 		}
-	};
+	}
 
-	updateDisplayedRows = (title: LocalTitle) => {
+	updateDisplayedRows(title: LocalTitle) {
 		if (Options.highlight) this.highlight(title);
 		if (Options.hideHigher || Options.hideLast || Options.hideLower) this.hide(title);
 		if (Options.progressInThumbnail) this.thumbnail?.updateContent(title);
@@ -92,13 +92,13 @@ class TitleChapterGroup {
 				}
 			}
 		}
-	};
+	}
 
 	/**
 	 * Find the next chapter for the group if it's available and bind events.
 	 * Also add required CSS to each rows.
 	 */
-	initialize = (syncModule: SyncModule): void => {
+	initialize(syncModule: SyncModule) {
 		const title = syncModule.title;
 
 		// Add back the name on the first row
@@ -200,9 +200,9 @@ class TitleChapterGroup {
 		}
 
 		this.findNextChapter(title);
-	};
+	}
 
-	toggleHidden = (hidden: boolean): void => {
+	toggleHidden(hidden: boolean) {
 		for (const group of this.groups) {
 			if (group.length == 0) continue;
 			let addedTitle = false;
@@ -222,9 +222,9 @@ class TitleChapterGroup {
 				}
 			}
 		}
-	};
+	}
 
-	hide = (title: LocalTitle): void => {
+	hide(title: LocalTitle) {
 		TitleChapterGroup.totalHiddenRows -= this.hiddenRows;
 		this.hiddenRows = 0;
 		const progress = title.progress;
@@ -264,9 +264,9 @@ class TitleChapterGroup {
 		}
 		TitleChapterGroup.totalHiddenRows += this.hiddenRows;
 		TitleChapterGroup.toggleButton.value.textContent = `${TitleChapterGroup.totalHiddenRows}`;
-	};
+	}
 
-	highlight = (title: LocalTitle): void => {
+	highlight(title: LocalTitle) {
 		const progress = title.progress;
 		let lastColor = Options.colors.highlights.length;
 		for (const group of this.groups) {
@@ -313,9 +313,9 @@ class TitleChapterGroup {
 			}
 		}
 		TitleChapterGroup.currentColor = (TitleChapterGroup.currentColor + 1) % lastColor;
-	};
+	}
 
-	findNextChapter = (title: LocalTitle): void => {
+	findNextChapter(title: LocalTitle) {
 		this.nextChapters = [];
 		const progress = title.progress;
 		let lowestProgress: Progress | undefined = undefined;
@@ -339,9 +339,9 @@ class TitleChapterGroup {
 			row.isNext = true;
 			this.nextChapterRows.push(row.node);
 		}
-	};
+	}
 
-	static getGroups = (): TitleChapterGroup[] => {
+	static getGroups(): TitleChapterGroup[] {
 		const groups: TitleChapterGroup[] = [];
 		let fullRows = document.querySelectorAll<HTMLElement>('.chapter-container > .row');
 		if (fullRows.length > 1) {
@@ -410,7 +410,7 @@ class TitleChapterGroup {
 			}
 		}
 		return groups;
-	};
+	}
 }
 
 export class ChapterListPage extends Page {

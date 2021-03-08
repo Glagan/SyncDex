@@ -29,7 +29,7 @@ export class Logs {
 		this.reload();
 	}
 
-	displayEmptyMessage = (): void => {
+	displayEmptyMessage() {
 		this.container.appendChild(
 			DOM.create('tr', {
 				childs: [
@@ -51,7 +51,7 @@ export class Logs {
 				],
 			})
 		);
-	};
+	}
 
 	async reload() {
 		DOM.clear(this.container);

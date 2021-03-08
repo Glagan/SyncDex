@@ -118,14 +118,14 @@ export class SaveSyncManager {
 		this.initialize();
 	}
 
-	toggleButtons = (value: boolean) => {
+	toggleButtons(value: boolean) {
 		this.importButton.disabled = value;
 		this.exportButton.disabled = value;
 		this.deleteLogoutButton.disabled = value;
 		this.logoutButton.disabled = value;
-	};
+	}
 
-	initialize = async () => {
+	async initialize() {
 		// Check if there is a token being received for a save sync service
 		const query: Query = {};
 		const queryString = window.location.search.substring(1);
@@ -181,9 +181,9 @@ export class SaveSyncManager {
 				this.refresh();
 			}
 		} else this.refresh();
-	};
+	}
 
-	refresh = async (): Promise<void> => {
+	async refresh() {
 		DOM.clear(this.container);
 		SaveSync.state = await Storage.get('saveSync');
 		if (SaveSync.state !== undefined) {
@@ -209,9 +209,9 @@ export class SaveSyncManager {
 				})
 			);
 		} else DOM.append(this.container, ...this.cards);
-	};
+	}
 
-	toggleImportProgressState = (value: boolean): void => {
+	toggleImportProgressState(value: boolean) {
 		for (const card of this.cards) {
 			if (value) {
 				card.classList.add('loading');
@@ -234,5 +234,5 @@ export class SaveSyncManager {
 				button.title = '';
 			}
 		}
-	};
+	}
 }

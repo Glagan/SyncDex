@@ -142,7 +142,7 @@ export class Thumbnail {
 		});
 	}
 
-	updateContent = (title: LocalTitle): void => {
+	updateContent(title: LocalTitle) {
 		DOM.clear(this.content);
 		let hasContent = false;
 		if (title.chapter) {
@@ -169,9 +169,9 @@ export class Thumbnail {
 			hasContent = true;
 		}
 		if (hasContent) this.container.appendChild(this.content);
-	};
+	}
 
-	updatePosition = (row: HTMLElement): void => {
+	updatePosition(row: HTMLElement) {
 		let rightColumn = this.thumbnail.dataset.column == 'true';
 		let rect = {
 			thumbnail: this.thumbnail.getBoundingClientRect(),
@@ -213,7 +213,7 @@ export class Thumbnail {
 			top = window.scrollY + window.innerHeight - rect.thumbnail.height - 5;
 		}
 		this.thumbnail.style.top = `${top}px`;
-	};
+	}
 
 	static bind(id: number, row: HTMLElement, title?: LocalTitle): Thumbnail {
 		if (!Thumbnail.list[id]) {

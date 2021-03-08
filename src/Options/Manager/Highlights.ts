@@ -28,7 +28,7 @@ class Highlights {
 		DOM.append(this.node, this.remove, this.input, this.display);
 	}
 
-	bind = (highlights: HighlightsManager): void => {
+	bind(highlights: HighlightsManager) {
 		this.update(Options.colors.highlights[this.index]);
 		this.input.addEventListener('input', () => {
 			this.display.style.backgroundColor = this.input.value;
@@ -54,12 +54,12 @@ class Highlights {
 				}, 300);
 			}
 		});
-	};
+	}
 
-	update = (value: string): void => {
+	update(value: string) {
 		this.input.value = value;
 		this.display.style.backgroundColor = value;
-	};
+	}
 }
 
 export class HighlightsManager {

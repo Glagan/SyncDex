@@ -41,7 +41,7 @@ export class TitleEditor {
 		return select;
 	}
 
-	static createHistoryChapter = (nodes: HistoryChapter[], chapter: number): HTMLElement => {
+	static createHistoryChapter(nodes: HistoryChapter[], chapter: number): HTMLElement {
 		const chapterNode = DOM.create('div', {
 			class: 'chapter',
 			textContent: `${chapter}`,
@@ -57,9 +57,9 @@ export class TitleEditor {
 			},
 		});
 		return chapterNode;
-	};
+	}
 
-	static createServiceInput = (service: Service, force: boolean, value?: MediaKey): AppendableElement[] => {
+	static createServiceInput(service: Service, force: boolean, value?: MediaKey): AppendableElement[] {
 		const forceCheckbox = DOM.create('input', { type: 'checkbox', id: `${service.key}_force`, checked: force });
 		const idInput = DOM.create('input', {
 			type: 'number',
@@ -95,7 +95,7 @@ export class TitleEditor {
 			if (slugInput) slugInput.style.borderColor = '#00c8d7';
 		}
 		return inputs;
-	};
+	}
 
 	static service(form: HTMLFormElement, key: ActivableKey): ServiceEditorValue {
 		let found = false;

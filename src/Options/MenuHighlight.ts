@@ -10,9 +10,9 @@ class Menu {
 		this.marginTop = parseInt(getComputedStyle(this.header).marginTop);
 	}
 
-	isVisible = (scroll: number): boolean => {
+	isVisible(scroll: number): boolean {
 		return scroll + window.innerHeight / 3 >= this.header.offsetTop - this.marginTop;
-	};
+	}
 }
 
 export class MenuHighlight {
@@ -41,7 +41,7 @@ export class MenuHighlight {
 		this.frame(this.node.scrollTop);
 	}
 
-	frame = (scrollTop: number): void => {
+	frame(scrollTop: number) {
 		if (scrollTop <= this.menus[0].marginTop) {
 			this.activateMenu(0);
 		} else if (scrollTop == this.node.scrollHeight - window.innerHeight) {
@@ -58,11 +58,11 @@ export class MenuHighlight {
 				}
 			}
 		}
-	};
+	}
 
-	activateMenu = (index: number): void => {
+	activateMenu(index: number) {
 		this.menus[this.activeMenu].link.classList.remove('active');
 		this.activeMenu = index;
 		this.menus[this.activeMenu].link.classList.add('active');
-	};
+	}
 }

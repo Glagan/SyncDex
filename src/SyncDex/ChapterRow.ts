@@ -79,27 +79,27 @@ export class ChapterRow {
 		}
 	}
 
-	updateDisplayedProgress = () => {
+	updateDisplayedProgress() {
 		this.chapterLink.textContent = `${progressToString(this.progress)}${this.title ? ` - ${this.title}` : ''}`;
-	};
+	}
 
-	addManageButtons = (): void => {
+	addManageButtons() {
 		this.parent.appendChild(this.manage);
-	};
+	}
 
-	enableToggleButton = (): void => {
+	enableToggleButton() {
 		this.toggleButton!.title = 'Remove from chapter list';
 		this.toggleIcon!.classList.add('fa-minus');
 		this.toggleIcon!.classList.remove('fa-plus');
-	};
+	}
 
-	disableToggleButton = (): void => {
+	disableToggleButton() {
 		this.toggleButton!.title = 'Add to chapter list';
 		this.toggleIcon!.classList.remove('fa-minus');
 		this.toggleIcon!.classList.add('fa-plus');
-	};
+	}
 
-	static hideAllExcept = (flag: string, tabLink: HTMLElement, afterToggle?: () => void): void => {
+	static hideAllExcept(flag: string, tabLink: HTMLElement, afterToggle?: () => void) {
 		for (const row of ChapterRow.rowLanguages) {
 			if (flag == 'all' || row.code == flag) {
 				row.node.classList.add('visible-lang');
@@ -111,16 +111,16 @@ export class ChapterRow {
 		ChapterRow.currentTab = tabLink;
 		ChapterRow.currentTab.classList.add('active');
 		if (afterToggle) afterToggle();
-	};
+	}
 
-	static createLanguageTab = (
+	static createLanguageTab(
 		parent: HTMLElement,
 		flag: string,
 		name: string,
 		title: string,
 		appendFunction?: (parent: HTMLElement, tab: HTMLElement) => void,
 		afterToggle?: () => void
-	): HTMLElement => {
+	): HTMLElement {
 		const tabLink = DOM.create('a', {
 			class: `nav-link tab-${flag} ${flag == Options.favoriteLanguage ? 'active' : ''}`,
 			href: '#',
@@ -146,13 +146,13 @@ export class ChapterRow {
 			appendFunction(parent, tab);
 		} else parent.appendChild(tab);
 		return tabLink;
-	};
+	}
 
-	static generateLanguageButtons = (
+	static generateLanguageButtons(
 		parent: HTMLElement | null,
 		appendFunction?: (parent: HTMLElement, tab: HTMLElement) => void,
 		afterToggle?: () => void
-	): void => {
+	) {
 		const langLoaded = parent ? parent.classList.contains('lang-loaded') : true;
 		if (Options.separateLanguages && parent && !langLoaded) {
 			parent.classList.add('lang-loaded');
@@ -189,5 +189,5 @@ export class ChapterRow {
 				if (language == defaultLanguage) ChapterRow.hideAllExcept(defaultLanguage, tab, afterToggle);
 			}
 		}
-	};
+	}
 }

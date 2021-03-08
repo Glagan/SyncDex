@@ -22,7 +22,7 @@ export class MangaUpdates extends Service {
 	loginMethod = LoginMethod.EXTERNAL;
 	loginUrl = 'https://www.mangaupdates.com/login.html';
 
-	loggedIn = async (): Promise<ResponseStatus> => {
+	async loggedIn(): Promise<ResponseStatus> {
 		const response = await Http.get('https://www.mangaupdates.com/aboutus.html', {
 			credentials: 'include',
 		});
@@ -30,7 +30,7 @@ export class MangaUpdates extends Service {
 		if (response.body && response.body.indexOf(`You are currently logged in as`) >= 0)
 			return ResponseStatus.SUCCESS;
 		return ResponseStatus.FAIL;
-	};
+	}
 
 	@LogExecTime
 	async get(key: MediaKey): Promise<Title | ResponseStatus> {
@@ -79,11 +79,11 @@ export class MangaUpdates extends Service {
 		return `https://www.mangaupdates.com/series.html?id=${key.id}`;
 	}
 
-	idFromLink = (href: string): MediaKey => {
+	idFromLink(href: string): MediaKey {
 		const regexp = /https:\/\/(?:www\.)?mangaupdates\.com\/series.html\?id=(\d+)/.exec(href);
 		if (regexp !== null) return { id: parseInt(regexp[1]) };
 		return { id: 0 };
-	};
+	}
 }
 
 export class MangaUpdatesTitle extends Title {
@@ -99,7 +99,7 @@ export class MangaUpdatesTitle extends Title {
 		score?: number;
 	};
 
-	static listToStatus = (list?: string): MangaUpdatesStatus => {
+	static listToStatus(list?: string): MangaUpdatesStatus {
 		if (!list) return MangaUpdatesStatus.READING;
 		switch (list) {
 			case 'read':
@@ -114,9 +114,9 @@ export class MangaUpdatesTitle extends Title {
 				return MangaUpdatesStatus.PAUSED;
 		}
 		return MangaUpdatesStatus.NONE;
-	};
+	}
 
-	static statusToList = (status: Status): string => {
+	static statusToList(status: Status): string {
 		switch (status) {
 			case Status.COMPLETED:
 				return 'complete';
@@ -133,10 +133,10 @@ export class MangaUpdatesTitle extends Title {
 		}
 		// Status.NONE: '---' magic string for [deletion] (*not* for creation)
 		return MangaUpdatesTitle.magicDelete;
-	};
+	}
 
 	// Get a list of status to go through to be able to update to the wanted status
-	pathToStatus = (): MangaUpdatesStatus[] => {
+	pathToStatus(): MangaUpdatesStatus[] {
 		let list: MangaUpdatesStatus[] = [];
 		const newEntry = !this.inList;
 		const from = newEntry ? MangaUpdatesStatus.NONE : MangaUpdatesTitle.fromStatus(this.current!.status);
@@ -170,13 +170,13 @@ export class MangaUpdatesTitle extends Title {
 			}
 		}
 		return list;
-	};
+	}
 
-	updateStatus = async (status: MangaUpdatesStatus): Promise<RawResponse> => {
+	async updateStatus(status: MangaUpdatesStatus): Promise<RawResponse> {
 		return await Http.get(`https://www.mangaupdates.com/ajax/list_update.php?s=${this.key.id}&l=${status}`, {
 			credentials: 'include',
 		});
-	};
+	}
 
 	@LogExecTime
 	async persist(): Promise<ResponseStatus> {
@@ -257,7 +257,7 @@ export class MangaUpdatesTitle extends Title {
 		return ResponseStatus.SUCCESS;
 	}
 
-	delete = async (): Promise<ResponseStatus> => {
+	async delete(): Promise<ResponseStatus> {
 		if (!this.inList) {
 			await log(`Could not sync MangaUpdates: status ${this.status} / current ${this.current?.status}`);
 			return ResponseStatus.BAD_REQUEST;
@@ -282,9 +282,9 @@ export class MangaUpdatesTitle extends Title {
 		this.reset();
 		const status = response.status;
 		return status == ResponseStatus.SUCCESS ? ResponseStatus.DELETED : status;
-	};
+	}
 
-	static toStatus = (status: MangaUpdatesStatus): Status => {
+	static toStatus(status: MangaUpdatesStatus): Status {
 		switch (status) {
 			case MangaUpdatesStatus.NONE:
 				return Status.NONE;
@@ -299,9 +299,9 @@ export class MangaUpdatesTitle extends Title {
 			case MangaUpdatesStatus.PAUSED:
 				return Status.PAUSED;
 		}
-	};
+	}
 
-	static fromStatus = (status: Status): MangaUpdatesStatus => {
+	static fromStatus(status: Status): MangaUpdatesStatus {
 		switch (status) {
 			case Status.READING:
 				return MangaUpdatesStatus.READING;
@@ -315,5 +315,5 @@ export class MangaUpdatesTitle extends Title {
 				return MangaUpdatesStatus.PAUSED;
 		}
 		return MangaUpdatesStatus.NONE;
-	};
+	}
 }

@@ -115,7 +115,7 @@ export class Kitsu extends Service {
 	loginMethod = LoginMethod.FORM;
 	identifierField: [string, string] = ['Email', 'email'];
 
-	getUserId = async (): Promise<ResponseStatus> => {
+	async getUserId(): Promise<ResponseStatus> {
 		if (Options.tokens.kitsuToken === undefined) return ResponseStatus.MISSING_TOKEN;
 		let response = await Http.json<KitsuUserResponse>('https://kitsu.io/api/edge/users?filter[self]=true', {
 			method: 'GET',
@@ -124,9 +124,9 @@ export class Kitsu extends Service {
 		if (!response.ok) return response.status;
 		Options.tokens.kitsuUser = response.body?.data[0].id;
 		return Options.tokens.kitsuUser ? ResponseStatus.SUCCESS : response.status;
-	};
+	}
 
-	loggedIn = async (): Promise<ResponseStatus> => {
+	async loggedIn(): Promise<ResponseStatus> {
 		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken) return ResponseStatus.MISSING_TOKEN;
 		const response = await Http.json<KitsuUserResponse>('https://kitsu.io/api/edge/users?filter[self]=true', {
 			method: 'GET',
@@ -136,9 +136,9 @@ export class Kitsu extends Service {
 			},
 		});
 		return response.status;
-	};
+	}
 
-	login = async (username: string, password: string): Promise<ResponseStatus> => {
+	async login(username: string, password: string): Promise<ResponseStatus> {
 		let response = await Http.json('https://kitsu.io/api/oauth/token', {
 			method: 'POST',
 			headers: {
@@ -154,7 +154,7 @@ export class Kitsu extends Service {
 		const userIdResp = await this.getUserId();
 		if (userIdResp !== ResponseStatus.SUCCESS) return userIdResp;
 		return ResponseStatus.SUCCESS;
-	};
+	}
 
 	@LogExecTime
 	async get(key: MediaKey): Promise<Title | ResponseStatus> {
@@ -189,20 +189,20 @@ export class Kitsu extends Service {
 		return new KitsuTitle(values);
 	}
 
-	logout = async (): Promise<void> => {
+	async logout(): Promise<void> {
 		delete Options.tokens.kitsuToken;
 		delete Options.tokens.kitsuUser;
-	};
+	}
 
 	link(key: MediaKey): string {
 		return `https://kitsu.io/manga/${key.id}`;
 	}
 
-	idFromLink = (href: string): MediaKey => {
+	idFromLink(href: string): MediaKey {
 		const regexp = /https:\/\/(?:www\.)?kitsu\.io\/manga\/(\d+)\/?/.exec(href);
 		if (regexp !== null) return { id: parseInt(regexp[1]) };
 		return { id: 0 };
-	};
+	}
 }
 
 export class KitsuTitle extends Title {
@@ -275,7 +275,7 @@ export class KitsuTitle extends Title {
 		return ResponseStatus.SUCCESS;
 	}
 
-	delete = async (): Promise<ResponseStatus> => {
+	async delete(): Promise<ResponseStatus> {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return ResponseStatus.MISSING_TOKEN;
 		if (!this.libraryEntryId || this.libraryEntryId <= 0) {
 			await log(`Could not sync Kitsu: status ${this.status} libraryEntryId ${this.libraryEntryId}`);
@@ -288,9 +288,9 @@ export class KitsuTitle extends Title {
 		this.libraryEntryId = 0;
 		this.reset();
 		return ResponseStatus.DELETED;
-	};
+	}
 
-	static toStatus = (status: KitsuStatus): Status => {
+	static toStatus(status: KitsuStatus): Status {
 		switch (status) {
 			case KitsuStatus.NONE:
 				return Status.NONE;
@@ -305,9 +305,9 @@ export class KitsuTitle extends Title {
 			case KitsuStatus.PLAN_TO_READ:
 				return Status.PLAN_TO_READ;
 		}
-	};
+	}
 
-	static fromStatus = (status: Status): KitsuStatus => {
+	static fromStatus(status: Status): KitsuStatus {
 		switch (status) {
 			case Status.READING:
 				return KitsuStatus.READING;
@@ -321,5 +321,5 @@ export class KitsuTitle extends Title {
 				return KitsuStatus.PLAN_TO_READ;
 		}
 		return KitsuStatus.NONE;
-	};
+	}
 }

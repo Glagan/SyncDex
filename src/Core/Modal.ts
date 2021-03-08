@@ -57,19 +57,19 @@ export class Modal {
 		});
 	}
 
-	show = (): void => {
+	show(): void {
 		document.body.appendChild(this.modal);
-	};
+	}
 
-	remove = (): void => {
+	remove(): void {
 		this.modal.classList.add('closed');
-	};
+	}
 
-	enableExit = (): void => {
+	enableExit(): void {
 		this.canExit = true;
-	};
+	}
 
-	disableExit = (): void => {
+	disableExit(): void {
 		this.canExit = false;
-	};
+	}
 }

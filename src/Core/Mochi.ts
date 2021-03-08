@@ -117,7 +117,7 @@ export class Mochi {
 	/**
 	 * Assign connections found from Mochi to a Title.
 	 */
-	static assign(title: LocalTitle, connections: MochiService): void {
+	static assign(title: LocalTitle, connections: MochiService) {
 		for (const key in connections) {
 			const serviceKey = key as keyof MochiService;
 			const mediaKey = connections[serviceKey]!;

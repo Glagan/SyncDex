@@ -101,7 +101,7 @@ class ServiceCard {
 		this.bind();
 	}
 
-	loading = (): void => {
+	loading() {
 		DOM.clear(this.activeCardContent);
 		if (Options.services[0] == this.service.key) {
 			DOM.append(this.activeCardContent, this.mainMessage);
@@ -114,9 +114,9 @@ class ServiceCard {
 			this.importButton,
 			this.exportButton
 		);
-	};
+	}
 
-	activate = (): void => {
+	activate() {
 		this.activeCard.classList.add('active');
 		DOM.clear(this.activeCardContent);
 		if (Options.services[0] == this.service.key) {
@@ -134,23 +134,23 @@ class ServiceCard {
 			this.importButton,
 			this.exportButton
 		);
-	};
+	}
 
-	desactivate = (): void => {
+	desactivate() {
 		this.activeCard.classList.remove('active');
 		DOM.clear(this.activeCardContent);
 		DOM.append(this.activeCardContent, this.activateButton, DOM.create('hr'), this.importButton, this.exportButton);
-	};
+	}
 
-	makeMain = (): void => {
+	makeMain() {
 		this.manager.mainCard = this;
 		this.mainButton.remove();
 		this.activeCardContent.insertBefore(this.mainMessage, this.activeCardContent.firstElementChild);
 		// Move the card to the first position
 		this.manager.activeContainer.insertBefore(this.activeCard, this.manager.activeContainer.firstElementChild);
-	};
+	}
 
-	bind = (): void => {
+	bind() {
 		if (this.service.loginUrl !== undefined) {
 			this.loginButton.href = this.service.loginUrl;
 		}
@@ -355,9 +355,9 @@ class ServiceCard {
 				moduleInterface.modal.show();
 			}
 		});
-	};
+	}
 
-	updateStatus = (status: ResponseStatus): void => {
+	updateStatus(status: ResponseStatus) {
 		// Avoid updating card if the Service has been removed while updating status
 		if (this.activeCard.classList.contains('active')) {
 			this.activate();
@@ -372,7 +372,7 @@ class ServiceCard {
 			}
 			this.manager.updateServiceStatus(this.service.key, status);
 		}
-	};
+	}
 }
 
 export class ServiceManager {
@@ -411,7 +411,7 @@ export class ServiceManager {
 	/**
 	 * Update the inactiveServices list and display warnings if the status isn't SUCCESS
 	 */
-	updateServiceStatus = (key: ActivableKey, status: ResponseStatus): void => {
+	updateServiceStatus(key: ActivableKey, status: ResponseStatus) {
 		const index = this.inactiveServices.indexOf(key);
 		if (index > -1) {
 			if (status == ResponseStatus.SUCCESS) {
@@ -424,21 +424,21 @@ export class ServiceManager {
 			this.inactiveServices.push(key);
 			this.inactiveWarning.classList.remove('hidden');
 		}
-	};
+	}
 
 	/**
 	 * Update active Services list and remove warning notifications if necessary
 	 */
-	addActiveService = (key: ActivableKey): void => {
+	addActiveService(key: ActivableKey) {
 		this.activeServices.push(key);
 		this.noServices.classList.add('hidden');
 		this.importAllButton.classList.remove('hidden');
-	};
+	}
 
 	/**
 	 * Update active and inactive Services list and remove warning notifications if necessary
 	 */
-	removeActiveService = (key: ActivableKey): void => {
+	removeActiveService(key: ActivableKey) {
 		let index = this.inactiveServices.indexOf(key);
 		if (index > -1) {
 			this.inactiveServices.splice(index, 1);
@@ -454,13 +454,13 @@ export class ServiceManager {
 				this.importAllButton.classList.add('hidden');
 			}
 		}
-	};
+	}
 
 	/**
 	 * Remove all visible activable services and insert them in order.
 	 * Also check the status with activateService
 	 */
-	refreshActive = (): void => {
+	refreshActive() {
 		// Remove previous
 		DOM.clear(this.activeContainer);
 		this.mainCard = undefined;
@@ -482,13 +482,13 @@ export class ServiceManager {
 			this.noServices.classList.add('hidden');
 			this.importAllButton.classList.remove('hidden');
 		}
-	};
+	}
 
 	/**
 	 * Activate or desactivate all buttons in a Service card.
 	 * Check if the user is logged in on the Service and calls updateStatus to display warnings.
 	 */
-	reloadCard = async (key: ActivableKey): Promise<void> => {
+	async reloadCard(key: ActivableKey) {
 		const card = this.cards[key];
 		const index = Options.services.indexOf(key);
 		if (index === 0) {
@@ -520,9 +520,9 @@ export class ServiceManager {
 		} else {
 			card.desactivate();
 		}
-	};
+	}
 
-	toggleImportProgressState = (value: boolean): void => {
+	toggleImportProgressState(value: boolean) {
 		this.importAllButton.disabled = value;
 		if (value) {
 			this.importAllButton.classList.add('loading');
@@ -543,5 +543,5 @@ export class ServiceManager {
 				card.exportButton.title = '';
 			}
 		}
-	};
+	}
 }

@@ -8,14 +8,14 @@ import { ActivableKey } from '../Keys';
 import { LocalTitle } from '../../Core/Title';
 
 export class KitsuImport extends ImportModule {
-	findManga = (included: KitsuManga[], id: string): KitsuManga => {
+	findManga(included: KitsuManga[], id: string): KitsuManga {
 		for (const manga of included) {
 			if (manga.id == id) return manga;
 		}
 		return included[0]; // never
-	};
+	}
 
-	execute = async (): Promise<boolean> => {
+	async execute(): Promise<boolean> {
 		const progress = DOM.create('p', { textContent: 'Fetching all titles...' });
 		const message = this.interface?.message('loading', [progress]);
 
@@ -86,7 +86,7 @@ export class KitsuImport extends ImportModule {
 		message?.classList.remove('loading');
 
 		return true;
-	};
+	}
 }
 
 export class KitsuExport extends ExportModule {
@@ -97,7 +97,7 @@ export class KitsuExport extends ExportModule {
 		};
 	} = {};
 
-	preExecute = async (titles: LocalTitle[]): Promise<boolean> => {
+	async preExecute(titles: LocalTitle[]): Promise<boolean> {
 		const message = this.interface?.message('loading', 'Checking current status of each titles...');
 		let max = Math.ceil(titles.length / 500);
 		for (let current = 1; !this.interface?.doStop && current <= max; current++) {
@@ -143,9 +143,9 @@ export class KitsuExport extends ExportModule {
 		}
 		message?.classList.remove('loading');
 		return this.interface ? !this.interface.doStop : true;
-	};
+	}
 
-	execute = async (titles: LocalTitle[]): Promise<boolean> => {
+	async execute(titles: LocalTitle[]): Promise<boolean> {
 		const max = titles.length;
 		this.interface?.message('default', `Exporting ${max} Titles...`);
 		const progress = DOM.create('p');
@@ -174,5 +174,5 @@ export class KitsuExport extends ExportModule {
 		}
 		message?.classList.remove('loading');
 		return this.interface ? !this.interface.doStop : true;
-	};
+	}
 }

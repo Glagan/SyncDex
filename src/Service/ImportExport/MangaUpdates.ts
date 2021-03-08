@@ -10,14 +10,14 @@ import { LocalTitle } from '../../Core/Title';
 export class MangaUpdatesImport extends ImportModule {
 	static lists: string[] = ['read', 'wish', 'complete', 'unfinished', 'hold'];
 
-	progressFromNode = (node: HTMLElement | null): number => {
+	progressFromNode(node: HTMLElement | null): number {
 		if (node !== null) {
 			return parseInt((node.textContent as string).slice(2));
 		}
 		return 0;
-	};
+	}
 
-	execute = async (): Promise<boolean> => {
+	async execute(): Promise<boolean> {
 		const progress = DOM.create('p', { textContent: 'Fetching all titles...' });
 		const message = this.interface?.message('loading', [progress]);
 		const parser = new DOMParser();
@@ -61,7 +61,7 @@ export class MangaUpdatesImport extends ImportModule {
 		message?.classList.remove('loading');
 
 		return this.interface ? !this.interface.doStop : true;
-	};
+	}
 }
 
 export class MangaUpdatesExport extends ExportModule {
@@ -69,7 +69,7 @@ export class MangaUpdatesExport extends ExportModule {
 
 	// We need the status of each titles before to move them from lists to lists
 	// Use ImportModule and get a list of FoundTitle
-	preExecute = async (titles: LocalTitle[]): Promise<boolean> => {
+	async preExecute(titles: LocalTitle[]): Promise<boolean> {
 		const importModule = new MangaUpdatesImport(Services[ActivableKey.MangaUpdates]);
 		importModule.options.save.default = false;
 		await importModule.run();
@@ -78,9 +78,9 @@ export class MangaUpdatesExport extends ExportModule {
 			this.onlineList[title.key.id!] = title;
 		}
 		return true;
-	};
+	}
 
-	execute = async (titles: LocalTitle[]): Promise<boolean> => {
+	async execute(titles: LocalTitle[]): Promise<boolean> {
 		const max = titles.length;
 		this.interface?.message('default', `Exporting ${max} Titles...`);
 		const progress = DOM.create('p');
@@ -116,5 +116,5 @@ export class MangaUpdatesExport extends ExportModule {
 		}
 		message?.classList.remove('loading');
 		return this.interface ? !this.interface.doStop : true;
-	};
+	}
 }

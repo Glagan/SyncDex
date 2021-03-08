@@ -14,9 +14,9 @@ export enum MyAnimeListStatus {
 	PLAN_TO_READ = 6,
 }
 
-const GetField = <T extends HTMLElement>(parent: Document, field: string): T => {
+function GetField<T extends HTMLElement>(parent: Document, field: string): T {
 	return parent.getElementById(field) as T;
-};
+}
 
 export class MyAnimeList extends Service {
 	name = ServiceName.MyAnimeList;
@@ -28,7 +28,7 @@ export class MyAnimeList extends Service {
 
 	static username: string = '';
 
-	loggedIn = async (): Promise<ResponseStatus> => {
+	async loggedIn(): Promise<ResponseStatus> {
 		const response = await Http.get('https://myanimelist.net/about.php', {
 			credentials: 'include',
 			cache: 'no-cache',
@@ -44,9 +44,9 @@ export class MyAnimeList extends Service {
 			return ResponseStatus.SUCCESS;
 		}
 		return ResponseStatus.FAIL;
-	};
+	}
 
-	dateRowToDate = (body: Document, row: 'start' | 'finish'): Date | undefined => {
+	dateRowToDate(body: Document, row: 'start' | 'finish'): Date | undefined {
 		const year = body.getElementById(`add_manga_${row}_date_year`) as HTMLSelectElement,
 			month = body.getElementById(`add_manga_${row}_date_month`) as HTMLSelectElement,
 			day = body.getElementById(`add_manga_${row}_date_day`) as HTMLSelectElement;
@@ -54,7 +54,7 @@ export class MyAnimeList extends Service {
 		const parts: number[] = [parseInt(year.value), parseInt(month.value), parseInt(day.value)];
 		if (parts.some((part) => isNaN(part))) return undefined;
 		return new Date(parts[0], Math.max(0, parts[1] - 1), parts[2]);
-	};
+	}
 
 	@LogExecTime
 	async get(key: MediaKey): Promise<Title | ResponseStatus> {
@@ -117,11 +117,11 @@ export class MyAnimeList extends Service {
 		return `https://myanimelist.net/manga/${key.id}`;
 	}
 
-	idFromLink = (href: string): MediaKey => {
+	idFromLink(href: string): MediaKey {
 		const regexp = /https:\/\/(?:www\.)?myanimelist\.net\/manga\/(\d+)\/?/.exec(href);
 		if (regexp !== null) return { id: parseInt(regexp[1]) };
 		return { id: 0 };
-	};
+	}
 }
 
 export class MyAnimeListTitle extends Title {
@@ -222,7 +222,7 @@ export class MyAnimeListTitle extends Title {
 		return ResponseStatus.SUCCESS;
 	}
 
-	delete = async (): Promise<ResponseStatus> => {
+	async delete(): Promise<ResponseStatus> {
 		if (!this.inList || !this.csrf) {
 			await log(`Could not sync MyAnimeList: status ${this.status} csrf ${!!this.csrf}`);
 			return ResponseStatus.BAD_REQUEST;
@@ -237,9 +237,9 @@ export class MyAnimeListTitle extends Title {
 		if (!response.ok) return response.status;
 		this.reset();
 		return ResponseStatus.DELETED;
-	};
+	}
 
-	static toStatus = (status: MyAnimeListStatus): Status => {
+	static toStatus(status: MyAnimeListStatus): Status {
 		switch (status) {
 			case MyAnimeListStatus.NONE:
 				return Status.NONE;
@@ -254,9 +254,9 @@ export class MyAnimeListTitle extends Title {
 			case MyAnimeListStatus.PAUSED:
 				return Status.PAUSED;
 		}
-	};
+	}
 
-	static fromStatus = (status: Status): MyAnimeListStatus => {
+	static fromStatus(status: Status): MyAnimeListStatus {
 		switch (status) {
 			case Status.READING:
 			case Status.REREADING:
@@ -272,5 +272,5 @@ export class MyAnimeListTitle extends Title {
 		}
 		// Status.WONT_READ
 		return MyAnimeListStatus.NONE;
-	};
+	}
 }

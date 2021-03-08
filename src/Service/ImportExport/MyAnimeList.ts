@@ -34,7 +34,7 @@ export class MyAnimeListImport extends ImportModule {
 	static api = (username: string, offset: number) =>
 		`https://myanimelist.net/mangalist/${username}/load.json?offset=${offset}&status=7`;
 
-	toStatus = (status: MyAnimeListExportStatus): Status => {
+	toStatus(status: MyAnimeListExportStatus): Status {
 		switch (status) {
 			case MyAnimeListExportStatus.READING:
 				return Status.READING;
@@ -48,26 +48,26 @@ export class MyAnimeListImport extends ImportModule {
 				return Status.DROPPED;
 		}
 		return Status.NONE;
-	};
+	}
 
 	// Convert a MM-DD-YYYY MyAnimeList date to a Date timestamp
-	dateToTime = (date?: string): Date | undefined => {
+	dateToTime(date?: string): Date | undefined {
 		if (date === undefined) return undefined;
 		const parts = date.split('-').map((p) => parseInt(p));
 		if (parts.length != 3) return undefined;
 		const year = parts[2] > 25 ? 1900 + parts[2] : 2000 + parts[2];
 		return new Date(year, Math.max(0, parts[0] - 1), parts[1]);
-	};
+	}
 
-	preExecute = async (): Promise<boolean> => {
+	async preExecute(): Promise<boolean> {
 		if (MyAnimeList.username == '') {
 			this.interface?.message('error', 'No MyAnimeList username found, make sure you are logged in.');
 			return false;
 		}
 		return true;
-	};
+	}
 
-	execute = async (): Promise<boolean> => {
+	async execute(): Promise<boolean> {
 		const progress = DOM.create('p', { textContent: 'Fetching all titles...' });
 		const message = this.interface?.message('loading', [progress]);
 
@@ -120,20 +120,20 @@ export class MyAnimeListImport extends ImportModule {
 		message?.classList.remove('loading');
 
 		return this.interface ? !this.interface.doStop : true;
-	};
+	}
 }
 
 export class MyAnimeListExport extends ExportModule {
 	csrfToken: string = '';
 
 	// Create an xml node of type <type> and a value of <value>
-	node = (document: Document, type: string, value?: string | number): HTMLElement => {
+	node(document: Document, type: string, value?: string | number): HTMLElement {
 		const node = document.createElement(type);
 		if (value !== undefined) node.textContent = typeof value === 'number' ? value.toString() : value;
 		return node;
-	};
+	}
 
-	fromStatus = (status: Status): MyAnimeListExportStatus => {
+	fromStatus(status: Status): MyAnimeListExportStatus {
 		switch (status) {
 			case Status.COMPLETED:
 				return MyAnimeListExportStatus.COMPLETED;
@@ -147,9 +147,9 @@ export class MyAnimeListExport extends ExportModule {
 				return MyAnimeListExportStatus.DROPPED;
 		}
 		return MyAnimeListExportStatus.NONE;
-	};
+	}
 
-	createTitle = (document: Document, title: LocalTitle): HTMLElement => {
+	createTitle(document: Document, title: LocalTitle): HTMLElement {
 		const node = document.createElement('manga');
 		DOM.append(
 			node,
@@ -164,9 +164,9 @@ export class MyAnimeListExport extends ExportModule {
 		if (title.start) node.appendChild(this.node(document, 'my_start_date', dateFormatInput(title.start)));
 		if (title.end) node.appendChild(this.node(document, 'my_finish_date', dateFormatInput(title.end)));
 		return node;
-	};
+	}
 
-	generateBatch = async (titles: LocalTitle[]): Promise<string> => {
+	async generateBatch(titles: LocalTitle[]): Promise<string> {
 		const xmlDocument = document.implementation.createDocument('myanimelist', '', null);
 		const main = xmlDocument.createElement('myanimelist');
 		xmlDocument.appendChild(main);
@@ -177,9 +177,9 @@ export class MyAnimeListExport extends ExportModule {
 			main.appendChild(this.createTitle(xmlDocument, title));
 		}
 		return `<?xml version="1.0" encoding="UTF-8" ?>${new XMLSerializer().serializeToString(xmlDocument)}`;
-	};
+	}
 
-	preExecute = async (titles: LocalTitle[]): Promise<boolean> => {
+	async preExecute(titles: LocalTitle[]): Promise<boolean> {
 		let response = await Http.get('https://myanimelist.net/import.php', {
 			credentials: 'include',
 		});
@@ -197,9 +197,9 @@ export class MyAnimeListExport extends ExportModule {
 		}
 		this.csrfToken = csrfTokenArr[1];
 		return true;
-	};
+	}
 
-	execute = async (titles: LocalTitle[]): Promise<boolean> => {
+	async execute(titles: LocalTitle[]): Promise<boolean> {
 		let message = this.interface?.message('loading', 'Generating export file...');
 		const file = await this.generateBatch(titles);
 		message?.classList.remove('loading');
@@ -233,5 +233,5 @@ export class MyAnimeListExport extends ExportModule {
 		this.summary.valid = totalUpdated;
 
 		return true;
-	};
+	}
 }

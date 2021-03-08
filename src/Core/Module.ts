@@ -54,13 +54,13 @@ export class Summary {
 		this.start();
 	}
 
-	start = (): void => {
+	start(): void {
 		this.startTime = Date.now();
-	};
+	}
 
-	totalTime = (): string => {
+	totalTime(): string {
 		return duration(Date.now() - this.startTime);
-	};
+	}
 }
 
 export interface ModuleOption {
@@ -90,15 +90,15 @@ export abstract class Module {
 		this.summary = new Summary();
 	}
 
-	bindInterface = (): void => {
+	bindInterface(): void {
 		if (this.interface) {
 			this.interface.createOptions(this.options);
 			this.interface.setStyle(this.service.createTitle(), this.service.key);
 			this.interface.bindFormSubmit(() => this.run());
 		}
-	};
+	}
 
-	summaryFailBlock = (parent: HTMLElement): HTMLElement => {
+	summaryFailBlock(parent: HTMLElement): HTMLElement {
 		const failedBlock = DOM.create('ul', { class: 'failed' });
 		DOM.append(
 			parent,
@@ -121,29 +121,29 @@ export abstract class Module {
 			failedBlock
 		);
 		return failedBlock;
-	};
+	}
 
-	checkCancel = (): boolean => {
+	checkCancel(): boolean {
 		return !!this.interface?.doStop;
-	};
+	}
 
-	checkLogin = async (): Promise<boolean> => {
+	async checkLogin(): Promise<boolean> {
 		const notification = this.interface?.message('loading', 'Checking login status...');
 		const loggedIn = (await this.service.loggedIn()) === ResponseStatus.SUCCESS;
 		notification?.classList.remove('loading');
 		return loggedIn;
-	};
+	}
 
-	setOptions = (): void => {
+	setOptions(): void {
 		for (const name in this.options) {
 			this.options[name].active = this.options[name].default;
 		}
 		this.interface?.setOptionsValues(this.options);
-	};
+	}
 
 	abstract run(): Promise<ModuleStatus>;
 
-	mochiCheck = async (collection: TitleCollection): Promise<void> => {
+	async mochiCheck(collection: TitleCollection): Promise<void> {
 		const progress = DOM.create('span', {
 			textContent: 'Page 1 out of 1',
 		});
@@ -166,7 +166,7 @@ export abstract class Module {
 			}
 		}
 		if (notification) notification.classList.remove('loading');
-	};
+	}
 }
 
 export abstract class ImportModule extends Module {
@@ -194,7 +194,7 @@ export abstract class ImportModule extends Module {
 	abstract execute(): Promise<boolean>;
 	async postExecute?(): Promise<void>;
 
-	displaySummary = (): void => {
+	displaySummary(): void {
 		if (this.interface) {
 			if (this.summary.total != this.summary.valid) {
 				const content = DOM.create('p', {
@@ -236,9 +236,9 @@ export abstract class ImportModule extends Module {
 			report += ` in ${this.summary.totalTime()} !`;
 			this.interface.message('success', report);
 		}
-	};
+	}
 
-	run = async (): Promise<ModuleStatus> => {
+	async run(): Promise<ModuleStatus> {
 		// Reset
 		this.summary = new Summary();
 		this.found = [];
@@ -356,7 +356,7 @@ export abstract class ImportModule extends Module {
 			this.interface?.complete();
 			return ModuleStatus.GENERAL_FAIL;
 		}
-	};
+	}
 }
 
 export abstract class ExportModule extends Module {
@@ -378,7 +378,7 @@ export abstract class ExportModule extends Module {
 	abstract execute(filtered: LocalTitle[]): Promise<boolean>;
 	async postExecute?(): Promise<void>;
 
-	displaySummary = (): void => {
+	displaySummary(): void {
 		if (this.interface) {
 			if (this.summary.failed.length > 0) {
 				const content = DOM.create('p', {
@@ -429,9 +429,9 @@ export abstract class ExportModule extends Module {
 			}
 			this.interface.message('success', `Exported ${this.summary.valid} titles in ${this.summary.totalTime()} !`);
 		}
-	};
+	}
 
-	selectTitles = (titles: TitleCollection): LocalTitle[] => {
+	selectTitles(titles: TitleCollection): LocalTitle[] {
 		const filtered: LocalTitle[] = [];
 		for (const title of titles) {
 			if (title.status !== Status.NONE && title.services[this.service.key] !== undefined) {
@@ -439,9 +439,9 @@ export abstract class ExportModule extends Module {
 			}
 		}
 		return filtered;
-	};
+	}
 
-	run = async (): Promise<ModuleStatus> => {
+	async run(): Promise<ModuleStatus> {
 		// Reset
 		this.summary = new Summary();
 
@@ -511,5 +511,5 @@ export abstract class ExportModule extends Module {
 			this.interface?.complete();
 			return ModuleStatus.GENERAL_FAIL;
 		}
-	};
+	}
 }

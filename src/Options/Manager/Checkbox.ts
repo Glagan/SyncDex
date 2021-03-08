@@ -26,7 +26,7 @@ export class Checkbox {
 		}
 	}
 
-	bind = (): void => {
+	bind() {
 		this.toggle(Options[this.optionName]);
 		this.label.addEventListener('click', (event) => {
 			if (event.target !== this.label) return;
@@ -34,25 +34,25 @@ export class Checkbox {
 			if (!this.enabled) return;
 			this.update(!Options[this.optionName]);
 		});
-	};
+	}
 
-	enable = (): void => {
+	enable() {
 		this.enabled = true;
 		this.node.disabled = false;
-	};
+	}
 
-	disable = (): void => {
+	disable() {
 		this.enabled = false;
 		this.node.disabled = true;
-	};
+	}
 
-	update = async (value: boolean) => {
+	async update(value: boolean) {
 		Options[this.optionName] = value;
 		await Options.save();
 		this.toggle(value);
-	};
+	}
 
-	toggleDependencies = (value: boolean): void => {
+	toggleDependencies(value: boolean) {
 		if (this.otherDependencies) {
 			if (value) this.otherDependencies.classList.remove('disabled');
 			else this.otherDependencies.classList.add('disabled');
@@ -62,9 +62,9 @@ export class Checkbox {
 				}
 			}
 		}
-	};
+	}
 
-	toggle = (value: boolean): void => {
+	toggle(value: boolean) {
 		this.node.checked = value;
 		if (value) {
 			for (const dependency of this.dependencies) {
@@ -76,7 +76,7 @@ export class Checkbox {
 			}
 		}
 		this.toggleDependencies(value);
-	};
+	}
 }
 
 export class CheckboxManager {
@@ -113,9 +113,9 @@ export class CheckboxManager {
 		}
 	}
 
-	updateAll = (): void => {
+	updateAll() {
 		for (const checkbox of this.checkboxes) {
 			checkbox.toggle(Options[checkbox.optionName]);
 		}
-	};
+	}
 }

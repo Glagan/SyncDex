@@ -6,7 +6,7 @@ import { AnimePlanet, AnimePlanetTitle } from '../Class/AnimePlanet';
 import { ActivableKey } from '../Keys';
 
 export class AnimePlanetImport extends ImportModule {
-	preExecute = async (): Promise<boolean> => {
+	async preExecute(): Promise<boolean> {
 		if (AnimePlanet.username == '') {
 			this.interface?.message('error', 'Username not found while checking if logged in.');
 			return false;
@@ -18,9 +18,9 @@ export class AnimePlanetImport extends ImportModule {
 		);
 		message?.classList.remove('loading');
 		return response.ok;
-	};
+	}
 
-	execute = async (): Promise<boolean> => {
+	async execute(): Promise<boolean> {
 		const progress = DOM.create('p', { textContent: 'Fetching all titles...' });
 		const message = this.interface?.message('loading', [progress]);
 		const parser = new DOMParser();
@@ -103,11 +103,11 @@ export class AnimePlanetImport extends ImportModule {
 		message?.classList.remove('loading');
 
 		return this.interface ? !this.interface.doStop : true;
-	};
+	}
 }
 
 export class AnimePlanetExport extends ExportModule {
-	preExecute = async (_filter: LocalTitle[]): Promise<boolean> => {
+	async preExecute(_filter: LocalTitle[]): Promise<boolean> {
 		if (AnimePlanet.username == '') {
 			this.interface?.message('error', 'Username not found while checking if logged in.');
 			return false;
@@ -117,9 +117,9 @@ export class AnimePlanetExport extends ExportModule {
 			return false;
 		}
 		return true;
-	};
+	}
 
-	execute = async (titles: LocalTitle[]): Promise<boolean> => {
+	async execute(titles: LocalTitle[]): Promise<boolean> {
 		const max = titles.length;
 		this.interface?.message('default', `Exporting ${max} Titles...`);
 		const progress = DOM.create('p');
@@ -146,5 +146,5 @@ export class AnimePlanetExport extends ExportModule {
 		}
 		message?.classList.remove('loading');
 		return this.interface ? !this.interface.doStop : true;
-	};
+	}
 }
