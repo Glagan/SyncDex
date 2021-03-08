@@ -4,11 +4,11 @@ import { Modal } from '../../Core/Modal';
 import { Options } from '../../Core/Options';
 import { Service, LoginMethod } from '../../Core/Service';
 import { ModuleInterface } from '../../Core/ModuleInterface';
-import { OptionsManager } from '../OptionsManager';
 import { ActivableKey, ServiceKey } from '../../Service/Keys';
 import { ServicesExport, ServicesImport } from '../../Service/ImportExport/Map';
 import { createModule } from '../../Service/ImportExport/Utility';
 import { Message } from '../../Core/Message';
+import { SaveViewer } from '../SaveViewer';
 
 class ServiceCard {
 	manager: ServiceManager;
@@ -341,7 +341,7 @@ class ServiceCard {
 			const moduleInterface = new ModuleInterface();
 			const importModule = createModule(this.service.key, 'import', moduleInterface);
 			if (importModule) {
-				importModule.postExecute = () => OptionsManager.instance.saveViewer.updateAll(true);
+				importModule.postExecute = () => SaveViewer.instance.updateAll(true);
 				moduleInterface.modal.show();
 			}
 		});
@@ -351,7 +351,7 @@ class ServiceCard {
 			const moduleInterface = new ModuleInterface();
 			const exportModule = createModule(this.service.key, 'export', moduleInterface);
 			if (exportModule) {
-				exportModule.postExecute = () => OptionsManager.instance.saveViewer.updateAll(true);
+				exportModule.postExecute = () => SaveViewer.instance.updateAll(true);
 				moduleInterface.modal.show();
 			}
 		});

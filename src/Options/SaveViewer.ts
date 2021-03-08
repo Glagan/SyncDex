@@ -48,6 +48,7 @@ export class SaveViewer {
 	};
 	// MangaDex login status for SyncModule
 	static loggedIn = false;
+	static instance = new SaveViewer();
 
 	constructor() {
 		this.pagingPages = document.getElementById('paging-pages')!;

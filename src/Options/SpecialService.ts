@@ -22,11 +22,11 @@ export abstract class SpecialService {
 	};
 	perConvert: number = 250;
 
-	optionExists = (key: string): key is keyof AvailableOptions => {
+	optionExists(key: string): key is keyof AvailableOptions {
 		return DefaultOptions[key as keyof AvailableOptions] !== undefined;
-	};
+	}
 
-	assignValidOption = <K extends keyof AvailableOptions>(key: K, value: AvailableOptions[K]): boolean => {
+	assignValidOption<K extends keyof AvailableOptions>(key: K, value: AvailableOptions[K]): boolean {
 		// Check if the value is the same type as the value in the Options
 		if (typeof value === typeof Options[key]) {
 			// Check if the key actually exist
@@ -36,9 +36,9 @@ export abstract class SpecialService {
 			}
 		}
 		return false;
-	};
+	}
 
-	mochi = async (titles: TitleCollection, moduleInterface?: ModuleInterface, extras?: MochiExtra): Promise<void> => {
+	async mochi(titles: TitleCollection, moduleInterface?: ModuleInterface, extras?: MochiExtra): Promise<void> {
 		let current = 0;
 		const progress = DOM.create('p');
 		const notification = moduleInterface?.message('loading', [progress]);
@@ -64,11 +64,11 @@ export abstract class SpecialService {
 			}
 		}
 		notification?.classList.remove('loading');
-	};
+	}
 
 	abstract start(): Promise<void>;
 
-	reload = (): void => {
+	reload() {
 		OptionsManager.instance.reload();
-	};
+	}
 }

@@ -37,7 +37,7 @@ export class OptionsManager {
 		this.inputManager = new InputManager();
 		this.menuHighlight = new MenuHighlight();
 		this.serviceManager = new ServiceManager();
-		this.saveViewer = new SaveViewer();
+		this.saveViewer = SaveViewer.instance;
 		this.saveSync = new SaveSyncManager();
 		this.logs = new Logs();
 
@@ -112,7 +112,7 @@ export class OptionsManager {
 		}
 	}
 
-	toggleImportProgressState = (value: boolean): void => {
+	toggleImportProgressState(value: boolean) {
 		this.saveSync.toggleImportProgressState(value);
 		this.serviceManager.toggleImportProgressState(value);
 		if (value) {
@@ -126,9 +126,9 @@ export class OptionsManager {
 				card.classList.remove('disabled');
 			}
 		}
-	};
+	}
 
-	reload = (): void => {
+	reload() {
 		this.highlightsManager.updateAll();
 		this.colorManager.updateAll();
 		this.checkboxManager.updateAll();
@@ -137,5 +137,5 @@ export class OptionsManager {
 		this.saveViewer.updateAll(true);
 		this.saveSync.refresh();
 		this.logs.reload();
-	};
+	}
 }
