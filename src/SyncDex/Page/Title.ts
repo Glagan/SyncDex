@@ -5,7 +5,7 @@ import { LogExecTime, TryCatch } from '../../Core/Log';
 import { MangaDex } from '../../Core/MangaDex';
 import { Mochi } from '../../Core/Mochi';
 import { Options } from '../../Core/Options';
-import { Request } from '../../Core/Request';
+import { Http } from '../../Core/Http';
 import { SyncModule } from '../../Core/SyncModule';
 import { iconToService, LocalTitle, MissableField, StatusMap, Title } from '../../Core/Title';
 import { TitleEditor } from '../../Core/TitleEditor';
@@ -1059,9 +1059,8 @@ class MangaDexList {
 export class TitlePage extends Page {
 	@LogExecTime
 	getMdTitle(id: number): Promise<JSONResponse<MangaDexTitleWithChaptersResponse>> {
-		return Request.json<MangaDexTitleWithChaptersResponse>({
+		return Http.json<MangaDexTitleWithChaptersResponse>(MangaDex.api('get:title', id, { chapters: true }), {
 			method: 'GET',
-			url: MangaDex.api('get:title', id, { chapters: true }),
 			credentials: 'include',
 		});
 	}
@@ -1212,7 +1211,7 @@ export class TitlePage extends Page {
 						{ duration: Options.infoDuration }
 					);
 					const response = await this.getMdTitle(id);
-					if (response.ok) {
+					if (response.ok && response.body) {
 						let uniqueChapters: number[] = [];
 						const volumeChapterCount: { [key: number]: number } = {};
 						const volumeChapterOffset: { [key: number]: number } = {};

@@ -1,6 +1,6 @@
 import { Title } from './Title';
 import { Options } from './Options';
-import { Request } from './Request';
+import { Http } from './Http';
 import { Services } from '../Service/Class/Map';
 import { log, LogExecTime } from './Log';
 import { ActivableKey } from '../Service/Keys';
@@ -390,13 +390,11 @@ export class SyncModule {
 	 * Sync MangaDex Status or Rating.
 	 */
 	@LogExecTime
-	private async syncMangaDex(field: MangaDexTitleField): Promise<RequestResponse> {
+	private async syncMangaDex(field: MangaDexTitleField): Promise<HttpResponse> {
 		dispatch('mangadex:syncing', { title: this.title, field });
-		let response: RawResponse;
+		let response: HttpResponse;
 		if (field == 'progress') {
-			response = await Request.get({
-				method: 'POST',
-				url: MangaDex.list(field, this.title.key.id!, this.mdState),
+			response = await Http.post(MangaDex.list(field, this.title.key.id!, this.mdState), {
 				credentials: 'include',
 				headers: { 'X-Requested-With': 'XMLHttpRequest' },
 				form: {
@@ -405,14 +403,12 @@ export class SyncModule {
 				},
 			});
 		} else {
-			response = await Request.get({
-				method: 'GET',
-				url: MangaDex.list(field, this.title.key.id!, this.mdState),
+			response = await Http.get(MangaDex.list(field, this.title.key.id!, this.mdState), {
 				credentials: 'include',
 				headers: { 'X-Requested-With': 'XMLHttpRequest' },
 			});
 		}
-		const status = Request.status(response);
+		const status = response.status;
 		dispatch('mangadex:synced', { title: this.title, field, status, state: this.mdState });
 		return response;
 	}
@@ -427,7 +423,7 @@ export class SyncModule {
 		if (!response.ok || (response.body && response.body.length > 0)) {
 			this.mdState.status = oldStatus;
 		}
-		return Request.status(response);
+		return response.status;
 	}
 
 	@LogExecTime
@@ -439,7 +435,7 @@ export class SyncModule {
 		if (!response.ok) {
 			this.mdState.progress = oldProgress;
 		}
-		return Request.status(response);
+		return response.status;
 	}
 
 	@LogExecTime
@@ -451,7 +447,7 @@ export class SyncModule {
 		if (!response.ok) {
 			this.mdState.rating = oldRating;
 		}
-		return Request.status(response);
+		return response.status;
 	}
 
 	/**

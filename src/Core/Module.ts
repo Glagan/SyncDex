@@ -5,7 +5,7 @@ import { FoundTitle } from './Title';
 import { Mochi } from './Mochi';
 import { Storage } from './Storage';
 import { Options } from './Options';
-import { Request } from './Request';
+import { Http } from './Http';
 import { log } from './Log';
 import { ServiceKey } from '../Service/Keys';
 import { LocalTitle, TitleCollection } from './Title';

@@ -695,7 +695,7 @@ export class TitleCollection {
 		return collection;
 	}
 
-	async persist(): Promise<void> {
+	async persist(): Promise<boolean> {
 		const mapped: { [key: string]: StorageTitle } = {};
 		for (const title of this) {
 			mapped[title.uniqueKey] = title.toSave();

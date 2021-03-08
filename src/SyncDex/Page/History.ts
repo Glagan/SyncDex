@@ -4,7 +4,7 @@ import { LocalTitle, TitleCollection } from '../../Core/Title';
 import { dateFormat, injectScript, progressFromString, progressToString } from '../../Core/Utility';
 import { Page } from '../Page';
 import { History } from '../../Core/History';
-import { Request } from '../../Core/Request';
+import { Http } from '../../Core/Http';
 import { MangaDex } from '../../Core/MangaDex';
 import { debug, TryCatch } from '../../Core/Log';
 
@@ -19,7 +19,7 @@ interface FollowPageResult {
 export class HistoryPage extends Page {
 	async fetchFollowPage(page: number): Promise<FollowPageResult | false> {
 		const before = Date.now();
-		const response = await Request.json<{
+		const response = await Http.json<{
 			data: {
 				chapters: {
 					id: number;
@@ -31,8 +31,7 @@ export class HistoryPage extends Page {
 					title: string;
 				}[];
 			};
-		}>({
-			url: MangaDex.api('get:user:followed:updates', page),
+		}>(MangaDex.api('get:user:followed:updates', page), {
 			method: 'GET',
 			cache: 'no-cache',
 			credentials: 'include',
@@ -45,7 +44,7 @@ export class HistoryPage extends Page {
 			requestTime: Date.now() - before,
 			code: response.code,
 		};
-		if (response.code >= 200 && response.code < 400) {
+		if (response.code >= 200 && response.code < 400 && response.body) {
 			const body = response.body;
 			// Get titles
 			for (const chapter of body.data.chapters) {

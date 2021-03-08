@@ -93,7 +93,7 @@ export class SaveSyncManager {
 						delete SaveSync.state;
 					} else SimpleNotification.error({ text: `Could not delete your save, check logs.` });
 					this.toggleButtons(false);
-					await Message.send({ action: MessageAction.saveSyncLogout });
+					await Message.send('saveSync:logout');
 					this.refresh();
 				},
 			},
@@ -109,7 +109,7 @@ export class SaveSyncManager {
 					await this.syncService.logout();
 					await this.syncService.clean();
 					delete SaveSync.state;
-					await Message.send({ action: MessageAction.saveSyncLogout });
+					await Message.send('saveSync:logout');
 					this.refresh();
 				},
 			},
@@ -156,7 +156,7 @@ export class SaveSyncManager {
 							SimpleNotification.success({
 								text: `Connected to **${syncService.name}**.`,
 							});
-							await Message.send({ action: MessageAction.saveSync, delay: 0 });
+							await Message.send('saveSync:start', { delay: 0 });
 						} else if (result == SaveSyncLoginResult.STATE_ERROR) {
 							SimpleNotification.error(
 								{

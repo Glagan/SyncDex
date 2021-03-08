@@ -402,7 +402,7 @@ export class ServiceManager {
 		this.importAllButton.addEventListener('click', async (event) => {
 			event.preventDefault();
 			// Start modules in the background -- response will be received in toggleImportProgressState
-			await Message.send({ action: MessageAction.silentImport });
+			await Message.send('import:start');
 		});
 		// Default State
 		this.refreshActive();

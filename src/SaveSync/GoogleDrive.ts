@@ -1,5 +1,5 @@
 import { DOM } from '../Core/DOM';
-import { Request } from '../Core/Request';
+import { Http } from '../Core/Http';
 import { Storage } from '../Core/Storage';
 import { generateRandomString } from '../Options/PKCEHelper';
 import { Declare, SaveSync } from '../Core/SaveSync';
@@ -44,7 +44,7 @@ export class GoogleDrive extends SaveSync {
 	onCardClick = async () => {
 		const state = generateRandomString();
 		await Storage.set(StorageUniqueKey.GoogleDriveState, state);
-		const url = `https://accounts.google.com/o/oauth2/v2/auth?${Request.buildQuery({
+		const url = `https://accounts.google.com/o/oauth2/v2/auth?${Http.buildQuery({
 			access_type: 'offline',
 			prompt: 'consent',
 			response_type: 'code',
@@ -60,19 +60,19 @@ export class GoogleDrive extends SaveSync {
 		if (await this.refreshTokenIfNeeded()) {
 			if (SaveSync.state?.id) {
 				// Get the file Metadata if it exists
-				const response = await Request.json<GoogleDriveMetadata>({
-					url: `https://www.googleapis.com/drive/v3/files/${SaveSync.state.id}?fields=modifiedTime`,
-					headers: { Authorization: `Bearer ${SaveSync.state.token}` },
-				});
-				if (response.ok && !response.body.error) {
+				const response = await Http.json<GoogleDriveMetadata>(
+					`https://www.googleapis.com/drive/v3/files/${SaveSync.state.id}?fields=modifiedTime`,
+					{ method: 'GET', headers: { Authorization: `Bearer ${SaveSync.state.token}` } }
+				);
+				if (response.ok && response.body && !response.body.error) {
 					return new Date(response.body.modifiedTime).getTime();
 				}
 			} else {
-				const response = await Request.json<GoogleDriveSearchResult>({
-					url: `https://www.googleapis.com/drive/v3/files/?pageSize=1&spaces=appDataFolder&q=name='Save.json'&fields=files(id,modifiedTime)`,
-					headers: { Authorization: `Bearer ${SaveSync.state!.token}` },
-				});
-				if (response.ok && !response.body.error) {
+				const response = await Http.json<GoogleDriveSearchResult>(
+					`https://www.googleapis.com/drive/v3/files/?pageSize=1&spaces=appDataFolder&q=name='Save.json'&fields=files(id,modifiedTime)`,
+					{ method: 'GET', headers: { Authorization: `Bearer ${SaveSync.state!.token}` } }
+				);
+				if (response.ok && response.body && !response.body.error) {
 					if (response.body.files.length == 1) {
 						if (!SaveSync.state?.id) {
 							SaveSync.state!.id = response.body.files[0].id;
@@ -91,12 +91,11 @@ export class GoogleDrive extends SaveSync {
 	async downloadExternalSave(): Promise<string | boolean> {
 		if (await this.refreshTokenIfNeeded()) {
 			if (!SaveSync.state?.id) return '{}';
-			const response = await Request.get({
-				method: 'GET',
-				url: `https://www.googleapis.com/drive/v3/files/${SaveSync.state!.id}?alt=media`,
-				headers: { Authorization: `Bearer ${SaveSync.state!.token}` },
-			});
-			if (response.ok) {
+			const response = await Http.get(
+				`https://www.googleapis.com/drive/v3/files/${SaveSync.state!.id}?alt=media`,
+				{ headers: { Authorization: `Bearer ${SaveSync.state!.token}` } }
+			);
+			if (response.ok && response.body) {
 				await debug(`Downloaded Google Drive Save`);
 				return response.body;
 			}
@@ -108,13 +107,18 @@ export class GoogleDrive extends SaveSync {
 	async uploadLocalSave(): Promise<number> {
 		if (await this.refreshTokenIfNeeded()) {
 			if (SaveSync.state?.id) {
-				const response = await Request.json<GoogleDriveMetadata>({
-					method: 'PATCH',
-					url: `https://www.googleapis.com/upload/drive/v3/files/${SaveSync.state.id}?uploadType=media&fields=id,modifiedTime`,
-					headers: { Authorization: `Bearer ${SaveSync.state!.token}`, 'Content-Type': 'application/json' },
-					fileRequest: 'localSave',
-				});
-				if (response.ok && !response.body.error) {
+				const response = await Http.json<GoogleDriveMetadata>(
+					`https://www.googleapis.com/upload/drive/v3/files/${SaveSync.state.id}?uploadType=media&fields=id,modifiedTime`,
+					{
+						method: 'PATCH',
+						headers: {
+							Authorization: `Bearer ${SaveSync.state!.token}`,
+							'Content-Type': 'application/json',
+						},
+						file: 'localSave',
+					}
+				);
+				if (response.ok && response.body && !response.body.error) {
 					await debug(`Uploaded Local Save to Google Drive`);
 					if (SaveSync.state!.id !== response.body.id) {
 						SaveSync.state!.id = response.body.id;
@@ -123,13 +127,15 @@ export class GoogleDrive extends SaveSync {
 					return new Date(response.body.modifiedTime).getTime();
 				}
 			} else {
-				const response = await Request.json<GoogleDriveMetadata>({
-					method: 'POST',
-					url: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime',
-					headers: { Authorization: `Bearer ${SaveSync.state!.token}` },
-					fileRequest: 'namedLocalSave',
-				});
-				if (response.ok && !response.body.error) {
+				const response = await Http.json<GoogleDriveMetadata>(
+					'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime',
+					{
+						method: 'POST',
+						headers: { Authorization: `Bearer ${SaveSync.state!.token}` },
+						file: 'namedLocalSave',
+					}
+				);
+				if (response.ok && response.body && !response.body.error) {
 					await debug(`Uploaded Local Save to Google Drive`);
 					SaveSync.state!.id = response.body.id;
 					await Storage.set(StorageUniqueKey.SaveSync, SaveSync.state);
@@ -144,11 +150,9 @@ export class GoogleDrive extends SaveSync {
 		if (!SaveSync.state) return false;
 		if (SaveSync.state.expires < Date.now()) {
 			await debug(`Refreshing Google Drive token (expired ${SaveSync.state.expires})`);
-			const response = await Request.get<RawResponse>({
-				method: 'POST',
-				url: 'https://syncdex.nikurasu.org/',
+			const response = await Http.post('https://syncdex.nikurasu.org/', {
 				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-				body: Request.buildQuery({
+				body: Http.buildQuery({
 					service: 'GoogleDrive',
 					refresh_token: SaveSync.state.refresh,
 				}),
@@ -164,11 +168,9 @@ export class GoogleDrive extends SaveSync {
 		if (googleDriveState == undefined || googleDriveState !== query.state) {
 			return SaveSyncLoginResult.STATE_ERROR;
 		}
-		const response = await Request.get({
-			method: 'POST',
-			url: 'https://syncdex.nikurasu.org/',
+		const response = await Http.post('https://syncdex.nikurasu.org/', {
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-			body: Request.buildQuery({
+			body: Http.buildQuery({
 				service: 'GoogleDrive',
 				code: query.code,
 				scope: GoogleDrive.SCOPE,
@@ -181,9 +183,7 @@ export class GoogleDrive extends SaveSync {
 	delete = async (): Promise<boolean> => {
 		if (await this.refreshTokenIfNeeded()) {
 			if (!SaveSync.state?.id) return false;
-			const response = await Request.get({
-				method: 'DELETE',
-				url: `https://www.googleapis.com/drive/v3/files/${SaveSync.state.id}`,
+			const response = await Http.delete(`https://www.googleapis.com/drive/v3/files/${SaveSync.state.id}`, {
 				headers: { Authorization: `Bearer ${SaveSync.state?.token}` },
 			});
 			if (!response.ok) await log(`Error in Google Drive delete: [${response.body}]`);
@@ -194,20 +194,22 @@ export class GoogleDrive extends SaveSync {
 
 	handleTokenResponse = async (response: RawResponse): Promise<SaveSyncLoginResult> => {
 		try {
-			const body: GoogleDriveTokenResponse = JSON.parse(response.body);
-			if (response.ok && !body.error) {
-				// Avoid reseting refresh token
-				const refreshToken = SaveSync.state?.refresh ? SaveSync.state.refresh : body.refresh_token;
-				SaveSync.state = {
-					id: SaveSync.state?.id,
-					service: 'GoogleDrive',
-					token: body.access_token,
-					expires: Date.now() + body.expires_in * 1000,
-					refresh: refreshToken,
-				};
-				await Storage.set(StorageUniqueKey.SaveSync, SaveSync.state);
-				await debug('Obtained Google Drive token');
-				return SaveSyncLoginResult.SUCCESS;
+			if (response.ok && response.body) {
+				const body: GoogleDriveTokenResponse = JSON.parse(response.body);
+				if (!body.error) {
+					// Avoid reseting refresh token
+					const refreshToken = SaveSync.state?.refresh ? SaveSync.state.refresh : body.refresh_token;
+					SaveSync.state = {
+						id: SaveSync.state?.id,
+						service: 'GoogleDrive',
+						token: body.access_token,
+						expires: Date.now() + body.expires_in * 1000,
+						refresh: refreshToken,
+					};
+					await Storage.set(StorageUniqueKey.SaveSync, SaveSync.state);
+					await debug('Obtained Google Drive token');
+					return SaveSyncLoginResult.SUCCESS;
+				}
 			}
 			/*SimpleNotification.error({
 				title: 'API Error',

@@ -1,5 +1,5 @@
 import { Service, LoginMethod } from '../../Core/Service';
-import { Request } from '../../Core/Request';
+import { Http } from '../../Core/Http';
 import { Title } from '../../Core/Title';
 import { Options } from '../../Core/Options';
 import { AppendableElement, DOM } from '../../Core/DOM';
@@ -117,21 +117,19 @@ export class Anilist extends Service {
 
 	async loggedIn(): Promise<ResponseStatus> {
 		if (Options.tokens.anilistToken === undefined) return ResponseStatus.MISSING_TOKEN;
-		const response = await Request.json({
+		const response = await Http.json(AnilistAPI, {
 			method: 'POST',
-			url: AnilistAPI,
 			headers: AnilistHeaders(),
 			body: JSON.stringify({ query: `query { Viewer { id } }` }),
 		});
-		return Request.status(response);
+		return response.status;
 	}
 
 	@LogExecTime
 	async get(key: MediaKey): Promise<AnilistTitle | ResponseStatus> {
 		const id = key.id!;
 		if (!Options.tokens.anilistToken) return ResponseStatus.MISSING_TOKEN;
-		const response = await Request.json<AnilistGetResponse>({
-			url: AnilistAPI,
+		const response = await Http.json<AnilistGetResponse>(AnilistAPI, {
 			method: 'POST',
 			headers: AnilistHeaders(),
 			body: JSON.stringify({
@@ -141,7 +139,7 @@ export class Anilist extends Service {
 				},
 			}),
 		});
-		if (!response.ok) return Request.status<JSONResponse>(response);
+		if (!response.ok || !response.body) return response.status;
 		// Convert Response to AnilistTitle
 		const body = response.body;
 		const mediaEntry = body.data.Media.mediaListEntry;
@@ -245,8 +243,7 @@ export class AnilistTitle extends Title {
 			await log(`Could not sync Anilist: status ${this.status}`);
 			return ResponseStatus.BAD_REQUEST;
 		}
-		const response = await Request.json<AnilistPersistResponse>({
-			url: AnilistAPI,
+		const response = await Http.json<AnilistPersistResponse>(AnilistAPI, {
 			method: 'POST',
 			headers: AnilistHeaders(),
 			body: JSON.stringify({
@@ -262,7 +259,7 @@ export class AnilistTitle extends Title {
 				},
 			}),
 		});
-		if (!response.ok) return Request.status(response);
+		if (!response.ok || !response.body) return response.status;
 		this.mediaEntryId = response.body.data.SaveMediaListEntry.id;
 		if (!this.inList) {
 			this.inList = true;
@@ -277,8 +274,7 @@ export class AnilistTitle extends Title {
 			await log(`Could not sync Anilist: status ${this.status}`);
 			return ResponseStatus.BAD_REQUEST;
 		}
-		const response = await Request.json({
-			url: AnilistAPI,
+		const response = await Http.json(AnilistAPI, {
 			method: 'POST',
 			headers: AnilistHeaders(),
 			body: JSON.stringify({
@@ -286,7 +282,7 @@ export class AnilistTitle extends Title {
 				variables: { id: this.mediaEntryId },
 			}),
 		});
-		if (!response.ok) return Request.status(response);
+		if (!response.ok) return response.status;
 		this.mediaEntryId = 0;
 		this.reset();
 		return ResponseStatus.DELETED;

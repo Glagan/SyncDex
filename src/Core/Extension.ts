@@ -1,5 +1,6 @@
 import { browser } from 'webextension-polyfill-ts';
 import { log } from './Log';
+import { Message } from './Message';
 
 export class Extension {
 	/**
@@ -8,9 +9,7 @@ export class Extension {
 	static async openOptions(): Promise<void> {
 		try {
 			// TODO: Handle background message sender ?
-			return browser.runtime.sendMessage({
-				action: MessageAction.openOptions,
-			});
+			return Message.send('openOptions');
 		} catch (error) {
 			await log(`Could not open Options with Runtime.openOptions: ${error}`);
 		}

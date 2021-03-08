@@ -2,7 +2,7 @@ import { LocalTitle } from './Title';
 import { ServiceKey } from '../Service/Keys';
 import { ServiceName } from '../Service/Names';
 import { log } from './Log';
-import { Request } from './Request';
+import { Http } from './Http';
 
 interface ComplexType {
 	bar: boolean;
@@ -76,11 +76,11 @@ export class Mochi {
 		source: ServiceName = ServiceName.MangaDex,
 		extra?: MochiExtra
 	): Promise<MochiService | undefined> {
-		const response = await Request.json<MochiResult>({
-			url: Mochi.connections(id, source, extra),
+		const response = await Http.json<MochiResult>(Mochi.connections(id, source, extra), {
+			method: 'GET',
 			headers: { Accept: 'application/json' },
 		});
-		if (!response.ok) {
+		if (!response.ok || !response.body) {
 			await log(
 				`Mochi error: code ${response.code ?? 0} body ${
 					typeof response.body === 'string' ? response.body : JSON.stringify(response.body)
@@ -102,10 +102,8 @@ export class Mochi {
 		source: ServiceName = ServiceName.MangaDex,
 		extra?: MochiExtra
 	): Promise<MochiService[] | undefined> {
-		const response = await Request.json<MochiResult>({
-			url: Mochi.connections(ids, source, extra),
-		});
-		if (!response.ok) {
+		const response = await Http.json<MochiResult>(Mochi.connections(ids, source, extra), { method: 'GET' });
+		if (!response.ok || !response.body) {
 			await log(
 				`Mochi error: code ${response.code} body ${
 					typeof response.body === 'string' ? response.body : JSON.stringify(response.body)

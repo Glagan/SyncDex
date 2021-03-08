@@ -1,6 +1,6 @@
 import { DOM } from '../../Core/DOM';
 import { ExportModule, ImportModule } from '../../Core/Module';
-import { Request } from '../../Core/Request';
+import { Http } from '../../Core/Http';
 import { FoundTitle } from '../../Core/Title';
 import { MyAnimeList, MyAnimeListTitle, MyAnimeListStatus } from '../Class/MyAnimeList';
 import { dateFormatInput } from '../../Core/Utility';
@@ -76,10 +76,11 @@ export class MyAnimeListImport extends ImportModule {
 		let current = 1;
 		while (!this.interface?.doStop && !lastPage) {
 			progress.textContent = `Fetching all titles... Page ${current}.`;
-			const response = await Request.json<MyAnimeListAPITitle[]>({
-				url: MyAnimeListImport.api(MyAnimeList.username, (current - 1) * 300),
-			});
-			if (!response.ok) {
+			const response = await Http.json<MyAnimeListAPITitle[]>(
+				MyAnimeListImport.api(MyAnimeList.username, (current - 1) * 300),
+				{ method: 'GET' }
+			);
+			if (!response.ok || !response.body) {
 				message?.classList.remove('loading');
 				this.interface?.message(
 					'warning',
@@ -179,12 +180,10 @@ export class MyAnimeListExport extends ExportModule {
 	};
 
 	preExecute = async (titles: LocalTitle[]): Promise<boolean> => {
-		let response = await Request.get<RawResponse>({
-			url: `https://myanimelist.net/import.php`,
-			method: 'GET',
+		let response = await Http.get('https://myanimelist.net/import.php', {
 			credentials: 'include',
 		});
-		if (!response.ok) {
+		if (!response.ok || !response.body) {
 			this.interface?.message(
 				'warning',
 				'The request failed, maybe MyAnimeList is having problems, retry later.'
@@ -208,9 +207,7 @@ export class MyAnimeListExport extends ExportModule {
 
 		// Send file
 		message = this.interface?.message('loading', 'Sending export file...');
-		const response = await Request.get<RawResponse>({
-			url: `https://myanimelist.net/import.php`,
-			method: 'POST',
+		const response = await Http.post('https://myanimelist.net/import.php', {
 			credentials: 'include',
 			form: {
 				importtype: '3',
@@ -226,7 +223,9 @@ export class MyAnimeListExport extends ExportModule {
 			},
 		});
 		message?.classList.remove('loading');
-		if (!response.ok) return false;
+		if (!response.ok || !response.body) {
+			return false;
+		}
 
 		// Update summary with number of updated titles	if (response.code == 200) {
 		const totalArr = /Total\s*Entries\s*Updated:\s*(\d+)/.exec(response.body);

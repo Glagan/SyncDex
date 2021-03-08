@@ -4,7 +4,7 @@ import { SyncModule } from '../../Core/SyncModule';
 import { Options } from '../../Core/Options';
 import { Mochi } from '../../Core/Mochi';
 import { Services } from '../../Service/Class/Map';
-import { Request } from '../../Core/Request';
+import { Http } from '../../Core/Http';
 import { MangaDex } from '../../Core/MangaDex';
 import { injectScript, progressFromString } from '../../Core/Utility';
 import { ActivableKey } from '../../Service/Keys';
@@ -201,9 +201,8 @@ export class ChapterPage extends Page {
 
 	@LogExecTime
 	getMdUserTitle(id: number): Promise<JSONResponse<MangaDexUserTitleResponse>> {
-		return Request.json<MangaDexUserTitleResponse>({
+		return Http.json<MangaDexUserTitleResponse>(MangaDex.api('get:user:title', id), {
 			method: 'GET',
-			url: MangaDex.api('get:user:title', id),
 			credentials: 'include',
 		});
 	}
@@ -363,7 +362,7 @@ export class ChapterPage extends Page {
 		// Find MangaDex status if needed
 		if (Options.updateOnlyInList || Options.updateMD) {
 			const response = await this.getMdUserTitle(id);
-			if (response.ok) {
+			if (response.ok && response.body) {
 				if (typeof response.body.data.followType === 'number') {
 					this.syncModule.mdState.status = response.body.data.followType;
 				}

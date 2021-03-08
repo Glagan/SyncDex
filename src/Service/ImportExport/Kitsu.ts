@@ -1,7 +1,7 @@
 import { DOM } from '../../Core/DOM';
 import { duration, ExportModule, ImportModule } from '../../Core/Module';
 import { Options } from '../../Core/Options';
-import { Request } from '../../Core/Request';
+import { Http } from '../../Core/Http';
 import { FoundTitle } from '../../Core/Title';
 import { KitsuAPI, KitsuHeaders, KitsuManga, KitsuResponse, KitsuTitle } from '../Class/Kitsu';
 import { ActivableKey } from '../Keys';
@@ -25,18 +25,18 @@ export class KitsuImport extends ImportModule {
 		let max = 1;
 		while (!lastPage) {
 			progress.textContent = `Fetching all titles... Page ${current} out of ${max}.`;
-			const response = await Request.json<KitsuResponse>({
-				url: `${KitsuAPI}?
-						filter[user_id]=${Options.tokens.kitsuUser}&
-						filter[kind]=manga&
-						fields[libraryEntries]=status,progress,volumesOwned,ratingTwenty,startedAt,finishedAt,manga&
-						include=manga&
-						fields[manga]=chapterCount,volumeCount,canonicalTitle&
-						page[limit]=500&
-						page[offset]=${(current - 1) * 500}`,
-				headers: KitsuHeaders(),
-			});
-			if (!response.ok) {
+			const response = await Http.json<KitsuResponse>(
+				`${KitsuAPI}?
+					filter[user_id]=${Options.tokens.kitsuUser}&
+					filter[kind]=manga&
+					fields[libraryEntries]=status,progress,volumesOwned,ratingTwenty,startedAt,finishedAt,manga&
+					include=manga&
+					fields[manga]=chapterCount,volumeCount,canonicalTitle&
+					page[limit]=500&
+					page[offset]=${(current - 1) * 500}`,
+				{ headers: KitsuHeaders() }
+			);
+			if (!response.ok || !response.body) {
 				this.interface?.message('warning', 'The request failed, maybe Kitsu is having problems, retry later.');
 				return false;
 			}
@@ -102,17 +102,17 @@ export class KitsuExport extends ExportModule {
 		let max = Math.ceil(titles.length / 500);
 		for (let current = 1; !this.interface?.doStop && current <= max; current++) {
 			const ids = titles.slice((current - 1) * 500, current * 500).map((title) => title.services.ku!.id!);
-			const response = await Request.json<KitsuResponse>({
-				url: `${KitsuAPI}
+			const response = await Http.json<KitsuResponse>(
+				`${KitsuAPI}
 					?filter[user_id]=${Options.tokens.kitsuUser}
 					&filter[mangaId]=${ids.join(',')}
 					&fields[libraryEntries]=id,manga
 					&include=manga
 					&fields[manga]=id,chapterCount,volumeCount
 					&page[limit]=500`,
-				headers: KitsuHeaders(),
-			});
-			if (!response.ok) {
+				{ headers: KitsuHeaders() }
+			);
+			if (!response.ok || !response.body) {
 				message?.classList.remove('loading');
 				this.interface?.message('warning', 'The request failed, maybe Kitsu is having problems, retry later.');
 				return false;

@@ -16,6 +16,7 @@ export namespace Storage {
 	 * @param defaultv Default value if the key is not found
 	 */
 	export async function get(): Promise<StorageValues>;
+	export async function get(key: null): Promise<StorageValues>;
 	export async function get<T extends StorageValues, K extends keyof T>(key: K): Promise<T[K] | undefined>;
 	export async function get<T extends StorageValues, K extends keyof T>(
 		key: K[]
@@ -27,31 +28,19 @@ export namespace Storage {
 	export async function get<T extends StorageValues, K extends keyof T>(
 		...args: any[]
 	): Promise<StorageValues | Promise<Partial<{ [key in K]: T[key] }>> | T[K] | NonNullable<T[K]> | undefined> {
-		return Message.send('storage:get', { key: args[0] ?? undefined, default: args[1] ?? undefined });
-		/*if (args.length == 0) return browser.storage.local.get();
-		const key = args[0];
-		const data = await browser.storage.local.get(typeof key === 'number' ? `${key}` : key);
-		if (typeof key === 'object') {
-			return data;
-		}
-		if (data[key] === undefined) return args[1] ?? undefined;
-		return data[key];*/
+		const res = await Message.send('storage:get', { key: args[0] ?? null });
+		return res !== undefined ? res : args[1] ?? undefined;
 	}
 
 	/**
 	 * Returns the number of bytes used by the list of keys or by all keys if key is null
-	 * @see https://bugzilla.mozilla.org/show_bug.cgi?id=1385832
 	 * @param key null for all keys or a valid key or list of keys
 	 */
 	export async function usage(): Promise<number>;
 	export async function usage<T extends StorageValues, K extends keyof T>(key: K): Promise<number>;
 	export async function usage<T extends StorageValues, K extends keyof T>(key: K[]): Promise<number>;
 	export async function usage(...args: any[]): Promise<number> {
-		return new TextEncoder().encode(
-			Object.entries(await browser.storage.local.get(args[0] ?? null))
-				.map(([key, value]) => key + JSON.stringify(value))
-				.join('')
-		).length;
+		return Message.send('storage:usage', { key: args[0] ?? null });
 	}
 
 	/**
@@ -61,16 +50,15 @@ export namespace Storage {
 	 */
 	export async function set<T extends StorageValues, K extends keyof T>(
 		data: Partial<{ [key in K]: T[K] }>
-	): Promise<void>;
-	export async function set<T extends StorageValues, K extends keyof T>(key: K, data: T[K]): Promise<void>;
-	export async function set(...args: any[]): Promise<void> {
-		if (typeof args[0] === 'object') {
-			return browser.storage.local.set(args[0]);
+	): Promise<boolean>;
+	export async function set<T extends StorageValues, K extends keyof T>(key: K, data: T[K]): Promise<boolean>;
+	export async function set(...args: any[]): Promise<boolean> {
+		if (args.length == 2) {
+			return Message.send('storage:set', {
+				values: { [args[0]]: args[1] },
+			});
 		}
-		if (SaveSync.state && Storage.isSyncableKey(args[0])) {
-			await Message.send({ action: MessageAction.saveSync });
-		}
-		return browser.storage.local.set({ [`${args[0]}`]: args[1] });
+		return Message.send('storage:set', { values: args[0] });
 	}
 
 	/**
@@ -78,12 +66,7 @@ export namespace Storage {
 	 * @param key A valid key or list of keys
 	 */
 	export async function remove(key: number | string | string[]) {
-		const isNumber = typeof key == 'number';
-		if (isNumber) key = key.toString();
-		await browser.storage.local.remove(key as string | string[]);
-		if (SaveSync.state && (typeof key !== 'string' || Storage.isSyncableKey(key))) {
-			await Message.send({ action: MessageAction.saveSync });
-		}
+		await Message.send('storage:remove', { key });
 	}
 
 	/**

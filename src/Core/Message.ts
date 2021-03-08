@@ -2,6 +2,13 @@ import { browser } from 'webextension-polyfill-ts';
 
 export namespace Message {
 	/**
+	 * ? Delete ?
+	 * Modifiable sender to send local messages in background script.
+	 */
+	const sender: <K extends keyof MessageDescriptions>(message: MessagePayload<K>) => Promise<MessageResponse<K>> =
+		browser.runtime.sendMessage;
+
+	/**
 	 * Send a message to the background running script.
 	 */
 	export function send<K extends keyof MessageDescriptions>(
@@ -9,8 +16,8 @@ export namespace Message {
 	): Promise<MessageResponse<K>> {
 		if (params.length == 2) {
 			// payload: params[1] is always an object if present
-			return browser.runtime.sendMessage({ ...(params[1] as any), action: params[0] });
+			return sender({ ...(params[1] as any), action: params[0] });
 		}
-		return browser.runtime.sendMessage({ action: params[0] } as MessagePayload<K>);
+		return sender({ action: params[0] } as MessagePayload<K>);
 	}
 }

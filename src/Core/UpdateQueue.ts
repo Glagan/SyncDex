@@ -7,7 +7,7 @@ import { MangaDex } from './MangaDex';
 import { Options } from './Options';
 import { SyncModule } from './SyncModule';
 import { LocalTitle, StatusMap } from './Title';
-import { Request } from '../Core/Request';
+import { Http } from './Http';
 import { progressToString } from './Utility';
 
 export class UpdateQueue {
@@ -158,7 +158,7 @@ export class UpdateQueue {
 					)
 				);
 			} else {
-				const error = Request.statusToString(report[key] as ResponseStatus);
+				const error = Http.statusToString(report[key] as ResponseStatus);
 				rows.push(this.reportNotificationRow(key, error));
 			}
 		}

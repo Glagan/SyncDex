@@ -8,6 +8,8 @@ import { Services } from '../Service/Class/Map';
 import { Storage } from '../Core/Storage';
 import { createModule } from '../Service/ImportExport/Utility';
 import { Updates } from '../Core/Updates';
+import { Http } from '../Core/Http';
+import { Cache } from './Cache';
 import { Message } from '../Core/Message';
 
 console.log('SyncDex :: Background');
@@ -15,6 +17,8 @@ console.log('SyncDex :: Background');
 /// @ts-ignore
 const isChrome = window.chrome && window.browser === undefined;
 const SaveSyncAlarmName = 'saveSyncBackup';
+
+// Message.sender = (message: MessagePayload) => handleMessage(message);
 
 function setIcon(title: string = '', bgColor: string = '', text: string = '') {
 	if (!isChrome) {
@@ -24,171 +28,27 @@ function setIcon(title: string = '', bgColor: string = '', text: string = '') {
 	}
 }
 
-Message.messageSender = (message: MessagePayload) => handleMessage(message);
-
-async function getCleanSave() {
-	const save = await Storage.get();
-	if (save.options?.tokens) save.options.tokens = {};
-	delete save.dropboxState;
-	delete save.googleDriveState;
-	delete save.saveSync;
-	delete save.saveSyncInProgress;
-	delete save.importInProgress;
-	delete save.logs;
-	return save;
-}
-
-function findDomain(url: string): string {
-	// Simple domain search - not the best but simple
-	const res = /https?:\/\/(?:.+\.)?([-\w\d]+\.(?:\w{2,5}))(?:$|\/)/i.exec(url);
-	if (res !== null) {
-		return res[1];
-	}
-	return '*';
-}
-let nextRequest: Record<string, number> = {};
-// Defaults to 1000ms
-const DEFAULT_COOLDOWN = 1250;
-const cooldowns: Record<string, number> = {
-	'mangadex.org': 1500,
-	'myanimelist.net': 1500,
-	'anilist.co': 1500,
-	'nikurasu.org': 500,
-};
-const cookieDomains = ['myanimelist.net', 'mangadex.org', 'mangaupdates.com', 'anime-planet.com'];
 // TODO: Handle containers in checkOnStartup since there is no sender
 // Probably gate which containers to update based on the future containers update with state for each containers
 // and import lists for each containers that need it by sending a fake MessageSender with preloaded tab informations for the container
-function handleMessage(message: MessagePayload, sender?: BrowserRuntime.MessageSender) {
-	if (message.action == MessageAction.request) {
-		return new Promise(async (resolve) => {
-			const msg = message as RequestMessage;
-
-			// Cooldown
-			const domain = findDomain(msg.url);
-			const now = Date.now();
-
-			// Sleep until cooldown is reached
-			if (nextRequest[domain] && nextRequest[domain] >= now) {
-				const diff = nextRequest[domain] - now;
-				nextRequest[domain] = now + diff + (cooldowns[domain] ?? DEFAULT_COOLDOWN) + 100;
-				await new Promise((resolve) => setTimeout(resolve, diff));
-			} else nextRequest[domain] = now + (cooldowns[domain] ?? DEFAULT_COOLDOWN) + 100;
-
-			// Options
-			msg.isJson = msg.isJson !== undefined ? msg.isJson : false;
-			msg.method = msg.method !== undefined ? msg.method : 'GET';
-			msg.body = msg.body !== undefined ? msg.body : null;
-			msg.redirect = msg.redirect !== undefined ? msg.redirect : 'follow';
-			msg.cache = msg.cache !== undefined ? msg.cache : 'default';
-			msg.mode = msg.mode !== undefined ? msg.mode : undefined;
-			msg.credentials = msg.credentials !== undefined ? msg.credentials : 'same-origin';
-			msg.headers = msg.headers !== undefined ? (msg.headers as Record<string, string>) : {};
-			let body: File | FormData | string | undefined;
-			if (msg.fileRequest !== undefined) {
-				const save = await getCleanSave();
-				if (msg.fileRequest == 'namedLocalSave') {
-					if (msg.headers['Content-Type']) delete msg.headers['Content-Type'];
-					body = new FormData();
-					body.append(
-						'Metadata',
-						new File(
-							[
-								JSON.stringify({
-									name: 'Save.json',
-									mimeType: 'application/json',
-									parents: ['appDataFolder'],
-									modifiedTime: new Date().toISOString(),
-								}),
-							],
-							'Metadata.json',
-							{ type: 'application/json; charset=UTF-8' }
-						)
-					);
-					body.append('Media', new File([JSON.stringify(save)], 'Save.json', { type: 'application/json' }));
-				} else {
-					if (msg.headers['Content-Type'] === undefined) {
-						msg.headers['Content-Type'] = 'application/octet-stream';
-					}
-					body = new File([JSON.stringify(save)], 'application/json');
-					//msg.headers['Content-Length'] = `${body.size}`;
-				}
-			} else if (msg.form !== undefined) {
-				if (!(msg.form instanceof FormData)) {
-					body = new FormData();
-					for (const key in msg.form as FormDataProxy) {
-						if (msg.form.hasOwnProperty(key)) {
-							const element = msg.form[key];
-							if (typeof element === 'string') {
-								body.set(key, element);
-							} else if (typeof element === 'number') {
-								body.set(key, element.toString());
-							} else {
-								body.set(key, new File(element.content, element.name, element.options));
-							}
-						}
-					}
-				} else body = msg.form;
-			} else if (msg.body !== null) {
-				body = msg.body;
-			}
-
-			// Get container cookies
-			// Doesn't work on Chrome, cookieStoreId is static
-			// Only find for sites which require cookies
-			if (
-				sender &&
-				((!isChrome && msg.credentials == 'same-origin') ||
-					(msg.credentials == 'include' && sender.tab?.cookieStoreId !== undefined)) &&
-				cookieDomains.indexOf(domain) >= 0
-			) {
-				const cookieStoreId = sender.tab!.cookieStoreId;
-				const cookiesList = await browser.cookies.getAll({ url: message.url, storeId: cookieStoreId });
-				const cookies = cookiesList.map((c) => `${c.name}=${c.value}`).join('; ');
-				if (cookies != '') msg.headers['X-Cookie'] = cookies;
-			}
-
-			// Add X-Origin and X-Referer if needed
-			// if (msg.headers['Origin']) msg.headers['X-Origin'] = msg.headers['Origin'];
-			// if (msg.headers['Referer']) msg.headers['X-Referer'] = msg.headers['Referer'];
-
-			// TODO: Handle X-RateLimit header for Anilist
-			const result = await fetch(msg.url, {
-				...message,
-				body,
-			})
-				.then(async (response) => {
-					return <RequestResponse>{
-						url: response.url,
-						ok: response.status >= 200 && response.status < 400,
-						failed: false,
-						code: response.status,
-						redirected: response.redirected,
-						// chrome doesn't allow message with the Headers object
-						headers: JSON.parse(JSON.stringify(response.headers)),
-						body: msg.isJson ? await response.json() : await response.text(),
-					};
-				})
-				.catch(async (error) => {
-					await loadLogs(true);
-					log(`Error on request [${msg.url}]: ${error}${error.stack ? `>> ${error.stack}` : ''}`);
-					return <RequestResponse>{
-						url: msg.url,
-						ok: false,
-						failed: true,
-						code: 0,
-						redirected: false,
-						headers: {},
-						body: msg.isJson ? {} : '',
-					};
-				});
-			resolve(result);
-		});
-	} else if (message.action == MessageAction.openOptions) {
+function handleMessage(message: AnyMessagePayload, sender?: BrowserRuntime.MessageSender): Promise<any> {
+	if (message.action == 'request') {
+		return Http.sendRequest(message, sender?.tab);
+	} else if (message.action == 'storage:get') {
+		return Cache.get(message.key);
+	} else if (message.action == 'storage:usage') {
+		return Cache.usage(message.key);
+	} else if (message.action == 'storage:set') {
+		return Cache.set(message.values);
+	} else if (message.action == 'storage:remove') {
+		return Cache.remove(message.key);
+	} else if (message.action == 'storage:clear') {
+		return Cache.clear();
+	} else if (message.action == 'openOptions') {
 		return browser.runtime.openOptionsPage();
-	} else if (message.action == MessageAction.silentImport) {
+	} else if (message.action == 'import:start') {
 		return silentImport(true);
-	} else if (message.action == MessageAction.saveSync) {
+	} else if (message.action == 'saveSync:start') {
 		return new Promise(async (resolve) => {
 			const alarm = await browser.alarms.get(SaveSyncAlarmName);
 			const delay = message.delay !== undefined ? message.delay : 1;
@@ -209,7 +69,7 @@ function handleMessage(message: MessagePayload, sender?: BrowserRuntime.MessageS
 			}
 			resolve(true);
 		});
-	} else if (message.action == MessageAction.saveSyncLogout) {
+	} else if (message.action == 'saveSync:logout') {
 		setIcon();
 		browser.alarms.get(SaveSyncAlarmName).then((alarm) => {
 			if (alarm) browser.alarms.clear(SaveSyncAlarmName);
@@ -300,27 +160,29 @@ async function syncSave(force: boolean = false) {
 			if (saveSyncServiceClass !== undefined) {
 				await loadLogs(true);
 				await Storage.set(StorageUniqueKey.SaveSyncInProgress, true);
-				let result = SaveSyncResult.ERROR;
+				let status = SaveSyncResult.ERROR;
 				try {
-					await browser.runtime.sendMessage({ action: MessageAction.saveSyncStart }).catch((_e) => _e);
+					await Message.send('saveSync:event:start');
+					// await browser.runtime.sendMessage({ action: MessageAction.saveSyncStart }).catch((_e) => _e);
 					/// @ts-ignore saveSyncServiceClass is *NOT* abstract
 					const saveSyncService: SaveSync = new saveSyncServiceClass();
 					SaveSync.state = syncState;
-					result = await saveSyncService.sync(force);
-					if (result == SaveSyncResult.NOTHING) {
+					status = await saveSyncService.sync(force);
+					if (status == SaveSyncResult.NOTHING) {
 						await log(`Save already synced with ${syncState.service}`);
-					} else if (result == SaveSyncResult.ERROR) {
+					} else if (status == SaveSyncResult.ERROR) {
 						await log(`Couldn't sync your local save with ${syncState.service}`);
-					} else if (result != SaveSyncResult.SYNCED) {
+					} else if (status != SaveSyncResult.SYNCED) {
 						await log(`Synced your save with ${syncState.service}`);
 					}
 				} catch (error) {
 					log(error);
 				}
 				await Storage.remove(StorageUniqueKey.SaveSyncInProgress);
-				await browser.runtime
+				await Message.send('saveSync:event:finish', { status });
+				/*await browser.runtime
 					.sendMessage({ action: MessageAction.saveSyncComplete, status: result })
-					.catch((_e) => _e);
+					.catch((_e) => _e);*/
 				setIcon('SyncDex', '#058b00', '\u2713');
 			} else {
 				SaveSync.state = undefined;
@@ -342,7 +204,8 @@ async function silentImport(manual: boolean = false) {
 		const lastCheck: number | string[] = await Storage.get('import', 0);
 		if (manual || typeof lastCheck !== 'number' || Date.now() - lastCheck > checkCooldown) {
 			await Storage.set(StorageUniqueKey.ImportInProgress, true);
-			await browser.runtime.sendMessage({ action: MessageAction.importStart }).catch((_e) => _e);
+			await Message.send('import:event:start');
+			// await browser.runtime.sendMessage({ action: MessageAction.importStart }).catch((_e) => _e);
 			await log('Importing lists');
 			const services =
 				!manual && Options.checkOnStartupMainOnly ? [Options.services[0]] : [...Options.services].reverse();
@@ -367,7 +230,8 @@ async function silentImport(manual: boolean = false) {
 			}
 			if (!manual) await Storage.set(StorageUniqueKey.Import, Date.now());
 			await Storage.remove(StorageUniqueKey.ImportInProgress);
-			await browser.runtime.sendMessage({ action: MessageAction.importComplete }).catch((_e) => _e);
+			await Message.send('import:event:finish');
+			// await browser.runtime.sendMessage({ action: MessageAction.importComplete }).catch((_e) => _e);
 			await log(`Done Importing lists`);
 		} else await log(`Startup script executed less than ${Options.checkOnStartupCooldown}minutes ago, skipping`);
 	} else if (Options.checkOnStartup) await log('Did not Import: No services enabled');

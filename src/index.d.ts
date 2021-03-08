@@ -22,7 +22,7 @@ interface FormDataProxy {
 	[key: string]: string | number | FormDataFile;
 }
 
-interface Request {
+interface HttpRequest {
 	method?: 'GET' | 'POST' | 'HEAD' | 'OPTIONS' | 'DELETE' | 'PUT' | 'PATCH';
 	url: string;
 	isJson?: boolean;
@@ -33,7 +33,7 @@ interface Request {
 	headers?: HeadersInit;
 	redirect?: RequestRedirect;
 	credentials?: RequestCredentials;
-	fileRequest?: 'localSave' | 'namedLocalSave';
+	file?: 'localSave' | 'namedLocalSave';
 }
 
 declare const enum ResponseStatus {
@@ -47,7 +47,7 @@ declare const enum ResponseStatus {
 	NOT_FOUND,
 }
 
-interface Response<T extends {} = Record<string, any> | string> {
+interface HttpResponse<T = any> {
 	url: string;
 	redirected: boolean;
 	ok: boolean;
@@ -55,8 +55,12 @@ interface Response<T extends {} = Record<string, any> | string> {
 	failed: boolean;
 	code: number;
 	headers: Record<string, string>;
-	body: T;
+	body?: T;
 }
+
+interface RawResponse extends HttpResponse<string> {}
+
+interface JSONResponse<T extends {} = Record<string, any>> extends HttpResponse<T> {}
 
 /**
  * Messages
@@ -68,21 +72,23 @@ interface Response<T extends {} = Record<string, any> | string> {
  * Pair of [send message payload, received response] for each type of messages.
  */
 type MessageDescriptions = {
-	request: [Request, Response];
+	request: [HttpRequest, HttpResponse];
 	openOptions: never;
 	'import:start': never;
-	'import:event': { type: 'start' | 'finish' };
+	'import:event:start': never;
+	'import:event:finish': never;
 	'saveSync:start': [{ delay?: number }, void];
 	'saveSync:logout': never;
-	'saveSync:event': { type: 'start' } | { type: 'finish'; status: SaveSyncResult };
+	'saveSync:event:start': never;
+	'saveSync:event:finish': { status: SaveSyncResult };
 	// ? No type safety can be achieved here
 	// ?	storage:get need to be generic inside a non-generic type with unrelated other keys
 	// ?	same for storage:set and storage:remove
 	'storage:get': [{ key?: any }, any];
-	'storage:usage': [{ method: 'usage'; key?: any }, number];
-	'storage:set': [{ method: 'set'; values: object }, boolean];
-	'storage:remove': [{ method: 'remove'; key: number | string | (number | string)[] }, boolean];
-	'storage:clear': [{ method: 'clear' }, boolean];
+	'storage:usage': [{ key?: any }, number];
+	'storage:set': [{ values: object }, boolean];
+	'storage:remove': [{ key: number | string | string[] }, boolean];
+	'storage:clear': [never, boolean];
 };
 type MessageParams<K extends keyof MessageDescriptions> = MessageDescriptions[K] extends never
 	? [action: K]
@@ -91,16 +97,19 @@ type MessageParams<K extends keyof MessageDescriptions> = MessageDescriptions[K]
 		? [action: K]
 		: [action: K, payload: MessageDescriptions[K][0]]
 	: [action: K, payload: MessageDescriptions[K]];
-type MessagePayload<K extends keyof MessageDescriptions> = { action: K } & (MessageDescriptions[K] extends never
-	? never
+type MessagePayload<K extends keyof MessageDescriptions> = MessageDescriptions[K] extends never
+	? { action: K }
 	: MessageDescriptions[K] extends Array<any>
-	? MessageDescriptions[K][0]
-	: MessageDescriptions[K]);
+	? MessageDescriptions[K][0] extends never
+		? { action: K }
+		: { action: K } & MessageDescriptions[K][0]
+	: { action: K } & MessageDescriptions[K];
 type MessageResponse<K extends keyof MessageDescriptions> = MessageDescriptions[K] extends never
 	? void
 	: MessageDescriptions[K] extends Array<any>
 	? MessageDescriptions[K][1]
 	: MessageDescriptions[K];
+type AnyMessagePayload<K = keyof MessageDescriptions> = K extends infer U ? MessagePayload<U> : never;
 
 /**
  * Storage

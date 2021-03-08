@@ -1,6 +1,6 @@
 import { DOM } from '../../Core/DOM';
 import { duration, ExportModule, ImportModule } from '../../Core/Module';
-import { Request } from '../../Core/Request';
+import { Http } from '../../Core/Http';
 import { LocalTitle } from '../../Core/Title';
 import { AnilistAPI, AnilistHeaders, AnilistTitle, AnilistStatus, AnilistDate } from '../Class/Anilist';
 import { ActivableKey } from '../Keys';
@@ -85,8 +85,7 @@ export class AnilistImport extends ImportModule {
 
 	preExecute = async (): Promise<boolean> => {
 		// Find required username
-		const viewerResponse = await Request.json({
-			url: AnilistAPI,
+		const viewerResponse = await Http.json(AnilistAPI, {
 			method: 'POST',
 			headers: AnilistHeaders(),
 			body: JSON.stringify({
@@ -107,8 +106,7 @@ export class AnilistImport extends ImportModule {
 	execute = async (): Promise<boolean> => {
 		// Get list of *all* titles
 		const message = this.interface?.message('loading', 'Fetching all titles...');
-		const response = await Request.json<AnilistListResponse>({
-			url: AnilistAPI,
+		const response = await Http.json<AnilistListResponse>(AnilistAPI, {
 			method: 'POST',
 			headers: AnilistHeaders(),
 			body: JSON.stringify({
@@ -119,7 +117,7 @@ export class AnilistImport extends ImportModule {
 			}),
 		});
 		message?.classList.remove('loading');
-		if (response.code >= 500) {
+		if (response.code >= 500 || !response.body) {
 			this.interface?.message('warning', 'The request failed, maybe Anilist is having problems, retry later.');
 			return false;
 		} else if (response.code >= 400) {

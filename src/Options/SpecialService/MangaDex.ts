@@ -2,7 +2,7 @@ import { DOM } from '../../Core/DOM';
 import { MangaDex } from '../../Core/MangaDex';
 import { ModuleInterface } from '../../Core/ModuleInterface';
 import { Options } from '../../Core/Options';
-import { Request } from '../../Core/Request';
+import { Http } from '../../Core/Http';
 import { Storage } from '../../Core/Storage';
 import { LocalTitle, TitleCollection } from '../../Core/Title';
 import { ServiceKey } from '../../Service/Keys';
@@ -50,11 +50,11 @@ export class MangaDexImport extends SpecialService {
 
 			// Check login and get an Username
 			let message = moduleInterface.message('loading', 'Fetching all Titles...');
-			const response = await Request.json<MangaDexAPIResponse>({
-				url: MangaDex.api('get:user:followed:list'),
+			const response = await Http.json<MangaDexAPIResponse>(MangaDex.api('get:user:followed:list'), {
+				method: 'GET',
 			});
 			message.classList.remove('loading');
-			if (!response.ok) {
+			if (!response.ok || !response.body) {
 				moduleInterface.message(
 					'warning',
 					`The request failed, maybe MangaDex is having problems or you aren't logged in retry later.`
@@ -117,19 +117,17 @@ export class MangaDexExport extends SpecialService {
 		// Status
 		let status = ResponseStatus.SUCCESS;
 		if (online?.status != title.status) {
-			const response = await Request.get<RawResponse>({
-				url: MangaDex.api('set:title:status', title.key.id!, title.status),
+			const response = await Http.get(MangaDex.api('set:title:status', title.key.id!, title.status), {
 				credentials: 'include',
 				headers: {
 					'X-Requested-With': 'XMLHttpRequest',
 				},
 			});
-			status = Request.status(response);
+			status = response.status;
 		}
 		// Score
 		if (online?.rating != Math.round(title.score / 10)) {
-			await Request.get<RawResponse>({
-				url: MangaDex.api('set:title:rating', title.key.id!, title.score / 10),
+			await Http.get(MangaDex.api('set:title:rating', title.key.id!, title.score / 10), {
 				credentials: 'include',
 				headers: {
 					'X-Requested-With': 'XMLHttpRequest',
@@ -141,9 +139,7 @@ export class MangaDexExport extends SpecialService {
 			Options.updateMDProgress &&
 			(online?.progress?.chapter !== title.progress.chapter || online?.progress?.volume !== title.progress.volume)
 		) {
-			await Request.get({
-				method: 'POST',
-				url: MangaDex.api('update:title:progress', title.key.id!),
+			await Http.post(MangaDex.api('update:title:progress', title.key.id!), {
 				credentials: 'include',
 				headers: { 'X-Requested-With': 'XMLHttpRequest' },
 				form: {
@@ -164,11 +160,11 @@ export class MangaDexExport extends SpecialService {
 		moduleInterface.bindFormSubmit(async () => {
 			// Check login and get an Username
 			let message = moduleInterface.message('loading', 'Fetching all Titles...');
-			const response = await Request.json<MangaDexAPIResponse>({
-				url: MangaDex.api('get:user:followed:list'),
+			const response = await Http.json<MangaDexAPIResponse>(MangaDex.api('get:user:followed:list'), {
+				method: 'GET',
 			});
 			message.classList.remove('loading');
-			if (!response.ok) {
+			if (!response.ok || !response.body) {
 				moduleInterface.message(
 					'warning',
 					'The request failed, maybe MangaDex is having problems, retry later.'

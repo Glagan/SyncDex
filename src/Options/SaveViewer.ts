@@ -5,7 +5,7 @@ import { dateFormat, progressToString } from '../Core/Utility';
 import { TitleEditor } from '../Core/TitleEditor';
 import { SyncModule } from '../Core/SyncModule';
 import { Services } from '../Service/Class/Map';
-import { Request } from '../Core/Request';
+import { Http } from '../Core/Http';
 import { ActivableKey } from '../Service/Keys';
 import { LocalTitle, TitleCollection } from '../Core/Title';
 import { MangaDex } from '../Core/MangaDex';
@@ -350,10 +350,7 @@ export class SaveViewer {
 		DOM.clear(this.pagingPages);
 		DOM.clear(this.body);
 		if (reload) {
-			const response = await Request.json({
-				url: MangaDex.api('get:user:me'),
-				credentials: 'include',
-			});
+			const response = await Http.json(MangaDex.api('get:user:me'), { method: 'GET', credentials: 'include' });
 			SaveViewer.loggedIn = response.ok;
 			this.realTitles = await TitleCollection.get();
 		}

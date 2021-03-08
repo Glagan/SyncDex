@@ -1,6 +1,6 @@
 import { DOM } from '../../Core/DOM';
 import { duration, ExportModule, ImportModule } from '../../Core/Module';
-import { Request } from '../../Core/Request';
+import { Http } from '../../Core/Http';
 import { FoundTitle } from '../../Core/Title';
 import { MangaUpdatesTitle } from '../Class/MangaUpdates';
 import { ActivableKey } from '../Keys';
@@ -27,11 +27,10 @@ export class MangaUpdatesImport extends ImportModule {
 		for (let current = 0; !this.interface?.doStop && current < max; current++) {
 			const page = MangaUpdatesImport.lists[current];
 			progress.textContent = `Fetching all titles... Page ${current + 1} out of ${max}.`;
-			const response = await Request.get<RawResponse>({
-				url: `https://www.mangaupdates.com/mylist.html?list=${page}`,
+			const response = await Http.get(`https://www.mangaupdates.com/mylist.html?list=${page}`, {
 				credentials: 'include',
 			});
-			if (response.ok && response.body.indexOf('You must be a user to access this page.') < 0) {
+			if (response.ok && response.body && response.body.indexOf('You must be a user to access this page.') < 0) {
 				const body = parser.parseFromString(response.body, 'text/html');
 				const rows = body.querySelectorAll(`div[id^='r']`);
 				const status = MangaUpdatesTitle.listToStatus(page);

@@ -1,6 +1,6 @@
 import { log, LogExecTime } from '../../Core/Log';
 import { Options } from '../../Core/Options';
-import { Request } from '../../Core/Request';
+import { Http } from '../../Core/Http';
 import { LoginMethod, Service } from '../../Core/Service';
 import { Title } from '../../Core/Title';
 import { ActivableKey } from '../Keys';
@@ -117,31 +117,29 @@ export class Kitsu extends Service {
 
 	getUserId = async (): Promise<ResponseStatus> => {
 		if (Options.tokens.kitsuToken === undefined) return ResponseStatus.MISSING_TOKEN;
-		let response = await Request.json<KitsuUserResponse>({
-			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
+		let response = await Http.json<KitsuUserResponse>('https://kitsu.io/api/edge/users?filter[self]=true', {
 			method: 'GET',
 			headers: KitsuHeaders(),
 		});
-		if (!response.ok) return Request.status(response);
-		Options.tokens.kitsuUser = response.body.data[0].id;
-		return ResponseStatus.SUCCESS;
+		if (!response.ok) return response.status;
+		Options.tokens.kitsuUser = response.body?.data[0].id;
+		return Options.tokens.kitsuUser ? ResponseStatus.SUCCESS : response.status;
 	};
 
 	loggedIn = async (): Promise<ResponseStatus> => {
 		if (Options.tokens.kitsuUser === undefined || !Options.tokens.kitsuToken) return ResponseStatus.MISSING_TOKEN;
-		const response = await Request.json<KitsuUserResponse>({
-			url: 'https://kitsu.io/api/edge/users?filter[self]=true',
+		const response = await Http.json<KitsuUserResponse>('https://kitsu.io/api/edge/users?filter[self]=true', {
+			method: 'GET',
 			headers: {
 				Authorization: `Bearer ${Options.tokens.kitsuToken}`,
 				Accept: 'application/vnd.api+json',
 			},
 		});
-		return Request.status(response);
+		return response.status;
 	};
 
 	login = async (username: string, password: string): Promise<ResponseStatus> => {
-		let response = await Request.json({
-			url: 'https://kitsu.io/api/oauth/token',
+		let response = await Http.json('https://kitsu.io/api/oauth/token', {
 			method: 'POST',
 			headers: {
 				Accept: 'application/vnd.api+json',
@@ -151,7 +149,7 @@ export class Kitsu extends Service {
 				password
 			)}`,
 		});
-		if (!response.ok) return Request.status(response);
+		if (!response.ok || !response.body) return response.status;
 		Options.tokens.kitsuToken = response.body.access_token;
 		const userIdResp = await this.getUserId();
 		if (userIdResp !== ResponseStatus.SUCCESS) return userIdResp;
@@ -161,12 +159,11 @@ export class Kitsu extends Service {
 	@LogExecTime
 	async get(key: MediaKey): Promise<Title | ResponseStatus> {
 		if (!Options.tokens.kitsuToken || !Options.tokens.kitsuUser) return ResponseStatus.MISSING_TOKEN;
-		const response = await Request.json<KitsuResponse>({
-			url: `${KitsuAPI}?filter[manga_id]=${key.id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=chapterCount,volumeCount,canonicalTitle`,
-			method: 'GET',
-			headers: KitsuHeaders(),
-		});
-		if (!response.ok) return Request.status(response);
+		const response = await Http.json<KitsuResponse>(
+			`${KitsuAPI}?filter[manga_id]=${key.id}&filter[user_id]=${Options.tokens.kitsuUser}&include=manga&fields[manga]=chapterCount,volumeCount,canonicalTitle`,
+			{ method: 'GET', headers: KitsuHeaders() }
+		);
+		if (!response.ok || !response.body) return response.status;
 		const body = response.body;
 		const values: Partial<KitsuTitle> = { loggedIn: true, key: key };
 		if (body.data.length == 1) {
@@ -228,7 +225,7 @@ export class KitsuTitle extends Title {
 		// Convert 0-100 score to the 0-20 range -- round to the nearest
 		const kuScore = this.score !== undefined && this.score > 0 ? Math.round(this.score / 5) : undefined;
 		// Fix progress to avoid 422 Cannot exceed media length
-		const progress: Progress = JSON.parse(JSON.stringify(this.progress));
+		const progress = { ...this.progress };
 		if (this.max) {
 			if (this.max.chapter && this.max.chapter < this.chapter) {
 				progress.chapter = this.max.chapter;
@@ -237,8 +234,7 @@ export class KitsuTitle extends Title {
 				progress.volume = this.max.volume;
 			}
 		}
-		const response = await Request.json<KitsuPersistResponse>({
-			url: url,
+		const response = await Http.json<KitsuPersistResponse>(url, {
 			method: method,
 			headers: KitsuHeaders(),
 			body: JSON.stringify({
@@ -270,7 +266,7 @@ export class KitsuTitle extends Title {
 				},
 			}),
 		});
-		if (!response.ok) return Request.status(response);
+		if (!response.ok || !response.body) return response.status;
 		this.libraryEntryId = parseInt(response.body.data.id);
 		if (!this.inList) {
 			this.inList = true;
@@ -285,12 +281,10 @@ export class KitsuTitle extends Title {
 			await log(`Could not sync Kitsu: status ${this.status} libraryEntryId ${this.libraryEntryId}`);
 			return ResponseStatus.BAD_REQUEST;
 		}
-		let response = await Request.get({
-			url: `https://kitsu.io/api/edge/library-entries/${this.libraryEntryId}`,
-			method: 'DELETE',
+		let response = await Http.delete(`https://kitsu.io/api/edge/library-entries/${this.libraryEntryId}`, {
 			headers: KitsuHeaders(),
 		});
-		if (!response.ok) return Request.status(response);
+		if (!response.ok) return response.status;
 		this.libraryEntryId = 0;
 		this.reset();
 		return ResponseStatus.DELETED;
