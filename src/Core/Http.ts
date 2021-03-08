@@ -51,16 +51,17 @@ export class Http {
 			} else Http.nextRequest[domain] = now + (Http.cooldowns[domain] ?? Http.DEFAULT_COOLDOWN) + 100;
 
 			// Options
+			const isJson = request.isJson === true;
 			const init: RequestInit & { headers: Record<string, string> } = {
 				method: request.method ?? 'GET',
 				body: request.body ?? null,
 				redirect: request.redirect ?? 'follow',
 				cache: request.cache ?? 'default',
 				mode: request.mode ?? undefined,
+				referrer: request.referrer ?? undefined,
 				credentials: request.credentials ?? 'same-origin',
 				headers: ((<unknown>request.headers) as Record<string, string>) ?? {},
 			};
-			const isJson = request.isJson === true;
 
 			if (request.file !== undefined) {
 				const save = await getCleanSave();

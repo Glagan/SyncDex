@@ -5,8 +5,9 @@ export namespace Message {
 	 * ? Delete ?
 	 * Modifiable sender to send local messages in background script.
 	 */
-	const sender: <K extends keyof MessageDescriptions>(message: MessagePayload<K>) => Promise<MessageResponse<K>> =
-		browser.runtime.sendMessage;
+	export let sender: <K extends keyof MessageDescriptions>(
+		message: MessagePayload<K>
+	) => Promise<MessageResponse<K>> = browser.runtime.sendMessage;
 
 	/**
 	 * Send a message to the background running script.

@@ -1,6 +1,5 @@
 import { browser } from 'webextension-polyfill-ts';
 import { Message } from './Message';
-import { SaveSync } from './SaveSync';
 
 console.log('SyncDex :: Storage');
 

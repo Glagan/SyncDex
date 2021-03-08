@@ -33,6 +33,8 @@ interface HttpRequest {
 	headers?: HeadersInit;
 	redirect?: RequestRedirect;
 	credentials?: RequestCredentials;
+	referrer?: string;
+	// Retrieve and add localStorage save to the body
 	file?: 'localSave' | 'namedLocalSave';
 }
 
