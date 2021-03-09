@@ -12,6 +12,12 @@ interface Window {
  * Requests
  */
 
+interface APIRateLimit {
+	limit: number;
+	remaining: number;
+	retry?: number;
+}
+
 interface FormDataFile {
 	content: string[];
 	name: string;

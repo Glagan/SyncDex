@@ -26,8 +26,9 @@ export class Http {
 		'anilist.co': 1500,
 		'nikurasu.org': 500,
 	};
+	private static apiRateLimit: { [key: string]: APIRateLimit } = {};
 	private static cookieDomains = ['myanimelist.net', 'mangadex.org', 'mangaupdates.com', 'anime-planet.com'];
-	private static nextRequest: Record<string, number> = {};
+	private static lastRequest: Record<string, number> = {};
 	private static findDomain(url: string): string {
 		// Simple domain search - not the best but simple
 		const res = /https?:\/\/(?:.+\.)?([-\w\d]+\.(?:\w{2,5}))(?:$|\/)/i.exec(url);
@@ -44,11 +45,33 @@ export class Http {
 			const now = Date.now();
 
 			// Sleep until cooldown is reached
-			if (Http.nextRequest[domain] && Http.nextRequest[domain] >= now) {
-				const diff = Http.nextRequest[domain] - now;
-				Http.nextRequest[domain] = now + diff + (Http.cooldowns[domain] ?? Http.DEFAULT_COOLDOWN) + 100;
+			const cooldown = Http.cooldowns[domain] ?? Http.DEFAULT_COOLDOWN;
+			if (Http.lastRequest[domain] && Http.lastRequest[domain] + cooldown >= now) {
+				const diff = Http.lastRequest[domain] + cooldown - now;
 				await new Promise((resolve) => setTimeout(resolve, diff));
-			} else Http.nextRequest[domain] = now + (Http.cooldowns[domain] ?? Http.DEFAULT_COOLDOWN) + 100;
+			}
+			Http.lastRequest[domain] = now + 50;
+
+			// Check Rate Limit
+			if (this.apiRateLimit[domain]) {
+				const rateLimit = this.apiRateLimit[domain];
+
+				// Sleep until Retry-After seconds
+				if (rateLimit.retry) {
+					await new Promise((resolve) => setTimeout(resolve, rateLimit.retry));
+					delete rateLimit.retry;
+				}
+				// Add sleep time if the remaining rate limit is getting low
+				else {
+					const percentRemaining = rateLimit.remaining / rateLimit.limit;
+					// If we used more than 50% of our rate limit
+					// We will sleep at least 50% of the cooldown duration
+					if (percentRemaining < 0.5) {
+						// Sleep "cooldown * (1 - (percentRemaining * 1.5))" ms
+						await new Promise((resolve) => setTimeout(resolve, cooldown * (1 - percentRemaining * 1.5)));
+					}
+				}
+			}
 
 			// Options
 			const isJson = request.isJson === true;
@@ -133,11 +156,25 @@ export class Http {
 			// if (init.headers['Origin']) init.headers['X-Origin'] = init.headers['Origin'];
 			// if (init.headers['Referer']) init.headers['X-Referer'] = init.headers['Referer'];
 
-			// TODO: Handle X-RateLimit header for Anilist
-
 			resolve(
 				await fetch(request.url, init)
 					.then(async (response) => {
+						// Save X-RateLimit-* headers for next request
+						if (response.headers.has('X-RateLimit-Limit')) {
+							if (!this.apiRateLimit[domain]) {
+								this.apiRateLimit[domain] = {
+									limit: parseInt(response.headers.get('X-RateLimit-Limit')!),
+								} as APIRateLimit;
+							}
+							if (response.headers.has('X-RateLimit-Remaining')) {
+								this.apiRateLimit[domain].remaining = parseInt(
+									response.headers.get('X-RateLimit-Remaining')!
+								);
+								if (response.headers.has('Retry-After')) {
+									this.apiRateLimit[domain].retry = parseInt(response.headers.get('Retry-After')!);
+								}
+							} else delete this.apiRateLimit[domain];
+						}
 						return <HttpResponse>{
 							url: response.url,
 							ok: response.status >= 200 && response.status < 400,
