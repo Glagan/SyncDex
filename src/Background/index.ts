@@ -103,6 +103,7 @@ browser.runtime.onInstalled.addListener(async (details: BrowserRuntime.OnInstall
 	let updated = false;
 	if (details.reason === 'update') {
 		await Options.load();
+		SaveSync.state = await Storage.get(StorageUniqueKey.SaveSync);
 		await loadLogs(true);
 		updated = await Updates.apply();
 	} else await log(`Installation version ${DefaultOptions.version}.${DefaultOptions.subVersion}`);
@@ -122,11 +123,16 @@ browser.alarms.onAlarm.addListener(ManageSaveSync.listener);
 //	Directly trigger Save Sync and (silent) Import if they're enabled
 browser.runtime.onStartup.addListener(async function () {
 	if (!isChrome) browser.browserAction.setBadgeTextColor({ color: '#FFFFFF' });
-	await Storage.remove(['dropboxState', 'googleDriveState', 'saveSyncInProgress', 'importInProgress']);
+	await Storage.remove([
+		StorageUniqueKey.DropboxState,
+		StorageUniqueKey.GoogleDriveState,
+		StorageUniqueKey.SaveSyncInProgress,
+		StorageUniqueKey.ImportInProgress,
+	]);
 
 	await Options.load();
 	await Updates.apply();
-	SaveSync.state = await Storage.get('saveSync');
+	SaveSync.state = await Storage.get(StorageUniqueKey.SaveSync);
 	await ManageSaveSync.sync();
 	await ImportExport.silentImport();
 });

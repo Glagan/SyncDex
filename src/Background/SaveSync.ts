@@ -19,7 +19,8 @@ export namespace ManageSaveSync {
 		await loadLogs(true);
 
 		setIcon('Save Sync in progress', '#45A1FF', '...');
-		const state = await Storage.get('saveSync');
+		SaveSync.state = await Storage.get(StorageUniqueKey.SaveSync);
+		const state = SaveSync.state;
 		if (state !== undefined) {
 			if (!(await Storage.get(StorageUniqueKey.SaveSyncInProgress, false))) {
 				const saveSyncServiceClass = SaveSyncServices[state.service];
@@ -55,7 +56,7 @@ export namespace ManageSaveSync {
 					delete (state as any).token;
 					delete (state as any).refresh;
 					await log(`Invalid Save Sync Service [${state}]`);
-					await Storage.remove('saveSync');
+					await Storage.remove(StorageUniqueKey.SaveSync);
 					setIcon();
 				}
 			} else setIcon();

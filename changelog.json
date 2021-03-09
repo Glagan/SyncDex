@@ -1,6 +1,16 @@
 {
 	"updates": [
 		{
+			"version": "0.3.0",
+			"description": [
+				"Update Overview style.",
+				"Remove `autoSync` option.",
+				"Update Sync notifications",
+				"Fix initialization when a gap chapter is opened.",
+				"Remove some circular dependencies."
+			]
+		},
+		{
 			"version": "0.2.15",
 			"description": [
 				"Fix MangaDex Export.##34",
