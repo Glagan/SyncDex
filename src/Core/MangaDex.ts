@@ -22,8 +22,7 @@ export namespace MangaDex {
 		return `https://mangadex.org/images/manga/${key.id}${size != 'original' ? `.${size}` : ''}.${extension}`;
 	}
 
-	// const MangaDexAPI = 'https://api.mangadex.org/v2';
-	const MangaDexAPI = 'https://mangadex.org/api/v2';
+	const MangaDexAPI = 'https://api.mangadex.org/v2';
 
 	export function api(type: 'get:user:me'): string;
 	export function api(type: 'get:user:title', id: number): string;
