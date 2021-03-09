@@ -142,10 +142,12 @@ export class UpdateQueue {
 		const rows: string[] = [];
 		for (const key of Options.services) {
 			if (report[key] === undefined) continue;
-			if (report[key] === false) {
+			if (report[key] === ServiceStatus.LOGGED_OUT) {
 				rows.push(this.reportNotificationRow(key, 'Logged out'));
-			} else if (title.services[key] === undefined) {
+			} else if (report[key] === ServiceStatus.NO_ID) {
 				rows.push(this.reportNotificationRow(key, 'No ID'));
+			} else if (report[key] === ServiceStatus.SYNCED) {
+				rows.push(this.reportNotificationRow(key, 'Synced'));
 			} else if (report[key]! <= ResponseStatus.DELETED) {
 				rows.push(
 					this.reportNotificationRow(

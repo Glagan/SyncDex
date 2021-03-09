@@ -157,17 +157,12 @@ abstract class Overview {
 	/**
 	 * Create a list of all values for the Media.
 	 */
-	update(title: Title | ResponseStatus | boolean, original: LocalTitle | undefined) {
+	update(title: Title | ServiceResponse, original: LocalTitle | undefined) {
 		this.clear();
 
 		if (typeof title === 'object') {
 			if (!title.loggedIn) {
-				this.body.appendChild(
-					DOM.create('div', {
-						class: 'alert alert-danger',
-						textContent: 'You are not Logged In.',
-					})
-				);
+				this.setErrorMessage(ServiceStatus.LOGGED_OUT);
 				this.setIcon('times has-error');
 				return;
 			} else if (title.inList && title.status != Status.NONE) {
@@ -238,14 +233,6 @@ abstract class Overview {
 		} else if (typeof title === 'number') {
 			this.setIcon('times has-error');
 			this.setErrorMessage(title);
-		} else {
-			this.body.appendChild(
-				this.alert(
-					'info',
-					`No ID for ${Services[this.key as ActivableKey].name}, you can manually add one in the Save Editor.`
-				)
-			);
-			this.setIcon('times has-error');
 		}
 	}
 
@@ -271,8 +258,21 @@ abstract class Overview {
 		});
 	}
 
-	setErrorMessage(res: ResponseStatus) {
+	setErrorMessage(res: ServiceResponse) {
 		switch (res) {
+			case ServiceStatus.NO_ID:
+				this.body.appendChild(
+					this.alert(
+						'info',
+						`No ID for ${
+							Services[this.key as ActivableKey].name
+						}, you can manually add one in the Save Editor.`
+					)
+				);
+				break;
+			case ServiceStatus.LOGGED_OUT:
+				this.body.appendChild(this.alert('danger', 'You are not Logged In.'));
+				break;
 			case ResponseStatus.MISSING_TOKEN:
 				this.body.appendChild(
 					this.alert('danger', [
@@ -304,6 +304,8 @@ abstract class Overview {
 				this.body.appendChild(this.alert('danger', 'Server Error, the Service might be down, retry later.'));
 				break;
 		}
+		// Make sur the overlay is the last child
+		this.body.appendChild(this.overlay);
 	}
 
 	activate() {
@@ -464,7 +466,7 @@ class ExternalOverview extends Overview {
 		this.setIcon('bookmark has-error');
 	}
 
-	update(title: Title | ResponseStatus | boolean, original: LocalTitle | undefined) {
+	update(title: Title | ServiceResponse, original: LocalTitle | undefined) {
 		super.update(title, original);
 
 		// Display *Sync* button only if the title is out of sync and if the title is in a list
@@ -589,7 +591,7 @@ class Overviews {
 		if (overview) overview.syncing();
 	}
 
-	synced(key: ActivableKey, title: Title | ResponseStatus | boolean, local: LocalTitle) {
+	synced(key: ActivableKey, title: Title | ServiceResponse, local: LocalTitle) {
 		const overview = this.overviews[key];
 		if (overview) {
 			overview.update(title, local);

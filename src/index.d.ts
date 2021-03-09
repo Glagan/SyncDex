@@ -323,8 +323,16 @@ type StorageValues = {
  * SyncModule
  */
 
+declare const enum ServiceStatus {
+	NO_ID = 99,
+	LOGGED_OUT,
+	SYNCED,
+}
+
+type ServiceResponse = ServiceStatus | ResponseStatus;
+
 type SyncReport = {
-	[key in import('./Service/Keys').ActivableKey]?: ResponseStatus | boolean;
+	[key in import('./Service/Keys').ActivableKey]?: ServiceResponse;
 };
 
 type MDListReport = {
@@ -453,7 +461,7 @@ type EventPayloads = {
 	'service:syncing': { key: import('./Service/Keys').ActivableKey };
 	'service:synced': {
 		key: import('./Service/Keys').ActivableKey;
-		title: import('./Core/Title').Title | ResponseStatus | boolean;
+		title: import('./Core/Title').Title | ServiceResponse;
 		local: import('./Core/Title').LocalTitle;
 	};
 	// SyncModule.syncMangaDex -- also called from syncExternal if enabled

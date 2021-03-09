@@ -105,7 +105,7 @@ class Overview {
 				icon.classList.remove('loading', 'error', 'synced', 'warning');
 				if (!Options.iconsSilentAfterSync) {
 					const res = payload.title;
-					if (res === false) {
+					if (res === ServiceStatus.LOGGED_OUT) {
 						icon.classList.add('error');
 					} else if (res instanceof Title) {
 						if (!res.loggedIn) {

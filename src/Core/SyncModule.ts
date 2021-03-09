@@ -10,8 +10,8 @@ import { dispatch } from './Event';
 
 export class SyncModule {
 	title: LocalTitle;
-	loadingServices: Promise<Title | ResponseStatus>[] = [];
-	services: { [key in ActivableKey]?: Title | ResponseStatus } = {};
+	loadingServices: Promise<Title | ServiceResponse>[] = [];
+	services: { [key in ActivableKey]?: Title | ServiceResponse } = {};
 	// Logged in on MangaDex
 	loggedIn: boolean = true;
 	// MangaDex Status and Score
@@ -47,7 +47,8 @@ export class SyncModule {
 					return ResponseStatus.FAIL;
 				});
 		} else {
-			dispatch('service:synced', { key, title: false, local: this.title });
+			this.services[key] = ServiceStatus.NO_ID;
+			dispatch('service:synced', { key, title: ServiceStatus.NO_ID, local: this.title });
 		}
 	}
 
@@ -211,7 +212,11 @@ export class SyncModule {
 			// Dispatch service:synced to update with difference if updateExternals is disabled
 			const { report, mdReport } = { report: undefined, mdReport: undefined };
 			for (const key of Options.services) {
-				dispatch('service:synced', { key, title: this.services[key] ?? false, local: this.title });
+				dispatch('service:synced', {
+					key,
+					title: this.services[key] ?? ServiceStatus.NO_ID,
+					local: this.title,
+				});
 			}
 			dispatch('sync:end', { type: 'edit', state, deleteReport, report, mdReport, updatedIDs, syncModule: this });
 		} else {
@@ -276,12 +281,15 @@ export class SyncModule {
 	 * Returns RequestStatus on request sent, false if the title has no ID or is not logged in.
 	 * @param key The Service key
 	 */
-	async exportService(key: ActivableKey): Promise<ResponseStatus | boolean> {
+	async exportService(key: ActivableKey): Promise<ServiceResponse> {
 		const title = this.services[key];
 		// If the title is "invalid" still send a service:synced to update the interface
-		if (title === undefined || (typeof title === 'object' && !title.loggedIn)) {
-			dispatch('service:synced', { key, title: false, local: this.title });
-			return false;
+		if (title === undefined) {
+			dispatch('service:synced', { key, title: ServiceStatus.NO_ID, local: this.title });
+			return ServiceStatus.NO_ID;
+		} else if (typeof title === 'object' && !title.loggedIn) {
+			dispatch('service:synced', { key, title: ServiceStatus.LOGGED_OUT, local: this.title });
+			return ServiceStatus.LOGGED_OUT;
 		} else if (typeof title !== 'object') {
 			dispatch('service:synced', { key, title, local: this.title });
 			return title;
@@ -309,8 +317,7 @@ export class SyncModule {
 		// Always update the overview to check against possible imported ServiceTitle
 		else {
 			dispatch('service:synced', { key, title, local: this.title });
-			// TODO: Return true -> updateQueue [Already Synced] ?
-			return true;
+			return ServiceStatus.SYNCED;
 		}
 	}
 
@@ -322,16 +329,12 @@ export class SyncModule {
 	async export(): Promise<{ report: SyncReport; mdReport: MDListReport }> {
 		await this.waitInitialize();
 
-		const promises: Promise<ResponseStatus | boolean | undefined>[] = [];
+		const promises: Promise<ServiceResponse | undefined>[] = [];
 		const report: SyncReport = {};
 		for (const key of Options.services) {
 			const promise = this.exportService(key);
 			promises.push(promise);
-			promise
-				.then((result) => {
-					report[key] = result;
-				})
-				.catch(() => (report[key] = false));
+			promise.then((result) => (report[key] = result)).catch(() => (report[key] = ResponseStatus.FAIL));
 		}
 
 		// Update MangaDex List Status and Score
