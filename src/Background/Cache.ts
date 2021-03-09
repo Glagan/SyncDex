@@ -1,4 +1,7 @@
 import { browser } from 'webextension-polyfill-ts';
+import { SaveSync } from '../Core/SaveSync';
+import { Storage } from '../Core/Storage';
+import { ManageSaveSync } from './SaveSync';
 
 export namespace Cache {
 	// let cache: StorageValues = {};
@@ -64,11 +67,16 @@ export namespace Cache {
 		commit -> true / catch -> false
 		return true;*/
 		try {
-			// TODO
-			/*if (SaveSync.state && Storage.isSyncableKey(args[0])) {
-				await Message.send({ action: MessageAction.saveSync });
-			}*/
 			await browser.storage.local.set(data);
+			if (SaveSync.state) {
+				// Check if any of the keys in data is syncable
+				for (const key in data) {
+					if (Storage.isSyncableKey(key)) {
+						ManageSaveSync.start();
+						break;
+					}
+				}
+			}
 			return true;
 		} catch (e) {
 			return false;
@@ -86,14 +94,13 @@ export namespace Cache {
 		commit -> true / catch -> false
 		return true;
 		*/
-		const isNumber = typeof key == 'number';
+		const isNumber = typeof key === 'number';
 		if (isNumber) key = key.toString();
 		try {
 			await browser.storage.local.remove(key as string | string[]);
-			// TODO
-			/*if (SaveSync.state && (typeof key !== 'string' || Storage.isSyncableKey(key))) {
-				await Message.send({ action: MessageAction.saveSync });
-			}*/
+			if (SaveSync.state && (typeof key !== 'string' || Storage.isSyncableKey(key))) {
+				ManageSaveSync.start();
+			}
 			return true;
 		} catch (e) {
 			return false;

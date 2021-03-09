@@ -64,7 +64,7 @@ export namespace Storage {
 	 * Remove the key or list of keys from local storage if they exists.
 	 * @param key A valid key or list of keys
 	 */
-	export async function remove(key: number | string | string[]) {
+	export async function remove(key: StorageUniqueKey | StorageUniqueKey[] | number | string | string[]) {
 		await Message.send('storage:remove', { key });
 	}
 

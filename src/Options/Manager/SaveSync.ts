@@ -87,13 +87,11 @@ export class SaveSyncManager {
 					if (this.exportButton.classList.contains('loading')) return;
 					this.toggleButtons(true);
 					if (!this.syncService) return;
-					if (await this.syncService.delete()) {
-						await this.syncService.logout();
-						await this.syncService.clean();
-						delete SaveSync.state;
-					} else SimpleNotification.error({ text: `Could not delete your save, check logs.` });
+					if (!(await this.syncService.delete())) {
+						SimpleNotification.error({ text: `Could not delete your save, check logs.` });
+					}
+					await this.syncService.logout();
 					this.toggleButtons(false);
-					await Message.send('saveSync:logout');
 					this.refresh();
 				},
 			},
@@ -107,9 +105,6 @@ export class SaveSyncManager {
 					if (this.exportButton.classList.contains('loading')) return;
 					if (!this.syncService) return;
 					await this.syncService.logout();
-					await this.syncService.clean();
-					delete SaveSync.state;
-					await Message.send('saveSync:logout');
 					this.refresh();
 				},
 			},

@@ -19,10 +19,10 @@ export namespace ManageSaveSync {
 		await loadLogs(true);
 
 		setIcon('Save Sync in progress', '#45A1FF', '...');
-		const syncState = await Storage.get('saveSync');
-		if (syncState !== undefined) {
+		const state = await Storage.get('saveSync');
+		if (state !== undefined) {
 			if (!(await Storage.get(StorageUniqueKey.SaveSyncInProgress, false))) {
-				const saveSyncServiceClass = SaveSyncServices[syncState.service];
+				const saveSyncServiceClass = SaveSyncServices[state.service];
 				if (saveSyncServiceClass !== undefined) {
 					await loadLogs(true);
 					await Storage.set(StorageUniqueKey.SaveSyncInProgress, true);
@@ -32,14 +32,14 @@ export namespace ManageSaveSync {
 						// await browser.runtime.sendMessage({ action: MessageAction.saveSyncStart }).catch((_e) => _e);
 						/// @ts-ignore saveSyncServiceClass is *NOT* abstract
 						const saveSyncService: SaveSync = new saveSyncServiceClass();
-						SaveSync.state = syncState;
+						SaveSync.state = state;
 						status = await saveSyncService.sync(force);
 						if (status == SaveSyncResult.NOTHING) {
-							await log(`Save already synced with ${syncState.service}`);
+							await log(`Save already synced with ${state.service}`);
 						} else if (status == SaveSyncResult.ERROR) {
-							await log(`Couldn't sync your local save with ${syncState.service}`);
+							await log(`Couldn't sync your local save with ${state.service}`);
 						} else if (status != SaveSyncResult.SYNCED) {
-							await log(`Synced your save with ${syncState.service}`);
+							await log(`Synced your save with ${state.service}`);
 						}
 					} catch (error) {
 						log(error);
@@ -51,10 +51,10 @@ export namespace ManageSaveSync {
 					.catch((_e) => _e);*/
 					setIcon('SyncDex', '#058b00', '\u2713');
 				} else {
-					SaveSync.state = undefined;
-					delete (syncState as any).token;
-					delete (syncState as any).refresh;
-					await log(`Invalid Save Sync Service [${syncState}]`);
+					delete SaveSync.state;
+					delete (state as any).token;
+					delete (state as any).refresh;
+					await log(`Invalid Save Sync Service [${state}]`);
 					await Storage.remove('saveSync');
 					setIcon();
 				}
@@ -62,6 +62,10 @@ export namespace ManageSaveSync {
 		} else setIcon();
 	}
 
+	/**
+	 * Schedule an alarm that will trigger in "delay" minutes to start a Save Sync.
+	 * @param delay The delay before saving (minutes)
+	 */
 	export async function start(delay?: number) {
 		const alarm = await browser.alarms.get(AlarmName);
 		delay = delay !== undefined ? delay : 1;
@@ -88,5 +92,11 @@ export namespace ManageSaveSync {
 		browser.alarms.get(AlarmName).then((alarm) => {
 			if (alarm) browser.alarms.clear(AlarmName);
 		});
+		delete SaveSync.state;
+		await Storage.remove([
+			StorageUniqueKey.SaveSync,
+			StorageUniqueKey.SaveSyncInProgress,
+			StorageUniqueKey.LastSync,
+		]);
 	}
 }

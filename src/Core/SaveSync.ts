@@ -1,4 +1,5 @@
 import { log } from './Log';
+import { Message } from './Message';
 import { Options } from './Options';
 import { Storage } from './Storage';
 import { Updates } from './Updates';
@@ -38,12 +39,11 @@ export abstract class SaveSync {
 	abstract login(query: { [key: string]: string }): Promise<SaveSyncLoginResult>;
 	abstract lastSync(): Promise<number>;
 	async logout(): Promise<boolean> {
+		delete SaveSync.state;
+		await Message.send('saveSync:logout');
 		return true;
 	}
 	abstract delete(): Promise<boolean>;
-	async clean(): Promise<void> {
-		return Storage.remove('saveSync');
-	}
 
 	abstract downloadExternalSave(): Promise<string | boolean>;
 	async import(lastSync?: number): Promise<SaveSyncResult> {
