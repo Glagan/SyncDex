@@ -1262,8 +1262,12 @@ export class TitlePage extends Page {
 		}
 
 		// Add listeners
-		listen('title:syncing', () => overviews.main.syncing());
+		listen('title:syncing', () => {
+			overviews.main.syncing();
+			chapterList.disable();
+		});
 		listen('title:synced', (payload) => {
+			chapterList.enable();
 			overviews.main.update(payload.title, undefined);
 			overviews.main.synced();
 		});
@@ -1271,18 +1275,22 @@ export class TitlePage extends Page {
 			overviews.reset();
 			overviews.bind(syncModule);
 		});
-		listen('mangadex:syncing', () => mangaDexList.disable());
+
+		listen('mangadex:syncing', () => {
+			chapterList.disable();
+			mangaDexList.disable();
+		});
 		listen('mangadex:synced', (payload) => {
+			chapterList.enable();
 			mangaDexList.update(payload.field, payload.state);
 			mangaDexList.enable();
 		});
+
 		listen('sync:initialize:start', () => {
 			overviews.main.syncing();
 			mangaDexList.disable();
 			chapterList.disable();
 		});
-		listen('service:syncing', (payload) => overviews.syncing(payload.key));
-		listen('service:synced', (payload) => overviews.synced(payload.key, payload.title, payload.local));
 		listen('sync:initialize:end', (payload) => {
 			const { title } = payload;
 			// Add the *Completed* button only if the title is complete
@@ -1293,6 +1301,10 @@ export class TitlePage extends Page {
 			mangaDexList.enable();
 			chapterList.enable();
 		});
+
+		listen('service:syncing', (payload) => overviews.syncing(payload.key));
+		listen('service:synced', (payload) => overviews.synced(payload.key, payload.title, payload.local));
+
 		listen('sync:start', () => {
 			overviews.main.syncing();
 			chapterList.disable();

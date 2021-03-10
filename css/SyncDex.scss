@@ -357,18 +357,27 @@
 }
 
 // Title page
-.chapter-container .row:hover {
+.chapter-container .row {
 	.title-column {
-		button {
+		button.loading {
 			opacity: 1;
 		}
 	}
-	.title-column.current {
-		button.set-latest {
-			opacity: 0;
-			user-select: none;
-			visibility: hidden;
-			cursor: default;
+
+	&:hover {
+		.title-column {
+			button {
+				opacity: 1;
+			}
+
+			&.current {
+				button.set-latest {
+					opacity: 0;
+					user-select: none;
+					visibility: hidden;
+					cursor: default;
+				}
+			}
 		}
 	}
 }

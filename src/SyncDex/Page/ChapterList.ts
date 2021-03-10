@@ -159,6 +159,7 @@ class TitleChapterGroup {
 					row.markButton.addEventListener('click', async (event) => {
 						event.preventDefault();
 						if (row.progress.chapter == title.chapter) return;
+						row.markButton.classList.add('loading');
 
 						if (!this.initializedSync) {
 							syncModule.initialize();
@@ -167,7 +168,6 @@ class TitleChapterGroup {
 						}
 
 						// Update to current row progress
-						row.markButton.classList.add('loading');
 						await syncModule.syncProgress(row.progress);
 						row.markButton.classList.remove('loading');
 
@@ -341,6 +341,24 @@ class TitleChapterGroup {
 		}
 	}
 
+	disable() {
+		for (const row of this.rows) {
+			if (row.toggleButton) {
+				row.toggleButton.disabled = true;
+			}
+			row.markButton.disabled = true;
+		}
+	}
+
+	enable() {
+		for (const row of this.rows) {
+			if (row.toggleButton) {
+				row.toggleButton.disabled = false;
+			}
+			row.markButton.disabled = false;
+		}
+	}
+
 	static getGroups(): TitleChapterGroup[] {
 		const groups: TitleChapterGroup[] = [];
 		let fullRows = document.querySelectorAll<HTMLElement>('.chapter-container > .row');
@@ -446,8 +464,20 @@ export class ChapterListPage extends Page {
 		}
 		// Add listener for cancel button after "Set Latest" progress update
 		// 	Find the group and update displayed rows back to the previous progress
+		const disableGroups = () => groups.forEach((g) => g.disable());
+		const enableGroups = () => groups.forEach((g) => g.enable());
+
+		listen('sync:initialize:start', () => disableGroups());
+		listen('sync:initialize:end', () => enableGroups());
+
+		listen('title:syncing', () => disableGroups());
+		listen('title:synced', () => enableGroups());
+
+		listen('sync:start', () => disableGroups());
 		listen('sync:end', (payload) => {
+			enableGroups();
 			if (payload.type !== 'cancel') return;
+
 			const title = payload.syncModule.title;
 			for (const group of groups) {
 				if (group.id == payload.syncModule.title.key.id) {

@@ -107,8 +107,8 @@ export class SyncModule {
 	 */
 	@LogExecTime
 	async import(): Promise<boolean> {
-		dispatch('title:syncing');
 		await this.waitInitialize();
+		dispatch('title:syncing');
 		// Sync Title with the most recent ServiceTitle ordered by User choice
 		// Services are reversed to select the first choice last
 		let doSave = false;
