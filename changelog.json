@@ -5,7 +5,7 @@
 			"description": [
 				"Update Overview style.",
 				"Remove `autoSync` option.",
-				"Update Sync notifications",
+				"Update Sync notifications.",
 				"Fix initialization when a gap chapter is opened.",
 				"Remove some circular dependencies."
 			]

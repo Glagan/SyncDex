@@ -380,7 +380,9 @@ export class ChapterPage extends Page {
 			} // 403 Error is expected if not logged in
 			else if (response.code >= 500) {
 				SimpleNotification.error(
-					{ text: `Error while getting **MangaDex** Status.\ncode: **${response.code}**` },
+					{
+						text: `Error while getting **MangaDex** Status.\ncode: __gn-badge t-error:**${response.code}**__`,
+					},
 					{ duration: Options.errorDuration }
 				);
 			}

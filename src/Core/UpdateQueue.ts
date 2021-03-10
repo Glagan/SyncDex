@@ -69,9 +69,9 @@ export class UpdateQueue {
 			} else if (payload.type == 'progress') {
 				this.notification(
 					'Progress Updated',
-					`Progress updated to **${progressToString(title.progress)}**\n${
-						payload.result.started ? '**Start Date** set to Today !\n' : ''
-					}${payload.result.completed ? '**End Date** set to Today !\n' : ''}`,
+					`Progress updated to **${progressToString(title.progress)}**${
+						payload.result.started ? '\n**Start Date** set to Today !' : ''
+					}${payload.result.completed ? '\n**End Date** set to Today !' : ''}`,
 					payload
 				);
 			} else if (payload.type == 'score') {
@@ -131,7 +131,7 @@ export class UpdateQueue {
 
 	static reportNotificationRow(key: ActivableKey | StaticKey.SyncDex, status: string): string {
 		const name = key === StaticKey.SyncDex ? 'SyncDex' : Services[key].name;
-		return `![${name}|${Extension.icon(key)}] **${name}**>*>[${status}]<`;
+		return `![${name}|${Extension.icon(key)}] **${name}**>*>${status}<`;
 	}
 
 	/**
@@ -143,24 +143,24 @@ export class UpdateQueue {
 		for (const key of Options.services) {
 			if (report[key] === undefined) continue;
 			if (report[key] === ServiceStatus.LOGGED_OUT) {
-				rows.push(this.reportNotificationRow(key, 'Logged out'));
+				rows.push(this.reportNotificationRow(key, '__gn-badge t-warning|Logged out__'));
 			} else if (report[key] === ServiceStatus.NO_ID) {
-				rows.push(this.reportNotificationRow(key, 'No ID'));
+				rows.push(this.reportNotificationRow(key, '__gn-badge t-info|No ID__'));
 			} else if (report[key] === ServiceStatus.SYNCED) {
-				rows.push(this.reportNotificationRow(key, 'Synced'));
+				rows.push(this.reportNotificationRow(key, '__gn-badge t-success|Synced__'));
 			} else if (report[key]! <= ResponseStatus.DELETED) {
 				rows.push(
 					this.reportNotificationRow(
 						key,
 						report[key] === ResponseStatus.CREATED
-							? 'Created'
+							? '__gn-badge t-success|Created__'
 							: report[key] === ResponseStatus.DELETED
-							? 'Deleted'
-							: 'Synced'
+							? '__gn-badge t-info|Deleted__'
+							: '__gn-badge t-success|Synced__'
 					)
 				);
 			} else {
-				const error = Http.statusToString(report[key] as ResponseStatus);
+				const error = `__gn-badge t-error|${Http.statusToString(report[key] as ResponseStatus)}__`;
 				rows.push(this.reportNotificationRow(key, error));
 			}
 		}
@@ -169,13 +169,32 @@ export class UpdateQueue {
 
 	static mdReport(report: MDListReport): string {
 		const updated: string[] = [];
-		if (report.status !== undefined) updated.push('Status');
-		if (report.progress !== undefined) updated.push('Progress');
-		if (report.rating !== undefined) updated.push('Rating');
-		if (updated.length > 0) {
-			return `![MangaDex|${Extension.icon(ServiceKey.MangaDex)}] Synced ${updated.join(', ')}.`;
+		const errors: string[] = [];
+		if (report.status !== undefined) {
+			if (report.status === ResponseStatus.SUCCESS) {
+				updated.push('**Status**');
+			} else errors.push(`Status __gn-badge t-error|${Http.statusToString(report.status)}__`);
 		}
-		return '';
+		if (report.progress !== undefined) {
+			if (report.progress === ResponseStatus.SUCCESS) {
+				updated.push('**Progress**');
+			} else errors.push(`Progress __gn-badge t-error|${Http.statusToString(report.progress)}__`);
+		}
+		if (report.rating !== undefined) {
+			if (report.rating === ResponseStatus.SUCCESS) {
+				updated.push('**Rating**');
+			} else errors.push(`Rating __gn-badge t-error|${Http.statusToString(report.rating)}__`);
+		}
+		let result = '';
+		if (updated.length > 0) {
+			result = `![MangaDex|${Extension.icon(ServiceKey.MangaDex)}] Synced ${updated.join(', ')}.`;
+		}
+		if (errors.length > 0) {
+			result = `${result !== '' ? `\n` : ''}![MangaDex|${Extension.icon(ServiceKey.MangaDex)}] ${errors.join(
+				', '
+			)}.`;
+		}
+		return result;
 	}
 
 	static notification(

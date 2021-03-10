@@ -922,6 +922,14 @@ SimpleNotification.tags = {
 		open: '{{',
 		close: '}}',
 	},
+	color: {
+		type: 'span',
+		title: true,
+		attributes: { class: '$title' },
+		textContent: '$content',
+		open: '__',
+		close: '__',
+	},
 	bold: {
 		type: 'span',
 		class: 'gn-bold',
