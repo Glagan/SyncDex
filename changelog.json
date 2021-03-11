@@ -3,6 +3,7 @@
 		{
 			"version": "0.3.0",
 			"description": [
+				"Fix Anilist rate limit.##46",
 				"Update Overview style.",
 				"Remove `autoSync` option.",
 				"Update Sync notifications.",
