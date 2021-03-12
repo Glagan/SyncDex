@@ -48,6 +48,7 @@ declare const enum ResponseStatus {
 	SUCCESS,
 	CREATED,
 	DELETED,
+	UNAUTHORIZED,
 	MISSING_TOKEN,
 	FAIL,
 	SERVER_ERROR,

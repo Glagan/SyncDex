@@ -290,6 +290,7 @@ export class Http {
 	static status(code: number): ResponseStatus {
 		if (code == 0) return ResponseStatus.FAIL;
 		else if (code >= 500) return ResponseStatus.SERVER_ERROR;
+		else if (code == 401) return ResponseStatus.UNAUTHORIZED;
 		else if (code == 404) return ResponseStatus.NOT_FOUND;
 		else if (code >= 400) return ResponseStatus.BAD_REQUEST;
 		return ResponseStatus.SUCCESS;
@@ -305,6 +306,7 @@ export class Http {
 				return 'Server Error';
 			case ResponseStatus.BAD_REQUEST:
 				return 'Bad Request';
+			case ResponseStatus.UNAUTHORIZED:
 			case ResponseStatus.MISSING_TOKEN:
 				return 'Logged Out';
 			case ResponseStatus.NOT_FOUND:

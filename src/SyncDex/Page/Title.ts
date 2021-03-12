@@ -271,6 +271,7 @@ abstract class Overview {
 				);
 				break;
 			case ServiceStatus.LOGGED_OUT:
+			case ResponseStatus.UNAUTHORIZED:
 				this.body.appendChild(this.alert('danger', 'You are not Logged In.'));
 				break;
 			case ResponseStatus.MISSING_TOKEN:
@@ -1260,6 +1261,9 @@ export class TitlePage extends Page {
 		if (Options.services.length == 0) {
 			overviews.hasNoServices(syncModule);
 		}
+		if (!syncModule.loggedIn) {
+			mangaDexList.disable();
+		}
 
 		// Add listeners
 		listen('title:syncing', () => {
@@ -1283,7 +1287,9 @@ export class TitlePage extends Page {
 		listen('mangadex:synced', (payload) => {
 			chapterList.enable();
 			mangaDexList.update(payload.field, payload.state);
-			mangaDexList.enable();
+			if (syncModule.loggedIn) {
+				mangaDexList.enable();
+			}
 		});
 
 		listen('sync:initialize:start', () => {
@@ -1298,7 +1304,9 @@ export class TitlePage extends Page {
 				overviews.main.addCompletedButton();
 			} else overviews.main.removeCompletedButton();
 			overviews.main.synced();
-			mangaDexList.enable();
+			if (syncModule.loggedIn) {
+				mangaDexList.enable();
+			}
 			chapterList.enable();
 		});
 
@@ -1316,7 +1324,9 @@ export class TitlePage extends Page {
 			overviews.main.synced();
 			chapterList.highlight(title);
 			chapterList.enable();
-			mangaDexList.enable();
+			if (syncModule.loggedIn) {
+				mangaDexList.enable();
+			}
 		});
 
 		// Start syncModule work

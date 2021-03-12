@@ -393,9 +393,9 @@ export class SyncModule {
 	 * Sync MangaDex Status or Rating.
 	 */
 	@LogExecTime
-	private async syncMangaDex(field: MangaDexTitleField): Promise<HttpResponse> {
+	private async syncMangaDex(field: MangaDexTitleField): Promise<RawResponse> {
 		dispatch('mangadex:syncing', { title: this.title, field });
-		let response: HttpResponse;
+		let response: RawResponse;
 		if (field == 'progress') {
 			response = await Http.post(MangaDex.list(field, this.title.key.id!, this.mdState), {
 				credentials: 'include',
@@ -411,7 +411,12 @@ export class SyncModule {
 				headers: { 'X-Requested-With': 'XMLHttpRequest' },
 			});
 		}
-		const status = response.status;
+		// MangaDex fails with a body on error
+		if (response.body && response.body.length > 0) {
+			response.ok = false;
+			response.status = ResponseStatus.UNAUTHORIZED;
+		}
+		const { status } = response;
 		dispatch('mangadex:synced', { title: this.title, field, status, state: this.mdState });
 		return response;
 	}
@@ -422,8 +427,7 @@ export class SyncModule {
 		const oldStatus = this.mdState.status;
 		this.mdState.status = status;
 		const response = await this.syncMangaDex(this.mdState.status == Status.NONE ? 'unfollow' : 'status');
-		// Status update returns a body on error
-		if (!response.ok || (response.body && response.body.length > 0)) {
+		if (!response.ok) {
 			this.mdState.status = oldStatus;
 		}
 		return response.status;
