@@ -190,9 +190,9 @@ export class UpdateQueue {
 			result = `![MangaDex|${Extension.icon(ServiceKey.MangaDex)}] Synced ${updated.join(', ')}.`;
 		}
 		if (errors.length > 0) {
-			result = `${result !== '' ? `\n` : ''}![MangaDex|${Extension.icon(ServiceKey.MangaDex)}] ${errors.join(
-				', '
-			)}.`;
+			result = `${result !== '' ? `${result}\n` : ''}![MangaDex|${Extension.icon(
+				ServiceKey.MangaDex
+			)}] ${errors.join(', ')}.`;
 		}
 		return result;
 	}

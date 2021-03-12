@@ -1,6 +1,14 @@
 {
 	"updates": [
 		{
+			"version": "0.3.1",
+			"description": [
+				"Fix \"Logged out\" status in MangaDex List rating update.",
+				"Fix missing MangaDex List synced status on error.",
+				"Fix Oneshot being saved as \"Reading\" instead of \"Completed\"."
+			]
+		},
+		{
 			"version": "0.3.0",
 			"description": [
 				"Fix Anilist rate limit.##46",

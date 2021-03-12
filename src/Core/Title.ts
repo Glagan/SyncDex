@@ -154,6 +154,10 @@ export abstract class Title implements Title {
 	setProgress(progress: Progress): ProgressUpdate {
 		let completed = false;
 		const started = this.status == Status.NONE || this.status == Status.PLAN_TO_READ;
+		if (started) {
+			this.status = Status.READING;
+			if (!this.start) this.start = new Date();
+		}
 		if (progress.oneshot || (this.max?.chapter && this.max.chapter <= progress.chapter)) {
 			completed = this.status !== Status.COMPLETED || !this.end;
 			this.status = Status.COMPLETED;
@@ -164,12 +168,6 @@ export abstract class Title implements Title {
 		this.progress.chapter = progress.chapter;
 		if (progress.volume) this.volume = progress.volume;
 		this.progress.oneshot = progress.oneshot;
-		if (started) {
-			this.status = Status.READING;
-		}
-		if (started && !this.start) {
-			this.start = new Date();
-		}
 		return { started, completed };
 	}
 

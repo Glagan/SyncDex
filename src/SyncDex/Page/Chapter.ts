@@ -211,7 +211,7 @@ export class ChapterPage extends Page {
 		const oneshot = details.title.toLocaleLowerCase() == 'oneshot';
 		let progress: Progress = {
 			chapter: oneshot ? 0 : parseFloat(details.chapter),
-			oneshot: oneshot,
+			oneshot,
 		};
 		const volume = parseInt(details.volume);
 		if (!isNaN(volume) && volume) progress.volume = volume;
@@ -451,7 +451,7 @@ export class ChapterPage extends Page {
 		// Check if currentProgress should be updated and use setProgress if needed
 		let doUpdate = mdListOptionValid && !unavailable;
 		if (doUpdate) {
-			const isFirstChapter = this.title.chapter == 0 && currentProgress.chapter == 0;
+			const isFirstChapter = (this.title.chapter == 0 && currentProgress.chapter == 0) || currentProgress.oneshot;
 			if (
 				(!Options.saveOnlyNext && !Options.saveOnlyHigher) ||
 				(Options.saveOnlyNext && (isFirstChapter || this.title.isNextChapter(currentProgress))) ||

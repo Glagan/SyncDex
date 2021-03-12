@@ -412,7 +412,7 @@ export class SyncModule {
 			});
 		}
 		// MangaDex fails with a body on error
-		if (response.body && response.body.length > 0) {
+		if (field !== 'rating' && response.body && response.body.length > 0) {
 			response.ok = false;
 			response.status = ResponseStatus.UNAUTHORIZED;
 		}
