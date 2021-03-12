@@ -5,7 +5,9 @@
 			"description": [
 				"Fix \"Logged out\" status in MangaDex List rating update.",
 				"Fix missing MangaDex List synced status on error.",
-				"Fix Oneshot being saved as \"Reading\" instead of \"Completed\"."
+				"Fix Oneshot being saved as \"Reading\" instead of \"Completed\".",
+				"Add `displaySyncStart` option.##50",
+				"Update Overview style.##50"
 			]
 		},
 		{
