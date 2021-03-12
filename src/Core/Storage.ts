@@ -29,7 +29,10 @@ export namespace Storage {
 	): Promise<StorageValues | Promise<Partial<{ [key in K]: T[key] }>> | T[K] | NonNullable<T[K]> | undefined> {
 		const res = await Message.send('storage:get', { key: args[0] ?? null });
 		// Message.send can returns null if undefined is sent on Chrome
-		return res === null ? undefined : res !== undefined ? res : args[1] ?? undefined;
+		if (res === null) {
+			return args[1] ?? undefined;
+		}
+		return res !== undefined ? res : args[1] ?? undefined;
 	}
 
 	/**
