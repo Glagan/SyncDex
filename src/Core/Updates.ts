@@ -15,17 +15,22 @@ export class Updates {
 	static list: Update[] = [
 		{
 			version: 0.2,
-			subVersion: 0.1,
+			subVersion: 1,
 			fnct: () => (Options.logLevel = LogLevel.Default),
 		},
 		{
 			version: 0.2,
-			subVersion: 0.12,
+			subVersion: 12,
 			fnct: () => {
 				Options.errorDuration = 4000;
 				Options.infoDuration = 4000;
 				Options.successDuration = 4000;
 			},
+		},
+		{
+			version: 0.3,
+			subVersion: 1,
+			fnct: () => (Options.displaySyncStart = false),
 		},
 	];
 

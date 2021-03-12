@@ -48,14 +48,16 @@ export class UpdateQueue {
 			const title = payload.title;
 			this.deleteNotification('sync', title.key.id!);
 
-			this.notifications[title.key.id!] = SimpleNotification.info(
-				{
-					image: MangaDex.thumbnail(title.key, 'thumb'),
-					text: `Syncing **${title.name}** ...`,
-					buttons: [this.closeButton()],
-				},
-				{ sticky: true, events: this.deleteEvents('sync', title.key.id!) }
-			);
+			if (Options.displaySyncStart) {
+				this.notifications[title.key.id!] = SimpleNotification.info(
+					{
+						image: MangaDex.thumbnail(title.key, 'thumb'),
+						text: `Syncing **${title.name}** ...`,
+						buttons: [this.closeButton()],
+					},
+					{ sticky: true, events: this.deleteEvents('sync', title.key.id!) }
+				);
+			}
 		});
 		listen('sync:end', (payload) => {
 			const title = payload.syncModule.title;
@@ -88,19 +90,22 @@ export class UpdateQueue {
 				this.miniOverview('Cancelled', `**${payload.syncModule.title.name}** Update cancelled.`, payload);
 			}
 		});
+
 		listen('mangadex:syncing', (payload) => {
 			const title = payload.title;
 			if (this.notifications[title.key.id!]) return;
 			this.deleteNotification('mangadex', title.key.id!);
 
-			this.mdNotifications[title.key.id!] = SimpleNotification.info(
-				{
-					image: MangaDex.thumbnail(title.key, 'thumb'),
-					text: `Syncing **${title.name}** ...`,
-					buttons: [this.closeButton()],
-				},
-				{ sticky: true, events: this.deleteEvents('mangadex', title.key.id!) }
-			);
+			if (Options.displaySyncStart) {
+				this.mdNotifications[title.key.id!] = SimpleNotification.info(
+					{
+						image: MangaDex.thumbnail(title.key, 'thumb'),
+						text: `Syncing **${title.name}** ...`,
+						buttons: [this.closeButton()],
+					},
+					{ sticky: true, events: this.deleteEvents('mangadex', title.key.id!) }
+				);
+			}
 		});
 		listen('mangadex:synced', (payload) => {
 			const title = payload.title;
