@@ -41,7 +41,7 @@ export const DefaultOptions: Readonly<AvailableOptions> = {
 	chapterStatus: false,
 	// Notifications
 	notifications: true,
-	displaySyncStart: true,
+	displaySyncStart: false,
 	errorNotifications: true,
 	errorDuration: 4000,
 	infoDuration: 4000,
