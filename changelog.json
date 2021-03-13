@@ -4,7 +4,8 @@
 			"version": "0.3.2",
 			"description": [
 				"Avoid sending requests when updating a Title with no status.",
-				"Fix MangaDex rating button staying disabled."
+				"Fix MangaDex rating button staying disabled.",
+				"Fix \"H\" in Title name."
 			]
 		},
 		{

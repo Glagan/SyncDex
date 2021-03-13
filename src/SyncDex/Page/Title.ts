@@ -1086,7 +1086,7 @@ export class TitlePage extends Page {
 		const syncModule = new SyncModule('title', title);
 		syncModule.loggedIn = !document.querySelector('button[title="You need to log in to use this function."]');
 		if (!title.inList || title.name === undefined || title.name == '') {
-			const headerTitle = document.querySelector('h6.card-header');
+			const headerTitle = document.querySelector('h6.card-header.mx-1');
 			if (headerTitle) title.name = headerTitle.textContent!.trim();
 		}
 		// Max progress if it's available
