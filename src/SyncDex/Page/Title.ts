@@ -627,12 +627,13 @@ class ChapterList {
 		for (const row of chapterRows) {
 			if (row.dataset.id == undefined) continue;
 			const chapterRow = new ChapterRow(row);
-			if (!isNaN(chapterRow.progress.chapter)) {
-				this.rows.push(chapterRow);
-				// Calculate highest chapter
-				if (chapterRow.progress.chapter > this.highest) this.highest = chapterRow.progress.chapter;
+			this.rows.push(chapterRow);
+			// Calculate highest chapter
+			if (chapterRow.progress.chapter > this.highest) {
+				this.highest = chapterRow.progress.chapter;
 			}
-			if (lastVolume >= 0) {
+			// Calculate Volumes reset Chapters
+			if (!chapterRow.isVolumeOnly && lastVolume >= 0) {
 				const currentVolume = chapterRow.progress.volume;
 				// If there is no volume, volumes can't reset chapters
 				if (currentVolume) {
@@ -668,6 +669,7 @@ class ChapterList {
 		if (title.volumeResetChapter) {
 			let previous = 0;
 			for (const row of this.rows) {
+				if (row.isVolumeOnly) continue;
 				title.updateProgressFromVolumes(row.progress);
 				// Add 0.1 or 0.5 to new chapters that are still lower than the previous one
 				// Avoid having a lower chapter on a new volume from the previous last chapter that is usually a 0.5
@@ -725,7 +727,9 @@ class ChapterList {
 			// Bind Set as Latest button
 			row.markButton.addEventListener('click', async (event) => {
 				event.preventDefault();
-				if (row.progress.chapter == title.chapter) return;
+				if (row.progress.chapter == title.chapter && title.volume == row.progress.volume) {
+					return;
+				}
 
 				if (row.markButton.classList.contains('loading')) return;
 				row.markButton.classList.add('loading');
@@ -751,7 +755,7 @@ class ChapterList {
 
 	highlight(title: LocalTitle): void {
 		let foundNext = false;
-		let nextChapterValue = 0;
+		let nextChapter: Progress = { chapter: 0 };
 		for (const row of this.rows) {
 			// Reset
 			row.parent.classList.remove('current');
@@ -759,35 +763,39 @@ class ChapterList {
 			row.isNext = false;
 			// Next Chapter is 0 if it exists and it's a new Title or the first next closest
 			const isOpened = title.chapters.indexOf(row.progress.chapter) >= 0;
+			// * Next Chapter
 			if (
-				(!foundNext &&
-					((row.progress.chapter > title.chapter && row.progress.chapter < Math.floor(title.chapter) + 2) ||
-						(row.progress.chapter == 0 && title.chapter == 0 && title.status !== Status.COMPLETED))) ||
-				(foundNext && nextChapterValue === row.progress.chapter)
+				(!foundNext && title.isNextChapter(row.progress)) ||
+				(foundNext &&
+					nextChapter.chapter === row.progress.chapter &&
+					(row.progress.chapter >= 0 || nextChapter.volume === row.progress.volume))
 			) {
-				// * Next Chapter
 				row.node.style.backgroundColor = Options.colors.nextChapter;
 				row.isNext = true;
 				foundNext = true;
-				nextChapterValue = row.progress.chapter;
-			} else if (title.chapter == row.progress.chapter) {
-				// * Current chapter
+				nextChapter = row.progress;
+			}
+			// * Current chapter
+			else if (
+				(title.chapter === row.progress.chapter &&
+					(!row.progress.volume || title.volume === row.progress.volume)) ||
+				(row.progress.chapter < 0 && title.volume === row.progress.volume)
+			) {
 				row.node.style.backgroundColor = Options.colors.highlights[0];
-			} else if (isOpened) {
-				// * Opened Chapter
+				// Hide Set Latest button
+				row.parent.classList.add('current');
+			}
+			// * Opened Chapter
+			else if (isOpened) {
 				row.node.style.backgroundColor = Options.colors.openedChapter;
 			}
 			// Set current state of the Toggle button
-			if (row.toggleButton && row.toggleIcon) {
+			if (row.toggleButton) {
 				if (isOpened) {
 					row.enableToggleButton();
 				} else {
 					row.disableToggleButton();
 				}
-			}
-			// Hide Set Latest button
-			if (row.progress.chapter == title.chapter) {
-				row.parent.classList.add('current');
 			}
 		}
 	}
@@ -1086,7 +1094,7 @@ export class TitlePage extends Page {
 		const syncModule = new SyncModule('title', title);
 		syncModule.loggedIn = !document.querySelector('button[title="You need to log in to use this function."]');
 		if (!title.inList || title.name === undefined || title.name == '') {
-			const headerTitle = document.querySelector('h6.card-header.mx-1');
+			const headerTitle = document.querySelector('h6.card-header .mx-1');
 			if (headerTitle) title.name = headerTitle.textContent!.trim();
 		}
 		// Max progress if it's available

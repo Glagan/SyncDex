@@ -16,6 +16,7 @@ export class ChapterRow {
 	hidden: boolean;
 	language?: string;
 	chapterId: number;
+	isVolumeOnly: boolean;
 
 	static languageMap: { [key: string]: string } = {};
 	static rowLanguages: { code: string; node: HTMLElement }[] = [];
@@ -30,10 +31,11 @@ export class ChapterRow {
 		this.parent = this.chapterLink.parentElement!;
 		const oneshot = chapterRow.dataset.title?.toLocaleLowerCase() == 'oneshot';
 		this.progress = {
-			chapter: oneshot ? 0 : parseFloat(chapterRow.dataset.chapter!),
-			volume: parseFloat(chapterRow.dataset?.volume || '') || undefined,
+			chapter: oneshot ? 0 : parseFloat(chapterRow.dataset.chapter || '') || -1,
+			volume: parseInt(chapterRow.dataset?.volume || '') || undefined,
 			oneshot: oneshot,
 		};
+		this.isVolumeOnly = this.progress.chapter < 0;
 		// Fallback to progress in chapter name
 		if (isNaN(this.progress.chapter)) {
 			this.progress = progressFromString(this.chapterLink.textContent!);
@@ -55,7 +57,7 @@ export class ChapterRow {
 			title: 'Set as the Latest chapter',
 		});
 		this.manage = DOM.create('div', { childs: [this.markButton] });
-		if (Options.saveOpenedChapters) {
+		if (Options.saveOpenedChapters && !this.isVolumeOnly) {
 			this.toggleIcon = DOM.icon('plus');
 			this.toggleButton = DOM.create('button', {
 				class: 'btn btn-secondary btn-sm toggle-open has-transition',
@@ -88,15 +90,19 @@ export class ChapterRow {
 	}
 
 	enableToggleButton() {
-		this.toggleButton!.title = 'Remove from chapter list';
-		this.toggleIcon!.classList.add('fa-minus');
-		this.toggleIcon!.classList.remove('fa-plus');
+		if (this.toggleButton) {
+			this.toggleButton.title = 'Remove from chapter list';
+			this.toggleIcon!.classList.add('fa-minus');
+			this.toggleIcon!.classList.remove('fa-plus');
+		}
 	}
 
 	disableToggleButton() {
-		this.toggleButton!.title = 'Add to chapter list';
-		this.toggleIcon!.classList.remove('fa-minus');
-		this.toggleIcon!.classList.add('fa-plus');
+		if (this.toggleButton) {
+			this.toggleButton.title = 'Add to chapter list';
+			this.toggleIcon!.classList.remove('fa-minus');
+			this.toggleIcon!.classList.add('fa-plus');
+		}
 	}
 
 	static hideAllExcept(flag: string, tabLink: HTMLElement, afterToggle?: () => void) {

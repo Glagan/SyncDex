@@ -41,7 +41,8 @@ export function injectScript(func: Function) {
 
 export function progressToString(progress: Progress): string {
 	const volume = progress.volume && progress.volume > 0 ? `Vol. ${progress.volume}` : '';
-	return `${progress.oneshot ? 'Oneshot' : `${volume ? `${volume} Ch.` : 'Chapter'} ${progress.chapter}`}`;
+	const chapter = progress.chapter >= 0 ? (volume ? ` Ch. ${progress.chapter}` : `Chapter ${progress.chapter}`) : '';
+	return progress.oneshot ? 'Oneshot' : `${volume}${chapter}`;
 }
 
 /**
@@ -63,7 +64,7 @@ export function progressFromString(chapter: string): Progress {
 
 	const volume = parseInt(result[1]);
 	const progress: Progress = {
-		chapter: parseFloat(result[2]),
+		chapter: parseFloat(result[2]) || -1,
 		volume: isNaN(volume) ? 0 : volume,
 	};
 	if (chapter.toLocaleLowerCase() == 'oneshot') {

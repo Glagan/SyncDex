@@ -6,7 +6,7 @@ import { Mochi } from '../../Core/Mochi';
 import { Services } from '../../Service/Class/Map';
 import { Http } from '../../Core/Http';
 import { MangaDex } from '../../Core/MangaDex';
-import { injectScript, progressFromString } from '../../Core/Utility';
+import { injectScript, progressFromString, progressToString } from '../../Core/Utility';
 import { ActivableKey } from '../../Service/Keys';
 import { DOM } from '../../Core/DOM';
 import { TitleEditor } from '../../Core/TitleEditor';
@@ -210,11 +210,10 @@ export class ChapterPage extends Page {
 	chapterProgress(details: MangaDexChapter): Progress {
 		const oneshot = details.title.toLocaleLowerCase() == 'oneshot';
 		let progress: Progress = {
-			chapter: oneshot ? 0 : parseFloat(details.chapter),
+			chapter: oneshot ? 0 : parseFloat(details.chapter || '') || -1,
+			volume: parseInt(details.volume) || undefined,
 			oneshot,
 		};
-		const volume = parseInt(details.volume);
-		if (!isNaN(volume) && volume) progress.volume = volume;
 		// Fallback if there is no valid chapter in API response
 		if (isNaN(progress.chapter)) {
 			progress = progressFromString(details.title);
@@ -291,13 +290,13 @@ export class ChapterPage extends Page {
 				progress: this.chapterProgress(chapter),
 			};
 			this.reverseChapters[chapter.id] = chapterDetails;
-			const currentChapter = parseFloat(chapterDetails.chapter);
-			if (currentChapter > highestChapter) {
-				highestChapter = currentChapter;
+			if (chapterDetails.progress.chapter > highestChapter) {
+				highestChapter = chapterDetails.progress.chapter;
 			}
 			// Always check for volumeChapterCount while reading to update the chapter count
 			//  since chapters are always available unlike in the Title page.
-			if (lastVolume >= 0) {
+			//	Ignore chapters that only have a volume (chapter == -1)
+			if (chapterDetails.progress.chapter >= 0 && lastVolume >= 0) {
 				const currentVolume = chapterDetails.progress.volume;
 				// If there is no volume, volumes can't reset chapters
 				if (currentVolume) {
@@ -326,13 +325,7 @@ export class ChapterPage extends Page {
 				} else lastVolume = -1;
 			}
 		}
-		// debug(`Volume reset chapters ? ${volumeResetChapter}`);
 		if (volumeResetChapter) {
-			/*debug(
-				`Volume reset chapters.\nVolume chapter count: ${JSON.stringify(
-					volumeChapterCount
-				)}\nVolume offset: ${JSON.stringify(volumeChapterOffset)}`
-			);*/
 			this.title.volumeChapterCount = volumeChapterCount;
 			this.title.volumeChapterOffset = volumeChapterOffset;
 			this.title.volumeResetChapter = true;
@@ -343,7 +336,7 @@ export class ChapterPage extends Page {
 			const lastChapter = parseFloat(details.lastChapter);
 			if (!isNaN(lastChapter) && lastChapter > 0) {
 				const max: Progress = {
-					chapter: parseFloat(details.lastChapter),
+					chapter: lastChapter,
 					volume: details.lastVolume ? parseInt(details.lastVolume) : undefined,
 				};
 				if (!this.title.volumeResetChapter) {
@@ -427,7 +420,9 @@ export class ChapterPage extends Page {
 		const unavailable = details.status == 'delayed' || details.status == 'external';
 		if (unavailable && Options.confirmChapter) {
 			reasons.push(
-				`**${this.title.name}** Chapter **${currentProgress.chapter}** is delayed or external and has not been updated.`
+				`**${this.title.name}** **${progressToString(
+					currentProgress
+				)}** is delayed or external and has not been updated.`
 			);
 		}
 		// Check if the title is in list if required
@@ -455,14 +450,18 @@ export class ChapterPage extends Page {
 			if (
 				(!Options.saveOnlyNext && !Options.saveOnlyHigher) ||
 				(Options.saveOnlyNext && (isFirstChapter || this.title.isNextChapter(currentProgress))) ||
+				// If the current synced chapter is lower than the read chapter
+				// 	Or if there is a saved volume and it's lower than the current volume
 				(Options.saveOnlyHigher &&
 					!Options.saveOnlyNext &&
-					(isFirstChapter || this.title.chapter < currentProgress.chapter))
+					(isFirstChapter ||
+						this.title.chapter < currentProgress.chapter ||
+						(this.title.volume && currentProgress.volume && currentProgress.volume > this.title.volume)))
 			) {
 				await this.syncModule.syncProgress(currentProgress);
 			} else if (Options.confirmChapter && (Options.saveOnlyNext || Options.saveOnlyHigher)) {
 				reasons.push(
-					`**${this.title.name}** Chapter **${currentProgress.chapter}** is not ${
+					`**${this.title.name}** **${progressToString(currentProgress)}** is not ${
 						Options.saveOnlyNext ? 'the next' : 'higher'
 					} and hasn't been updated.`
 				);

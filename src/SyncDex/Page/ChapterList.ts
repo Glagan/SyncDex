@@ -87,7 +87,11 @@ class TitleChapterGroup {
 				if (title.chapters.indexOf(title.chapter) < 0) {
 					row.disableToggleButton();
 				} else row.enableToggleButton();
-				if (row.progress.chapter == title.chapter) {
+				if (
+					(title.chapter === row.progress.chapter &&
+						(!row.progress.volume || title.volume === row.progress.volume)) ||
+					(row.progress.chapter < 0 && title.volume === row.progress.volume)
+				) {
 					row.parent.classList.add('current');
 				}
 			}
@@ -108,7 +112,7 @@ class TitleChapterGroup {
 
 				// Bind each row and add current chapter class
 				for (const row of group) {
-					if (title.volumeResetChapter) {
+					if (!row.isVolumeOnly && title.volumeResetChapter) {
 						// TODO: ? Add warning or update from API if lastTitle || lastRead < chapter release
 						// 		to avoid new volume gap from incorrect previous volume real length
 						title.updateProgressFromVolumes(row.progress);
@@ -158,7 +162,12 @@ class TitleChapterGroup {
 					// Bind Set as Latest button
 					row.markButton.addEventListener('click', async (event) => {
 						event.preventDefault();
-						if (row.progress.chapter == title.chapter) return;
+						if (
+							(row.progress.chapter == title.chapter && title.volume == row.progress.volume) ||
+							row.markButton.classList.contains('loading')
+						) {
+							return;
+						}
 						row.markButton.classList.add('loading');
 
 						if (!this.initializedSync) {
@@ -238,13 +247,23 @@ class TitleChapterGroup {
 				row.hidden = false;
 				row.node.classList.remove('hidden', 'visible');
 				row.node.firstElementChild!.textContent = '';
-				// Hide Lower and Last, avoid hiding next Chapter (0 is the next of 0)
+				// Hide Lower and Last, avoid hiding next Chapter
 				if (
 					(Options.hideHigher &&
-						row.progress.chapter > progress.chapter &&
-						this.nextChapterRows.indexOf(row.node) < 0) ||
-					(Options.hideLower && row.progress.chapter < progress.chapter) ||
-					(Options.hideLast && progress.chapter == row.progress.chapter)
+						this.nextChapterRows.indexOf(row.node) < 0 &&
+						(row.progress.chapter < progress.chapter ||
+							(progress.chapter < 0 &&
+								progress.volume &&
+								row.progress.volume &&
+								progress.volume > row.progress.volume))) ||
+					(Options.hideLower &&
+						row.progress.chapter < progress.chapter &&
+						(!row.progress.volume || !progress.volume || row.progress.volume < progress.volume)) ||
+					(Options.hideLast &&
+						((progress.chapter === row.progress.chapter &&
+							(!row.progress.volume || progress.volume === row.progress.volume)) ||
+							row.progress.chapter < 0 ||
+							progress.volume === row.progress.volume))
 				) {
 					row.node.classList.add('hidden');
 					if (showHidden) row.node.classList.add('visible');
@@ -267,7 +286,6 @@ class TitleChapterGroup {
 	}
 
 	highlight(title: LocalTitle) {
-		const progress = title.progress;
 		let lastColor = Options.colors.highlights.length;
 		for (const group of this.groups) {
 			// index of the next or current chapter in the group
@@ -277,31 +295,41 @@ class TitleChapterGroup {
 			// If there is data
 			let chapterCount = group.length;
 			for (let j = 0; j < chapterCount; j++) {
-				let row = group[j];
+				const row = group[j];
 				// Reset
 				row.node.style.backgroundColor = '';
 				(row.node.firstElementChild as HTMLElement).style.backgroundColor = '';
-				if (row.progress) {
-					// * Next Chapter
-					if (this.nextChapterRows.indexOf(row.node) >= 0) {
-						row.node.style.backgroundColor = Options.colors.nextChapter;
-						selected = j;
-						foundNext = true;
-						outerColor = Options.colors.nextChapter;
-					}
-					// * Higher Chapter
-					else if (row.progress.chapter > progress.chapter) {
-						row.node.style.backgroundColor = Options.colors.higherChapter;
-					}
-					// * Lower Chapter
-					else if (row.progress.chapter < progress.chapter) {
-						row.node.style.backgroundColor = Options.colors.lowerChapter;
-					}
-					// * Current Chapter
-					else if (progress.chapter == row.progress.chapter) {
-						row.node.style.backgroundColor = Options.colors.highlights[TitleChapterGroup.currentColor];
-						if (!foundNext) selected = j;
-					}
+				// * Next Chapter
+				if (this.nextChapterRows.indexOf(row.node) >= 0) {
+					row.node.style.backgroundColor = Options.colors.nextChapter;
+					selected = j;
+					foundNext = true;
+					outerColor = Options.colors.nextChapter;
+				}
+				// * Current Chapter
+				else if (
+					(title.chapter === row.progress.chapter &&
+						(!row.progress.volume || title.volume === row.progress.volume)) ||
+					(row.progress.chapter < 0 && title.volume === row.progress.volume)
+				) {
+					row.node.style.backgroundColor = Options.colors.highlights[TitleChapterGroup.currentColor];
+					if (!foundNext) selected = j;
+				}
+				// * Higher Chapter
+				else if (
+					(row.progress.chapter > title.chapter &&
+						(!row.progress.volume || !title.volume || row.progress.volume >= title.volume)) ||
+					(row.progress.volume && title.volume && row.progress.volume > title.volume)
+				) {
+					row.node.style.backgroundColor = Options.colors.higherChapter;
+				}
+				// * Lower Chapter
+				else if (
+					(row.progress.chapter < title.chapter &&
+						(!row.progress.volume || !title.volume || row.progress.volume <= title.volume)) ||
+					(row.progress.volume && title.volume && row.progress.volume < title.volume)
+				) {
+					row.node.style.backgroundColor = Options.colors.lowerChapter;
 				}
 			}
 			if (selected >= 0) {
@@ -317,19 +345,24 @@ class TitleChapterGroup {
 
 	findNextChapter(title: LocalTitle) {
 		this.nextChapters = [];
-		const progress = title.progress;
 		let lowestProgress: Progress | undefined = undefined;
 		// Select the lowest next chapter of the group
 		for (const row of this.rows) {
 			if (
-				row.progress &&
-				((row.progress.chapter > progress.chapter && row.progress.chapter < Math.floor(progress.chapter) + 2) ||
-					(row.progress.chapter == 0 && progress.chapter == 0 && title.status !== Status.COMPLETED)) &&
-				(!lowestProgress || lowestProgress.chapter > row.progress.chapter)
+				title.isNextChapter(row.progress) &&
+				(!lowestProgress ||
+					lowestProgress.chapter > row.progress.chapter ||
+					(lowestProgress.volume && row.progress.volume && lowestProgress.volume > row.progress.volume))
 			) {
 				lowestProgress = row.progress;
 				this.nextChapters = [row];
-			} else if (lowestProgress && lowestProgress.chapter === row.progress.chapter) {
+			}
+			// Duplicate next chapter (other language/group)
+			else if (
+				lowestProgress &&
+				lowestProgress.chapter === row.progress.chapter &&
+				(lowestProgress.chapter >= 0 || lowestProgress.volume === row.progress.volume)
+			) {
 				this.nextChapters.push(row);
 			}
 		}
@@ -391,39 +424,33 @@ class TitleChapterGroup {
 						}
 					}
 					const currentChapterRow = new ChapterRow(chapterRow);
-					// Don't add empty chapters
-					if (!isNaN(currentChapterRow.progress.chapter)) {
-						firstChild.textContent = '';
-						// Move the chapters to a single group
-						if (Options.groupTitlesInLists) {
-							const max = currentChapterGroup.length;
-							if (max > 0) {
-								let i = 0;
-								for (; i < max; i++) {
-									const otherRow = currentChapterGroup[i];
-									if (currentChapterRow.progress.chapter > otherRow.progress.chapter) {
-										otherRow.node.parentElement!.insertBefore(
-											currentChapterRow.node,
-											otherRow.node
-										);
-										currentChapterGroup.splice(i, 0, currentChapterRow);
-										break;
-									}
+					firstChild.textContent = '';
+					// Move the chapters to a single group
+					if (Options.groupTitlesInLists) {
+						const max = currentChapterGroup.length;
+						if (max > 0) {
+							let i = 0;
+							for (; i < max; i++) {
+								const otherRow = currentChapterGroup[i];
+								if (currentChapterRow.progress.chapter > otherRow.progress.chapter) {
+									otherRow.node.parentElement!.insertBefore(currentChapterRow.node, otherRow.node);
+									currentChapterGroup.splice(i, 0, currentChapterRow);
+									break;
 								}
-								// If the chapter is not higher it's the lower one and it's last
-								if (i == max) {
-									currentChapterGroup[max - 1].node.parentElement!.insertBefore(
-										currentChapterRow.node,
-										currentChapterGroup[max - 1].node.nextElementSibling
-									);
-									currentChapterGroup.push(currentChapterRow);
-								}
-							} else currentChapterGroup.push(currentChapterRow);
-						} else {
-							currentChapterGroup.push(currentChapterRow);
-						}
-						currentTitleGroup.rows.push(currentChapterRow);
+							}
+							// If the chapter is not higher it's the lower one and it's last
+							if (i == max) {
+								currentChapterGroup[max - 1].node.parentElement!.insertBefore(
+									currentChapterRow.node,
+									currentChapterGroup[max - 1].node.nextElementSibling
+								);
+								currentChapterGroup.push(currentChapterRow);
+							}
+						} else currentChapterGroup.push(currentChapterRow);
+					} else {
+						currentChapterGroup.push(currentChapterRow);
 					}
+					currentTitleGroup.rows.push(currentChapterRow);
 				}
 			}
 		}

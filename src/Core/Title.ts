@@ -158,6 +158,13 @@ export abstract class Title implements Title {
 			this.status = Status.READING;
 			if (!this.start) this.start = new Date();
 		}
+
+		if (progress.chapter < 0) {
+			progress.chapter = this.progress.chapter;
+		} else this.progress.chapter = progress.chapter;
+		if (progress.volume) this.volume = progress.volume;
+		this.progress.oneshot = progress.oneshot;
+
 		if (progress.oneshot || (this.max?.chapter && this.max.chapter <= progress.chapter)) {
 			completed = this.status !== Status.COMPLETED || !this.end;
 			this.status = Status.COMPLETED;
@@ -165,9 +172,6 @@ export abstract class Title implements Title {
 		} else if (this.status == Status.NONE) {
 			this.status = Status.READING;
 		}
-		this.progress.chapter = progress.chapter;
-		if (progress.volume) this.volume = progress.volume;
-		this.progress.oneshot = progress.oneshot;
 		return { started, completed };
 	}
 
@@ -226,7 +230,17 @@ export abstract class Title implements Title {
 	}
 
 	isNextChapter(progress: Progress): boolean {
-		return progress.chapter > this.chapter && progress.chapter < Math.floor(this.chapter) + 2;
+		return (
+			// Next from chapter (progress < current + 2) to handle sub-chapters
+			(progress.chapter > this.chapter && progress.chapter < Math.floor(this.chapter) + 2) ||
+			// Next from first chapter if not completed (Oneshot)
+			(progress.chapter == 0 && this.chapter == 0 && this.status !== Status.COMPLETED) ||
+			// Next from volume (progress == current + 1) if progress has no chapter
+			(progress.chapter < 0 &&
+				progress.volume !== undefined &&
+				this.volume !== undefined &&
+				progress.volume == this.volume + 1)
+		);
 	}
 
 	reset(): void {
@@ -490,6 +504,7 @@ export class LocalTitle extends Title implements LocalTitle {
 	}
 
 	addChapter(chapter: number): boolean {
+		if (chapter < 0) return false;
 		let max = this.chapters.length;
 		const doAdd = this.chapters.indexOf(chapter) < 0;
 		let index = 0;

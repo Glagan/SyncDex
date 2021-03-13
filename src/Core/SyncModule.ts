@@ -252,7 +252,7 @@ export class SyncModule {
 	async syncProgress(progress: Progress): Promise<void> {
 		dispatch('sync:start', { title: this.title });
 		const state = this.saveState();
-		const result = this.title.setProgress(progress);
+		const result = this.title.setProgress({ ...progress });
 		if (Options.saveOpenedChapters) {
 			this.title.addChapter(progress.chapter);
 		}

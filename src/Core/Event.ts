@@ -31,10 +31,10 @@ export function listen<K extends keyof EventPayloads>(
 export function dispatch<K extends keyof EventPayloads>(...params: EventDispatchParams<K>): void {
 	const event = params[0];
 	if (!listeners[event]) {
-		console.debug(`No listeners for triggered {${event}}`);
+		//console.debug(`No listeners for triggered {${event}}`);
 		return;
 	}
-	console.debug(`triggered {${event}} for ${Object.keys(listeners[event]!).length} listeners`);
+	//console.debug(`triggered {${event}} for ${Object.keys(listeners[event]!).length} listeners`);
 	// Start listeners callback in anonymous function to not block trigger call with blocking events
 	const payload = params[1];
 	(async () => {
