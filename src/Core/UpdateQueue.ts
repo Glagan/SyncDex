@@ -146,27 +146,29 @@ export class UpdateQueue {
 	static report(title: LocalTitle, report: SyncReport): string {
 		const rows: string[] = [];
 		for (const key of Options.services) {
-			if (report[key] === undefined) continue;
-			if (report[key] === ServiceStatus.LOGGED_OUT) {
-				rows.push(this.reportNotificationRow(key, '__gn-badge t-warning|Logged out__'));
-			} else if (report[key] === ServiceStatus.NO_ID) {
-				rows.push(this.reportNotificationRow(key, '__gn-badge t-info|No ID__'));
-			} else if (report[key] === ServiceStatus.SYNCED) {
-				rows.push(this.reportNotificationRow(key, '__gn-badge t-success|Synced__'));
-			} else if (report[key]! <= ResponseStatus.DELETED) {
-				rows.push(
-					this.reportNotificationRow(
-						key,
-						report[key] === ResponseStatus.CREATED
-							? '__gn-badge t-success|Created__'
-							: report[key] === ResponseStatus.DELETED
-							? '__gn-badge t-info|Deleted__'
-							: '__gn-badge t-success|Synced__'
-					)
-				);
-			} else {
-				const error = `__gn-badge t-error|${Http.statusToString(report[key] as ResponseStatus)}__`;
-				rows.push(this.reportNotificationRow(key, error));
+			if (report[key] === undefined || report[key] === ServiceStatus.SYNCED) {
+				continue;
+			}
+			switch (report[key]) {
+				case ServiceStatus.LOGGED_OUT:
+					rows.push(this.reportNotificationRow(key, '__gn-badge t-warning|Logged out__'));
+					break;
+				case ServiceStatus.NO_ID:
+					rows.push(this.reportNotificationRow(key, '__gn-badge t-info|No ID__'));
+					break;
+				case ResponseStatus.SUCCESS:
+					rows.push(this.reportNotificationRow(key, '__gn-badge t-success|Synced__'));
+					break;
+				case ResponseStatus.CREATED:
+					rows.push(this.reportNotificationRow(key, '__gn-badge t-success|Created__'));
+					break;
+				case ResponseStatus.DELETED:
+					rows.push(this.reportNotificationRow(key, '__gn-badge t-info|Deleted__'));
+					break;
+				default:
+					const error = `__gn-badge t-error|${Http.statusToString(report[key] as ResponseStatus)}__`;
+					rows.push(this.reportNotificationRow(key, error));
+					break;
 			}
 		}
 		return rows.join(`\n`);

@@ -298,27 +298,28 @@ export class SyncModule {
 		const synced = title.isSyncedWith(this.title);
 		if (!synced) {
 			dispatch('service:syncing', { key: key });
+			const previousStatus = title.status;
 			title.import(this.title);
-			// ! An update without a status (score update only for example) try to delete, maybe ignore ?
-			const promise = title.status == Status.NONE ? title.delete() : title.persist();
-			return promise
-				.then((res) => {
-					if (res > ResponseStatus.DELETED) {
-						dispatch('service:synced', { key, title: res, local: this.title });
-					} else dispatch('service:synced', { key, title, local: this.title });
-					return res;
-				})
-				.catch(async (error) => {
-					dispatch('service:synced', { key, title: ResponseStatus.FAIL, local: this.title });
-					await log(error);
-					throw error;
-				});
+			// Only update if the status is not null (update) OR if it wasn't null (delete)
+			if (title.status != Status.NONE || previousStatus != Status.NONE) {
+				const promise = title.status == Status.NONE ? title.delete() : title.persist();
+				return promise
+					.then((res) => {
+						if (res > ResponseStatus.DELETED) {
+							dispatch('service:synced', { key, title: res, local: this.title });
+						} else dispatch('service:synced', { key, title, local: this.title });
+						return res;
+					})
+					.catch(async (error) => {
+						dispatch('service:synced', { key, title: ResponseStatus.FAIL, local: this.title });
+						await log(error);
+						throw error;
+					});
+			}
 		}
 		// Always update the overview to check against possible imported ServiceTitle
-		else {
-			dispatch('service:synced', { key, title, local: this.title });
-			return ServiceStatus.SYNCED;
-		}
+		dispatch('service:synced', { key, title, local: this.title });
+		return ServiceStatus.SYNCED;
 	}
 
 	/**

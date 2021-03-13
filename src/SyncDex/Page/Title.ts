@@ -1040,6 +1040,8 @@ class MangaDexList {
 		}
 		// Score
 		else if (field == 'rating') {
+			const previous = this.score.dropdown.querySelector('.disabled');
+			if (previous) previous.classList.remove('disabled');
 			if (state.rating == 0) {
 				this.score.ratings[0].classList.add('disabled');
 				this.score.button.childNodes[1].textContent = ` `;

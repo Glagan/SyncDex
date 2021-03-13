@@ -1,6 +1,13 @@
 {
 	"updates": [
 		{
+			"version": "0.3.2",
+			"description": [
+				"Avoid sending requests when updating a Title with no status.",
+				"Fix MangaDex rating button staying disabled."
+			]
+		},
+		{
 			"version": "0.3.1",
 			"description": [
 				"Fix \"Logged out\" status in MangaDex List rating update.",
