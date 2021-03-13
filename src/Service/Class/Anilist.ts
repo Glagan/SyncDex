@@ -251,7 +251,7 @@ export class AnilistTitle extends Title {
 				variables: <SaveMediaListEntry>{
 					mediaId: this.key.id,
 					status: AnilistTitle.fromStatus(this.status),
-					scoreRaw: this.score !== undefined && this.score > 0 ? this.score : undefined,
+					scoreRaw: this.score,
 					progress: Math.floor(this.chapter),
 					progressVolumes: this.volume,
 					startedAt: AnilistTitle.dateToAnilist(this.start),

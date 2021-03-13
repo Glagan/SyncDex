@@ -495,7 +495,7 @@ export class ChapterListPage extends Page {
 		const enableGroups = () => groups.forEach((g) => g.enable());
 
 		listen('sync:initialize:start', () => disableGroups());
-		listen('sync:initialize:end', () => enableGroups());
+		//listen('sync:initialize:end', () => enableGroups());
 
 		listen('title:syncing', () => disableGroups());
 		listen('title:synced', () => enableGroups());

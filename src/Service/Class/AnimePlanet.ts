@@ -166,7 +166,7 @@ export class AnimePlanetTitle extends Title {
 			this.current.progress.chapter = this.chapter;
 		}
 		// Score
-		if (this.score > 0 && this.current.score !== this.score) {
+		if (this.current.score !== this.score) {
 			// Convert 0-100 score to the 0-5 range -- Round to nearest .5
 			const apScore = Math.round((this.score / 20) * 2) / 2;
 			const response = await Http.json(`${AnimePlanetAPI}/rate/manga/${id}/${apScore}/${this.token}`, {

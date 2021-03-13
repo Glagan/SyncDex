@@ -222,8 +222,6 @@ export class KitsuTitle extends Title {
 		const libraryEntryId = this.libraryEntryId ? this.libraryEntryId : 0;
 		const method = libraryEntryId > 0 ? 'PATCH' : 'POST';
 		const url = `${KitsuAPI}${libraryEntryId > 0 ? `/${this.libraryEntryId}` : ''}`;
-		// Convert 0-100 score to the 0-20 range -- round to the nearest
-		const kuScore = this.score !== undefined && this.score > 0 ? Math.round(this.score / 5) : undefined;
 		// Fix progress to avoid 422 Cannot exceed media length
 		const progress = { ...this.progress };
 		if (this.max) {
@@ -244,7 +242,8 @@ export class KitsuTitle extends Title {
 						status: KitsuTitle.fromStatus(this.status),
 						progress: Math.floor(progress.chapter),
 						volumesOwned: progress.volume,
-						ratingTwenty: kuScore,
+						// Convert 0-100 score to the 0-20 range -- round to the nearest
+						ratingTwenty: this.score === 0 ? null : Math.round(this.score / 5),
 						startedAt: this.start !== undefined ? this.start.toISOString() : null,
 						finishedAt: this.end !== undefined ? this.end.toISOString() : null,
 					},

@@ -41,7 +41,7 @@ export class MangaUpdates extends Service {
 		const parser = new DOMParser();
 		const body = parser.parseFromString(response.body, 'text/html');
 		const values: Partial<MangaUpdatesTitle> = { progress: { chapter: 0 }, key: key };
-		values.current = { progress: { chapter: 0 }, status: Status.NONE };
+		values.current = { progress: { chapter: 0 }, status: Status.NONE, score: 0 };
 		const showList = body.getElementById('showList');
 		if (showList !== null) {
 			values.loggedIn = true;
@@ -66,7 +66,7 @@ export class MangaUpdates extends Service {
 			const scoreNode = body.querySelector<HTMLInputElement>(`input[type='radio'][name='rating'][checked]`);
 			if (scoreNode) {
 				// MangaUpdates have a simple 0-10 range
-				values.score = parseInt(scoreNode.value) * 10;
+				values.score = (parseInt(scoreNode.value) || 0) * 10;
 				values.current.score = values.score;
 			}
 		} else values.loggedIn = false;
@@ -237,10 +237,7 @@ export class MangaUpdatesTitle extends Title {
 			};
 		}
 		// Update score
-		if (
-			this.score > 0 &&
-			(this.current.score === undefined || (this.score != this.current.score && this.score > 0))
-		) {
+		if (this.current.score === undefined || this.score !== this.current.score) {
 			// Convert back to the MangaUpdates 0-10 range
 			const muScore = Math.round(this.score / 10);
 			const response = await Http.get(

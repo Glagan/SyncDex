@@ -5,7 +5,11 @@
 			"description": [
 				"Avoid sending requests when updating a Title with no status.",
 				"Fix MangaDex rating button staying disabled.",
-				"Fix \"H\" in Title name."
+				"Fix \"H\" in Title name.",
+				"Save releases without a Chapter value.##49",
+				"Keep groups disabled using \"Set Latest\" in Chapters List pages.",
+				"Fix Score deletion for all external Services.",
+				"Fix Sync with MangaDex List progress if enabled."
 			]
 		},
 		{

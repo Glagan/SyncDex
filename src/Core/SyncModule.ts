@@ -240,8 +240,11 @@ export class SyncModule {
 			if (!this.title.end) this.title.end = new Date();
 		}
 		await this.title.persist();
-		const { report, mdReport } = await this.export();
-		// TODO: MangaDex sync status only
+		const { report } = await this.export(false);
+		const mdReport: MDListReport = {};
+		if (Options.updateMD) {
+			mdReport.status = await this.syncMangaDexStatus(status);
+		}
 		dispatch('sync:end', { type: 'status', state, report, mdReport, syncModule: this });
 	}
 
@@ -257,8 +260,11 @@ export class SyncModule {
 			this.title.addChapter(progress.chapter);
 		}
 		await this.title.persist();
-		const { report, mdReport } = await this.export();
-		// TODO: MangaDex sync progress only
+		const { report } = await this.export(false);
+		const mdReport: MDListReport = {};
+		if (Options.updateMD && Options.updateMDProgress) {
+			mdReport.progress = await this.syncMangaDexProgress(progress);
+		}
 		dispatch('sync:end', { type: 'progress', state, result, report, mdReport, syncModule: this });
 	}
 
@@ -271,8 +277,11 @@ export class SyncModule {
 		const state = this.saveState();
 		this.title.score = score;
 		await this.title.persist();
-		const { report, mdReport } = await this.export();
-		// TODO: MangaDex sync rating only
+		const { report } = await this.export(false);
+		const mdReport: MDListReport = {};
+		if (Options.updateMD) {
+			mdReport.rating = await this.syncMangaDexRating(score);
+		}
 		dispatch('sync:end', { type: 'score', state, report, mdReport, syncModule: this });
 	}
 
@@ -326,8 +335,12 @@ export class SyncModule {
 	 * Sync all Services with the local SyncDex Title, or delete them if needed.
 	 * Also sync MangaDex if Options.updateMD is enabled, also deleting the follow if needed.
 	 */
+	async export(exportMangaDex?: true): Promise<{ report: SyncReport; mdReport: MDListReport }>;
+	async export(exportMangaDex?: false): Promise<{ report: SyncReport }>;
 	@LogExecTime
-	async export(): Promise<{ report: SyncReport; mdReport: MDListReport }> {
+	async export(
+		exportMangaDex: boolean = true
+	): Promise<{ report: SyncReport; mdReport: MDListReport } | { report: SyncReport }> {
 		await this.waitInitialize();
 
 		const promises: Promise<ServiceResponse | undefined>[] = [];
@@ -338,40 +351,16 @@ export class SyncModule {
 			promise.then((result) => (report[key] = result)).catch(() => (report[key] = ResponseStatus.FAIL));
 		}
 
-		// Update MangaDex List Status and Score
+		// Update MangaDex List Status, Score and Progress
 		// Can't check loggedIn status since it can be called without MangaDex check first
-		const mdReport: MDListReport = {};
-		// TODO: Update this block
-		if (Options.updateMD && this.loggedIn) {
-			// Status
-			if (this.mdState.status != this.title.status) {
-				mdReport.status = await this.syncMangaDexStatus(this.title.status);
-			}
-			// Score
-			if (
-				this.loggedIn &&
-				this.title.score > 0 &&
-				Math.round(this.mdState.rating / 10) != Math.round(this.title.score / 10)
-			) {
-				mdReport.rating = await this.syncMangaDexRating(this.title.score);
-			}
-			// Progress
-			// Update on Chapter Page if it's a sub chapter, since MD don't save them
-			//	OR if the previous read chapter was a subchapter to fix a MD bug with sub chapters in MD Progress
-			const isSubChapter = Math.floor(this.title.chapter) != this.title.chapter;
-			if (
-				this.loggedIn &&
-				Options.updateMDProgress &&
-				(this.origin != 'chapter' ||
-					isSubChapter ||
-					this.previousIsSubChapter ||
-					Math.floor(this.mdState.progress.chapter) != this.mdState.progress.chapter) &&
-				(this.title.chapter != this.mdState.progress.chapter ||
-					(this.title.volume != undefined && this.title.volume != this.mdState.progress.volume))
-			) {
+		let mdReport: MDListReport | undefined;
+		if (exportMangaDex && Options.updateMD && this.loggedIn) {
+			mdReport = {};
+			mdReport.status = await this.syncMangaDexStatus(this.title.status);
+			mdReport.rating = await this.syncMangaDexRating(this.title.score);
+			if (Options.updateMDProgress) {
 				mdReport.progress = await this.syncMangaDexProgress(this.title.progress);
 			}
-			this.previousIsSubChapter = isSubChapter;
 		}
 		await Promise.all(promises);
 		return { report, mdReport };
@@ -424,6 +413,7 @@ export class SyncModule {
 
 	@LogExecTime
 	async syncMangaDexStatus(status: Status): Promise<ResponseStatus> {
+		if (!this.loggedIn) return ResponseStatus.UNAUTHORIZED;
 		if (this.mdState.status === status) return ResponseStatus.SUCCESS;
 		const oldStatus = this.mdState.status;
 		this.mdState.status = status;
@@ -436,19 +426,37 @@ export class SyncModule {
 
 	@LogExecTime
 	async syncMangaDexProgress(progress: Progress): Promise<ResponseStatus> {
-		const oldProgress = this.mdState.progress;
-		this.mdState.progress = { ...progress };
-		if (!this.mdState.progress.volume) this.mdState.progress.volume = 0;
-		const response = await this.syncMangaDex('progress');
-		if (!response.ok) {
-			this.mdState.progress = oldProgress;
+		if (!this.loggedIn) return ResponseStatus.UNAUTHORIZED;
+		const isSubChapter = Math.floor(progress.chapter) != progress.chapter;
+		if (
+			(this.origin != 'chapter' ||
+				isSubChapter ||
+				this.previousIsSubChapter ||
+				Math.floor(this.mdState.progress.chapter) != this.mdState.progress.chapter) &&
+			(progress.chapter != this.mdState.progress.chapter || progress.volume !== this.mdState.progress.volume)
+		) {
+			const oldProgress = this.mdState.progress;
+			this.mdState.progress = { ...progress };
+			if (!this.mdState.progress.volume) this.mdState.progress.volume = 0;
+			const response = await this.syncMangaDex('progress');
+			if (!response.ok) {
+				this.mdState.progress = oldProgress;
+			} else this.previousIsSubChapter = isSubChapter;
+			return response.status;
 		}
-		return response.status;
+		return ResponseStatus.SUCCESS;
 	}
 
+	/**
+	 * Update on Chapter Page if it's a sub chapter, since MD don't save them
+	 * 	OR if the previous read chapter was a subchapter to fix a MD bug with sub chapters in MD Progress
+	 */
 	@LogExecTime
 	async syncMangaDexRating(rating: number): Promise<ResponseStatus> {
-		if (this.mdState.rating === rating) return ResponseStatus.SUCCESS;
+		if (!this.loggedIn) return ResponseStatus.UNAUTHORIZED;
+		if (Math.round(this.mdState.rating / 10) === Math.round(rating / 10)) {
+			return ResponseStatus.SUCCESS;
+		}
 		const oldRating = this.mdState.rating;
 		this.mdState.rating = rating;
 		const response = await this.syncMangaDex('rating');

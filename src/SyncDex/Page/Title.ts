@@ -973,12 +973,20 @@ class MangaDexList {
 			if (syncModule.mdState.progress.volume) {
 				volume = syncModule.mdState.progress.volume + 1;
 			}
-			syncModule.syncMangaDexProgress({ chapter: syncModule.mdState.progress.chapter, volume });
+			if (Options.mdUpdateSyncDex) {
+				syncModule.syncProgress({ chapter: syncModule.mdState.progress.chapter, volume });
+			} else {
+				syncModule.syncMangaDexProgress({ chapter: syncModule.mdState.progress.chapter, volume });
+			}
 		});
 		this.progress.incChapter.addEventListener('click', async (event) => {
 			event.preventDefault();
 			const chapter = syncModule.mdState.progress.chapter + 1;
-			syncModule.syncMangaDexProgress({ chapter, volume: syncModule.mdState.progress.volume });
+			if (Options.mdUpdateSyncDex) {
+				syncModule.syncProgress({ chapter, volume: syncModule.mdState.progress.volume });
+			} else {
+				syncModule.syncMangaDexProgress({ chapter, volume: syncModule.mdState.progress.volume });
+			}
 		});
 	}
 
