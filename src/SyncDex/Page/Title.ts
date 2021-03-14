@@ -499,6 +499,7 @@ class Overviews {
 	main: LocalOverview;
 	overviews: Partial<{ [key in ActivableKey]: ExternalOverview }> = {};
 	binded: boolean = false;
+	noServiceAlert: HTMLElement | undefined;
 
 	constructor() {
 		this.column = DOM.create('div', { class: 'overviews col-lg-9 col-xl-10' });
@@ -540,27 +541,31 @@ class Overviews {
 	}
 
 	hasNoServices(syncModule: SyncModule): void {
-		const alert = DOM.create('div', {
-			class: 'alert alert-warning',
-			childs: [
-				DOM.text(`You have no active Services, SyncDex won't sync anything until you activate one.`),
-				DOM.space(),
-				DOM.create('button', {
-					class: 'btn btn-secondary',
-					childs: [DOM.icon('sync-alt'), DOM.space(), DOM.text('Refresh')],
-					events: {
-						click: async (event) => {
-							event.preventDefault();
-							await syncModule.refresh();
-						},
+		if (!this.noServiceAlert) {
+			const refreshButton = DOM.create('button', {
+				class: 'btn btn-secondary',
+				childs: [DOM.icon('sync-alt'), DOM.space(), DOM.text('Refresh')],
+				events: {
+					click: async (event) => {
+						event.preventDefault();
+						refreshButton.classList.add('loading');
+						await Options.load();
+						await syncModule.refresh();
+						refreshButton.classList.remove('loading');
 					},
-				}),
-				DOM.icon('edit'),
-				DOM.space(),
-			],
-		});
-		alert.style.marginTop = '8px';
-		this.column.appendChild(alert);
+				},
+			});
+			this.noServiceAlert = DOM.create('div', {
+				class: 'alert alert-warning',
+				css: { marginTop: '8px' },
+				childs: [
+					DOM.text(`You have no active Services, SyncDex won't sync anything until you activate one.`),
+					DOM.space(),
+					refreshButton,
+				],
+			});
+		}
+		this.column.appendChild(this.noServiceAlert);
 	}
 
 	createOverview(key: ActivableKey) {
@@ -1330,6 +1335,9 @@ export class TitlePage extends Page {
 				mangaDexList.enable();
 			}
 			chapterList.enable();
+			if (Options.services.length == 0) {
+				overviews.hasNoServices(syncModule);
+			}
 		});
 
 		listen('service:syncing', (payload) => overviews.syncing(payload.key));
@@ -1348,6 +1356,9 @@ export class TitlePage extends Page {
 			chapterList.enable();
 			if (syncModule.loggedIn) {
 				mangaDexList.enable();
+			}
+			if (Options.services.length == 0) {
+				overviews.hasNoServices(syncModule);
 			}
 		});
 

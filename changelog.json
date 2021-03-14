@@ -4,8 +4,9 @@
 			"version": "0.3.3",
 			"description": [
 				"Fix chapter value detection with first chapters.",
-				"Fix Anime-Planet update to chapter 0.",
-				"Fix visible \"Set Latest\" button for chapter 0."
+				"Fix Anime-Planet update to Chapter 0.",
+				"Fix visible \"Set Latest\" button for Chapter 0.",
+				"Oneshot are now saved as Chapter 1 instead of 0."
 			]
 		},
 		{

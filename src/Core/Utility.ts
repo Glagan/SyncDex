@@ -57,7 +57,7 @@ export function progressToString(progress: Progress): string {
 export function progressFromString(chapter: string): Progress {
 	// Oneshot
 	if (chapter.toLocaleLowerCase() == 'oneshot') {
-		return { chapter: 0, oneshot: true };
+		return { chapter: 1, oneshot: true };
 	}
 
 	// (Volume X) Chapter Y(.Z) | (Vol. X) Ch. Y(.Z)
@@ -68,7 +68,7 @@ export function progressFromString(chapter: string): Progress {
 	const volume = parseInt(result[1]);
 	const progress: Progress = {
 		chapter: isNaN(chapterValue) ? -1 : chapterValue,
-		volume: isNaN(volume) ? 0 : volume,
+		volume: isNaN(volume) ? undefined : volume,
 	};
 	return progress;
 }
@@ -80,7 +80,7 @@ export function getProgress(
 ): Progress {
 	const oneshot = name?.toLocaleLowerCase() == 'oneshot';
 	let progress: Progress = {
-		chapter: oneshot ? 0 : parseFloat(chapter!),
+		chapter: oneshot ? 1 : parseFloat(chapter!),
 		volume: parseInt(volume!),
 		oneshot,
 	};

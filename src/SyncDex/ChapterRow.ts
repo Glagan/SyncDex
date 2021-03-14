@@ -24,12 +24,13 @@ export class ChapterRow {
 
 	constructor(chapterRow: HTMLElement) {
 		const fullRow = chapterRow.parentElement!.parentElement!;
-		this.title = chapterRow.dataset.title ?? '';
+		const dataset = chapterRow.dataset;
+		this.title = dataset.title ?? '';
 		this.isNext = false;
 		this.node = fullRow;
 		this.chapterLink = chapterRow.querySelector<HTMLAnchorElement>(`a[href^='/chapter']`)!;
 		this.parent = this.chapterLink.parentElement!;
-		this.progress = getProgress(chapterRow.dataset.title, chapterRow.dataset.chapter, chapterRow.dataset.volume);
+		this.progress = getProgress(this.chapterLink.textContent!, dataset.chapter, dataset.volume);
 		this.isVolumeOnly = this.progress.chapter < 0;
 		this.chapterId = parseInt(/\/chapter\/(\d+)/.exec(this.chapterLink.href)![1]);
 		this.hidden = false;
