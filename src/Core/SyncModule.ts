@@ -255,6 +255,7 @@ export class SyncModule {
 	async syncProgress(progress: Progress): Promise<void> {
 		dispatch('sync:start', { title: this.title });
 		const state = this.saveState();
+		if (!progress.volume) progress.volume = this.title.volume;
 		const result = this.title.setProgress({ ...progress });
 		if (Options.saveOpenedChapters) {
 			this.title.addChapter(progress.chapter);
@@ -429,11 +430,14 @@ export class SyncModule {
 		if (!this.loggedIn) return ResponseStatus.UNAUTHORIZED;
 		const isSubChapter = Math.floor(progress.chapter) != progress.chapter;
 		if (
-			(this.origin != 'chapter' ||
+			// ? Always sync, MangaDex sometimes (?) doesn't do it
+			/*(this.origin != 'chapter' ||
 				isSubChapter ||
 				this.previousIsSubChapter ||
-				Math.floor(this.mdState.progress.chapter) != this.mdState.progress.chapter) &&
-			(progress.chapter != this.mdState.progress.chapter || progress.volume !== this.mdState.progress.volume)
+				Math.floor(this.mdState.progress.chapter) != this.mdState.progress.chapter) &&*/
+			progress.chapter != this.mdState.progress.chapter ||
+			// undefined if already "synced" with 0
+			(progress.volume != undefined && progress.volume !== this.mdState.progress.volume)
 		) {
 			const oldProgress = this.mdState.progress;
 			this.mdState.progress = { ...progress };

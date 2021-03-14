@@ -975,7 +975,8 @@ class MangaDexList {
 			}
 			if (Options.mdUpdateSyncDex) {
 				syncModule.syncProgress({ chapter: syncModule.mdState.progress.chapter, volume });
-			} else {
+			}
+			if (!Options.updateMD || !Options.updateMDProgress) {
 				syncModule.syncMangaDexProgress({ chapter: syncModule.mdState.progress.chapter, volume });
 			}
 		});
@@ -984,7 +985,8 @@ class MangaDexList {
 			const chapter = syncModule.mdState.progress.chapter + 1;
 			if (Options.mdUpdateSyncDex) {
 				syncModule.syncProgress({ chapter, volume: syncModule.mdState.progress.volume });
-			} else {
+			}
+			if (!Options.updateMD || !Options.updateMDProgress) {
 				syncModule.syncMangaDexProgress({ chapter, volume: syncModule.mdState.progress.volume });
 			}
 		});
