@@ -6,7 +6,7 @@ import { Mochi } from '../../Core/Mochi';
 import { Services } from '../../Service/Class/Map';
 import { Http } from '../../Core/Http';
 import { MangaDex } from '../../Core/MangaDex';
-import { injectScript, progressFromString, progressToString } from '../../Core/Utility';
+import { getProgress, injectScript, progressToString } from '../../Core/Utility';
 import { ActivableKey } from '../../Service/Keys';
 import { DOM } from '../../Core/DOM';
 import { TitleEditor } from '../../Core/TitleEditor';
@@ -207,20 +207,6 @@ export class ChapterPage extends Page {
 		});
 	}
 
-	chapterProgress(details: MangaDexChapter): Progress {
-		const oneshot = details.title.toLocaleLowerCase() == 'oneshot';
-		let progress: Progress = {
-			chapter: oneshot ? 0 : parseFloat(details.chapter || '') || -1,
-			volume: parseInt(details.volume) || undefined,
-			oneshot,
-		};
-		// Fallback if there is no valid chapter in API response
-		if (isNaN(progress.chapter)) {
-			progress = progressFromString(details.title);
-		}
-		return progress;
-	}
-
 	updateReverseChapters() {
 		let previous = 0;
 		for (const key in this.reverseChapters) {
@@ -287,7 +273,7 @@ export class ChapterPage extends Page {
 				chapter: chapter.chapter,
 				volume: chapter.volume,
 				status: chapter.status,
-				progress: this.chapterProgress(chapter),
+				progress: getProgress(chapter.title, chapter.chapter, chapter.volume),
 			};
 			this.reverseChapters[chapter.id] = chapterDetails;
 			if (chapterDetails.progress.chapter > highestChapter) {
@@ -579,7 +565,7 @@ export class ChapterPage extends Page {
 				chapter: details.chapter,
 				volume: details.volume,
 				status: details.status,
-				progress: this.chapterProgress(details),
+				progress: getProgress(details.title, details.chapter, details.volume),
 			};
 			// Process queue directly for external chapters, no ReaderPageChange trigerred
 			if (details.status == 'external' || details.status == 'delayed') {

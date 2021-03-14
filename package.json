@@ -1,6 +1,6 @@
 {
 	"name": "syncdex",
-	"version": "0.3.2",
+	"version": "0.3.3",
 	"description": "Automatically update your manga lists on multiple services while reading on MangaDex.",
 	"main": "build.js",
 	"scripts": {

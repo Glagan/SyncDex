@@ -763,6 +763,10 @@ class ChapterList {
 			row.isNext = false;
 			// Next Chapter is 0 if it exists and it's a new Title or the first next closest
 			const isOpened = title.chapters.indexOf(row.progress.chapter) >= 0;
+			const currentProgress =
+				(title.chapter === row.progress.chapter &&
+					(!row.progress.volume || title.volume === row.progress.volume)) ||
+				(row.progress.chapter < 0 && title.volume === row.progress.volume);
 			// * Next Chapter
 			if (
 				(!foundNext && title.isNextChapter(row.progress)) ||
@@ -776,18 +780,16 @@ class ChapterList {
 				nextChapter = row.progress;
 			}
 			// * Current chapter
-			else if (
-				(title.chapter === row.progress.chapter &&
-					(!row.progress.volume || title.volume === row.progress.volume)) ||
-				(row.progress.chapter < 0 && title.volume === row.progress.volume)
-			) {
+			else if (currentProgress) {
 				row.node.style.backgroundColor = Options.colors.highlights[0];
-				// Hide Set Latest button
-				row.parent.classList.add('current');
 			}
 			// * Opened Chapter
 			else if (isOpened) {
 				row.node.style.backgroundColor = Options.colors.openedChapter;
+			}
+			// Hide Set Latest button
+			if (currentProgress) {
+				row.parent.classList.add('current');
 			}
 			// Set current state of the Toggle button
 			if (row.toggleButton) {

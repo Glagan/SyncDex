@@ -157,7 +157,7 @@ export class AnimePlanetTitle extends Title {
 		}
 		// Chapter progress
 		const chapterToUpdate = this.max?.chapter && this.max.chapter < this.chapter ? this.max.chapter : this.chapter;
-		if (this.chapter > 0 && this.current.progress.chapter !== chapterToUpdate) {
+		if (this.current.progress.chapter !== chapterToUpdate) {
 			const response = await Http.json(
 				`${AnimePlanetAPI}/update/manga/${id}/${Math.floor(chapterToUpdate)}/0/${this.token}`,
 				{ method: 'GET', credentials: 'include' }

@@ -1,6 +1,14 @@
 {
 	"updates": [
 		{
+			"version": "0.3.3",
+			"description": [
+				"Fix chapter value detection with first chapters.",
+				"Fix Anime-Planet update to chapter 0.",
+				"Fix visible \"Set Latest\" button for chapter 0."
+			]
+		},
+		{
 			"version": "0.3.2",
 			"description": [
 				"Avoid sending requests when updating a Title with no status.",

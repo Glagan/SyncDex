@@ -52,23 +52,46 @@ export function progressToString(progress: Progress): string {
  * 		(Vol. X) Ch. Y(.Z)
  * Progress.chapter is kept as NaN on error
  * @param chapter Chapter name
+ * @see https://regexr.com/5oheg
  */
 export function progressFromString(chapter: string): Progress {
-	// (Volume X) Chapter Y(.Z) | (Vol. X) Ch. Y(.Z)
-	const result = /(?:Vol(?:\.|ume)\s*)?([0-9]+)?\s*(?:Ch(?:\.|apter)\s*)([0-9]+(?:\.[0-9]+)?)/.exec(chapter);
-
-	// If it's a Oneshot
-	if (result == null) {
-		return { chapter: NaN };
+	// Oneshot
+	if (chapter.toLocaleLowerCase() == 'oneshot') {
+		return { chapter: 0, oneshot: true };
 	}
 
+	// (Volume X) Chapter Y(.Z) | (Vol. X) Ch. Y(.Z)
+	const result = /(?:Vol(?:\.|ume)\s*([0-9]+)?\s*)?(?:Ch(?:\.|apter)\s*([0-9]+(?:\.[0-9]+)?))?/.exec(chapter);
+	// Broken ?
+	if (result == null) return { chapter: NaN };
+	const chapterValue = parseFloat(result[2]);
 	const volume = parseInt(result[1]);
 	const progress: Progress = {
-		chapter: parseFloat(result[2]) || -1,
+		chapter: isNaN(chapterValue) ? -1 : chapterValue,
 		volume: isNaN(volume) ? 0 : volume,
 	};
-	if (chapter.toLocaleLowerCase() == 'oneshot') {
-		progress.oneshot = true;
+	return progress;
+}
+
+export function getProgress(
+	name: string | undefined,
+	chapter: string | undefined,
+	volume: string | undefined
+): Progress {
+	const oneshot = name?.toLocaleLowerCase() == 'oneshot';
+	let progress: Progress = {
+		chapter: oneshot ? 0 : parseFloat(chapter!),
+		volume: parseInt(volume!),
+		oneshot,
+	};
+	// Fallback to progress in chapter name
+	if (isNaN(progress.chapter)) {
+		if (name) {
+			progress = progressFromString(name);
+		} else progress.chapter = 0;
+	}
+	if (progress.volume !== undefined && isNaN(progress.volume)) {
+		progress.volume = undefined;
 	}
 	return progress;
 }

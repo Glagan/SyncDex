@@ -1,6 +1,6 @@
 import { DOM } from '../Core/DOM';
 import { Options } from '../Core/Options';
-import { progressFromString, progressToString } from '../Core/Utility';
+import { getProgress, progressToString } from '../Core/Utility';
 
 export class ChapterRow {
 	isNext: boolean;
@@ -29,26 +29,15 @@ export class ChapterRow {
 		this.node = fullRow;
 		this.chapterLink = chapterRow.querySelector<HTMLAnchorElement>(`a[href^='/chapter']`)!;
 		this.parent = this.chapterLink.parentElement!;
-		const oneshot = chapterRow.dataset.title?.toLocaleLowerCase() == 'oneshot';
-		this.progress = {
-			chapter: oneshot ? 0 : parseFloat(chapterRow.dataset.chapter || '') || -1,
-			volume: parseInt(chapterRow.dataset?.volume || '') || undefined,
-			oneshot: oneshot,
-		};
+		this.progress = getProgress(chapterRow.dataset.title, chapterRow.dataset.chapter, chapterRow.dataset.volume);
 		this.isVolumeOnly = this.progress.chapter < 0;
-		// Fallback to progress in chapter name
-		if (isNaN(this.progress.chapter)) {
-			this.progress = progressFromString(this.chapterLink.textContent!);
-		}
 		this.chapterId = parseInt(/\/chapter\/(\d+)/.exec(this.chapterLink.href)![1]);
 		this.hidden = false;
 
 		// Update CSS
-		if (!isNaN(this.progress.chapter)) {
-			this.parent.classList.add('title-column');
-			this.node.classList.add('has-transition');
-			this.node.style.backgroundColor = '';
-		}
+		this.parent.classList.add('title-column');
+		this.node.classList.add('has-transition');
+		this.node.style.backgroundColor = '';
 
 		// Set as latest and chapter list buttons
 		this.markButton = DOM.create('button', {
