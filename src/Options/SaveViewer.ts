@@ -1,7 +1,7 @@
 import { StatusMap } from '../Core/Title';
 import { DOM, AppendableElement } from '../Core/DOM';
 import { Storage } from '../Core/Storage';
-import { dateFormat, progressToString } from '../Core/Utility';
+import { dateFormat } from '../Core/Utility';
 import { TitleEditor } from '../Core/TitleEditor';
 import { SyncModule } from '../Core/SyncModule';
 import { Services } from '../Service/Class/Map';
@@ -11,6 +11,7 @@ import { LocalTitle, TitleCollection } from '../Core/Title';
 import { MangaDex } from '../Core/MangaDex';
 import { Extension } from '../Core/Extension';
 import { listen } from '../Core/Event';
+import { Progress } from '../Core/Progress';
 
 interface SaveRow {
 	title: LocalTitle;
@@ -265,7 +266,7 @@ export class SaveViewer {
 				DOM.create('td', { childs: this.titleServices(title) }),
 				DOM.create('td', { textContent: StatusMap[title.status] }),
 				DOM.create('td', { textContent: title.score ? title.score.toString() : '-' }),
-				DOM.create('td', { textContent: progressToString(title.progress) }),
+				DOM.create('td', { textContent: Progress.toString(title.progress) }),
 				DOM.create('td', { textContent: title.start ? dateFormat(title.start) : '-' }),
 				DOM.create('td', { textContent: title.end ? dateFormat(title.end) : '-' }),
 				DOM.create('td', {

@@ -3,6 +3,7 @@ import { ActivableKey } from '../Service/Keys';
 import { Options } from './Options';
 import { History } from './History';
 import { Storage } from './Storage';
+import { Progress } from './Progress';
 
 export const StatusMap: { [key in Status]: string } = {
 	[Status.NONE]: 'No Status',
@@ -229,18 +230,25 @@ export abstract class Title implements Title {
 		title.merge(this);
 	}
 
+	isHigherChapter(progress: Progress): boolean {
+		return Progress.isHigher(this.progress, progress);
+	}
+
 	isNextChapter(progress: Progress): boolean {
 		return (
-			// Next from chapter (progress < current + 2) to handle sub-chapters
-			(progress.chapter > this.chapter && progress.chapter < Math.floor(this.chapter) + 2) ||
-			// Next from first chapter if not completed (Oneshot)
-			(progress.chapter == 0 && this.chapter == 0 && this.status !== Status.COMPLETED) ||
-			// Next from volume (progress == current + 1) if progress has no chapter
-			(progress.chapter < 0 &&
-				progress.volume !== undefined &&
-				this.volume !== undefined &&
-				progress.volume == this.volume + 1)
+			// Chapter + Volume
+			Progress.isNext(this.progress, progress) ||
+			// First chapter if not completed (Oneshot)
+			(progress.chapter == 0 && this.chapter == 0 && this.status !== Status.COMPLETED)
 		);
+	}
+
+	isCurrentChapter(progress: Progress): boolean {
+		return Progress.isEqual(this.progress, progress);
+	}
+
+	isLowerChapter(progress: Progress): boolean {
+		return Progress.isLower(this.progress, progress);
 	}
 
 	reset(): void {

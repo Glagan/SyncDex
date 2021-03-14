@@ -14,6 +14,7 @@ import { Services } from '../../Service/Class/Map';
 import { ActivableKey, ServiceKey, OverviewKey } from '../../Service/Keys';
 import { ChapterRow } from '../ChapterRow';
 import { Page } from '../Page';
+import { Progress } from '../../Core/Progress';
 
 interface MangaDexExtendedManga extends MangaDexSimpleManga {
 	altTitles: string;
@@ -768,16 +769,11 @@ class ChapterList {
 			row.isNext = false;
 			// Next Chapter is 0 if it exists and it's a new Title or the first next closest
 			const isOpened = title.chapters.indexOf(row.progress.chapter) >= 0;
-			const currentProgress =
-				(title.chapter === row.progress.chapter &&
-					(!row.progress.volume || title.volume === row.progress.volume)) ||
-				(row.progress.chapter < 0 && title.volume === row.progress.volume);
+			const isCurrentProgress = title.isCurrentChapter(row.progress);
 			// * Next Chapter
 			if (
 				(!foundNext && title.isNextChapter(row.progress)) ||
-				(foundNext &&
-					nextChapter.chapter === row.progress.chapter &&
-					(row.progress.chapter >= 0 || nextChapter.volume === row.progress.volume))
+				(foundNext && Progress.isEqual(nextChapter, row.progress))
 			) {
 				row.node.style.backgroundColor = Options.colors.nextChapter;
 				row.isNext = true;
@@ -785,7 +781,7 @@ class ChapterList {
 				nextChapter = row.progress;
 			}
 			// * Current chapter
-			else if (currentProgress) {
+			else if (isCurrentProgress) {
 				row.node.style.backgroundColor = Options.colors.highlights[0];
 			}
 			// * Opened Chapter
@@ -793,7 +789,7 @@ class ChapterList {
 				row.node.style.backgroundColor = Options.colors.openedChapter;
 			}
 			// Hide Set Latest button
-			if (currentProgress) {
+			if (isCurrentProgress) {
 				row.parent.classList.add('current');
 			}
 			// Set current state of the Toggle button

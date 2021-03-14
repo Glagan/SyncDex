@@ -52,6 +52,9 @@
 .hidden.full.visible {
 	display: flex;
 }
+tr.hidden.full.visible {
+	display: table-row;
+}
 
 // Tooltips
 .tooltip {

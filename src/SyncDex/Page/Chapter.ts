@@ -6,7 +6,7 @@ import { Mochi } from '../../Core/Mochi';
 import { Services } from '../../Service/Class/Map';
 import { Http } from '../../Core/Http';
 import { MangaDex } from '../../Core/MangaDex';
-import { getProgress, injectScript, progressToString } from '../../Core/Utility';
+import { injectScript } from '../../Core/Utility';
 import { ActivableKey } from '../../Service/Keys';
 import { DOM } from '../../Core/DOM';
 import { TitleEditor } from '../../Core/TitleEditor';
@@ -14,6 +14,7 @@ import { LogExecTime, TryCatch } from '../../Core/Log';
 import { Extension } from '../../Core/Extension';
 import { UpdateQueue } from '../../Core/UpdateQueue';
 import { listen } from '../../Core/Event';
+import { Progress } from '../../Core/Progress';
 
 type ReaderEvent =
 	| 'loadingchange'
@@ -273,7 +274,7 @@ export class ChapterPage extends Page {
 				chapter: chapter.chapter,
 				volume: chapter.volume,
 				status: chapter.status,
-				progress: getProgress(chapter.title, chapter.chapter, chapter.volume),
+				progress: Progress.get(chapter.title, chapter.chapter, chapter.volume),
 			};
 			this.reverseChapters[chapter.id] = chapterDetails;
 			if (chapterDetails.progress.chapter > highestChapter) {
@@ -406,7 +407,7 @@ export class ChapterPage extends Page {
 		const unavailable = details.status == 'delayed' || details.status == 'external';
 		if (unavailable && Options.confirmChapter) {
 			reasons.push(
-				`**${this.title.name}** **${progressToString(
+				`**${this.title.name}** **${Progress.toString(
 					currentProgress
 				)}** is delayed or external and has not been updated.`
 			);
@@ -436,18 +437,14 @@ export class ChapterPage extends Page {
 			if (
 				(!Options.saveOnlyNext && !Options.saveOnlyHigher) ||
 				(Options.saveOnlyNext && (isFirstChapter || this.title.isNextChapter(currentProgress))) ||
-				// If the current synced chapter is lower than the read chapter
-				// 	Or if there is a saved volume and it's lower than the current volume
 				(Options.saveOnlyHigher &&
 					!Options.saveOnlyNext &&
-					(isFirstChapter ||
-						this.title.chapter < currentProgress.chapter ||
-						(this.title.volume && currentProgress.volume && currentProgress.volume > this.title.volume)))
+					(isFirstChapter || this.title.isHigherChapter(currentProgress)))
 			) {
 				await this.syncModule.syncProgress(currentProgress);
 			} else if (Options.confirmChapter && (Options.saveOnlyNext || Options.saveOnlyHigher)) {
 				reasons.push(
-					`**${this.title.name}** **${progressToString(currentProgress)}** is not ${
+					`**${this.title.name}** **${Progress.toString(currentProgress)}** is not ${
 						Options.saveOnlyNext ? 'the next' : 'higher'
 					} and hasn't been updated.`
 				);
@@ -565,7 +562,7 @@ export class ChapterPage extends Page {
 				chapter: details.chapter,
 				volume: details.volume,
 				status: details.status,
-				progress: getProgress(details.title, details.chapter, details.volume),
+				progress: Progress.get(details.title, details.chapter, details.volume),
 			};
 			// Process queue directly for external chapters, no ReaderPageChange trigerred
 			if (details.status == 'external' || details.status == 'delayed') {

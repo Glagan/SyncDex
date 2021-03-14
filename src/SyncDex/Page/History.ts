@@ -1,12 +1,13 @@
 import { DOM } from '../../Core/DOM';
 import { Options } from '../../Core/Options';
 import { LocalTitle, TitleCollection } from '../../Core/Title';
-import { dateFormat, injectScript, progressFromString, progressToString } from '../../Core/Utility';
+import { dateFormat, injectScript } from '../../Core/Utility';
 import { Page } from '../Page';
 import { History } from '../../Core/History';
 import { Http } from '../../Core/Http';
 import { MangaDex } from '../../Core/MangaDex';
-import { debug, TryCatch } from '../../Core/Log';
+import { TryCatch } from '../../Core/Log';
+import { Progress } from '../../Core/Progress';
 
 interface FollowPageResult {
 	titles: { [key: number]: number };
@@ -44,7 +45,7 @@ export class HistoryPage extends Page {
 			requestTime: Date.now() - before,
 			code: response.code,
 		};
-		if (response.code >= 200 && response.code < 400 && response.body) {
+		if (response.ok && response.body) {
 			const body = response.body;
 			// Get titles
 			for (const chapter of body.data.chapters) {
@@ -166,10 +167,10 @@ export class HistoryPage extends Page {
 			const title = wasInHistory ? titles.find(id) : await LocalTitle.get(id);
 			if (title) {
 				historyCards[id] = node;
-				const progress = progressFromString(chapterLink.textContent!);
+				const progress = Progress.fromString(chapterLink.textContent!);
 				if (isNaN(progress.chapter)) continue;
 				if (!title.history) title.history = progress;
-				else chapterLink.textContent = progressToString(title.history);
+				else chapterLink.textContent = Progress.toString(title.history);
 				if (title.lastChapter !== chapter) title.lastChapter = chapter;
 				if (!title.inList) {
 					title.name = node.querySelector<HTMLElement>('.manga_title')!.textContent!;
@@ -360,7 +361,7 @@ export class HistoryPage extends Page {
 		const chapterLink = DOM.create('a', {
 			class: 'white',
 			href: `/chapter/${title.lastChapter}`,
-			textContent: title.history ? progressToString(title.history) : 'Unknown Chapter',
+			textContent: title.history ? Progress.toString(title.history) : 'Unknown Chapter',
 		});
 		if (!title.lastChapter) {
 			chapterLink.href = '#';

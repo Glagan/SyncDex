@@ -1,10 +1,10 @@
 import { Options } from '../../Core/Options';
 import { TitleCollection } from '../../Core/Title';
 import { Page } from '../Page';
-import { progressFromString } from '../../Core/Utility';
 import { Title } from '../../Core/Title';
 import { DOM } from '../../Core/DOM';
 import { TryCatch } from '../../Core/Log';
+import { Progress } from '../../Core/Progress';
 
 interface ChapterRow {
 	node: HTMLElement;
@@ -26,26 +26,19 @@ export class UpdateGroup {
 	}
 
 	hide(title: Title) {
-		const progress = title.progress;
 		let chapterCount = this.chapters.length;
 		let hidden = 0;
-		let foundNext = false;
 		for (const row of this.chapters) {
 			if (!row.progress) continue;
 			// If it's the next chapter do nothing and skip it
-			const isNextChapter =
-				!foundNext &&
-				((row.progress.chapter > progress.chapter && row.progress.chapter < Math.floor(progress.chapter) + 2) ||
-					(row.progress.chapter == 0 && progress.chapter == 0 && title.status !== Status.COMPLETED));
-			if (isNextChapter) {
-				foundNext = true;
+			if (title.isNextChapter(row.progress)) {
 				continue;
 			}
 			// Hide row if it matches any option
 			if (
-				(Options.hideHigher && row.progress.chapter > progress.chapter) ||
-				(Options.hideLower && row.progress.chapter < progress.chapter) ||
-				(Options.hideLast && progress.chapter == row.progress.chapter)
+				(Options.hideHigher && title.isHigherChapter(row.progress)) ||
+				(Options.hideLower && title.isLowerChapter(row.progress)) ||
+				(Options.hideLast && title.isCurrentChapter(row.progress))
 			) {
 				row.node.className = 'hidden full';
 				hidden++;
@@ -64,7 +57,6 @@ export class UpdateGroup {
 	}
 
 	highlight(title: Title) {
-		const progress = title.progress;
 		let lastColor = Options.colors.highlights.length;
 		let foundNext = false;
 		// If there is data
@@ -73,25 +65,21 @@ export class UpdateGroup {
 			if (!row.progress) continue;
 			row.node.classList.add('has-fast-in-transition');
 			// * Next Chapter
-			if (
-				!foundNext &&
-				((row.progress.chapter > progress.chapter && row.progress.chapter < Math.floor(progress.chapter) + 2) ||
-					(row.progress.chapter == 0 && progress.chapter == 0 && title.status !== Status.COMPLETED))
-			) {
+			if (title.isNextChapter(row.progress)) {
 				foundNext = true;
 				row.node.style.backgroundColor = Options.colors.nextChapter;
 				bgColumn.style.backgroundColor = Options.colors.nextChapter;
 			}
 			// * Higher Chapter
-			else if (row.progress.chapter > progress.chapter) {
+			else if (title.isHigherChapter(row.progress)) {
 				row.node.style.backgroundColor = Options.colors.higherChapter;
 			}
 			// * Lower Chapter
-			else if (row.progress.chapter < progress.chapter) {
+			else if (title.isLowerChapter(row.progress)) {
 				row.node.style.backgroundColor = Options.colors.lowerChapter;
 			}
 			// * Current Chapter
-			else if (progress.chapter == row.progress.chapter) {
+			else if (title.isCurrentChapter(row.progress)) {
 				row.node.style.backgroundColor = Options.colors.highlights[UpdateGroup.currentColor];
 				if (!foundNext) {
 					bgColumn.style.backgroundColor = Options.colors.highlights[UpdateGroup.currentColor];
@@ -119,7 +107,7 @@ export class UpdateGroup {
 			} else if (currentGroup != undefined) {
 				const chapterLink = row.querySelector<HTMLAnchorElement>(`a[href^='/chapter/'`);
 				if (!chapterLink) continue;
-				const progress = progressFromString(chapterLink.textContent!);
+				const progress = Progress.fromString(chapterLink.textContent!);
 				if (isNaN(progress.chapter)) continue;
 				currentGroup.chapters.unshift({
 					node: row,

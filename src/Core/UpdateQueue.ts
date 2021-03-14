@@ -8,7 +8,7 @@ import { Options } from './Options';
 import { SyncModule } from './SyncModule';
 import { LocalTitle, StatusMap } from './Title';
 import { Http } from './Http';
-import { progressToString } from './Utility';
+import { Progress } from './Progress';
 
 export class UpdateQueue {
 	static notifications: { [key: number]: SimpleNotification } = {};
@@ -71,7 +71,7 @@ export class UpdateQueue {
 			} else if (payload.type == 'progress') {
 				this.notification(
 					'Progress Updated',
-					`Progress updated to **${progressToString(title.progress)}**${
+					`Progress updated to **${Progress.toString(title.progress)}**${
 						payload.result.started ? '\n**Start Date** set to Today !' : ''
 					}${payload.result.completed ? '\n**End Date** set to Today !' : ''}`,
 					payload
@@ -241,7 +241,7 @@ export class UpdateQueue {
 			{
 				title: name,
 				image: MangaDex.thumbnail(title.key, 'thumb'),
-				text: `${message}\nStatus: **${StatusMap[title.status]}**\nProgress: **${progressToString(
+				text: `${message}\nStatus: **${StatusMap[title.status]}**\nProgress: **${Progress.toString(
 					title.progress
 				)}**\nScore: **${title.score}** (${Math.floor(title.score / 10)}/10)${report}`,
 				buttons,

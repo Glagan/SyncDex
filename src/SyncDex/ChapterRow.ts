@@ -1,6 +1,6 @@
 import { DOM } from '../Core/DOM';
 import { Options } from '../Core/Options';
-import { getProgress, progressToString } from '../Core/Utility';
+import { Progress } from '../Core/Progress';
 
 export class ChapterRow {
 	isNext: boolean;
@@ -30,7 +30,7 @@ export class ChapterRow {
 		this.node = fullRow;
 		this.chapterLink = chapterRow.querySelector<HTMLAnchorElement>(`a[href^='/chapter']`)!;
 		this.parent = this.chapterLink.parentElement!;
-		this.progress = getProgress(this.chapterLink.textContent!, dataset.chapter, dataset.volume);
+		this.progress = Progress.get(this.chapterLink.textContent!, dataset.chapter, dataset.volume);
 		this.isVolumeOnly = this.progress.chapter < 0;
 		this.chapterId = parseInt(/\/chapter\/(\d+)/.exec(this.chapterLink.href)![1]);
 		this.hidden = false;
@@ -72,7 +72,7 @@ export class ChapterRow {
 	}
 
 	updateDisplayedProgress() {
-		this.chapterLink.textContent = `${progressToString(this.progress)}${this.title ? ` - ${this.title}` : ''}`;
+		this.chapterLink.textContent = `${Progress.toString(this.progress)}${this.title ? ` - ${this.title}` : ''}`;
 	}
 
 	addManageButtons() {
