@@ -42,6 +42,7 @@ export const DefaultOptions: Readonly<AvailableOptions> = {
 	// Notifications
 	notifications: true,
 	displaySyncStart: false,
+	displayProgressUpdated: true,
 	errorNotifications: true,
 	errorDuration: 4000,
 	infoDuration: 4000,

@@ -279,8 +279,13 @@
 						<label for="ck_errorDuration">Error notifications duration (in milliseconds).</label>
 						<input type="number" id="ck_errorDuration" min="1" data-input="errorDuration" data-dependency="errorNotifications">
 					</div>
+				</div>
+				<div class="parameter">
+					<h2>Progress Sync</h2>
 					<input type="checkbox" id="ck_displaySyncStart" data-name="displaySyncStart" />
 					<label for="ck_displaySyncStart">Display a <b>Syncing ...</b> notification when a <b>Sync</b> start.</label>
+					<input type="checkbox" id="ck_displayProgressUpdated" data-name="displayProgressUpdated" />
+					<label for="ck_displayProgressUpdated">Display the <b>Report</b> notification after a <b>Sync</b>.</label>
 				</div>
 			</div>
 		</div>
@@ -310,7 +315,7 @@
 		<h1 id="other"><i class="fas fa-ellipsis-h"></i> Other</h1>
 		<div class="section">
 			<div class="section-content">
-				<h2 class="bold">Mochi</h2>
+				<h2>Mochi</h2>
 				<div class="parameter">
 					<input type="checkbox" id="ck_useMochi" data-name="useMochi" />
 					<label for="ck_useMochi">Use <a href="https://mochi.nikurasu.org/" target="_blank" rel="noreferrer noopener">Mochi <i class="fas fa-external-link-alt"></i></a> to get Services links.</label>

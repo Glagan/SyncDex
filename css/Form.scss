@@ -149,4 +149,8 @@
 			margin-left: 30px;
 		}
 	}
+
+	label + input[type='checkbox'] + label {
+		margin-top: 8px;
+	}
 }

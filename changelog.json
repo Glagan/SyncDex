@@ -2,7 +2,10 @@
 	"updates": [
 		{
 			"version": "0.3.4",
-			"description": ["Fix `Hide Last Chapter` hiding everything.##51"]
+			"description": [
+				"Fix `Hide Last Chapter` hiding everything.##51",
+				"Add `displayProgressUpdated` option.##50"
+			]
 		},
 		{
 			"version": "0.3.3",

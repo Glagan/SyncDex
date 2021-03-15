@@ -66,28 +66,30 @@ export class UpdateQueue {
 				this.deleteNotification('mangadex', title.key.id!);
 			}
 
-			if (payload.type == 'status') {
-				this.notification('Status Updated', `Status updated to **${StatusMap[title.status]}**.`, payload);
-			} else if (payload.type == 'progress') {
-				this.notification(
-					'Progress Updated',
-					`Progress updated to **${Progress.toString(title.progress)}**${
-						payload.result.started ? '\n**Start Date** set to Today !' : ''
-					}${payload.result.completed ? '\n**End Date** set to Today !' : ''}`,
-					payload
-				);
-			} else if (payload.type == 'score') {
-				this.notification(
-					'Score Updated',
-					`Score updated to **${title.score}** (${Math.floor(title.score / 10)}/10).`,
-					payload
-				);
-			} else if (payload.type == 'delete') {
-				this.notification('Title Deleted', `**${payload.syncModule.title.name}** Deleted.`, payload);
-			} else if (payload.type == 'edit') {
-				this.miniOverview('Updated', `**${payload.syncModule.title.name}** Updated.`, payload);
-			} else if (payload.type == 'cancel') {
-				this.miniOverview('Cancelled', `**${payload.syncModule.title.name}** Update cancelled.`, payload);
+			if (Options.displayProgressUpdated) {
+				if (payload.type == 'status') {
+					this.notification('Status Updated', `Status updated to **${StatusMap[title.status]}**.`, payload);
+				} else if (payload.type == 'progress') {
+					this.notification(
+						'Progress Updated',
+						`Progress updated to **${Progress.toString(title.progress)}**${
+							payload.result.started ? '\n**Start Date** set to Today !' : ''
+						}${payload.result.completed ? '\n**End Date** set to Today !' : ''}`,
+						payload
+					);
+				} else if (payload.type == 'score') {
+					this.notification(
+						'Score Updated',
+						`Score updated to **${title.score}** (${Math.floor(title.score / 10)}/10).`,
+						payload
+					);
+				} else if (payload.type == 'delete') {
+					this.notification('Title Deleted', `**${payload.syncModule.title.name}** Deleted.`, payload);
+				} else if (payload.type == 'edit') {
+					this.miniOverview('Updated', `**${payload.syncModule.title.name}** Updated.`, payload);
+				} else if (payload.type == 'cancel') {
+					this.miniOverview('Cancelled', `**${payload.syncModule.title.name}** Update cancelled.`, payload);
+				}
 			}
 		});
 
@@ -111,25 +113,26 @@ export class UpdateQueue {
 			const title = payload.title;
 			this.deleteNotification('mangadex', title.key.id!);
 
-			// Add to report
-			if (payload.field == 'unfollow') {
-				this.mdNotifications[title.key.id!] = SimpleNotification.success(
-					{
-						image: MangaDex.thumbnail(title.key, 'thumb'),
-						text: `![MangaDex|${Extension.icon(ServiceKey.MangaDex)}] Unfollowed.`,
-						buttons: [this.closeButton()],
-					},
-					{ duration: Options.successDuration, events: this.deleteEvents('mangadex', title.key.id!) }
-				);
-			} else {
-				this.mdNotifications[title.key.id!] = SimpleNotification.success(
-					{
-						image: MangaDex.thumbnail(title.key, 'thumb'),
-						text: this.mdReport({ [payload.field]: payload.status }),
-						buttons: [this.closeButton()],
-					},
-					{ duration: Options.successDuration, events: this.deleteEvents('mangadex', title.key.id!) }
-				);
+			if (Options.displayProgressUpdated) {
+				if (payload.field == 'unfollow') {
+					this.mdNotifications[title.key.id!] = SimpleNotification.success(
+						{
+							image: MangaDex.thumbnail(title.key, 'thumb'),
+							text: `![MangaDex|${Extension.icon(ServiceKey.MangaDex)}] Unfollowed.`,
+							buttons: [this.closeButton()],
+						},
+						{ duration: Options.successDuration, events: this.deleteEvents('mangadex', title.key.id!) }
+					);
+				} else {
+					this.mdNotifications[title.key.id!] = SimpleNotification.success(
+						{
+							image: MangaDex.thumbnail(title.key, 'thumb'),
+							text: this.mdReport({ [payload.field]: payload.status }),
+							buttons: [this.closeButton()],
+						},
+						{ duration: Options.successDuration, events: this.deleteEvents('mangadex', title.key.id!) }
+					);
+				}
 			}
 		});
 	}
@@ -248,9 +251,6 @@ export class UpdateQueue {
 			},
 			{ duration: Options.successDuration, events: this.deleteEvents('sync', payload.syncModule.title.key.id!) }
 		);
-		/*syncModule.title.status == Status.NONE
-			? 'Removed from list'
-			: `[${StatusMap[syncModule.title.status]}] Chapter ${syncModule.title.chapter}`*/
 	}
 
 	static cancelButton(payload: { syncModule: SyncModule; state: LocalTitleState }): Button {

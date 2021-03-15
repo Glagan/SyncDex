@@ -176,8 +176,9 @@ interface AvailableOptions {
 	biggerHistory: boolean;
 	chapterStatus: boolean;
 	// Notifications
-	displaySyncStart: boolean;
 	notifications: boolean;
+	displaySyncStart: boolean;
+	displayProgressUpdated: boolean;
 	errorNotifications: boolean;
 	errorDuration: number;
 	infoDuration: number;
