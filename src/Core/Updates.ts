@@ -32,6 +32,11 @@ export class Updates {
 			subVersion: 1,
 			fnct: () => (Options.displaySyncStart = false),
 		},
+		{
+			version: 0.3,
+			subVersion: 4,
+			fnct: () => (Options.displayProgressUpdated = true),
+		},
 	];
 
 	static async apply(): Promise<boolean> {
