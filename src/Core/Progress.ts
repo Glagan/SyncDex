@@ -61,7 +61,7 @@ export namespace Progress {
 	export function isHigher(p1: Progress, p2: Progress): boolean {
 		return (
 			(p2.chapter > p1.chapter && (!p2.volume || !p1.volume || p2.volume >= p1.volume)) ||
-			(!!p2.volume && !!p1.volume && p2.volume > p1.volume)
+			(p2.chapter < 0 && !!p2.volume && !!p1.volume && p2.volume > p1.volume)
 		);
 	}
 
@@ -100,7 +100,7 @@ export namespace Progress {
 	export function isLower(p1: Progress, p2: Progress): boolean {
 		return (
 			(p2.chapter < p1.chapter && (!p2.volume || !p1.volume || p2.volume <= p1.volume)) ||
-			(!!p2.volume && !!p1.volume && p2.volume < p1.volume)
+			(p2.chapter < 0 && !!p2.volume && !!p1.volume && p2.volume < p1.volume)
 		);
 	}
 }

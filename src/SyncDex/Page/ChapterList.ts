@@ -237,7 +237,6 @@ class TitleChapterGroup {
 	hide(title: LocalTitle) {
 		TitleChapterGroup.totalHiddenRows -= this.hiddenRows;
 		this.hiddenRows = 0;
-		const progress = title.progress;
 		const showHidden = TitleChapterGroup.toggleButton.button.classList.contains('show-hidden');
 		for (const group of this.groups) {
 			if (group.length == 0) continue;
@@ -254,7 +253,7 @@ class TitleChapterGroup {
 						this.nextChapterRows.indexOf(row.node) < 0 &&
 						title.isHigherChapter(row.progress)) ||
 					(Options.hideLower && title.isLowerChapter(row.progress)) ||
-					(Options.hideLast && title.isCurrentChapter(progress))
+					(Options.hideLast && title.isCurrentChapter(row.progress))
 				) {
 					row.node.classList.add('hidden');
 					if (showHidden) row.node.classList.add('visible');

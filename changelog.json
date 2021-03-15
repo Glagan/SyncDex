@@ -1,6 +1,10 @@
 {
 	"updates": [
 		{
+			"version": "0.3.4",
+			"description": ["Fix `Hide Last Chapter` hiding everything.##51"]
+		},
+		{
 			"version": "0.3.3",
 			"description": [
 				"Fix chapter value detection with first chapters.",
